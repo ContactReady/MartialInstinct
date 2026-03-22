@@ -358,6 +358,18 @@ export const BLOCKS: Block[] = [
     icon: '☠️',
     moduleIds: ['mod-11', 'mod-12', 'mod-13'],
     requiresApplication: true
+  },
+  {
+    id: 'assistant_instructor',
+    name: 'ASSISTANT INSTRUCTOR',
+    subtitle: 'Ausbilder',
+    level: 'assistant_instructor',
+    color: 'text-yellow-400',
+    bgColor: 'bg-gradient-to-r from-yellow-900/20 to-amber-900/20',
+    borderColor: 'border-yellow-700',
+    icon: '🎓',
+    moduleIds: [],
+    requiresApplication: true
   }
 ];
 

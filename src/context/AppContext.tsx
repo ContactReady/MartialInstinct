@@ -412,36 +412,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const logPractice = useCallback((techniqueId: string) => {
     if (!currentUser) return;
-    setMembers(prev => prev.map(m =>
-      m.id === currentUser.id
-        ? {
-            ...m,
-            techniqueProgress: {
-              ...m.techniqueProgress,
-              [techniqueId]: {
-                ...m.techniqueProgress[techniqueId],
-                techniqueId,
-                status: m.techniqueProgress[techniqueId]?.status || 'not_tested',
-                practiceCount: (m.techniqueProgress[techniqueId]?.practiceCount ?? 0) + 1,
-                lastPracticedAt: new Date()
-              }
-            }
+    const todayStr = new Date().toDateString();
+
+    const applyLog = (m: Member): Member => {
+      const prog = m.techniqueProgress[techniqueId];
+      // Tages-Limit: Selbst-Markierung max 1× pro Tag
+      if (prog?.lastSelfPracticedAt && new Date(prog.lastSelfPracticedAt).toDateString() === todayStr) return m;
+      const now = new Date();
+      return {
+        ...m,
+        techniqueProgress: {
+          ...m.techniqueProgress,
+          [techniqueId]: {
+            ...prog,
+            techniqueId,
+            status: prog?.status || 'not_tested',
+            practiceCount: (prog?.practiceCount ?? 0) + 1,
+            lastPracticedAt: now,
+            lastSelfPracticedAt: now,
           }
-        : m
-    ));
-    setCurrentUser(prev => prev ? {
-      ...prev,
-      techniqueProgress: {
-        ...prev.techniqueProgress,
-        [techniqueId]: {
-          ...prev.techniqueProgress[techniqueId],
-          techniqueId,
-          status: prev.techniqueProgress[techniqueId]?.status || 'not_tested',
-          practiceCount: (prev.techniqueProgress[techniqueId]?.practiceCount ?? 0) + 1,
-          lastPracticedAt: new Date()
         }
-      }
-    } : null);
+      };
+    };
+
+    setMembers(prev => prev.map(m => m.id === currentUser.id ? applyLog(m) : m));
+    setCurrentUser(prev => prev ? applyLog(prev) : null);
   }, [currentUser]);
 
   const markTechniquePassed = useCallback((memberId: string, techniqueId: string, notes?: string) => {
@@ -613,8 +608,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const approveInstructorApplication = useCallback((memberId: string, feedback?: string) => {
     if (!currentUser) return;
-    
-    setMembers(prev => prev.map(m => 
+
+    setMembers(prev => prev.map(m =>
       m.id === memberId && m.assistantInstructorApplication
         ? {
             ...m,
@@ -624,9 +619,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               processedAt: new Date(),
               processedBy: currentUser.id,
               feedback
-            },
-            currentLevel: 'assistant_instructor' as ModuleLevel,
-            role: 'assistant_instructor' as const
+            }
+            // Keine automatische Rollenänderung — Admin entscheidet separat
           }
         : m
     ));

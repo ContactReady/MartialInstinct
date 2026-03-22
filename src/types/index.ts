@@ -115,6 +115,8 @@ export interface TechniqueProgress {
   // Praxis
   practiceCount?: number;
   lastPracticedAt?: Date;
+  lastSelfPracticedAt?: Date;    // Tages-Limit: Selbst-Markierung (max 1×/Tag)
+  lastTheoryPracticedAt?: Date;  // Tages-Limit: Theorie-Quiz (max 1×/Tag)
 }
 
 // Prüfungsanfrage

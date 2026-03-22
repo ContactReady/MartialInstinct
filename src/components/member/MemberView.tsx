@@ -354,33 +354,69 @@ export const MemberView: React.FC = () => {
           )}
 
           {/* Aktions-Buttons */}
-          <div className="flex gap-3">
-            <button
-              onClick={() => logPractice(tech.id)}
-              className="flex-shrink-0 bg-gray-700 hover:bg-gray-600 text-gray-200 px-4 py-3 rounded-xl text-sm font-medium transition-all"
-            >
-              🏋️ Als geübt
-            </button>
-            {canRequest && !isPending && (
-              <button
-                onClick={() => { handleRequestExam(tech.id); setSelectedTechniqueId(null); }}
-                className="flex-1 bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-semibold transition-all text-sm"
-              >
-                {techPassed ? '🔶 Taktische Prüfung anfragen' : '🔷 Technische Prüfung anfragen'}
-              </button>
-            )}
-            {isPending && (
-              <div className="flex-1 flex items-center justify-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl py-3">
-                <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
-                <span className="text-yellow-400 text-sm font-medium">Prüfung ausstehend…</span>
+          {(() => {
+            const practiceCount = progress?.practiceCount ?? 0;
+            const MIN_PRACTICE = 5;
+            const hasEnough = practiceCount >= MIN_PRACTICE;
+            const todayStr2 = new Date().toDateString();
+            const practicedToday = !!progress?.lastSelfPracticedAt &&
+              new Date(progress.lastSelfPracticedAt).toDateString() === todayStr2;
+
+            return (
+              <div className="space-y-3">
+                {/* Üben-Zeile mit Fortschritt */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => { if (!practicedToday) logPractice(tech.id); }}
+                    disabled={practicedToday}
+                    className={`flex-shrink-0 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                      practicedToday
+                        ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
+                        : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
+                    }`}
+                  >
+                    🏋️ Als geübt markieren
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: MIN_PRACTICE }).map((_, i) => (
+                      <span key={i} className={`w-3 h-3 rounded-full ${i < practiceCount ? 'bg-blue-400' : 'bg-gray-600'}`} />
+                    ))}
+                    <span className="text-sm text-gray-400 ml-1">{Math.min(practiceCount, MIN_PRACTICE)}/{MIN_PRACTICE}</span>
+                  </div>
+                  {practicedToday && <span className="text-xs text-gray-500 italic">Heute erledigt</span>}
+                </div>
+
+                {/* Prüfungsanfrage */}
+                {canRequest && !isPending && (
+                  hasEnough ? (
+                    <button
+                      onClick={() => { handleRequestExam(tech.id); setSelectedTechniqueId(null); }}
+                      className="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-semibold transition-all text-sm"
+                    >
+                      {techPassed ? '🔶 Taktische Prüfung anfragen' : '🔷 Technische Prüfung anfragen'}
+                    </button>
+                  ) : (
+                    <div className="w-full bg-gray-700/40 border border-gray-600/30 rounded-xl py-3 text-center">
+                      <span className="text-gray-500 text-sm">
+                        🔒 Mindestens {MIN_PRACTICE}× üben für Prüfungsanfrage ({practiceCount}/{MIN_PRACTICE})
+                      </span>
+                    </div>
+                  )
+                )}
+                {isPending && (
+                  <div className="w-full flex items-center justify-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl py-3">
+                    <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
+                    <span className="text-yellow-400 text-sm font-medium">Prüfung ausstehend…</span>
+                  </div>
+                )}
+                {tacPassed && (
+                  <div className="w-full flex items-center justify-center gap-2 bg-green-500/10 border border-green-500/20 rounded-xl py-3">
+                    <span className="text-green-400 font-semibold text-sm">✅ Vollständig gemeistert</span>
+                  </div>
+                )}
               </div>
-            )}
-            {tacPassed && (
-              <div className="flex-1 flex items-center justify-center gap-2 bg-green-500/10 border border-green-500/20 rounded-xl py-3">
-                <span className="text-green-400 font-semibold text-sm">✅ Vollständig gemeistert</span>
-              </div>
-            )}
-          </div>
+            );
+          })()}
         </div>
       );
     }

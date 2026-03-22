@@ -105,7 +105,7 @@ export const InstructorView: React.FC = () => {
       case 'requests':
         return EXAM_PERMISSIONS[currentUser.role].length > 0;
       case 'applications':
-        return currentUser.role === 'owner';
+        return currentUser.role === 'owner' || currentUser.role === 'admin';
       case 'board':
         return currentUser.role !== 'member';
       default:
@@ -138,65 +138,6 @@ export const InstructorView: React.FC = () => {
             <div className="text-blue-300 font-semibold text-sm">Laufender Kurs</div>
             <div className="text-blue-400/80 text-xs">{detectedCourse}</div>
           </div>
-        </div>
-      )}
-
-      {/* Pending Check-ins */}
-      {pendingCheckIns.length > 0 ? (
-        <div className="bg-yellow-900/30 rounded-xl p-4 border border-yellow-700">
-          <h3 className="text-lg font-bold text-yellow-400 mb-4">
-            🔔 Check-in Anfragen ({pendingCheckIns.length})
-          </h3>
-          <div className="space-y-3">
-            {pendingCheckIns.map(checkIn => {
-              const canApprove = canApproveCheckIn(currentUser.role, currentUser.id, checkIn);
-              const member = members.find(m => m.id === checkIn.memberId);
-              return (
-                <div key={checkIn.id} className="bg-gray-800 rounded-lg p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-2xl flex-shrink-0">{member?.avatar ?? '🥋'}</span>
-                      <div className="min-w-0">
-                        <div className="font-medium text-white">{checkIn.memberName}</div>
-                        <div className="text-gray-400 text-xs">{formatTimeAgo(checkIn.requestedAt)}</div>
-                        {detectedCourse && (
-                          <div className="text-blue-400/70 text-xs mt-0.5">{detectedCourse}</div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      {canApprove ? (
-                        <>
-                          <button
-                            onClick={() => approveCheckIn(checkIn.id)}
-                            className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-bold transition-all"
-                            title="Bestätigen"
-                          >
-                            ✓
-                          </button>
-                          <button
-                            onClick={() => rejectCheckIn(checkIn.id)}
-                            className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold transition-all"
-                            title="Ablehnen"
-                          >
-                            ✕
-                          </button>
-                        </>
-                      ) : (
-                        <span className="text-xs text-gray-500 italic px-2 py-2">
-                          Nicht dein Kurs
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ) : (
-        <div className="bg-gray-800/30 rounded-xl p-4 border border-gray-700/30 text-center">
-          <p className="text-gray-500 text-sm">Keine offenen Check-in Anfragen</p>
         </div>
       )}
 
@@ -458,8 +399,69 @@ export const InstructorView: React.FC = () => {
   // Render Requests Tab
   const renderRequestsTab = () => (
     <div className="space-y-6">
+
+      {/* ── Check-in Anfragen ─────────────────────────────────────────────── */}
+      <div>
+        <h3 className="text-lg font-bold text-white mb-3">
+          📥 Check-in Anfragen ({pendingCheckIns.length})
+        </h3>
+        {pendingCheckIns.length === 0 ? (
+          <div className="bg-gray-800/30 rounded-xl p-4 border border-gray-700/30 text-center">
+            <p className="text-gray-500 text-sm">Keine offenen Check-in Anfragen</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {pendingCheckIns.map(checkIn => {
+              const canApprove = canApproveCheckIn(currentUser.role, currentUser.id, checkIn);
+              const member = members.find(m => m.id === checkIn.memberId);
+              return (
+                <div key={checkIn.id} className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-2xl flex-shrink-0">{member?.avatar ?? '🥋'}</span>
+                      <div className="min-w-0">
+                        <div className="font-medium text-white">{checkIn.memberName}</div>
+                        <div className="text-gray-400 text-xs">{formatTimeAgo(checkIn.requestedAt)}</div>
+                        {detectedCourse && (
+                          <div className="text-blue-400/70 text-xs mt-0.5">📅 {detectedCourse}</div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      {canApprove ? (
+                        <>
+                          <button
+                            onClick={() => approveCheckIn(checkIn.id)}
+                            className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-bold transition-all"
+                            title="Bestätigen"
+                          >
+                            ✓
+                          </button>
+                          <button
+                            onClick={() => rejectCheckIn(checkIn.id)}
+                            className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold transition-all"
+                            title="Ablehnen"
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-500 italic px-2 py-2">
+                          Nicht dein Kurs
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Prüfungsanfragen ──────────────────────────────────────────────── */}
       <h3 className="text-lg font-bold text-white">
-        Offene Prüfungsanfragen ({pendingExamRequests.length})
+        🔷 Prüfungsanfragen ({pendingExamRequests.length})
       </h3>
 
       {pendingExamRequests.length === 0 ? (
@@ -474,6 +476,9 @@ export const InstructorView: React.FC = () => {
             const canProcess = currentUser.role !== 'member';
             const feedback = rejectionFeedback[req.id] ?? '';
             const hasComment = feedback.trim().length >= 5;
+            // Bestanden: kein Kommentar nötig. Nachtrainieren: Pflicht.
+            const canPass = canProcess;
+            const canReject = canProcess && hasComment;
 
             const levelBadge = req.examLevel === 'technical'
               ? <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-medium">🔷 Technisch</span>
@@ -503,42 +508,36 @@ export const InstructorView: React.FC = () => {
                   <div className="border-t border-gray-700/50 px-4 pt-3 pb-4 space-y-3">
                     <div>
                       <label className="text-xs text-gray-400 mb-1 block">
-                        Kommentar <span className="text-red-400">*</span>
-                        <span className="text-gray-600 ml-1">(mind. 5 Zeichen — Pflicht)</span>
+                        Kommentar
+                        <span className="text-gray-600 ml-1">(optional bei Bestanden — Pflicht bei Nachtrainieren)</span>
                       </label>
                       <textarea
                         rows={2}
-                        placeholder="Konkretes Feedback für den Member…"
+                        placeholder="Feedback für den Member… (Pflicht bei Nachtrainieren)"
                         value={feedback}
                         onChange={e => setRejectionFeedback(prev => ({ ...prev, [req.id]: e.target.value }))}
-                        className={`w-full bg-gray-700/60 border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 resize-none focus:outline-none transition-colors ${
-                          hasComment ? 'border-gray-500 focus:border-gray-400' : 'border-gray-600 focus:border-yellow-500/50'
-                        }`}
+                        className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 resize-none focus:outline-none focus:border-gray-400 transition-colors"
                       />
                     </div>
                     <div className="flex gap-2">
                       <button
-                        disabled={!hasComment}
+                        disabled={!canPass}
                         onClick={() => {
                           approveExam(req.memberId, req.id, feedback);
                           setRejectionFeedback(prev => { const n = { ...prev }; delete n[req.id]; return n; });
                         }}
-                        className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
-                          hasComment
-                            ? 'bg-green-600 hover:bg-green-500 text-white'
-                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                        }`}
+                        className="flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all bg-green-600 hover:bg-green-500 text-white"
                       >
                         ✅ Bestanden
                       </button>
                       <button
-                        disabled={!hasComment}
+                        disabled={!canReject}
                         onClick={() => {
                           rejectExam(req.memberId, req.id, feedback);
                           setRejectionFeedback(prev => { const n = { ...prev }; delete n[req.id]; return n; });
                         }}
                         className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
-                          hasComment
+                          canReject
                             ? 'bg-orange-600 hover:bg-orange-500 text-white'
                             : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                         }`}
@@ -627,16 +626,28 @@ export const InstructorView: React.FC = () => {
                     </div>
                     <div className="space-y-3 mb-6">
                       <div className="bg-gray-800/50 rounded-lg p-3">
-                        <div className="text-gray-400 text-sm">Motivation</div>
-                        <div className="text-white">{app.answers.motivation}</div>
+                        <div className="text-gray-400 text-xs mb-1">Warum möchtest du Instructor werden?</div>
+                        <div className="text-white text-sm">{app.answers.motivation}</div>
                       </div>
                       <div className="bg-gray-800/50 rounded-lg p-3">
-                        <div className="text-gray-400 text-sm">Unterrichtserfahrung</div>
-                        <div className="text-white">{app.answers.teachingExperience}</div>
+                        <div className="text-gray-400 text-xs mb-1">Hast du bereits Unterrichtserfahrung?</div>
+                        <div className="text-white text-sm">{app.answers.teachingExperience}</div>
                       </div>
                       <div className="bg-gray-800/50 rounded-lg p-3">
-                        <div className="text-gray-400 text-sm">Verfügbarkeit</div>
-                        <div className="text-white">{app.answers.availability}</div>
+                        <div className="text-gray-400 text-xs mb-1">Stärken und Schwächen</div>
+                        <div className="text-white text-sm">{app.answers.strengthsWeaknesses}</div>
+                      </div>
+                      <div className="bg-gray-800/50 rounded-lg p-3">
+                        <div className="text-gray-400 text-xs mb-1">Verfügbarkeit</div>
+                        <div className="text-white text-sm">{app.answers.availability}</div>
+                      </div>
+                      <div className="bg-gray-800/50 rounded-lg p-3">
+                        <div className="text-gray-400 text-xs mb-1">Ziele als Instructor</div>
+                        <div className="text-white text-sm">{app.answers.goals}</div>
+                      </div>
+                      <div className="bg-gray-800/50 rounded-lg p-3">
+                        <div className="text-gray-400 text-xs mb-1">Was macht einen guten Instructor aus?</div>
+                        <div className="text-white text-sm">{app.answers.roleModel}</div>
                       </div>
                     </div>
                     <div className="flex gap-3">
@@ -701,10 +712,10 @@ export const InstructorView: React.FC = () => {
   // Tab configuration
   const allTabs: { id: Tab; label: string; icon: string; badge?: number }[] = [
     { id: 'lernen' as Tab, label: 'Lernen', icon: '📚' },
-    { id: 'live' as Tab, label: 'Live', icon: '📍', badge: pendingCheckIns.length },
+    { id: 'live' as Tab, label: 'Live', icon: '📍' },
     { id: 'evaluate' as Tab, label: 'Bewerten', icon: '✏️' },
     { id: 'members' as Tab, label: 'Mitglieder', icon: '👥' },
-    { id: 'requests' as Tab, label: 'Anfragen', icon: '🟡', badge: pendingExamRequests.length },
+    { id: 'requests' as Tab, label: 'Anfragen', icon: '🟡', badge: pendingCheckIns.length + pendingExamRequests.length },
     { id: 'applications' as Tab, label: 'Bewerbungen', icon: '💀', badge: totalPendingApps },
     { id: 'board' as Tab, label: 'Board', icon: '💬' },
   ];
