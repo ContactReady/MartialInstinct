@@ -2,7 +2,7 @@
 // MARTIAL INSTINCT - APP CONTEXT
 // ============================================
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import {
   Member,
   CheckIn,
@@ -97,6 +97,7 @@ interface AppContextType {
   // Helpers
   getMemberById: (id: string) => Member | undefined;
   getCheckedInMembers: () => Member[];
+  getOnlineMembers: () => Member[];
   getPendingCheckIns: () => CheckIn[];
   getPendingExamRequests: () => ExamRequest[];
   getMemberProgress: (memberId: string) => { total: number; completed: number; percentage: number };
@@ -130,22 +131,53 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const login = useCallback((email: string, password: string): boolean => {
     const member = members.find(m => m.email === email && m.password === password);
     if (member) {
-      setCurrentUser(member);
+      const now = new Date();
+      const online = { ...member, onlineSince: now, lastSeenAt: now };
+      setMembers(prev => prev.map(m => m.id === member.id ? online : m));
+      setCurrentUser(online);
       return true;
     }
     return false;
   }, [members]);
 
   const logout = useCallback(() => {
+    if (currentUser) {
+      // Online-Status löschen beim Logout
+      setMembers(prev => prev.map(m =>
+        m.id === currentUser.id ? { ...m, onlineSince: undefined } : m
+      ));
+    }
     setCurrentUser(null);
-  }, []);
+  }, [currentUser]);
 
   const switchUser = useCallback((userId: string) => {
+    // Vorherigen User offline setzen
+    if (currentUser) {
+      setMembers(prev => prev.map(m =>
+        m.id === currentUser.id ? { ...m, onlineSince: undefined } : m
+      ));
+    }
     const member = members.find(m => m.id === userId);
     if (member) {
-      setCurrentUser(member);
+      const now = new Date();
+      const online = { ...member, onlineSince: now, lastSeenAt: now };
+      setMembers(prev => prev.map(m => m.id === userId ? online : m));
+      setCurrentUser(online);
     }
-  }, [members]);
+  }, [members, currentUser]);
+
+  // Heartbeat: lastSeenAt alle 60s aktualisieren (→ "online" = < 3 Min)
+  useEffect(() => {
+    if (!currentUser) return;
+    const interval = setInterval(() => {
+      const now = new Date();
+      setMembers(prev => prev.map(m =>
+        m.id === currentUser.id ? { ...m, lastSeenAt: now } : m
+      ));
+      setCurrentUser(prev => prev ? { ...prev, lastSeenAt: now } : null);
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [currentUser?.id]);
 
   // ============================================
   // CHECK-INS
@@ -825,6 +857,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return members.filter(m => m.isCheckedIn);
   }, [members]);
 
+  // Online = hat onlineSince gesetzt (aktive Session)
+  // Inaktiv = lastSeenAt < 10 Minuten her (noch sichtbar, aber kein Heartbeat)
+  const getOnlineMembers = useCallback((): Member[] => {
+    const cutoff = new Date(Date.now() - 10 * 60 * 1000); // 10 Minuten
+    return members.filter(m =>
+      m.onlineSince !== undefined || new Date(m.lastSeenAt) > cutoff
+    );
+  }, [members]);
+
   const getPendingCheckIns = useCallback((): CheckIn[] => {
     return checkIns.filter(c => c.status === 'pending');
   }, [checkIns]);
@@ -1016,6 +1057,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     toggleDarkMode,
     getMemberById,
     getCheckedInMembers,
+    getOnlineMembers,
     getPendingCheckIns,
     getPendingExamRequests,
     getMemberProgress,

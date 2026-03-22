@@ -187,7 +187,8 @@ export interface Member {
   locationId: string;
   joinedAt: Date;
   lastSeenAt: Date;
-  
+  onlineSince?: Date;   // Gesetzt bei Login, gelöscht bei Logout
+
   // Aktuelles Level
   currentLevel: ModuleLevel;
   

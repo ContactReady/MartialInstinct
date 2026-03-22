@@ -3,7 +3,7 @@
 // Strukturiert, autoritätsbasiert und skalierbar
 // ============================================
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp, MODULES, BLOCKS, COURSES } from '../../context/AppContext';
 import {
   STATUS_DISPLAY,
@@ -50,6 +50,7 @@ export const InstructorView: React.FC = () => {
   const {
     currentUser,
     members,
+    checkIns,
     boardMessages,
     approveCheckIn,
     rejectCheckIn,
@@ -68,7 +69,8 @@ export const InstructorView: React.FC = () => {
     sendBoardMessage,
     getPendingCheckIns,
     getPendingExamRequests,
-    getBlockProgress
+    getBlockProgress,
+    getOnlineMembers,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>('lernen');
@@ -128,77 +130,206 @@ export const InstructorView: React.FC = () => {
   };
 
   // Render Live Tab
-  const renderLiveTab = () => (
-    <div className="space-y-6">
-      {/* Kurs-Erkennung Banner */}
-      {detectedCourse && (
-        <div className="bg-blue-900/30 border border-blue-700/50 rounded-xl px-4 py-3 flex items-center gap-2">
-          <span className="text-blue-400 text-lg">📅</span>
-          <div>
-            <div className="text-blue-300 font-semibold text-sm">Laufender Kurs</div>
-            <div className="text-blue-400/80 text-xs">{detectedCourse}</div>
-          </div>
-        </div>
-      )}
+  const renderLiveTab = () => {
+    // 30s Auto-Refresh innerhalb des Tabs
+    const [tick, setTick] = useState(0);
+    useEffect(() => {
+      const interval = setInterval(() => setTick(t => t + 1), 30_000);
+      return () => clearInterval(interval);
+    }, []);
 
-      {/* Checked-in Members */}
-      <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-        <h3 className="text-lg font-bold text-white mb-4">
-          📍 Eingecheckt ({checkedInMembers.length})
-        </h3>
-        {checkedInMembers.length === 0 ? (
-          <p className="text-gray-400">Niemand ist aktuell eingecheckt</p>
-        ) : (
-          <div className="space-y-3">
-            {checkedInMembers.map(member => (
-              <div key={member.id} className="bg-gray-700/50 rounded-lg p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{member.avatar}</span>
-                  <div>
-                    <div className="font-medium text-white">{member.name}</div>
-                    <div className="text-gray-400 text-sm">
-                      {LEVEL_DISPLAY[member.currentLevel].subtitle} • 
-                      Eingecheckt {member.checkedInAt ? formatTimeAgo(member.checkedInAt) : ''}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  {canAccessTab('evaluate') && (
-                    <button
-                      onClick={() => {
-                        setSelectedMember(member);
-                        setActiveTab('evaluate');
-                      }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm"
-                    >
-                      Bewerten
-                    </button>
-                  )}
-                  <button
-                    onClick={() => checkOut(member.id)}
-                    className="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-lg text-sm"
-                  >
-                    Auschecken
-                  </button>
-                </div>
-              </div>
-            ))}
+    const now = new Date();
+    const todayStr = now.toDateString();
+
+    // Online-Status: onlineSince gesetzt = aktiv eingeloggt
+    // Inaktiv: lastSeenAt < 10 Min her, aber kein onlineSince
+    const INACTIVE_CUTOFF = 10 * 60 * 1000;
+    const isOnline = (m: typeof members[0]) => !!m.onlineSince;
+    const isInactive = (m: typeof members[0]) =>
+      !m.onlineSince && (now.getTime() - new Date(m.lastSeenAt).getTime()) < INACTIVE_CUTOFF;
+
+    const onlineMembers = getOnlineMembers().filter(m => isOnline(m) || isInactive(m));
+
+    const instructorRoles = ['assistant_instructor', 'instructor', 'tactical_instructor', 'head_instructor', 'owner', 'admin'];
+    const onlineInstructors = onlineMembers.filter(m => instructorRoles.includes(m.role));
+    const onlineRegularMembers = onlineMembers.filter(m => m.role === 'member');
+
+    // Bestätigte Check-ins von heute
+    const todayCheckIns = checkIns.filter(
+      c => c.status === 'approved' && new Date(c.requestedAt).toDateString() === todayStr
+    );
+
+    const formatOnlineSince = (m: typeof members[0]): string => {
+      const since = m.onlineSince ? new Date(m.onlineSince) : new Date(m.lastSeenAt);
+      const diffMs = now.getTime() - since.getTime();
+      const mins = Math.floor(diffMs / 60_000);
+      if (mins < 1) return 'gerade eben';
+      if (mins < 60) return `seit ${mins} Min`;
+      return `seit ${Math.floor(mins / 60)} Std`;
+    };
+
+    const OnlineDot = ({ member }: { member: typeof members[0] }) => (
+      <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${isOnline(member) ? 'bg-green-400' : 'bg-yellow-400'}`} />
+    );
+
+    return (
+      <div className="space-y-6">
+        {/* Kurs-Erkennung Banner */}
+        {detectedCourse && (
+          <div className="bg-blue-900/30 border border-blue-700/50 rounded-xl px-4 py-3 flex items-center gap-2">
+            <span className="text-blue-400 text-lg">📅</span>
+            <div>
+              <div className="text-blue-300 font-semibold text-sm">Laufender Kurs</div>
+              <div className="text-blue-400/80 text-xs">{detectedCourse}</div>
+            </div>
           </div>
         )}
-      </div>
 
-      {/* QR Code */}
-      <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700 text-center">
-        <h3 className="text-lg font-bold text-white mb-4">📱 QR-Code für Check-in</h3>
-        <div className="bg-white p-8 rounded-xl inline-block">
-          <div className="w-48 h-48 bg-gray-200 flex items-center justify-center">
-            <span className="text-6xl">🥋</span>
+        {/* ── Bereich 1: In der Plattform ─────────────────────────────────── */}
+        <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-700/60 flex items-center justify-between">
+            <h3 className="font-bold text-white flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-400 inline-block animate-pulse" />
+              In der Plattform
+              <span className="text-gray-500 font-normal text-sm">({onlineMembers.length})</span>
+            </h3>
+            <span className="text-gray-600 text-xs">aktualisiert vor {tick === 0 ? '0' : tick}×30s</span>
+          </div>
+
+          {onlineMembers.length === 0 ? (
+            <div className="px-4 py-6 text-center text-gray-500 text-sm">Niemand ist gerade online</div>
+          ) : (
+            <div className="divide-y divide-gray-700/40">
+              {/* Trainer-Sektion */}
+              {onlineInstructors.length > 0 && (
+                <div className="px-4 py-3">
+                  <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">
+                    Trainer ({onlineInstructors.length})
+                  </div>
+                  <div className="space-y-2">
+                    {onlineInstructors.map(m => (
+                      <div key={m.id} className="flex items-center gap-3">
+                        <OnlineDot member={m} />
+                        <span className="text-xl">{m.avatar}</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-white font-medium text-sm">{m.name}</span>
+                          <span className={`ml-2 text-xs ${ROLE_DISPLAY[m.role].color}`}>
+                            {ROLE_DISPLAY[m.role].label}
+                          </span>
+                        </div>
+                        <span className="text-gray-500 text-xs flex-shrink-0">{formatOnlineSince(m)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Member-Sektion */}
+              {onlineRegularMembers.length > 0 && (
+                <div className="px-4 py-3">
+                  <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">
+                    Members ({onlineRegularMembers.length})
+                  </div>
+                  <div className="space-y-2">
+                    {onlineRegularMembers.map(m => (
+                      <div key={m.id} className="flex items-center gap-3">
+                        <OnlineDot member={m} />
+                        <span className="text-xl">{m.avatar}</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-white font-medium text-sm">{m.name}</span>
+                          <span className="ml-2 text-xs text-gray-500">
+                            {LEVEL_DISPLAY[m.currentLevel].subtitle}
+                          </span>
+                        </div>
+                        <span className="text-gray-500 text-xs flex-shrink-0">{formatOnlineSince(m)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Legende */}
+          <div className="px-4 py-2 border-t border-gray-700/40 flex items-center gap-4">
+            <span className="flex items-center gap-1.5 text-xs text-gray-500">
+              <span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> Aktiv
+            </span>
+            <span className="flex items-center gap-1.5 text-xs text-gray-500">
+              <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> Inaktiv (&lt;10 Min)
+            </span>
           </div>
         </div>
-        <p className="text-gray-400 mt-4 text-sm">Mitglieder scannen diesen Code zum Einchecken</p>
+
+        {/* ── Bereich 2: Beim Training ─────────────────────────────────────── */}
+        <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-700/60">
+            <h3 className="font-bold text-white flex items-center gap-2">
+              📍 Beim Training
+              <span className="text-gray-500 font-normal text-sm">({todayCheckIns.length})</span>
+            </h3>
+          </div>
+
+          {todayCheckIns.length === 0 ? (
+            <div className="px-4 py-6 text-center text-gray-500 text-sm">Niemand ist heute eingecheckt</div>
+          ) : (
+            <div className="divide-y divide-gray-700/40">
+              {todayCheckIns.map(ci => {
+                const member = members.find(m => m.id === ci.memberId);
+                if (!member) return null;
+                const checkedInTime = ci.approvedAt
+                  ? new Date(ci.approvedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+                  : '–';
+
+                return (
+                  <div key={ci.id} className="px-4 py-3 flex items-center gap-3">
+                    <span className="text-xl flex-shrink-0">{member.avatar}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-white font-medium text-sm">{member.name}</div>
+                      <div className="text-gray-500 text-xs">
+                        {LEVEL_DISPLAY[member.currentLevel].subtitle}
+                        {detectedCourse && <span> · {detectedCourse.split(' •')[0]}</span>}
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-green-400 text-sm font-medium">✅ {checkedInTime} Uhr</div>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      {canAccessTab('evaluate') && (
+                        <button
+                          onClick={() => { setSelectedMember(member); setActiveTab('evaluate'); }}
+                          className="bg-blue-600/80 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs"
+                        >
+                          Bewerten
+                        </button>
+                      )}
+                      <button
+                        onClick={() => checkOut(member.id)}
+                        className="bg-gray-600/80 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg text-xs"
+                      >
+                        Auschecken
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* QR Code */}
+        <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700 text-center">
+          <h3 className="text-lg font-bold text-white mb-4">📱 QR-Code für Check-in</h3>
+          <div className="bg-white p-8 rounded-xl inline-block">
+            <div className="w-48 h-48 bg-gray-200 flex items-center justify-center">
+              <span className="text-6xl">🥋</span>
+            </div>
+          </div>
+          <p className="text-gray-400 mt-4 text-sm">Mitglieder scannen diesen Code zum Einchecken</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Render Evaluate Tab
   const renderEvaluateTab = () => {
