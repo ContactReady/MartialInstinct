@@ -264,12 +264,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const requestExam = useCallback((techniqueId: string) => {
     if (!currentUser) return;
-    
+
     const technique = getAllTechniques().find(t => t.id === techniqueId);
     const module = technique ? getModuleById(technique.moduleId) : undefined;
-    
     if (!technique || !module) return;
-    
+
+    const currentStatus = currentUser.techniqueProgress[techniqueId]?.status ?? 'not_tested';
+
+    // Guard: keine neue Anfrage wenn bereits pending oder vollständig bestanden
+    if (currentStatus === 'tech_pending' || currentStatus === 'tac_pending' || currentStatus === 'tac_passed') return;
+
+    // Auto-Erkennung: welche Ebene kommt als nächstes?
+    const examLevel: 'technical' | 'tactical' =
+      currentStatus === 'tech_passed' ? 'tactical' : 'technical';
+
+    const pendingStatus: TechniqueStatus =
+      examLevel === 'technical' ? 'tech_pending' : 'tac_pending';
+
     const newRequest: ExamRequest = {
       id: `exam-${Date.now()}`,
       memberId: currentUser.id,
@@ -278,123 +289,120 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       techniqueName: technique.name,
       moduleId: module.id,
       moduleName: module.name,
-      targetLevel: technique.level,
+      examLevel,
       requestedAt: new Date(),
-      status: 'pending'
+      status: 'pending',
     };
-    
-    setMembers(prev => prev.map(m => 
-      m.id === currentUser.id
-        ? { 
-            ...m, 
-            examRequests: [...m.examRequests, newRequest],
-            techniqueProgress: {
-              ...m.techniqueProgress,
-              [techniqueId]: { techniqueId, status: 'requested' as TechniqueStatus }
-            }
-          }
-        : m
-    ));
-    
-    // Update current user
-    if (currentUser) {
-      setCurrentUser(prev => prev ? {
-        ...prev,
-        examRequests: [...prev.examRequests, newRequest],
-        techniqueProgress: {
-          ...prev.techniqueProgress,
-          [techniqueId]: { techniqueId, status: 'requested' as TechniqueStatus }
-        }
-      } : null);
-    }
+
+    const updateMember = (m: Member): Member => ({
+      ...m,
+      examRequests: [...m.examRequests, newRequest],
+      techniqueProgress: {
+        ...m.techniqueProgress,
+        [techniqueId]: {
+          ...m.techniqueProgress[techniqueId],
+          techniqueId,
+          status: pendingStatus,
+        },
+      },
+    });
+
+    setMembers(prev => prev.map(m => m.id === currentUser.id ? updateMember(m) : m));
+    setCurrentUser(prev => prev ? updateMember(prev) : null);
   }, [currentUser]);
 
-  const approveExam = useCallback((memberId: string, requestId: string, feedback?: string) => {
+  const approveExam = useCallback((memberId: string, requestId: string, feedback: string) => {
     if (!currentUser) return;
-    
+
     const member = members.find(m => m.id === memberId);
     const request = member?.examRequests.find(r => r.id === requestId);
-    
     if (!member || !request) return;
-    
-    const newStatus: TechniqueStatus = request.targetLevel;
-    
-    setMembers(prev => prev.map(m => 
+
+    const now = new Date();
+    const isTechnical = request.examLevel === 'technical';
+    const newStatus: TechniqueStatus = isTechnical ? 'tech_passed' : 'tac_passed';
+
+    const prevProgress = member.techniqueProgress[request.techniqueId] ?? { techniqueId: request.techniqueId, status: 'not_tested' as TechniqueStatus };
+
+    const updatedProgress: TechniqueProgress = {
+      ...prevProgress,
+      status: newStatus,
+      lastFeedback: feedback,
+      ...(isTechnical
+        ? { techPassedAt: now, techExaminerId: currentUser.id, techExaminerName: currentUser.name }
+        : { tacPassedAt: now, tacExaminerId: currentUser.id, tacExaminerName: currentUser.name }
+      ),
+    };
+
+    setMembers(prev => prev.map(m =>
       m.id === memberId
         ? {
             ...m,
-            examRequests: m.examRequests.map(r => 
-              r.id === requestId 
-                ? { ...r, status: 'approved' as const, examinerId: currentUser.id, examinerName: currentUser.name, feedback, processedAt: new Date() }
+            examRequests: m.examRequests.map(r =>
+              r.id === requestId
+                ? { ...r, status: 'passed' as const, examinerId: currentUser.id, examinerName: currentUser.name, feedback, processedAt: now }
                 : r
             ),
-            techniqueProgress: {
-              ...m.techniqueProgress,
-              [request.techniqueId]: {
-                techniqueId: request.techniqueId,
-                status: newStatus,
-                examinerId: currentUser.id,
-                examinerName: currentUser.name,
-                locationId: currentUser.locationId,
-                examinedAt: new Date()
-              }
-            }
+            techniqueProgress: { ...m.techniqueProgress, [request.techniqueId]: updatedProgress },
           }
         : m
     ));
-    
-    // Notify member
-    const memberNotification: Notification = {
+
+    const levelLabel = isTechnical ? 'Technisch' : 'Taktisch';
+    setNotifications(prev => [...prev, {
       id: `notif-${Date.now()}`,
       oduserId: memberId,
-      type: 'exam_result',
-      title: 'Technik bestanden! ✅',
-      message: `${request.techniqueName} wurde freigegeben!`,
+      type: 'exam_result' as const,
+      title: `✅ ${levelLabel} bestanden!`,
+      message: `${request.techniqueName} — ${currentUser.name}: "${feedback}"`,
       read: false,
-      createdAt: new Date()
-    };
-    setNotifications(prev => [...prev, memberNotification]);
+      createdAt: now,
+    }]);
   }, [currentUser, members]);
 
   const rejectExam = useCallback((memberId: string, requestId: string, feedback: string) => {
     if (!currentUser) return;
-    
+
     const member = members.find(m => m.id === memberId);
     const request = member?.examRequests.find(r => r.id === requestId);
-    
     if (!member || !request) return;
-    
-    setMembers(prev => prev.map(m => 
+
+    const now = new Date();
+    const isTechnical = request.examLevel === 'technical';
+    const prevProgress = member.techniqueProgress[request.techniqueId] ?? { techniqueId: request.techniqueId, status: 'not_tested' as TechniqueStatus };
+
+    // Taktische Ablehnung: tech_passed bleibt erhalten, nur Status auf needs_training
+    const updatedProgress: TechniqueProgress = {
+      ...prevProgress,
+      status: 'needs_training',
+      lastFeedback: feedback,
+      // Bei Ablehnung der technischen Ebene: alle Tech-Felder zurücksetzen
+      ...(isTechnical ? { techPassedAt: undefined, techExaminerId: undefined, techExaminerName: undefined } : {}),
+    };
+
+    setMembers(prev => prev.map(m =>
       m.id === memberId
         ? {
             ...m,
-            examRequests: m.examRequests.map(r => 
-              r.id === requestId 
-                ? { ...r, status: 'needs_training' as const, examinerId: currentUser.id, examinerName: currentUser.name, feedback, processedAt: new Date() }
+            examRequests: m.examRequests.map(r =>
+              r.id === requestId
+                ? { ...r, status: 'needs_training' as const, examinerId: currentUser.id, examinerName: currentUser.name, feedback, processedAt: now }
                 : r
             ),
-            techniqueProgress: {
-              ...m.techniqueProgress,
-              [request.techniqueId]: {
-                techniqueId: request.techniqueId,
-                status: 'not_tested' as TechniqueStatus
-              }
-            }
+            techniqueProgress: { ...m.techniqueProgress, [request.techniqueId]: updatedProgress },
           }
         : m
     ));
-    
-    // Notify member
-    const memberNotification: Notification = {
+
+    setNotifications(prev => [...prev, {
       id: `notif-${Date.now()}`,
       oduserId: memberId,
-      type: 'exam_result',
-      title: 'Nachtraining erforderlich',
-      message: `${request.techniqueName}: ${feedback}`,
+      type: 'exam_result' as const,
+      title: '↩ Nachtraining empfohlen',
+      message: `${request.techniqueName} — ${currentUser.name}: "${feedback}"`,
       read: false,
-      createdAt: new Date()
-    };
-    setNotifications(prev => [...prev, memberNotification]);
+      createdAt: now,
+    }]);
   }, [currentUser, members]);
 
   const canExamineLevel = useCallback((level: ModuleLevel): boolean => {
@@ -439,29 +447,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const markTechniquePassed = useCallback((memberId: string, techniqueId: string, notes?: string) => {
     if (!currentUser) return;
     const technique = getAllTechniques().find(t => t.id === techniqueId);
-    if (!technique || !EXAM_PERMISSIONS[currentUser.role].includes(technique.level)) return;
+    if (!technique) return;
 
-    setMembers(prev => prev.map(m =>
-      m.id === memberId
-        ? {
-            ...m,
-            techniqueProgress: {
-              ...m.techniqueProgress,
-              [techniqueId]: {
-                techniqueId,
-                status: technique.level,
-                examinerId: currentUser.id,
-                examinerName: currentUser.name,
-                locationId: currentUser.locationId,
-                examinedAt: new Date(),
-                notes,
-                practiceCount: m.techniqueProgress[techniqueId]?.practiceCount,
-                lastPracticedAt: m.techniqueProgress[techniqueId]?.lastPracticedAt
-              }
-            }
-          }
-        : m
-    ));
+    const now = new Date();
+    setMembers(prev => prev.map(m => {
+      if (m.id !== memberId) return m;
+      const prev_ = m.techniqueProgress[techniqueId];
+      return {
+        ...m,
+        techniqueProgress: {
+          ...m.techniqueProgress,
+          [techniqueId]: {
+            ...prev_,
+            techniqueId,
+            status: 'tac_passed' as TechniqueStatus,
+            lastFeedback: notes,
+            techPassedAt: prev_?.techPassedAt ?? now,
+            techExaminerId: prev_?.techExaminerId ?? currentUser.id,
+            techExaminerName: prev_?.techExaminerName ?? currentUser.name,
+            tacPassedAt: now,
+            tacExaminerId: currentUser.id,
+            tacExaminerName: currentUser.name,
+            practiceCount: prev_?.practiceCount,
+            lastPracticedAt: prev_?.lastPracticedAt,
+          },
+        },
+      };
+    }));
 
     const memberNotification: Notification = {
       id: `notif-${Date.now()}`,
@@ -827,51 +839,51 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return members.flatMap(m => m.examRequests.filter(r => r.status === 'pending'));
   }, [members]);
 
+  // Technik gilt als "abgeschlossen" wenn mindestens technisch bestanden
+  const isTechniqueCompleted = (status: TechniqueStatus): boolean =>
+    status === 'tech_passed' || status === 'tac_passed';
+
   const getMemberProgress = useCallback((memberId: string): { total: number; completed: number; percentage: number } => {
     const member = members.find(m => m.id === memberId);
     if (!member) return { total: 0, completed: 0, percentage: 0 };
-    
+
     const allTechs = getAllTechniques();
     const total = allTechs.length;
     const completed = Object.values(member.techniqueProgress).filter(
-      p => p.status !== 'not_tested' && p.status !== 'requested'
+      p => isTechniqueCompleted(p.status)
     ).length;
-    
+
     return { total, completed, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
   }, [members]);
 
   const getModuleProgress = useCallback((memberId: string, moduleId: string): { total: number; completed: number; percentage: number } => {
     const member = members.find(m => m.id === memberId);
     const module = MODULES.find(m => m.id === moduleId);
-    
+
     if (!member || !module) return { total: 0, completed: 0, percentage: 0 };
-    
+
     const total = module.techniques.length;
     const completed = module.techniques.filter(
-      t => member.techniqueProgress[t.id]?.status && 
-           member.techniqueProgress[t.id].status !== 'not_tested' && 
-           member.techniqueProgress[t.id].status !== 'requested'
+      t => isTechniqueCompleted(member.techniqueProgress[t.id]?.status ?? 'not_tested')
     ).length;
-    
+
     return { total, completed, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
   }, [members]);
 
   const getBlockProgress = useCallback((memberId: string, blockLevel: ModuleLevel): { total: number; completed: number; percentage: number } => {
     const member = members.find(m => m.id === memberId);
     const block = BLOCKS.find(b => b.level === blockLevel);
-    
+
     if (!member || !block) return { total: 0, completed: 0, percentage: 0 };
-    
+
     const blockModules = MODULES.filter(m => block.moduleIds.includes(m.id));
     const allTechs = blockModules.flatMap(m => m.techniques);
-    
+
     const total = allTechs.length;
     const completed = allTechs.filter(
-      t => member.techniqueProgress[t.id]?.status && 
-           member.techniqueProgress[t.id].status !== 'not_tested' && 
-           member.techniqueProgress[t.id].status !== 'requested'
+      t => isTechniqueCompleted(member.techniqueProgress[t.id]?.status ?? 'not_tested')
     ).length;
-    
+
     return { total, completed, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
   }, [members]);
 

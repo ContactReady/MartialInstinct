@@ -1,11 +1,11 @@
 // ============================================
-// TECHNIQUE CARD — Fortschritts-Karte
-// Wiederverwendbar für Member- und Instructor-Ansicht
+// TECHNIQUE CARD — Zwei-Ebenen Prüfsystem
+// Technisch ◐ und Taktisch ● pro Technik
 // ============================================
 
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Technique, TechniqueProgress, STATUS_DISPLAY, TechniqueStatus } from '../../types';
+import { Technique, TechniqueProgress, TechniqueStatus } from '../../types';
 
 interface TechniqueCardProps {
   technique: Technique;
@@ -15,13 +15,43 @@ interface TechniqueCardProps {
   onRequestExam?: () => void;
   onMarkPassed?: (notes?: string) => void;
   canExamine?: boolean;
+  onClick?: () => void;
 }
 
-const isPassed = (status: TechniqueStatus): boolean =>
-  status !== 'not_tested' && status !== 'requested';
+const formatDate = (date: Date | undefined): string =>
+  date ? new Date(date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 
-const formatDate = (date: Date): string =>
-  new Date(date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+// Zwei-Level Status-Chip
+const LevelChip: React.FC<{
+  label: string;
+  passedAt?: Date;
+  examinerName?: string;
+  pending: boolean;
+}> = ({ label, passedAt, examinerName, pending }) => {
+  if (passedAt) {
+    return (
+      <div className="flex items-center gap-1 bg-green-500/15 border border-green-500/30 rounded-lg px-2 py-1">
+        <span className="text-green-400 text-xs">●</span>
+        <span className="text-green-400 text-xs font-medium">{label}</span>
+        {examinerName && <span className="text-green-400/60 text-xs hidden sm:inline">· {examinerName}</span>}
+      </div>
+    );
+  }
+  if (pending) {
+    return (
+      <div className="flex items-center gap-1 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-2 py-1">
+        <Loader2 className="w-3 h-3 animate-spin text-yellow-400" />
+        <span className="text-yellow-400 text-xs font-medium">{label}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1 bg-gray-700/40 border border-gray-600/30 rounded-lg px-2 py-1">
+      <span className="text-gray-500 text-xs">○</span>
+      <span className="text-gray-500 text-xs">{label}</span>
+    </div>
+  );
+};
 
 export const TechniqueCard: React.FC<TechniqueCardProps> = ({
   technique,
@@ -30,15 +60,24 @@ export const TechniqueCard: React.FC<TechniqueCardProps> = ({
   onLogPractice,
   onRequestExam,
   onMarkPassed,
-  canExamine = false
+  canExamine = false,
+  onClick,
 }) => {
   const [showNoteField, setShowNoteField] = useState(false);
   const [note, setNote] = useState('');
 
-  const status = progress?.status ?? 'not_tested';
-  const statusInfo = STATUS_DISPLAY[status];
-  const passed = isPassed(status);
+  const status: TechniqueStatus = progress?.status ?? 'not_tested';
   const practiceCount = progress?.practiceCount ?? 0;
+
+  const techPassed = status === 'tech_passed' || status === 'tac_passed';
+  const tacPassed = status === 'tac_passed';
+  const techPending = status === 'tech_pending';
+  const tacPending = status === 'tac_pending';
+  const fullyMastered = tacPassed;
+  const needsTraining = status === 'needs_training';
+
+  const canRequestExam = status === 'not_tested' || status === 'needs_training' || status === 'tech_passed';
+  const isPending = techPending || tacPending;
 
   const handleMarkPassed = () => {
     onMarkPassed?.(note.trim() || undefined);
@@ -46,119 +85,117 @@ export const TechniqueCard: React.FC<TechniqueCardProps> = ({
     setShowNoteField(false);
   };
 
-  // Status-Badge Hintergrundfarbe
-  const badgeBg = passed
-    ? 'bg-green-500/20 border border-green-500/30'
-    : status === 'requested'
-      ? 'bg-yellow-500/20 border border-yellow-500/30'
-      : 'bg-gray-700/50 border border-gray-600/30';
+  const cardBorder = fullyMastered
+    ? 'border-green-500/30'
+    : techPassed
+    ? 'border-blue-500/20'
+    : isPending
+    ? 'border-yellow-500/20'
+    : 'border-gray-700';
 
   return (
-    <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+    <div
+      className={`bg-gray-800/50 rounded-xl border overflow-hidden transition-all ${cardBorder} ${onClick ? 'cursor-pointer hover:border-gray-500 active:scale-[0.99]' : ''}`}
+      onClick={onClick}
+    >
       {/* Header */}
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
-          {/* Status-Badge + Name */}
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className={`flex-shrink-0 px-2 py-1 rounded-lg text-sm flex items-center gap-1 ${badgeBg}`}>
-              <span>{statusInfo.icon}</span>
-              <span className={`font-medium text-xs ${statusInfo.color}`}>{statusInfo.label}</span>
-            </div>
-            <div className="min-w-0">
-              <div className="text-white font-semibold truncate">{technique.name}</div>
-              {technique.description && (
-                <div className="text-gray-400 text-xs mt-0.5 line-clamp-1">{technique.description}</div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-white font-semibold truncate">{technique.name}</span>
+              {technique.isRequired && (
+                <span className="flex-shrink-0 bg-red-500/20 text-red-400 text-xs px-1.5 py-0.5 rounded border border-red-500/20">
+                  Pflicht
+                </span>
+              )}
+              {fullyMastered && (
+                <span className="flex-shrink-0 bg-green-500/20 text-green-400 text-xs px-1.5 py-0.5 rounded border border-green-500/30">
+                  Gemeistert
+                </span>
+              )}
+              {needsTraining && (
+                <span className="flex-shrink-0 bg-orange-500/20 text-orange-400 text-xs px-1.5 py-0.5 rounded border border-orange-500/20">
+                  ↩ Nachtrainieren
+                </span>
               )}
             </div>
+            {technique.description && (
+              <div className="text-gray-400 text-xs mt-0.5 line-clamp-1">{technique.description}</div>
+            )}
           </div>
-
-          {/* Pflicht-Badge */}
-          {technique.isRequired && (
-            <span className="flex-shrink-0 bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded border border-red-500/20">
-              Pflicht
-            </span>
-          )}
         </div>
 
-        {/* Meta-Infos: Übungszähler + Datum + Bewerter */}
-        <div className="mt-3 flex flex-wrap gap-3 text-xs text-gray-400">
-          <span className="flex items-center gap-1">
-            🏋️ <span className="text-gray-300 font-medium">{practiceCount}×</span> geübt
-          </span>
+        {/* Zwei-Level Chips */}
+        <div className="mt-3 flex gap-2 flex-wrap">
+          <LevelChip
+            label="Technisch"
+            passedAt={progress?.techPassedAt}
+            examinerName={progress?.techExaminerName}
+            pending={techPending}
+          />
+          <LevelChip
+            label="Taktisch"
+            passedAt={progress?.tacPassedAt}
+            examinerName={progress?.tacExaminerName}
+            pending={tacPending}
+          />
+        </div>
+
+        {/* Meta */}
+        <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
+          {practiceCount > 0 && (
+            <span>🏋️ <span className="text-gray-300 font-medium">{practiceCount}×</span> geübt</span>
+          )}
           {progress?.lastPracticedAt && (
-            <span className="flex items-center gap-1">
-              📅 Zuletzt: <span className="text-gray-300">{formatDate(progress.lastPracticedAt)}</span>
-            </span>
-          )}
-          {passed && progress?.examinerName && (
-            <span className="flex items-center gap-1">
-              👤 <span className="text-gray-300">{progress.examinerName}</span>
-            </span>
-          )}
-          {passed && progress?.examinedAt && (
-            <span className="flex items-center gap-1">
-              ✅ {formatDate(progress.examinedAt)}
-            </span>
+            <span>📅 {formatDate(progress.lastPracticedAt)}</span>
           )}
         </div>
 
-        {/* Notiz vom Instructor (wenn vorhanden) */}
-        {progress?.notes && (
+        {/* Trainer-Feedback */}
+        {progress?.lastFeedback && (
           <div className="mt-2 bg-gray-700/40 rounded-lg px-3 py-2 text-xs text-gray-300 italic border-l-2 border-yellow-500/50">
-            💬 {progress.notes}
+            💬 {progress.lastFeedback}
           </div>
         )}
       </div>
 
-      {/* Aktionsbereich */}
-      {mode === 'member' && !passed && (
+      {/* Aktionsbereich Member */}
+      {mode === 'member' && !onClick && (
         <div className="border-t border-gray-700/50 px-4 py-3 flex gap-2">
-          {/* Als geübt markieren */}
           <button
-            onClick={onLogPractice}
-            className="flex-shrink-0 bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5"
+            onClick={e => { e.stopPropagation(); onLogPractice?.(); }}
+            className="flex-shrink-0 bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
           >
-            🏋️ Als geübt
+            🏋️ Geübt
           </button>
 
-          {/* Prüfung anfragen */}
-          {status === 'not_tested' ? (
+          {canRequestExam && !isPending && (
             <button
-              onClick={onRequestExam}
+              onClick={e => { e.stopPropagation(); onRequestExam?.(); }}
               className="flex-1 bg-yellow-600/80 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
             >
-              🟡 Prüfung anfragen
+              {techPassed ? '🔶 Taktisch prüfen' : '🔷 Technisch prüfen'}
             </button>
-          ) : status === 'requested' ? (
+          )}
+          {isPending && (
             <div className="flex-1 flex items-center justify-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-1.5">
               <Loader2 className="w-3 h-3 animate-spin text-yellow-400" />
               <span className="text-yellow-400 text-sm">Prüfung ausstehend…</span>
             </div>
-          ) : null}
+          )}
         </div>
       )}
 
-      {/* Member-Mode: auch bei bestandenen Techniken "als geübt" erlauben */}
-      {mode === 'member' && passed && (
-        <div className="border-t border-gray-700/50 px-4 py-3">
-          <button
-            onClick={onLogPractice}
-            className="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5"
-          >
-            🏋️ Als geübt markieren
-          </button>
-        </div>
-      )}
-
-      {/* Instructor-Mode: Bestanden-Button */}
-      {mode === 'instructor' && canExamine && !passed && (
+      {/* Aktionsbereich Instructor */}
+      {mode === 'instructor' && canExamine && !fullyMastered && (
         <div className="border-t border-gray-700/50 px-4 py-3 space-y-2">
           {showNoteField ? (
             <>
               <textarea
                 value={note}
                 onChange={e => setNote(e.target.value)}
-                placeholder="Optionale Notiz für den Schüler…"
+                placeholder="Notiz für den Schüler (optional)…"
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 resize-none focus:outline-none focus:border-green-500"
                 rows={2}
                 autoFocus
@@ -168,7 +205,7 @@ export const TechniqueCard: React.FC<TechniqueCardProps> = ({
                   onClick={handleMarkPassed}
                   className="flex-1 bg-green-600 hover:bg-green-500 text-white py-1.5 rounded-lg text-sm font-medium transition-all"
                 >
-                  ✅ Bestätigen
+                  ✅ Vollständig bestanden
                 </button>
                 <button
                   onClick={() => { setShowNoteField(false); setNote(''); }}
@@ -179,14 +216,12 @@ export const TechniqueCard: React.FC<TechniqueCardProps> = ({
               </div>
             </>
           ) : (
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowNoteField(true)}
-                className="flex-1 bg-green-600 hover:bg-green-500 text-white py-1.5 rounded-lg text-sm font-medium transition-all"
-              >
-                ✅ Bestanden markieren
-              </button>
-            </div>
+            <button
+              onClick={() => setShowNoteField(true)}
+              className="w-full bg-green-600 hover:bg-green-500 text-white py-1.5 rounded-lg text-sm font-medium transition-all"
+            >
+              ✅ Als bestanden markieren
+            </button>
           )}
         </div>
       )}

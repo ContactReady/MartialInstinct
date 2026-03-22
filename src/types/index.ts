@@ -5,16 +5,14 @@
 // Standardisierung vor Wachstum
 // ============================================
 
-// Technik-Status (sichtbar für Member)
-export type TechniqueStatus = 
-  | 'not_tested'      // ❌ Nicht geprüft
-  | 'requested'       // 🟡 Prüfung angefragt
-  | 'conflict'        // ⚪ Basis bestanden (Conflict-Level)
-  | 'combat'          // ⚫ Anwendung bestanden (Combat-Level)
-  | 'tactical'        // 🔴 Tactical bestanden
-  | 'contact'         // ☠️ Contact Ready bestanden
-  | 'assistant_instructor'  // 🎓 Assistant Instructor bestanden
-  | 'instructor_level';     // 👑 Instructor bestanden
+// Technik-Status (pro Technik, zwei Prüfebenen)
+export type TechniqueStatus =
+  | 'not_tested'      // ○ Noch nicht geprüft
+  | 'tech_pending'    // ⏳ Technische Prüfung beantragt
+  | 'tech_passed'     // ◐ Technisch bestanden
+  | 'tac_pending'     // ⏳ Taktische Prüfung beantragt
+  | 'tac_passed'      // ● Vollständig gemeistert (beide Ebenen)
+  | 'needs_training'; // ↩ Nachtrainieren empfohlen
 
 // Module/Level
 export type ModuleLevel = 'conflict' | 'combat' | 'tactical' | 'contact' | 'assistant_instructor' | 'instructor_level';
@@ -100,18 +98,23 @@ export interface Block {
   requiresApplication: boolean;
 }
 
-// Technik-Fortschritt eines Mitglieds
+// Technik-Fortschritt eines Mitglieds (zwei Prüfebenen)
 export interface TechniqueProgress {
   techniqueId: string;
   status: TechniqueStatus;
-  examinerId?: string;
-  examinerName?: string;
-  locationId?: string;
-  examinedAt?: Date;
-  secondObserverId?: string;
-  notes?: string;
-  practiceCount?: number;    // Wie oft diese Technik geübt wurde
-  lastPracticedAt?: Date;    // Datum der letzten Übungseinheit
+  // Technisch-Ebene
+  techPassedAt?: Date;
+  techExaminerId?: string;
+  techExaminerName?: string;
+  // Taktisch-Ebene
+  tacPassedAt?: Date;
+  tacExaminerId?: string;
+  tacExaminerName?: string;
+  // Letzter Trainer-Kommentar
+  lastFeedback?: string;
+  // Praxis
+  practiceCount?: number;
+  lastPracticedAt?: Date;
 }
 
 // Prüfungsanfrage
@@ -123,12 +126,12 @@ export interface ExamRequest {
   techniqueName: string;
   moduleId: string;
   moduleName: string;
-  targetLevel: ModuleLevel;
+  examLevel: 'technical' | 'tactical';    // Welche Prüfebene wird angefragt
   requestedAt: Date;
-  status: 'pending' | 'approved' | 'needs_training';
+  status: 'pending' | 'passed' | 'needs_training';
   examinerId?: string;
   examinerName?: string;
-  feedback?: string;
+  feedback?: string;    // Pflichtkommentar (für beide Outcomes)
   processedAt?: Date;
 }
 
@@ -475,14 +478,12 @@ export interface AppState {
 
 // Status Display Helpers
 export const STATUS_DISPLAY: Record<TechniqueStatus, { icon: string; label: string; color: string }> = {
-  not_tested: { icon: '❌', label: 'Nicht geprüft', color: 'text-gray-500' },
-  requested: { icon: '🟡', label: 'Prüfung angefragt', color: 'text-yellow-500' },
-  conflict: { icon: '⚪', label: 'Basis bestanden', color: 'text-gray-300' },
-  combat: { icon: '⚫', label: 'Anwendung bestanden', color: 'text-gray-900' },
-  tactical: { icon: '🔴', label: 'Tactical bestanden', color: 'text-red-500' },
-  contact: { icon: '☠️', label: 'Contact Ready', color: 'text-red-700' },
-  assistant_instructor: { icon: '🎓', label: 'Assistant Instructor', color: 'text-yellow-400' },
-  instructor_level: { icon: '👑', label: 'Instructor', color: 'text-purple-400' }
+  not_tested:     { icon: '○',  label: 'Nicht geprüft',        color: 'text-gray-500' },
+  tech_pending:   { icon: '⏳', label: 'Prüfung angefragt',    color: 'text-yellow-400' },
+  tech_passed:    { icon: '◐',  label: 'Technisch bestanden',  color: 'text-blue-400' },
+  tac_pending:    { icon: '⏳', label: 'Prüfung angefragt',    color: 'text-yellow-400' },
+  tac_passed:     { icon: '●',  label: 'Vollständig',          color: 'text-green-400' },
+  needs_training: { icon: '↩',  label: 'Nachtrainieren',       color: 'text-orange-400' },
 };
 
 export const LEVEL_DISPLAY: Record<ModuleLevel, { name: string; subtitle: string; color: string; bgColor: string; icon: string }> = {

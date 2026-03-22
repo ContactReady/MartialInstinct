@@ -459,70 +459,98 @@ export const InstructorView: React.FC = () => {
   const renderRequestsTab = () => (
     <div className="space-y-6">
       <h3 className="text-lg font-bold text-white">
-        🟡 Offene Prüfungsanfragen ({pendingExamRequests.length})
+        Offene Prüfungsanfragen ({pendingExamRequests.length})
       </h3>
-      
+
       {pendingExamRequests.length === 0 ? (
-        <p className="text-gray-400">Keine offenen Anfragen</p>
+        <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/30 text-center">
+          <p className="text-gray-500 text-sm">Keine offenen Anfragen</p>
+        </div>
       ) : (
         <div className="space-y-4">
           {pendingExamRequests.map(req => {
             const member = members.find(m => m.id === req.memberId);
-            const canProcess = canExamineLevel(req.targetLevel);
-            
+            // Jeder Instructor (nicht member) kann Prüfungsanfragen bearbeiten
+            const canProcess = currentUser.role !== 'member';
+            const feedback = rejectionFeedback[req.id] ?? '';
+            const hasComment = feedback.trim().length >= 5;
+
+            const levelBadge = req.examLevel === 'technical'
+              ? <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-medium">🔷 Technisch</span>
+              : <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded border border-orange-500/20 font-medium">🔶 Taktisch</span>;
+
             return (
-              <div key={req.id} className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{member?.avatar}</span>
-                    <div>
-                      <div className="font-medium text-white">{req.memberName}</div>
-                      <div className="text-gray-400 text-sm">{req.moduleName}</div>
+              <div key={req.id} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+                {/* Kopfzeile */}
+                <div className="p-4 pb-3">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-2xl flex-shrink-0">{member?.avatar ?? '🥋'}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-white">{req.memberName}</div>
+                      <div className="text-gray-400 text-xs">{req.moduleName}</div>
                     </div>
+                    {levelBadge}
                   </div>
-                  <span className={`px-2 py-1 rounded text-sm ${LEVEL_DISPLAY[req.targetLevel].bgColor} ${LEVEL_DISPLAY[req.targetLevel].color}`}>
-                    {LEVEL_DISPLAY[req.targetLevel].icon} {LEVEL_DISPLAY[req.targetLevel].subtitle}
-                  </span>
-                </div>
-                
-                <div className="bg-gray-700/50 rounded-lg p-3 mb-3">
-                  <div className="text-white">{req.techniqueName}</div>
-                  <div className="text-gray-400 text-sm">
-                    Angefragt {formatTimeAgo(req.requestedAt)}
+
+                  <div className="bg-gray-700/40 rounded-lg px-3 py-2 flex items-center justify-between">
+                    <span className="text-white text-sm font-medium">{req.techniqueName}</span>
+                    <span className="text-gray-500 text-xs flex-shrink-0">{formatTimeAgo(req.requestedAt)}</span>
                   </div>
                 </div>
-                
+
+                {/* Kommentar + Buttons */}
                 {canProcess ? (
-                  <div className="space-y-3">
+                  <div className="border-t border-gray-700/50 px-4 pt-3 pb-4 space-y-3">
+                    <div>
+                      <label className="text-xs text-gray-400 mb-1 block">
+                        Kommentar <span className="text-red-400">*</span>
+                        <span className="text-gray-600 ml-1">(mind. 5 Zeichen — Pflicht)</span>
+                      </label>
+                      <textarea
+                        rows={2}
+                        placeholder="Konkretes Feedback für den Member…"
+                        value={feedback}
+                        onChange={e => setRejectionFeedback(prev => ({ ...prev, [req.id]: e.target.value }))}
+                        className={`w-full bg-gray-700/60 border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 resize-none focus:outline-none transition-colors ${
+                          hasComment ? 'border-gray-500 focus:border-gray-400' : 'border-gray-600 focus:border-yellow-500/50'
+                        }`}
+                      />
+                    </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => approveExam(req.memberId, req.id, 'Technik korrekt ausgeführt')}
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium"
+                        disabled={!hasComment}
+                        onClick={() => {
+                          approveExam(req.memberId, req.id, feedback);
+                          setRejectionFeedback(prev => { const n = { ...prev }; delete n[req.id]; return n; });
+                        }}
+                        className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                          hasComment
+                            ? 'bg-green-600 hover:bg-green-500 text-white'
+                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        }`}
                       >
-                        ✅ Freigeben
+                        ✅ Bestanden
                       </button>
                       <button
+                        disabled={!hasComment}
                         onClick={() => {
-                          const feedback = rejectionFeedback[req.id] || 'Nachtraining erforderlich';
                           rejectExam(req.memberId, req.id, feedback);
+                          setRejectionFeedback(prev => { const n = { ...prev }; delete n[req.id]; return n; });
                         }}
-                        className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-2 rounded-lg font-medium"
+                        className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                          hasComment
+                            ? 'bg-orange-600 hover:bg-orange-500 text-white'
+                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        }`}
                       >
-                        🔄 Nachtraining
+                        ↩ Nachtrainieren
                       </button>
                     </div>
-                    <input
-                      type="text"
-                      placeholder="Feedback (optional)"
-                      value={rejectionFeedback[req.id] || ''}
-                      onChange={(e) => setRejectionFeedback(prev => ({ ...prev, [req.id]: e.target.value }))}
-                      className="w-full bg-gray-700 text-white rounded-lg p-2 border border-gray-600 text-sm"
-                    />
                   </div>
                 ) : (
-                  <p className="text-yellow-500 text-sm">
-                    ⚠️ Du hast keine Berechtigung für {LEVEL_DISPLAY[req.targetLevel].subtitle}-Prüfungen
-                  </p>
+                  <div className="border-t border-gray-700/50 px-4 py-3">
+                    <p className="text-yellow-500/80 text-sm">⚠️ Keine Berechtigung zur Prüfung</p>
+                  </div>
                 )}
               </div>
             );
