@@ -78,6 +78,15 @@ export const InstructorView: React.FC = () => {
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
   const [boardMessageText, setBoardMessageText] = useState('');
   const [rejectionFeedback, setRejectionFeedback] = useState<Record<string, string>>({});
+  const [liveTick, setLiveTick] = useState(0);
+  const [memberSearch, setMemberSearch] = useState('');
+  const [memberSort, setMemberSort] = useState<'name' | 'lastSeen' | 'lastTraining'>('lastSeen');
+
+  // 30s Auto-Refresh für den Live-Tab
+  useEffect(() => {
+    const interval = setInterval(() => setLiveTick(t => t + 1), 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (!currentUser) return null;
 
@@ -131,13 +140,6 @@ export const InstructorView: React.FC = () => {
 
   // Render Live Tab
   const renderLiveTab = () => {
-    // 30s Auto-Refresh innerhalb des Tabs
-    const [tick, setTick] = useState(0);
-    useEffect(() => {
-      const interval = setInterval(() => setTick(t => t + 1), 30_000);
-      return () => clearInterval(interval);
-    }, []);
-
     const now = new Date();
     const todayStr = now.toDateString();
 
@@ -193,7 +195,7 @@ export const InstructorView: React.FC = () => {
               In der Plattform
               <span className="text-gray-500 font-normal text-sm">({onlineMembers.length})</span>
             </h3>
-            <span className="text-gray-600 text-xs">aktualisiert vor {tick === 0 ? '0' : tick}×30s</span>
+            <span className="text-gray-600 text-xs">aktualisiert vor {liveTick === 0 ? '0' : liveTick}×30s</span>
           </div>
 
           {onlineMembers.length === 0 ? (
@@ -456,8 +458,10 @@ export const InstructorView: React.FC = () => {
 
   // Render Members Tab
   const renderMembersTab = () => {
-    const [search, setSearch] = useState('');
-    const [sortKey, setSortKey] = useState<'name' | 'lastSeen' | 'lastTraining'>('lastSeen');
+    const search = memberSearch;
+    const setSearch = setMemberSearch;
+    const sortKey = memberSort;
+    const setSortKey = setMemberSort;
 
     const allMembers = members.filter(m => m.role === 'member');
 

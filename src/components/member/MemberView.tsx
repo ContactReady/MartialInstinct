@@ -39,6 +39,7 @@ export const MemberView: React.FC = () => {
   const [selectedTechniqueId, setSelectedTechniqueId] = useState<string | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState<ApplicationType>(null);
   const [progressView, setProgressView] = useState<'ranking' | 'myProgress'>('ranking');
+  const [rankSort, setRankSort] = useState<'streak' | 'techniques' | 'xp'>('streak');
   
   // Contact Application Answers
   const [contactAnswers, setContactAnswers] = useState({
@@ -278,8 +279,6 @@ export const MemberView: React.FC = () => {
 
   // ── Rangliste ─────────────────────────────────────────────────────────────
   const renderRanking = () => {
-    const [rankSort, setRankSort] = useState<'streak' | 'techniques' | 'xp'>('streak');
-
     // Alle Members (inkl. Instructors, damit Rangliste vollständig ist)
     const rankMembers = members.filter(m => m.role === 'member');
 
