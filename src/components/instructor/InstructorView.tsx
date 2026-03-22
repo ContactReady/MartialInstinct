@@ -455,77 +455,205 @@ export const InstructorView: React.FC = () => {
   };
 
   // Render Members Tab
-  const renderMembersTab = () => (
-    <div className="space-y-4">
-      <h3 className="text-lg font-bold text-white">Alle Mitglieder</h3>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="text-left text-gray-400 border-b border-gray-700">
-              <th className="pb-3">Mitglied</th>
-              <th className="pb-3">Level</th>
-              <th className="pb-3">Streak</th>
-              <th className="pb-3">Zuletzt</th>
-              <th className="pb-3">Aktionen</th>
-            </tr>
-          </thead>
-          <tbody>
-            {members.filter(m => m.role === 'member').map(member => {
+  const renderMembersTab = () => {
+    const [search, setSearch] = useState('');
+    const [sortKey, setSortKey] = useState<'name' | 'lastSeen' | 'lastTraining'>('lastSeen');
+
+    const allMembers = members.filter(m => m.role === 'member');
+
+    // Status-Helfer
+    const getMemberStatus = (m: Member): 'training' | 'online' | 'offline' => {
+      if (m.isCheckedIn) return 'training';
+      if (m.onlineSince !== undefined) return 'online';
+      return 'offline';
+    };
+
+    // Formatierung: Datum + Uhrzeit
+    const formatDateTime = (date: Date | null | undefined): string => {
+      if (!date) return '–';
+      const d = new Date(date);
+      const today = new Date();
+      const isToday = d.toDateString() === today.toDateString();
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      const isYesterday = d.toDateString() === yesterday.toDateString();
+      const time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+      if (isToday) return `Heute, ${time}`;
+      if (isYesterday) return `Gestern, ${time}`;
+      return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) + `, ${time}`;
+    };
+
+    // Filtern
+    const filtered = allMembers.filter(m =>
+      m.name.toLowerCase().includes(search.toLowerCase())
+    );
+
+    // Sortieren
+    const sorted = [...filtered].sort((a, b) => {
+      if (sortKey === 'name') return a.name.localeCompare(b.name, 'de');
+      if (sortKey === 'lastSeen') {
+        return new Date(b.lastSeenAt).getTime() - new Date(a.lastSeenAt).getTime();
+      }
+      // lastTraining
+      const aT = a.streak.lastTrainingDate ? new Date(a.streak.lastTrainingDate).getTime() : 0;
+      const bT = b.streak.lastTrainingDate ? new Date(b.streak.lastTrainingDate).getTime() : 0;
+      return bT - aT;
+    });
+
+    // Status-Zusammenfassung
+    const countTraining = allMembers.filter(m => m.isCheckedIn).length;
+    const countOnline   = allMembers.filter(m => !m.isCheckedIn && m.onlineSince !== undefined).length;
+    const countOffline  = allMembers.length - countTraining - countOnline;
+
+    const StatusDot = ({ status }: { status: 'training' | 'online' | 'offline' }) => {
+      if (status === 'training') return <span className="w-3 h-3 rounded-full bg-orange-400 flex-shrink-0 inline-block" />;
+      if (status === 'online')   return <span className="w-3 h-3 rounded-full bg-green-400 flex-shrink-0 inline-block animate-pulse" />;
+      return <span className="w-3 h-3 rounded-full bg-gray-600 flex-shrink-0 inline-block" />;
+    };
+
+    const statusLabel = (status: 'training' | 'online' | 'offline') => {
+      if (status === 'training') return <span className="text-orange-400 text-xs font-medium">Beim Training</span>;
+      if (status === 'online')   return <span className="text-green-400 text-xs font-medium">Online</span>;
+      return <span className="text-gray-500 text-xs">Offline</span>;
+    };
+
+    const SortBtn = ({ k, label }: { k: typeof sortKey; label: string }) => (
+      <button
+        onClick={() => setSortKey(k)}
+        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+          sortKey === k
+            ? 'bg-red-600 text-white'
+            : 'bg-gray-700/60 text-gray-400 hover:text-white'
+        }`}
+      >
+        {label}
+      </button>
+    );
+
+    return (
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h3 className="text-lg font-bold text-white">
+            Mitglieder
+            <span className="text-gray-500 font-normal text-sm ml-2">({allMembers.length})</span>
+          </h3>
+          {/* Status-Zusammenfassung */}
+          <div className="flex items-center gap-3 text-xs text-gray-400">
+            {countTraining > 0 && (
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-orange-400 inline-block" />
+                {countTraining} beim Training
+              </span>
+            )}
+            {countOnline > 0 && (
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
+                {countOnline} online
+              </span>
+            )}
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-gray-600 inline-block" />
+              {countOffline} offline
+            </span>
+          </div>
+        </div>
+
+        {/* Suche + Sortierung */}
+        <div className="flex gap-2 flex-wrap">
+          <input
+            type="text"
+            placeholder="Mitglied suchen…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="flex-1 min-w-40 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
+          />
+          <div className="flex gap-1.5">
+            <SortBtn k="name" label="Name" />
+            <SortBtn k="lastSeen" label="Letzter Login" />
+            <SortBtn k="lastTraining" label="Letztes Training" />
+          </div>
+        </div>
+
+        {/* Karten-Liste */}
+        {sorted.length === 0 ? (
+          <div className="bg-gray-800/30 rounded-xl p-6 text-center text-gray-500 text-sm">
+            Kein Mitglied gefunden
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {sorted.map(member => {
+              const status   = getMemberStatus(member);
               const progress = getBlockProgress(member.id, member.currentLevel);
-              
+
               return (
-                <tr key={member.id} className="border-b border-gray-800">
-                  <td className="py-3">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{member.avatar}</span>
-                      <div>
-                        <div className="text-white">{member.name}</div>
-                        <div className="text-gray-400 text-sm">{progress.completed} Techniken</div>
+                <div
+                  key={member.id}
+                  className={`bg-gray-800/50 rounded-xl border transition-all ${
+                    status === 'training'
+                      ? 'border-orange-500/30'
+                      : status === 'online'
+                      ? 'border-green-500/20'
+                      : 'border-gray-700'
+                  }`}
+                >
+                  {/* Hauptzeile */}
+                  <div className="px-4 py-3 flex items-center gap-3">
+                    <StatusDot status={status} />
+                    <span className="text-2xl flex-shrink-0">{member.avatar}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-white font-semibold text-sm">{member.name}</span>
+                        <span className={`text-xs ${LEVEL_DISPLAY[member.currentLevel].color}`}>
+                          {LEVEL_DISPLAY[member.currentLevel].icon} {LEVEL_DISPLAY[member.currentLevel].subtitle}
+                        </span>
+                        <span className="text-gray-600 text-xs">{progress.completed} Techniken</span>
                       </div>
+                      <div className="mt-0.5">{statusLabel(status)}</div>
                     </div>
-                  </td>
-                  <td className="py-3">
-                    <span className={LEVEL_DISPLAY[member.currentLevel].color}>
-                      {LEVEL_DISPLAY[member.currentLevel].icon} {LEVEL_DISPLAY[member.currentLevel].subtitle}
-                    </span>
-                  </td>
-                  <td className="py-3">
-                    <span className="flex items-center gap-1">
-                      🔥 {member.streak.currentStreak}
-                      <span className="text-gray-400 text-sm">/ 🩹 {member.streak.bandaids}</span>
-                    </span>
-                  </td>
-                  <td className="py-3 text-gray-400">
-                    {formatTimeAgo(member.lastSeenAt)}
-                  </td>
-                  <td className="py-3">
-                    <div className="flex gap-2">
+                    {/* Aktionen */}
+                    <div className="flex gap-1.5 flex-shrink-0">
                       <button
                         onClick={() => awardBandaid(member.id, 'Instructor Bonus')}
-                        className="bg-green-600/20 text-green-400 px-2 py-1 rounded text-sm hover:bg-green-600/30"
+                        className="bg-gray-700/60 hover:bg-gray-700 text-gray-300 px-2.5 py-1.5 rounded-lg text-xs transition-all"
                         title="Pflaster vergeben"
                       >
                         🩹+
                       </button>
                       <button
-                        onClick={() => {
-                          setSelectedMember(member);
-                          setActiveTab('evaluate');
-                        }}
-                        className="bg-blue-600/20 text-blue-400 px-2 py-1 rounded text-sm hover:bg-blue-600/30"
+                        onClick={() => { setSelectedMember(member); setActiveTab('evaluate'); }}
+                        className="bg-blue-600/80 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                       >
                         Bewerten
                       </button>
                     </div>
-                  </td>
-                </tr>
+                  </div>
+
+                  {/* Detail-Zeile */}
+                  <div className="px-4 pb-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500 border-t border-gray-700/40 pt-2">
+                    <span>
+                      <span className="text-gray-600">Zuletzt online:</span>{' '}
+                      <span className="text-gray-400">{formatDateTime(member.lastSeenAt)}</span>
+                    </span>
+                    <span>
+                      <span className="text-gray-600">Letztes Training:</span>{' '}
+                      <span className="text-gray-400">{formatDateTime(member.streak.lastTrainingDate)}</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      🔥 <span className="text-gray-400">{member.streak.currentStreak} Wochen</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      🩹 <span className="text-gray-400">{member.streak.bandaids}/{member.streak.maxBandaids}</span>
+                    </span>
+                  </div>
+                </div>
               );
             })}
-          </tbody>
-        </table>
+          </div>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   // Render Requests Tab
   const renderRequestsTab = () => (
