@@ -10,8 +10,9 @@ import { MODULES, BLOCKS } from '../../data/modules';
 import { STATUS_DISPLAY, LEVEL_DISPLAY, TechniqueStatus, ModuleLevel } from '../../types';
 import { TechniqueCard } from '../shared/TechniqueCard';
 import { ProgressBar } from '../shared/ProgressBar';
+import { MemberLearningView } from './MemberLearningView';
 
-type Tab = 'dashboard' | 'progress' | 'streak' | 'requests';
+type Tab = 'dashboard' | 'lernen' | 'progress' | 'streak' | 'requests';
 type ApplicationType = 'contact' | 'assistant_instructor' | null;
 
 export const MemberView: React.FC = () => {
@@ -899,8 +900,9 @@ export const MemberView: React.FC = () => {
       </header>
 
       {/* Content */}
-      <main className="max-w-4xl mx-auto p-4 pb-24">
+      <main className={`max-w-4xl mx-auto pb-24 ${activeTab === 'lernen' ? 'h-[calc(100vh-8rem)] flex flex-col' : 'p-4'}`}>
         {activeTab === 'dashboard' && renderDashboard()}
+        {activeTab === 'lernen' && <MemberLearningView />}
         {activeTab === 'progress' && renderProgress()}
         {activeTab === 'streak' && renderStreak()}
         {activeTab === 'requests' && renderRequests()}
@@ -910,7 +912,8 @@ export const MemberView: React.FC = () => {
       <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800">
         <div className="max-w-4xl mx-auto flex">
           {[
-            { id: 'dashboard' as Tab, icon: '🏠', label: 'Dashboard' },
+            { id: 'dashboard' as Tab, icon: '🏠', label: 'Home' },
+            { id: 'lernen' as Tab, icon: '🎓', label: 'Lernen' },
             { id: 'progress' as Tab, icon: '📊', label: 'Fortschritt' },
             { id: 'streak' as Tab, icon: '🔥', label: 'Streak' },
             { id: 'requests' as Tab, icon: '📝', label: 'Anfragen' },

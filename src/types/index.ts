@@ -216,6 +216,20 @@ export interface Member {
 
   // Instructor-Lernfortschritt (nur für Instructor-Rollen relevant)
   instructorLessonProgress?: Record<string, InstructorLessonProgress>;
+
+  // XP (Erfahrungspunkte aus Quiz-Sessions)
+  xp?: number;
+
+  // Member-Quiz-Fortschritt (moduleId → letzte Session)
+  quizProgress?: Record<string, MemberQuizProgress>;
+}
+
+export interface MemberQuizProgress {
+  moduleId: string;
+  lastScore: number;       // Prozent
+  bestScore: number;
+  completedAt: Date;
+  totalSessions: number;
 }
 
 // Contact Ready Bewerbung

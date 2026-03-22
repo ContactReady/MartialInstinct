@@ -15,7 +15,8 @@ import {
   ContactApplication,
   InstructorApplication,
   BandaidEvent,
-  InstructorLessonProgress
+  InstructorLessonProgress,
+  MemberQuizProgress
 } from '../types';
 import { MEMBERS, CHECK_INS, BOARD_MESSAGES, NOTIFICATIONS, LOCATIONS, VIDEOS, COURSES } from '../data/mockData';
 import { MODULES, BLOCKS, getAllTechniques, getModuleById } from '../data/modules';
@@ -85,6 +86,10 @@ interface AppContextType {
   // Instructor Learning
   completeInstructorLesson: (lessonId: string, quizScore?: number) => void;
   getInstructorProgress: (memberId: string) => Record<string, InstructorLessonProgress>;
+
+  // XP & Member Quiz
+  awardXP: (amount: number) => void;
+  completeModuleQuiz: (moduleId: string, score: number, xpEarned: number) => void;
 
   // Theme
   toggleDarkMode: () => void;
@@ -913,6 +918,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return member?.instructorLessonProgress ?? {};
   }, [members]);
 
+  const awardXP = useCallback((amount: number) => {
+    if (!currentUser) return;
+    const update = (m: Member): Member => ({ ...m, xp: (m.xp ?? 0) + amount });
+    setMembers(prev => prev.map(m => m.id === currentUser.id ? update(m) : m));
+    setCurrentUser(prev => prev ? update(prev) : null);
+  }, [currentUser]);
+
+  const completeModuleQuiz = useCallback((moduleId: string, score: number, xpEarned: number) => {
+    if (!currentUser) return;
+    const prev = currentUser.quizProgress?.[moduleId];
+    const progress: MemberQuizProgress = {
+      moduleId,
+      lastScore: score,
+      bestScore: Math.max(score, prev?.bestScore ?? 0),
+      completedAt: new Date(),
+      totalSessions: (prev?.totalSessions ?? 0) + 1
+    };
+    const update = (m: Member): Member => ({
+      ...m,
+      xp: (m.xp ?? 0) + xpEarned,
+      quizProgress: { ...m.quizProgress, [moduleId]: progress }
+    });
+    setMembers(prev => prev.map(m => m.id === currentUser.id ? update(m) : m));
+    setCurrentUser(prev => prev ? update(prev) : null);
+  }, [currentUser]);
+
   // ============================================
   // VALUE
   // ============================================
@@ -953,6 +984,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addInstructorNote,
     completeInstructorLesson,
     getInstructorProgress,
+    awardXP,
+    completeModuleQuiz,
     toggleDarkMode,
     getMemberById,
     getCheckedInMembers,

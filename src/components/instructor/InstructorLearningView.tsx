@@ -7,161 +7,11 @@
 import React, { useState } from 'react';
 import { ChevronLeft, CheckCircle2, Lock, BookOpen, Trophy, Clock } from 'lucide-react';
 import { INSTRUCTOR_TRACKS } from '../../data/instructorCurriculum';
-import { InstructorLesson, InstructorTrack, InstructorQuizQuestion } from '../../types';
+import { InstructorLesson, InstructorTrack } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { ProgressBar } from '../shared/ProgressBar';
+import { QuizEngine, QuizQuestion } from '../shared/QuizEngine';
 
-// ============================================
-// QUIZ VIEW
-// ============================================
-
-interface QuizViewProps {
-  lesson: InstructorLesson;
-  onComplete: (score: number) => void;
-  onBack: () => void;
-}
-
-const QuizView: React.FC<QuizViewProps> = ({ lesson, onComplete, onBack }) => {
-  const quiz = lesson.quiz!;
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [answered, setAnswered] = useState(false);
-  const [correctCount, setCorrectCount] = useState(0);
-  const [finished, setFinished] = useState(false);
-
-  const question: InstructorQuizQuestion = quiz.questions[currentIndex];
-  const isCorrect = selected === question.correctIndex;
-
-  const handleSelect = (idx: number) => {
-    if (answered) return;
-    setSelected(idx);
-    setAnswered(true);
-    if (idx === question.correctIndex) {
-      setCorrectCount(prev => prev + 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentIndex + 1 >= quiz.questions.length) {
-      setFinished(true);
-    } else {
-      setCurrentIndex(prev => prev + 1);
-      setSelected(null);
-      setAnswered(false);
-    }
-  };
-
-  const finalScore = Math.round((correctCount / quiz.questions.length) * 100);
-  const passed = finalScore >= quiz.passingScore;
-
-  if (finished) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 px-6 text-center space-y-6">
-        <div className={`w-24 h-24 rounded-full flex items-center justify-center text-4xl ${passed ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-          {passed ? '🏆' : '😤'}
-        </div>
-        <div>
-          <div className={`text-3xl font-bold ${passed ? 'text-green-400' : 'text-red-400'}`}>{finalScore}%</div>
-          <div className="text-gray-400 mt-1">{correctCount} von {quiz.questions.length} richtig</div>
-        </div>
-        <div className={`text-lg font-semibold ${passed ? 'text-green-400' : 'text-yellow-400'}`}>
-          {passed ? 'Lektion abgeschlossen!' : `Mindestens ${quiz.passingScore}% erforderlich`}
-        </div>
-        <div className="flex gap-3 w-full max-w-xs">
-          {!passed && (
-            <button
-              onClick={() => {
-                setCurrentIndex(0);
-                setSelected(null);
-                setAnswered(false);
-                setCorrectCount(0);
-                setFinished(false);
-              }}
-              className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-medium transition-all"
-            >
-              Nochmal
-            </button>
-          )}
-          <button
-            onClick={() => onComplete(finalScore)}
-            className={`flex-1 py-3 rounded-xl font-medium transition-all text-white ${passed ? 'bg-green-600 hover:bg-green-500' : 'bg-gray-700 hover:bg-gray-600'}`}
-          >
-            {passed ? 'Weiter' : 'Trotzdem fortfahren'}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col h-full">
-      {/* Progress */}
-      <div className="px-4 pt-4 pb-3">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-gray-400">Frage {currentIndex + 1} / {quiz.questions.length}</span>
-          <span className="text-sm text-green-400 font-medium">✓ {correctCount} richtig</span>
-        </div>
-        <ProgressBar
-          progress={((currentIndex) / quiz.questions.length) * 100}
-          color="bg-green-500"
-          height="h-2"
-        />
-      </div>
-
-      {/* Question */}
-      <div className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-          <p className="text-white font-medium leading-relaxed">{question.question}</p>
-        </div>
-
-        {/* Options */}
-        <div className="space-y-2">
-          {question.options.map((option, idx) => {
-            let btnClass = 'w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ';
-            if (!answered) {
-              btnClass += 'bg-gray-800 border-gray-700 text-gray-200 hover:border-gray-500 hover:bg-gray-700';
-            } else if (idx === question.correctIndex) {
-              btnClass += 'bg-green-500/20 border-green-500 text-green-300';
-            } else if (idx === selected && !isCorrect) {
-              btnClass += 'bg-red-500/20 border-red-500 text-red-300';
-            } else {
-              btnClass += 'bg-gray-800/50 border-gray-700/50 text-gray-500';
-            }
-
-            return (
-              <button key={idx} onClick={() => handleSelect(idx)} className={btnClass}>
-                <span className="mr-2 font-bold text-gray-500">{String.fromCharCode(65 + idx)}.</span>
-                {option}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Explanation */}
-        {answered && (
-          <div className={`rounded-xl p-4 border ${isCorrect ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
-            <div className={`font-semibold mb-1 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
-              {isCorrect ? '✅ Richtig!' : '❌ Nicht ganz...'}
-            </div>
-            <p className="text-sm text-gray-300">{question.explanation}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Next Button */}
-      {answered && (
-        <div className="px-4 pb-4">
-          <button
-            onClick={handleNext}
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-semibold transition-all"
-          >
-            {currentIndex + 1 >= quiz.questions.length ? 'Ergebnis sehen →' : 'Weiter →'}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
 
 // ============================================
 // LESSON VIEW
@@ -187,24 +37,25 @@ const LessonView: React.FC<LessonViewProps> = ({
   const [showQuiz, setShowQuiz] = useState(false);
 
   if (showQuiz && lesson.quiz) {
+    const quizQuestions: QuizQuestion[] = lesson.quiz.questions.map(q => ({
+      id: q.id,
+      question: q.question,
+      options: q.options,
+      correctIndex: q.correctIndex,
+      explanation: q.explanation,
+    }));
     return (
       <div className="flex flex-col h-full">
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-700/50 bg-gray-900/80">
-          <button onClick={() => setShowQuiz(false)} className="text-gray-400 hover:text-white">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <span className="text-gray-300 font-medium">Quiz: {lesson.title}</span>
-        </div>
-        <div className="flex-1 overflow-hidden">
-          <QuizView
-            lesson={lesson}
-            onComplete={(score) => {
-              onComplete(score);
-              setShowQuiz(false);
-            }}
-            onBack={() => setShowQuiz(false)}
-          />
-        </div>
+        <QuizEngine
+          title={`${track.icon} ${lesson.title}`}
+          questions={quizQuestions}
+          accentColor="bg-blue-600"
+          onComplete={(score) => {
+            onComplete(score);
+            setShowQuiz(false);
+          }}
+          onBack={() => setShowQuiz(false)}
+        />
       </div>
     );
   }
@@ -232,7 +83,7 @@ const LessonView: React.FC<LessonViewProps> = ({
           </span>
           {lesson.quiz && (
             <span className="flex items-center gap-1">
-              📝 {lesson.quiz.questions.length} Fragen
+              📝 10 Fragen
             </span>
           )}
           {isCompleted && (
@@ -417,7 +268,7 @@ const TrackDetailView: React.FC<TrackDetailProps> = ({ track, progress, onSelect
                       <Clock className="w-3 h-3" /> {lesson.estimatedMinutes} Min.
                     </span>
                     {lesson.quiz && (
-                      <span className="text-xs text-gray-500">• {lesson.quiz.questions.length} Fragen</span>
+                      <span className="text-xs text-gray-500">• 10 Fragen</span>
                     )}
                   </div>
                 </div>
