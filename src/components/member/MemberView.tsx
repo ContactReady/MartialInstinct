@@ -312,10 +312,13 @@ export const MemberView: React.FC = () => {
       return <span className="w-2.5 h-2.5 rounded-full bg-gray-600 flex-shrink-0" />;
     };
 
+    // Spaltenbreite für Buttons UND Stats-Werte — exakt gleich
+    const COL = 'w-16 text-center flex-shrink-0';
+
     const SortBtn = ({ k, label }: { k: typeof rankSort; label: string }) => (
       <button
         onClick={() => setRankSort(k)}
-        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+        className={`${COL} py-1.5 rounded-lg text-xs font-medium transition-all ${
           rankSort === k ? 'bg-red-600 text-white' : 'bg-gray-700/60 text-gray-400 hover:text-white'
         }`}
       >
@@ -323,19 +326,30 @@ export const MemberView: React.FC = () => {
       </button>
     );
 
+    const formatDateTime = (date: Date | null | undefined): string => {
+      if (!date) return '–';
+      const d = new Date(date);
+      const today = new Date();
+      const isToday = d.toDateString() === today.toDateString();
+      const time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+      if (isToday) return `Heute ${time}`;
+      return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + ` ${time}`;
+    };
+
     return (
       <div className="space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
+        <div className="flex items-center gap-3">
+          <div className="flex-1 min-w-0">
             <h2 className="text-xl font-bold text-white">🏆 Rangliste</h2>
             {myRank > 0 && (
               <p className="text-sm text-gray-400 mt-0.5">Du bist auf Platz {myRank}</p>
             )}
           </div>
-          <div className="flex gap-1.5">
+          {/* Sortier-Buttons — gleiche Breite wie Stats-Spalten */}
+          <div className="flex gap-1.5 flex-shrink-0">
             <SortBtn k="streak" label="🔥 Streak" />
-            <SortBtn k="techniques" label="✅ Techniken" />
+            <SortBtn k="techniques" label="✅ Tech." />
             <SortBtn k="xp" label="⭐ XP" />
           </div>
         </div>
@@ -350,50 +364,63 @@ export const MemberView: React.FC = () => {
             return (
               <div
                 key={m.id}
-                className={`rounded-xl border px-4 py-3 flex items-center gap-3 transition-all ${
-                  isMe
-                    ? 'bg-yellow-900/20 border-yellow-500/40'
-                    : 'bg-gray-800/50 border-gray-700'
+                className={`rounded-xl border overflow-hidden transition-all ${
+                  isMe ? 'bg-yellow-900/20 border-yellow-500/40' : 'bg-gray-800/50 border-gray-700'
                 }`}
               >
-                {/* Rang */}
-                <div className="w-8 text-center flex-shrink-0">
-                  <span className={`font-bold ${rank <= 3 ? 'text-lg' : 'text-gray-500 text-sm'}`}>
-                    {medal(rank)}
-                  </span>
-                </div>
-
-                {/* Status-Dot + Avatar */}
-                {statusDot(m)}
-                <span className="text-2xl flex-shrink-0">{m.avatar}</span>
-
-                {/* Name + Level */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`font-semibold text-sm ${isMe ? 'text-yellow-300' : 'text-white'}`}>
-                      {m.name}
+                {/* Hauptzeile */}
+                <div className="px-4 py-3 flex items-center gap-3">
+                  {/* Rang */}
+                  <div className="w-8 text-center flex-shrink-0">
+                    <span className={`font-bold ${rank <= 3 ? 'text-lg' : 'text-gray-500 text-sm'}`}>
+                      {medal(rank)}
                     </span>
-                    {isMe && <span className="text-yellow-500/70 text-xs">(Du)</span>}
                   </div>
-                  <span className={`text-xs ${LEVEL_DISPLAY[m.currentLevel].color}`}>
-                    {LEVEL_DISPLAY[m.currentLevel].icon} {LEVEL_DISPLAY[m.currentLevel].subtitle}
-                  </span>
+
+                  {/* Status-Dot + Avatar */}
+                  {statusDot(m)}
+                  <span className="text-2xl flex-shrink-0">{m.avatar}</span>
+
+                  {/* Name + Level */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`font-semibold text-sm ${isMe ? 'text-yellow-300' : 'text-white'}`}>
+                        {m.name}
+                      </span>
+                      {isMe && <span className="text-yellow-500/70 text-xs">(Du)</span>}
+                    </div>
+                    <span className={`text-xs ${LEVEL_DISPLAY[m.currentLevel].color}`}>
+                      {LEVEL_DISPLAY[m.currentLevel].icon} {LEVEL_DISPLAY[m.currentLevel].subtitle}
+                    </span>
+                  </div>
+
+                  {/* Stats — gleiche Breite wie Buttons */}
+                  <div className="flex gap-1.5 flex-shrink-0">
+                    <div className={COL}>
+                      <div className="text-white font-bold text-sm">{m.streak.currentStreak}</div>
+                      <div className="text-gray-500 text-xs">Wo.</div>
+                    </div>
+                    <div className={COL}>
+                      <div className="text-white font-bold text-sm">{passed}</div>
+                      <div className="text-gray-500 text-xs">Tech.</div>
+                    </div>
+                    <div className={COL}>
+                      <div className="text-white font-bold text-sm">{m.xp ?? 0}</div>
+                      <div className="text-gray-500 text-xs">XP</div>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Stats */}
-                <div className="flex gap-4 flex-shrink-0 text-right">
-                  <div>
-                    <div className="text-white font-bold text-sm">{m.streak.currentStreak}</div>
-                    <div className="text-gray-500 text-xs">Wochen</div>
-                  </div>
-                  <div>
-                    <div className="text-white font-bold text-sm">{passed}</div>
-                    <div className="text-gray-500 text-xs">Tech.</div>
-                  </div>
-                  <div>
-                    <div className="text-white font-bold text-sm">{m.xp ?? 0}</div>
-                    <div className="text-gray-500 text-xs">XP</div>
-                  </div>
+                {/* Detail-Zeile: Zuletzt online + Letztes Training */}
+                <div className="px-4 pb-2.5 flex flex-wrap gap-x-5 gap-y-0.5 text-xs border-t border-gray-700/30 pt-2">
+                  <span>
+                    <span className="text-gray-600">Zuletzt online:</span>{' '}
+                    <span className="text-gray-400">{formatDateTime(m.lastSeenAt)}</span>
+                  </span>
+                  <span>
+                    <span className="text-gray-600">Letztes Training:</span>{' '}
+                    <span className="text-gray-400">{formatDateTime(m.streak.lastTrainingDate)}</span>
+                  </span>
                 </div>
               </div>
             );
