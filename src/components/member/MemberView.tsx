@@ -30,7 +30,9 @@ export const MemberView: React.FC = () => {
     submitContactApplication,
     submitInstructorApplication,
     notifications,
-    markNotificationRead
+    markNotificationRead,
+    submitTechniqueWish,
+    techniqueWishes
   } = useApp();
   
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -577,6 +579,25 @@ export const MemberView: React.FC = () => {
                     <span className="text-green-400 font-semibold text-sm">✅ Vollständig gemeistert</span>
                   </div>
                 )}
+
+                {/* Wunschtechnik */}
+                {(() => {
+                  const alreadyWished = techniqueWishes.some(
+                    w => w.techniqueId === tech.id && w.memberId === currentUser.id && w.status === 'pending'
+                  );
+                  return alreadyWished ? (
+                    <div className="w-full flex items-center justify-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-xl py-2.5">
+                      <span className="text-purple-400 text-sm">💡 Wunsch gemeldet</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => submitTechniqueWish(tech.id, tech.name, module.id, module.name)}
+                      className="w-full bg-gray-700/40 hover:bg-gray-700/70 border border-gray-600/30 hover:border-purple-500/30 text-gray-400 hover:text-purple-300 py-2.5 rounded-xl text-sm transition-all"
+                    >
+                      💡 Als Wunschtechnik melden
+                    </button>
+                  );
+                })()}
               </div>
             );
           })()}

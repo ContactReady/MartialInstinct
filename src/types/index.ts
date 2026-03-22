@@ -137,6 +137,20 @@ export interface ExamRequest {
   processedAt?: Date;
 }
 
+// Wunschtechnik (Mitglied meldet gewünschte Technik)
+export interface TechniqueWish {
+  id: string;
+  memberId: string;
+  memberName: string;
+  memberAvatar: string;
+  techniqueId: string;
+  techniqueName: string;
+  moduleId: string;
+  moduleName: string;
+  submittedAt: Date;
+  status: 'pending' | 'acknowledged';
+}
+
 // Streak & Bandaid System
 export interface StreakData {
   currentStreak: number;

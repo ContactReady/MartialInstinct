@@ -16,7 +16,8 @@ import {
   InstructorApplication,
   BandaidEvent,
   InstructorLessonProgress,
-  MemberQuizProgress
+  MemberQuizProgress,
+  TechniqueWish
 } from '../types';
 import { MEMBERS, CHECK_INS, BOARD_MESSAGES, NOTIFICATIONS, LOCATIONS, VIDEOS, COURSES } from '../data/mockData';
 import { MODULES, BLOCKS, getAllTechniques, getModuleById } from '../data/modules';
@@ -95,6 +96,12 @@ interface AppContextType {
   toggleDarkMode: () => void;
 
   // Helpers
+  // Wunschtechniken
+  techniqueWishes: TechniqueWish[];
+  submitTechniqueWish: (techniqueId: string, techniqueName: string, moduleId: string, moduleName: string) => void;
+  acknowledgeWish: (wishId: string) => void;
+  getPendingTechniqueWishes: () => TechniqueWish[];
+
   getMemberById: (id: string) => Member | undefined;
   getCheckedInMembers: () => Member[];
   getOnlineMembers: () => Member[];
@@ -123,6 +130,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [boardMessages, setBoardMessages] = useState<BoardMessage[]>(BOARD_MESSAGES);
   const [notifications, setNotifications] = useState<Notification[]>(NOTIFICATIONS);
   const [darkMode, setDarkMode] = useState(true);
+  const [techniqueWishes, setTechniqueWishes] = useState<TechniqueWish[]>([]);
 
   // ============================================
   // AUTH
@@ -838,6 +846,45 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [currentUser]);
 
   // ============================================
+  // WUNSCHTECHNIKEN
+  // ============================================
+
+  const submitTechniqueWish = useCallback((techniqueId: string, techniqueName: string, moduleId: string, moduleName: string) => {
+    if (!currentUser) return;
+
+    // Guard: kein doppelter Wunsch für dieselbe Technik
+    const alreadyPending = techniqueWishes.some(
+      w => w.techniqueId === techniqueId && w.memberId === currentUser.id && w.status === 'pending'
+    );
+    if (alreadyPending) return;
+
+    const wish: TechniqueWish = {
+      id: `wish-${Date.now()}`,
+      memberId: currentUser.id,
+      memberName: currentUser.name,
+      memberAvatar: currentUser.avatar,
+      techniqueId,
+      techniqueName,
+      moduleId,
+      moduleName,
+      submittedAt: new Date(),
+      status: 'pending'
+    };
+
+    setTechniqueWishes(prev => [...prev, wish]);
+  }, [currentUser, techniqueWishes]);
+
+  const acknowledgeWish = useCallback((wishId: string) => {
+    setTechniqueWishes(prev => prev.map(w =>
+      w.id === wishId ? { ...w, status: 'acknowledged' as const } : w
+    ));
+  }, []);
+
+  const getPendingTechniqueWishes = useCallback((): TechniqueWish[] => {
+    return techniqueWishes.filter(w => w.status === 'pending');
+  }, [techniqueWishes]);
+
+  // ============================================
   // THEME
   // ============================================
 
@@ -1055,6 +1102,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     awardXP,
     completeModuleQuiz,
     toggleDarkMode,
+    techniqueWishes,
+    submitTechniqueWish,
+    acknowledgeWish,
+    getPendingTechniqueWishes,
     getMemberById,
     getCheckedInMembers,
     getOnlineMembers,

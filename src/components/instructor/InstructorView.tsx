@@ -71,6 +71,8 @@ export const InstructorView: React.FC = () => {
     getPendingExamRequests,
     getBlockProgress,
     getOnlineMembers,
+    getPendingTechniqueWishes,
+    acknowledgeWish,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>('lernen');
@@ -95,6 +97,7 @@ export const InstructorView: React.FC = () => {
   const visibleCheckIns = allPendingCheckIns.filter(c => c.locationId === currentUser.locationId);
   const pendingCheckIns = visibleCheckIns; // Alias für Template
   const pendingExamRequests = getPendingExamRequests();
+  const pendingWishes = getPendingTechniqueWishes();
   const checkedInMembers = members.filter(m => m.isCheckedIn);
   const detectedCourse = detectCurrentCourse(currentUser.locationId);
   
@@ -663,6 +666,155 @@ export const InstructorView: React.FC = () => {
   const renderRequestsTab = () => (
     <div className="space-y-6">
 
+      {/* ── Prüfungsanfragen ──────────────────────────────────────────────── */}
+      <div>
+        <h3 className="text-lg font-bold text-white mb-3">
+          🔷 Prüfungsanfragen ({pendingExamRequests.length})
+        </h3>
+
+        {pendingExamRequests.length === 0 ? (
+          <div className="bg-gray-800/30 rounded-xl p-4 border border-gray-700/30 text-center">
+            <p className="text-gray-500 text-sm">Keine offenen Anfragen</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {pendingExamRequests.map(req => {
+              const member = members.find(m => m.id === req.memberId);
+              const canProcess = currentUser.role !== 'member';
+              const feedback = rejectionFeedback[req.id] ?? '';
+              const hasComment = feedback.trim().length >= 5;
+              const canPass = canProcess;
+              const canReject = canProcess && hasComment;
+
+              const levelBadge = req.examLevel === 'technical'
+                ? <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-medium">🔷 Technisch</span>
+                : <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded border border-orange-500/20 font-medium">🔶 Taktisch</span>;
+
+              return (
+                <div key={req.id} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+                  <div className="p-4 pb-3">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-2xl flex-shrink-0">{member?.avatar ?? '🥋'}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-white">{req.memberName}</div>
+                        <div className="text-gray-400 text-xs">{req.moduleName}</div>
+                      </div>
+                      {levelBadge}
+                    </div>
+                    <div className="bg-gray-700/40 rounded-lg px-3 py-2 flex items-center justify-between">
+                      <span className="text-white text-sm font-medium">{req.techniqueName}</span>
+                      <span className="text-gray-500 text-xs flex-shrink-0">{formatTimeAgo(req.requestedAt)}</span>
+                    </div>
+                  </div>
+                  {canProcess ? (
+                    <div className="border-t border-gray-700/50 px-4 pt-3 pb-4 space-y-3">
+                      <div>
+                        <label className="text-xs text-gray-400 mb-1 block">
+                          Kommentar
+                          <span className="text-gray-600 ml-1">(optional bei Bestanden — Pflicht bei Nachtrainieren)</span>
+                        </label>
+                        <textarea
+                          rows={2}
+                          placeholder="Feedback für den Member… (Pflicht bei Nachtrainieren)"
+                          value={feedback}
+                          onChange={e => setRejectionFeedback(prev => ({ ...prev, [req.id]: e.target.value }))}
+                          className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 resize-none focus:outline-none focus:border-gray-400 transition-colors"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          disabled={!canPass}
+                          onClick={() => {
+                            approveExam(req.memberId, req.id, feedback);
+                            setRejectionFeedback(prev => { const n = { ...prev }; delete n[req.id]; return n; });
+                          }}
+                          className="flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all bg-green-600 hover:bg-green-500 text-white"
+                        >
+                          ✅ Bestanden
+                        </button>
+                        <button
+                          disabled={!canReject}
+                          onClick={() => {
+                            rejectExam(req.memberId, req.id, feedback);
+                            setRejectionFeedback(prev => { const n = { ...prev }; delete n[req.id]; return n; });
+                          }}
+                          className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                            canReject
+                              ? 'bg-orange-600 hover:bg-orange-500 text-white'
+                              : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          ↩ Nachtrainieren
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border-t border-gray-700/50 px-4 py-3">
+                      <p className="text-yellow-500/80 text-sm">⚠️ Keine Berechtigung zur Prüfung</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Wunschtechniken ───────────────────────────────────────────────── */}
+      <div>
+        <h3 className="text-lg font-bold text-white mb-3">
+          💡 Wunschtechniken ({pendingWishes.length})
+        </h3>
+        {pendingWishes.length === 0 ? (
+          <div className="bg-gray-800/30 rounded-xl p-4 border border-gray-700/30 text-center">
+            <p className="text-gray-500 text-sm">Keine Wunschtechniken gemeldet</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* Gruppieren nach techniqueId */}
+            {Object.entries(
+              pendingWishes.reduce<Record<string, typeof pendingWishes>>((acc, w) => {
+                if (!acc[w.techniqueId]) acc[w.techniqueId] = [];
+                acc[w.techniqueId].push(w);
+                return acc;
+              }, {})
+            )
+              .sort(([, a], [, b]) => b.length - a.length)
+              .map(([techniqueId, wishes]) => (
+                <div key={techniqueId} className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-medium text-white text-sm">{wishes[0].techniqueName}</div>
+                      <div className="text-gray-500 text-xs">{wishes[0].moduleName}</div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <span className="bg-purple-500/20 text-purple-300 border border-purple-500/20 rounded-full px-3 py-1 text-sm font-bold">
+                        {wishes.length}×
+                      </span>
+                      <button
+                        onClick={() => wishes.forEach(w => acknowledgeWish(w.id))}
+                        className="bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs px-3 py-2 rounded-lg transition-all"
+                      >
+                        ✓ Gesehen
+                      </button>
+                    </div>
+                  </div>
+                  {/* Member-Avatare */}
+                  <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-gray-700/50">
+                    {wishes.map(w => (
+                      <span key={w.id} title={w.memberName} className="text-lg">{w.memberAvatar}</span>
+                    ))}
+                    <span className="text-gray-500 text-xs ml-1">
+                      {wishes.map(w => w.memberName).join(', ')}
+                    </span>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        )}
+      </div>
+
       {/* ── Check-in Anfragen ─────────────────────────────────────────────── */}
       <div>
         <h3 className="text-lg font-bold text-white mb-3">
@@ -722,103 +874,6 @@ export const InstructorView: React.FC = () => {
         )}
       </div>
 
-      {/* ── Prüfungsanfragen ──────────────────────────────────────────────── */}
-      <h3 className="text-lg font-bold text-white">
-        🔷 Prüfungsanfragen ({pendingExamRequests.length})
-      </h3>
-
-      {pendingExamRequests.length === 0 ? (
-        <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/30 text-center">
-          <p className="text-gray-500 text-sm">Keine offenen Anfragen</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {pendingExamRequests.map(req => {
-            const member = members.find(m => m.id === req.memberId);
-            // Jeder Instructor (nicht member) kann Prüfungsanfragen bearbeiten
-            const canProcess = currentUser.role !== 'member';
-            const feedback = rejectionFeedback[req.id] ?? '';
-            const hasComment = feedback.trim().length >= 5;
-            // Bestanden: kein Kommentar nötig. Nachtrainieren: Pflicht.
-            const canPass = canProcess;
-            const canReject = canProcess && hasComment;
-
-            const levelBadge = req.examLevel === 'technical'
-              ? <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-medium">🔷 Technisch</span>
-              : <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded border border-orange-500/20 font-medium">🔶 Taktisch</span>;
-
-            return (
-              <div key={req.id} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
-                {/* Kopfzeile */}
-                <div className="p-4 pb-3">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-2xl flex-shrink-0">{member?.avatar ?? '🥋'}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-white">{req.memberName}</div>
-                      <div className="text-gray-400 text-xs">{req.moduleName}</div>
-                    </div>
-                    {levelBadge}
-                  </div>
-
-                  <div className="bg-gray-700/40 rounded-lg px-3 py-2 flex items-center justify-between">
-                    <span className="text-white text-sm font-medium">{req.techniqueName}</span>
-                    <span className="text-gray-500 text-xs flex-shrink-0">{formatTimeAgo(req.requestedAt)}</span>
-                  </div>
-                </div>
-
-                {/* Kommentar + Buttons */}
-                {canProcess ? (
-                  <div className="border-t border-gray-700/50 px-4 pt-3 pb-4 space-y-3">
-                    <div>
-                      <label className="text-xs text-gray-400 mb-1 block">
-                        Kommentar
-                        <span className="text-gray-600 ml-1">(optional bei Bestanden — Pflicht bei Nachtrainieren)</span>
-                      </label>
-                      <textarea
-                        rows={2}
-                        placeholder="Feedback für den Member… (Pflicht bei Nachtrainieren)"
-                        value={feedback}
-                        onChange={e => setRejectionFeedback(prev => ({ ...prev, [req.id]: e.target.value }))}
-                        className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 resize-none focus:outline-none focus:border-gray-400 transition-colors"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        disabled={!canPass}
-                        onClick={() => {
-                          approveExam(req.memberId, req.id, feedback);
-                          setRejectionFeedback(prev => { const n = { ...prev }; delete n[req.id]; return n; });
-                        }}
-                        className="flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all bg-green-600 hover:bg-green-500 text-white"
-                      >
-                        ✅ Bestanden
-                      </button>
-                      <button
-                        disabled={!canReject}
-                        onClick={() => {
-                          rejectExam(req.memberId, req.id, feedback);
-                          setRejectionFeedback(prev => { const n = { ...prev }; delete n[req.id]; return n; });
-                        }}
-                        className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
-                          canReject
-                            ? 'bg-orange-600 hover:bg-orange-500 text-white'
-                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        ↩ Nachtrainieren
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="border-t border-gray-700/50 px-4 py-3">
-                    <p className="text-yellow-500/80 text-sm">⚠️ Keine Berechtigung zur Prüfung</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 
@@ -978,7 +1033,7 @@ export const InstructorView: React.FC = () => {
     { id: 'live' as Tab, label: 'Live', icon: '📍' },
     { id: 'evaluate' as Tab, label: 'Bewerten', icon: '✏️' },
     { id: 'members' as Tab, label: 'Mitglieder', icon: '👥' },
-    { id: 'requests' as Tab, label: 'Anfragen', icon: '🟡', badge: pendingCheckIns.length + pendingExamRequests.length },
+    { id: 'requests' as Tab, label: 'Anfragen', icon: '🟡', badge: pendingCheckIns.length + pendingExamRequests.length + pendingWishes.length },
     { id: 'applications' as Tab, label: 'Bewerbungen', icon: '💀', badge: totalPendingApps },
     { id: 'board' as Tab, label: 'Board', icon: '💬' },
   ];
