@@ -55,12 +55,12 @@ export const MEMBERS: Member[] = [
     lastSeenAt: new Date(),
     currentLevel: 'contact',
     techniqueProgress: Object.fromEntries(
-      allTechniques.map(t => [t.id, { 
-        techniqueId: t.id, 
-        status: 'contact' as const,
-        examinedAt: new Date('2020-01-01'),
-        examinerId: 'user-owner-001',
-        examinerName: 'Jay I'
+      allTechniques.map(t => [t.id, {
+        techniqueId: t.id,
+        status: 'tac_passed' as const,
+        tacPassedAt: new Date('2020-01-01'),
+        tacExaminerId: '001',
+        tacExaminerName: 'Jay I'
       }])
     ),
     examRequests: [],
@@ -83,12 +83,12 @@ export const MEMBERS: Member[] = [
     lastSeenAt: new Date(),
     currentLevel: 'contact',
     techniqueProgress: Object.fromEntries(
-      allTechniques.map(t => [t.id, { 
-        techniqueId: t.id, 
-        status: 'contact' as const,
-        examinedAt: new Date('2020-01-01'),
-        examinerId: 'user-owner-002',
-        examinerName: 'Jay II'
+      allTechniques.map(t => [t.id, {
+        techniqueId: t.id,
+        status: 'tac_passed' as const,
+        tacPassedAt: new Date('2020-01-01'),
+        tacExaminerId: '002',
+        tacExaminerName: 'Jay II'
       }])
     ),
     examRequests: [],
@@ -111,12 +111,12 @@ export const MEMBERS: Member[] = [
     lastSeenAt: new Date(),
     currentLevel: 'tactical',
     techniqueProgress: Object.fromEntries(
-      allTechniques.filter(t => t.level !== 'contact').map(t => [t.id, { 
-        techniqueId: t.id, 
-        status: 'tactical' as const,
-        examinedAt: new Date('2021-06-01'),
-        examinerId: 'user-owner-001',
-        examinerName: 'Jay I'
+      allTechniques.filter(t => t.level !== 'contact').map(t => [t.id, {
+        techniqueId: t.id,
+        status: 'tac_passed' as const,
+        tacPassedAt: new Date('2021-06-01'),
+        tacExaminerId: '001',
+        tacExaminerName: 'Jay I'
       }])
     ),
     examRequests: [],
@@ -139,12 +139,12 @@ export const MEMBERS: Member[] = [
     lastSeenAt: new Date(),
     currentLevel: 'combat',
     techniqueProgress: Object.fromEntries(
-      allTechniques.filter(t => ['conflict', 'combat'].includes(t.level)).map(t => [t.id, { 
-        techniqueId: t.id, 
-        status: 'combat' as const,
-        examinedAt: new Date('2022-06-01'),
-        examinerId: 'user-head',
-        examinerName: 'Jay I'
+      allTechniques.filter(t => ['conflict', 'combat'].includes(t.level)).map(t => [t.id, {
+        techniqueId: t.id,
+        status: 'tac_passed' as const,
+        tacPassedAt: new Date('2022-06-01'),
+        tacExaminerId: 'user-head',
+        tacExaminerName: 'Jay I'
       }])
     ),
     examRequests: [],
@@ -167,12 +167,12 @@ export const MEMBERS: Member[] = [
     lastSeenAt: new Date(),
     currentLevel: 'conflict',
     techniqueProgress: Object.fromEntries(
-      allTechniques.filter(t => t.level === 'conflict').map(t => [t.id, { 
-        techniqueId: t.id, 
-        status: 'conflict' as const,
-        examinedAt: new Date('2023-06-01'),
-        examinerId: 'user-instructor',
-        examinerName: 'Holger'
+      allTechniques.filter(t => t.level === 'conflict').map(t => [t.id, {
+        techniqueId: t.id,
+        status: 'tac_passed' as const,
+        tacPassedAt: new Date('2023-06-01'),
+        tacExaminerId: 'user-instructor',
+        tacExaminerName: 'Holger'
       }])
     ),
     examRequests: [],
@@ -195,10 +195,35 @@ export const MEMBERS: Member[] = [
     lastSeenAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
     currentLevel: 'conflict',
     techniqueProgress: {
-      't-1-1': { techniqueId: 't-1-1', status: 'conflict', examinedAt: new Date('2024-02-01'), examinerId: 'user-instructor', examinerName: 'Holger' },
-      't-1-2': { techniqueId: 't-1-2', status: 'conflict', examinedAt: new Date('2024-02-01'), examinerId: 'user-instructor', examinerName: 'Holger' },
-      't-1-3': { techniqueId: 't-1-3', status: 'requested' },
-      't-2-1': { techniqueId: 't-2-1', status: 'conflict', examinedAt: new Date('2024-02-15'), examinerId: 'user-instructor', examinerName: 'Holger' },
+      't-1-1': {
+        techniqueId: 't-1-1',
+        status: 'tac_passed',
+        tacPassedAt: new Date('2024-02-01'),
+        tacExaminerId: 'user-instructor',
+        tacExaminerName: 'Holger',
+        practiceCount: 8
+      },
+      't-1-2': {
+        techniqueId: 't-1-2',
+        status: 'tac_passed',
+        tacPassedAt: new Date('2024-02-01'),
+        tacExaminerId: 'user-instructor',
+        tacExaminerName: 'Holger',
+        practiceCount: 6
+      },
+      't-1-3': {
+        techniqueId: 't-1-3',
+        status: 'tech_pending',
+        practiceCount: 5
+      },
+      't-2-1': {
+        techniqueId: 't-2-1',
+        status: 'tech_passed',
+        techPassedAt: new Date('2024-02-15'),
+        techExaminerId: 'user-instructor',
+        techExaminerName: 'Holger',
+        practiceCount: 7
+      },
     },
     examRequests: [
       {
@@ -209,15 +234,15 @@ export const MEMBERS: Member[] = [
         techniqueName: 'Grundbewegungen vorwärts/rückwärts',
         moduleId: 'mod-1',
         moduleName: 'Mission Begins',
-        targetLevel: 'conflict',
+        examLevel: 'technical',
         requestedAt: new Date(),
         status: 'pending'
       }
     ],
-    streak: { 
-      ...createDefaultStreak(), 
-      currentStreak: 3, 
-      longestStreak: 5, 
+    streak: {
+      ...createDefaultStreak(),
+      currentStreak: 3,
+      longestStreak: 5,
       lastTrainingDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
       bandaids: 1
     },
@@ -248,26 +273,28 @@ export const MEMBERS: Member[] = [
     lastSeenAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
     currentLevel: 'combat',
     techniqueProgress: Object.fromEntries([
-      ...allTechniques.filter(t => t.level === 'conflict').map(t => [t.id, { 
-        techniqueId: t.id, 
-        status: 'conflict' as const,
-        examinedAt: new Date('2023-12-01'),
-        examinerId: 'user-instructor',
-        examinerName: 'Holger'
+      ...allTechniques.filter(t => t.level === 'conflict').map(t => [t.id, {
+        techniqueId: t.id,
+        status: 'tac_passed' as const,
+        tacPassedAt: new Date('2023-12-01'),
+        tacExaminerId: 'user-instructor',
+        tacExaminerName: 'Holger',
+        practiceCount: 10
       }]),
-      ...allTechniques.filter(t => t.level === 'combat').slice(0, 10).map(t => [t.id, { 
-        techniqueId: t.id, 
-        status: 'combat' as const,
-        examinedAt: new Date('2024-02-01'),
-        examinerId: 'user-head',
-        examinerName: 'Jay I'
+      ...allTechniques.filter(t => t.level === 'combat').slice(0, 10).map(t => [t.id, {
+        techniqueId: t.id,
+        status: 'tac_passed' as const,
+        tacPassedAt: new Date('2024-02-01'),
+        tacExaminerId: 'user-head',
+        tacExaminerName: 'Jay I',
+        practiceCount: 8
       }])
     ]),
     examRequests: [],
-    streak: { 
-      ...createDefaultStreak(), 
-      currentStreak: 12, 
-      longestStreak: 16, 
+    streak: {
+      ...createDefaultStreak(),
+      currentStreak: 12,
+      longestStreak: 16,
       lastTrainingDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
       bandaids: 2
     },
@@ -290,7 +317,7 @@ export const MEMBERS: Member[] = [
     instructorNotes: [],
     deficitHints: []
   },
-  // REGULAR MEMBER 3
+  // REGULAR MEMBER 3 - Peter
   {
     id: 'user-member-3',
     name: 'Peter',
@@ -303,7 +330,11 @@ export const MEMBERS: Member[] = [
     lastSeenAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
     currentLevel: 'conflict',
     techniqueProgress: {
-      't-1-1': { techniqueId: 't-1-1', status: 'requested' },
+      't-1-1': {
+        techniqueId: 't-1-1',
+        status: 'tech_pending',
+        practiceCount: 5
+      },
     },
     examRequests: [
       {
@@ -314,15 +345,15 @@ export const MEMBERS: Member[] = [
         techniqueName: 'Richtige Stellung',
         moduleId: 'mod-1',
         moduleName: 'Mission Begins',
-        targetLevel: 'conflict',
+        examLevel: 'technical',
         requestedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
         status: 'pending'
       }
     ],
-    streak: { 
-      ...createDefaultStreak(), 
-      currentStreak: 0, 
-      longestStreak: 2, 
+    streak: {
+      ...createDefaultStreak(),
+      currentStreak: 0,
+      longestStreak: 2,
       lastTrainingDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     },
     isCheckedIn: false,
@@ -346,9 +377,9 @@ export const CHECK_INS: CheckIn[] = [];
 export const BOARD_MESSAGES: BoardMessage[] = [
   {
     id: 'msg-1',
-    authorId: 'user-owner-001',
+    authorId: '001',
     authorName: 'Jay I',
-    authorRole: 'owner',
+    authorRole: 'admin',
     content: 'Willkommen im neuen System! Bitte alle Instructor-Zugänge testen.',
     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
   },
@@ -356,7 +387,7 @@ export const BOARD_MESSAGES: BoardMessage[] = [
     id: 'msg-2',
     authorId: 'user-head',
     authorName: 'Jay I',
-    authorRole: 'head_instructor',
+    authorRole: 'admin',
     content: 'Neuer Kursplan ab nächster Woche. Bitte Bescheid geben wer wann kann.',
     createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
   }
@@ -366,7 +397,7 @@ export const BOARD_MESSAGES: BoardMessage[] = [
 // VIDEOS
 // ============================================
 
-export const VIDEOS: Video[] = MODULES.slice(0, 5).flatMap((module, mIdx) => 
+export const VIDEOS: Video[] = MODULES.slice(0, 5).flatMap((module, mIdx) =>
   module.techniques.slice(0, 3).map((tech, tIdx) => ({
     id: `vid-${module.id}-${tIdx}`,
     title: tech.name,
@@ -394,7 +425,7 @@ export const COURSES: Course[] = [
     level: 'conflict',
     locationId: 'loc-1',
     instructorId: 'user-instructor',
-    instructorName: 'Thomas Müller',
+    instructorName: 'Holger',
     dayOfWeek: 1, // Monday
     startTime: '18:00',
     endTime: '19:30',
@@ -408,7 +439,7 @@ export const COURSES: Course[] = [
     level: 'combat',
     locationId: 'loc-1',
     instructorId: 'user-head',
-    instructorName: 'Sarah Weber',
+    instructorName: 'Jay I',
     dayOfWeek: 3, // Wednesday
     startTime: '19:00',
     endTime: '20:30',
@@ -422,7 +453,7 @@ export const COURSES: Course[] = [
     level: 'conflict',
     locationId: 'loc-1',
     instructorId: 'user-assistant',
-    instructorName: 'Lisa Braun',
+    instructorName: 'Hannah',
     dayOfWeek: 5, // Friday
     startTime: '17:00',
     endTime: '19:00',

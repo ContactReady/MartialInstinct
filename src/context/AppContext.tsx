@@ -374,19 +374,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ),
     };
 
-    setMembers(prev => prev.map(m =>
-      m.id === memberId
-        ? {
-            ...m,
-            examRequests: m.examRequests.map(r =>
-              r.id === requestId
-                ? { ...r, status: 'passed' as const, examinerId: currentUser.id, examinerName: currentUser.name, feedback, processedAt: now }
-                : r
-            ),
-            techniqueProgress: { ...m.techniqueProgress, [request.techniqueId]: updatedProgress },
-          }
-        : m
-    ));
+    const applyApprove = (m: Member): Member => ({
+      ...m,
+      examRequests: m.examRequests.map(r =>
+        r.id === requestId
+          ? { ...r, status: 'passed' as const, examinerId: currentUser.id, examinerName: currentUser.name, feedback, processedAt: now }
+          : r
+      ),
+      techniqueProgress: { ...m.techniqueProgress, [request.techniqueId]: updatedProgress },
+    });
+
+    setMembers(prev => prev.map(m => m.id === memberId ? applyApprove(m) : m));
+    if (currentUser.id === memberId) setCurrentUser(prev => prev ? applyApprove(prev) : null);
 
     const levelLabel = isTechnical ? 'Technisch' : 'Taktisch';
     setNotifications(prev => [...prev, {
@@ -420,19 +419,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ...(isTechnical ? { techPassedAt: undefined, techExaminerId: undefined, techExaminerName: undefined } : {}),
     };
 
-    setMembers(prev => prev.map(m =>
-      m.id === memberId
-        ? {
-            ...m,
-            examRequests: m.examRequests.map(r =>
-              r.id === requestId
-                ? { ...r, status: 'needs_training' as const, examinerId: currentUser.id, examinerName: currentUser.name, feedback, processedAt: now }
-                : r
-            ),
-            techniqueProgress: { ...m.techniqueProgress, [request.techniqueId]: updatedProgress },
-          }
-        : m
-    ));
+    const applyReject = (m: Member): Member => ({
+      ...m,
+      examRequests: m.examRequests.map(r =>
+        r.id === requestId
+          ? { ...r, status: 'needs_training' as const, examinerId: currentUser.id, examinerName: currentUser.name, feedback, processedAt: now }
+          : r
+      ),
+      techniqueProgress: { ...m.techniqueProgress, [request.techniqueId]: updatedProgress },
+    });
+
+    setMembers(prev => prev.map(m => m.id === memberId ? applyReject(m) : m));
+    if (currentUser.id === memberId) setCurrentUser(prev => prev ? applyReject(prev) : null);
 
     setNotifications(prev => [...prev, {
       id: `notif-${Date.now()}`,
