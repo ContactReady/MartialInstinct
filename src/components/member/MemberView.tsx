@@ -18,6 +18,7 @@ type ApplicationType = 'contact' | 'assistant_instructor' | null;
 export const MemberView: React.FC = () => {
   const {
     currentUser,
+    members,
     requestCheckIn,
     checkIns,
     requestExam,
@@ -37,6 +38,7 @@ export const MemberView: React.FC = () => {
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
   const [selectedTechniqueId, setSelectedTechniqueId] = useState<string | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState<ApplicationType>(null);
+  const [progressView, setProgressView] = useState<'ranking' | 'myProgress'>('ranking');
   
   // Contact Application Answers
   const [contactAnswers, setContactAnswers] = useState({
@@ -273,6 +275,141 @@ export const MemberView: React.FC = () => {
       </div>
     </div>
   );
+
+  // ── Rangliste ─────────────────────────────────────────────────────────────
+  const renderRanking = () => {
+    const [rankSort, setRankSort] = useState<'streak' | 'techniques' | 'xp'>('streak');
+
+    // Alle Members (inkl. Instructors, damit Rangliste vollständig ist)
+    const rankMembers = members.filter(m => m.role === 'member');
+
+    const countPassed = (m: typeof members[0]) =>
+      Object.values(m.techniqueProgress).filter(
+        p => p.status === 'tech_passed' || p.status === 'tac_passed'
+      ).length;
+
+    const sorted = [...rankMembers].sort((a, b) => {
+      if (rankSort === 'streak') {
+        const diff = b.streak.currentStreak - a.streak.currentStreak;
+        if (diff !== 0) return diff;
+        return countPassed(b) - countPassed(a);
+      }
+      if (rankSort === 'techniques') return countPassed(b) - countPassed(a);
+      return (b.xp ?? 0) - (a.xp ?? 0);
+    });
+
+    const myRank = sorted.findIndex(m => m.id === currentUser.id) + 1;
+
+    const medal = (rank: number) => {
+      if (rank === 1) return '🥇';
+      if (rank === 2) return '🥈';
+      if (rank === 3) return '🥉';
+      return `#${rank}`;
+    };
+
+    const statusDot = (m: typeof members[0]) => {
+      if (m.isCheckedIn) return <span className="w-2.5 h-2.5 rounded-full bg-orange-400 flex-shrink-0" />;
+      if (m.onlineSince)  return <span className="w-2.5 h-2.5 rounded-full bg-green-400 flex-shrink-0 animate-pulse" />;
+      return <span className="w-2.5 h-2.5 rounded-full bg-gray-600 flex-shrink-0" />;
+    };
+
+    const SortBtn = ({ k, label }: { k: typeof rankSort; label: string }) => (
+      <button
+        onClick={() => setRankSort(k)}
+        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+          rankSort === k ? 'bg-red-600 text-white' : 'bg-gray-700/60 text-gray-400 hover:text-white'
+        }`}
+      >
+        {label}
+      </button>
+    );
+
+    return (
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h2 className="text-xl font-bold text-white">🏆 Rangliste</h2>
+            {myRank > 0 && (
+              <p className="text-sm text-gray-400 mt-0.5">Du bist auf Platz {myRank}</p>
+            )}
+          </div>
+          <div className="flex gap-1.5">
+            <SortBtn k="streak" label="🔥 Streak" />
+            <SortBtn k="techniques" label="✅ Techniken" />
+            <SortBtn k="xp" label="⭐ XP" />
+          </div>
+        </div>
+
+        {/* Liste */}
+        <div className="space-y-2">
+          {sorted.map((m, idx) => {
+            const rank = idx + 1;
+            const isMe = m.id === currentUser.id;
+            const passed = countPassed(m);
+
+            return (
+              <div
+                key={m.id}
+                className={`rounded-xl border px-4 py-3 flex items-center gap-3 transition-all ${
+                  isMe
+                    ? 'bg-yellow-900/20 border-yellow-500/40'
+                    : 'bg-gray-800/50 border-gray-700'
+                }`}
+              >
+                {/* Rang */}
+                <div className="w-8 text-center flex-shrink-0">
+                  <span className={`font-bold ${rank <= 3 ? 'text-lg' : 'text-gray-500 text-sm'}`}>
+                    {medal(rank)}
+                  </span>
+                </div>
+
+                {/* Status-Dot + Avatar */}
+                {statusDot(m)}
+                <span className="text-2xl flex-shrink-0">{m.avatar}</span>
+
+                {/* Name + Level */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`font-semibold text-sm ${isMe ? 'text-yellow-300' : 'text-white'}`}>
+                      {m.name}
+                    </span>
+                    {isMe && <span className="text-yellow-500/70 text-xs">(Du)</span>}
+                  </div>
+                  <span className={`text-xs ${LEVEL_DISPLAY[m.currentLevel].color}`}>
+                    {LEVEL_DISPLAY[m.currentLevel].icon} {LEVEL_DISPLAY[m.currentLevel].subtitle}
+                  </span>
+                </div>
+
+                {/* Stats */}
+                <div className="flex gap-4 flex-shrink-0 text-right">
+                  <div>
+                    <div className="text-white font-bold text-sm">{m.streak.currentStreak}</div>
+                    <div className="text-gray-500 text-xs">Wochen</div>
+                  </div>
+                  <div>
+                    <div className="text-white font-bold text-sm">{passed}</div>
+                    <div className="text-gray-500 text-xs">Tech.</div>
+                  </div>
+                  <div>
+                    <div className="text-white font-bold text-sm">{m.xp ?? 0}</div>
+                    <div className="text-gray-500 text-xs">XP</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Legende */}
+        <div className="flex items-center gap-4 text-xs text-gray-600 pt-1">
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> Beim Training</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> Online</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-gray-600 inline-block" /> Offline</span>
+        </div>
+      </div>
+    );
+  };
 
   // Render Progress Tab
   const renderProgress = () => {
@@ -1079,7 +1216,30 @@ export const MemberView: React.FC = () => {
       <main className={`max-w-4xl mx-auto pb-24 ${activeTab === 'lernen' ? 'h-[calc(100vh-8rem)] flex flex-col' : 'p-4'}`}>
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'lernen' && <MemberLearningView />}
-        {activeTab === 'progress' && renderProgress()}
+        {activeTab === 'progress' && (
+          <div className="space-y-4">
+            {/* Sub-Nav */}
+            <div className="flex gap-2 bg-gray-800/50 rounded-xl p-1 border border-gray-700">
+              <button
+                onClick={() => { setProgressView('ranking'); setSelectedBlock(null); setSelectedModule(null); setSelectedTechniqueId(null); }}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                  progressView === 'ranking' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                🏆 Rangliste
+              </button>
+              <button
+                onClick={() => setProgressView('myProgress')}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                  progressView === 'myProgress' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                📊 Mein Fortschritt
+              </button>
+            </div>
+            {progressView === 'ranking' ? renderRanking() : renderProgress()}
+          </div>
+        )}
         {activeTab === 'streak' && renderStreak()}
         {activeTab === 'requests' && renderRequests()}
       </main>
@@ -1090,7 +1250,7 @@ export const MemberView: React.FC = () => {
           {[
             { id: 'dashboard' as Tab, icon: '🏠', label: 'Dashboard' },
             { id: 'lernen' as Tab, icon: '🎓', label: 'Lernen' },
-            { id: 'progress' as Tab, icon: '📊', label: 'Fortschritt' },
+            { id: 'progress' as Tab, icon: '🏆', label: 'Rangliste' },
             { id: 'streak' as Tab, icon: '🔥', label: 'Streak' },
             { id: 'requests' as Tab, icon: '📝', label: 'Anfragen' },
           ].map(tab => (

@@ -222,6 +222,7 @@ export const MEMBERS: Member[] = [
       bandaids: 1
     },
     isCheckedIn: false,
+    xp: 320,
     certificates: [],
     instructorNotes: [
       {
@@ -285,6 +286,7 @@ export const MEMBERS: Member[] = [
         qrCode: 'MI-CERT-001'
       }
     ],
+    xp: 840,
     instructorNotes: [],
     deficitHints: []
   },
@@ -324,6 +326,7 @@ export const MEMBERS: Member[] = [
       lastTrainingDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     },
     isCheckedIn: false,
+    xp: 80,
     certificates: [],
     instructorNotes: [],
     deficitHints: []
