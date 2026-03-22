@@ -1,0 +1,491 @@
+// ============================================
+// MARTIAL INSTINCT - SYSTEM TYPES
+// Autorität vor Automatisierung
+// Struktur vor Emotion
+// Standardisierung vor Wachstum
+// ============================================
+
+// Technik-Status (sichtbar für Member)
+export type TechniqueStatus = 
+  | 'not_tested'      // ❌ Nicht geprüft
+  | 'requested'       // 🟡 Prüfung angefragt
+  | 'conflict'        // ⚪ Basis bestanden (Conflict-Level)
+  | 'combat'          // ⚫ Anwendung bestanden (Combat-Level)
+  | 'tactical'        // 🔴 Tactical bestanden
+  | 'contact'         // ☠️ Contact Ready bestanden
+  | 'assistant_instructor'  // 🎓 Assistant Instructor bestanden
+  | 'instructor_level';     // 👑 Instructor bestanden
+
+// Module/Level
+export type ModuleLevel = 'conflict' | 'combat' | 'tactical' | 'contact' | 'assistant_instructor' | 'instructor_level';
+
+// Instructor-Hierarchie
+export type InstructorRole = 
+  | 'member'              // Normales Mitglied
+  | 'assistant_instructor' // Unterstützt, keine Prüfberechtigung
+  | 'instructor'          // Leitet Trainings, keine Prüfungsfreigabe Combat+
+  | 'tactical_instructor' // Alle Level unterrichten, keine Tactical-Prüfung
+  | 'head_instructor'     // Darf Conflict, Combat, Tactical prüfen
+  | 'owner'               // Darf Contact Ready freigeben, Systemautorität
+  | 'admin';              // Administrator mit allen Rechten (Jay I)
+
+// Prüfungsberechtigungen pro Rolle
+export const EXAM_PERMISSIONS: Record<InstructorRole, ModuleLevel[]> = {
+  member: [],
+  assistant_instructor: [],
+  instructor: [],
+  tactical_instructor: ['conflict'],
+  head_instructor: ['conflict', 'combat', 'tactical'],
+  owner: ['conflict', 'combat', 'tactical', 'contact', 'assistant_instructor', 'instructor_level'],
+  admin: ['conflict', 'combat', 'tactical', 'contact', 'assistant_instructor', 'instructor_level']
+};
+
+// Unterrichtsberechtigungen pro Rolle
+export const TEACHING_PERMISSIONS: Record<InstructorRole, ModuleLevel[]> = {
+  member: [],
+  assistant_instructor: ['conflict'],
+  instructor: ['conflict', 'combat'],
+  tactical_instructor: ['conflict', 'combat', 'tactical', 'contact'],
+  head_instructor: ['conflict', 'combat', 'tactical', 'contact'],
+  owner: ['conflict', 'combat', 'tactical', 'contact', 'assistant_instructor', 'instructor_level'],
+  admin: ['conflict', 'combat', 'tactical', 'contact', 'assistant_instructor', 'instructor_level']
+};
+
+// Standort
+export interface Location {
+  id: string;
+  name: string;
+  address: string;
+  headInstructorId: string;
+  instructorIds: string[];
+  createdAt: Date;
+}
+
+// Technik
+export interface Technique {
+  id: string;
+  name: string;
+  description: string;
+  moduleId: string;
+  level: ModuleLevel;
+  isRequired: boolean;
+  videoUrl?: string;
+  order: number;
+}
+
+// Modul
+export interface Module {
+  id: string;
+  number: number;
+  name: string;
+  subtitle: string;
+  level: ModuleLevel;
+  description: string;
+  icon: string;
+  techniques: Technique[];
+  requiredTechniquesPercent: number;
+}
+
+// Block (Conflict Ready, Combat Ready, etc.)
+export interface Block {
+  id: string;
+  name: string;
+  subtitle: string;
+  level: ModuleLevel;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  icon: string;
+  moduleIds: string[];
+  requiresApplication: boolean;
+}
+
+// Technik-Fortschritt eines Mitglieds
+export interface TechniqueProgress {
+  techniqueId: string;
+  status: TechniqueStatus;
+  examinerId?: string;
+  examinerName?: string;
+  locationId?: string;
+  examinedAt?: Date;
+  secondObserverId?: string;
+  notes?: string;
+  practiceCount?: number;    // Wie oft diese Technik geübt wurde
+  lastPracticedAt?: Date;    // Datum der letzten Übungseinheit
+}
+
+// Prüfungsanfrage
+export interface ExamRequest {
+  id: string;
+  memberId: string;
+  memberName: string;
+  techniqueId: string;
+  techniqueName: string;
+  moduleId: string;
+  moduleName: string;
+  targetLevel: ModuleLevel;
+  requestedAt: Date;
+  status: 'pending' | 'approved' | 'needs_training';
+  examinerId?: string;
+  examinerName?: string;
+  feedback?: string;
+  processedAt?: Date;
+}
+
+// Streak & Bandaid System
+export interface StreakData {
+  currentStreak: number;
+  longestStreak: number;
+  lastTrainingDate: Date | null;
+  weekStartDate: Date;
+  bandaids: number;
+  maxBandaids: number;
+  streakHistory: StreakWeek[];
+  bandaidHistory: BandaidEvent[];
+}
+
+export interface StreakWeek {
+  weekStart: Date;
+  trained: boolean;
+  bandaidUsed: boolean;
+}
+
+export interface BandaidEvent {
+  id: string;
+  type: 'earned' | 'used';
+  reason: string;
+  date: Date;
+}
+
+// Bandaid-Verdienst-Gründe
+export type BandaidReason = 
+  | 'streak_4_weeks'
+  | 'checkins_10'
+  | 'module_complete'
+  | 'videos_complete'
+  | 'techniques_5_day'
+  | 'quiz_passed'
+  | 'application_approved'
+  | 'birthday'
+  | 'instructor_bonus'
+  | 'referral'
+  | 'event_participation';
+
+// Mitglied
+export interface Member {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  avatar: string;
+  role: InstructorRole;
+  locationId: string;
+  joinedAt: Date;
+  lastSeenAt: Date;
+  
+  // Aktuelles Level
+  currentLevel: ModuleLevel;
+  
+  // Technik-Fortschritt
+  techniqueProgress: Record<string, TechniqueProgress>;
+  
+  // Prüfungsanfragen
+  examRequests: ExamRequest[];
+  
+  // Streak
+  streak: StreakData;
+  
+  // Check-in Status
+  isCheckedIn: boolean;
+  checkedInAt?: Date;
+  
+  // Contact Ready Bewerbung
+  contactApplication?: ContactApplication;
+  
+  // Assistant Instructor Bewerbung
+  assistantInstructorApplication?: InstructorApplication;
+  
+  // Zertifikate
+  certificates: Certificate[];
+  
+  // Instructor-Notizen (nur für Instructors sichtbar)
+  instructorNotes?: InstructorNote[];
+  
+  // Defizit-Hinweise (nach Instructor-Bestätigung)
+  deficitHints?: DeficitHint[];
+
+  // Instructor-Lernfortschritt (nur für Instructor-Rollen relevant)
+  instructorLessonProgress?: Record<string, InstructorLessonProgress>;
+}
+
+// Contact Ready Bewerbung
+export interface ContactApplication {
+  id: string;
+  memberId: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: Date;
+  processedAt?: Date;
+  processedBy?: string;
+  
+  // Bewerbungsfragen
+  answers: {
+    motivation: string;
+    experience: string;
+    teamwork: string;
+    stressHandling: string;
+    protectionOfOthers: string;
+    availability: string;
+  };
+  
+  feedback?: string;
+}
+
+// Assistant Instructor / Instructor Bewerbung
+export interface InstructorApplication {
+  id: string;
+  memberId: string;
+  type: 'assistant_instructor' | 'instructor_level';
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: Date;
+  processedAt?: Date;
+  processedBy?: string;
+  
+  // Bewerbungsfragen
+  answers: {
+    motivation: string;           // Warum möchtest du Instructor werden?
+    teachingExperience: string;   // Hast du bereits Unterrichtserfahrung?
+    strengthsWeaknesses: string;  // Was sind deine Stärken und Schwächen?
+    availability: string;         // Wann kannst du unterrichten?
+    goals: string;                // Was sind deine Ziele als Instructor?
+    roleModel: string;            // Was macht für dich einen guten Instructor aus?
+  };
+  
+  feedback?: string;
+}
+
+// Zertifikat
+export interface Certificate {
+  id: string;
+  memberId: string;
+  memberName: string;
+  level: ModuleLevel;
+  issuedAt: Date;
+  locationId: string;
+  locationName: string;
+  examinerId: string;
+  examinerName: string;
+  qrCode: string;
+  patchAwarded?: boolean;
+}
+
+// Instructor-Notiz
+export interface InstructorNote {
+  id: string;
+  authorId: string;
+  authorName: string;
+  content: string;
+  createdAt: Date;
+}
+
+// Defizit-Hinweis (KI-generiert, Instructor-bestätigt)
+export interface DeficitHint {
+  id: string;
+  techniqueId: string;
+  techniqueName: string;
+  hint: string;
+  suggestedBy: 'ai' | 'instructor';
+  confirmedByInstructorId?: string;
+  confirmedAt?: Date;
+  resolved: boolean;
+}
+
+// Check-in
+export interface CheckIn {
+  id: string;
+  memberId: string;
+  memberName: string;
+  locationId: string;
+  requestedAt: Date;
+  status: 'pending' | 'approved' | 'rejected';
+  approvedById?: string;
+  approvedByName?: string;
+  approvedAt?: Date;
+}
+
+// Benachrichtigung
+export interface Notification {
+  id: string;
+  oduserId: string;
+  type: 'exam_result' | 'exam_request' | 'checkin' | 'certificate' | 'application' | 'system' | 'bandaid';
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: Date;
+  data?: Record<string, unknown>;
+}
+
+// Kurs/Training
+export interface Course {
+  id: string;
+  name: string;
+  description: string;
+  level: ModuleLevel;
+  locationId: string;
+  instructorId: string;
+  instructorName: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  maxParticipants: number;
+  participantIds: string[];
+}
+
+// Instructor Board Nachricht
+export interface BoardMessage {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorRole: InstructorRole;
+  content: string;
+  createdAt: Date;
+  locationId?: string;
+}
+
+// Classroom Video
+export interface Video {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  thumbnailUrl: string;
+  moduleId: string;
+  techniqueId?: string;
+  level: ModuleLevel;
+  duration: number;
+  order: number;
+  isRequired: boolean;
+}
+
+export interface VideoProgress {
+  videoId: string;
+  watched: boolean;
+  watchedAt?: Date;
+  progress: number;
+  notes?: string;
+  bookmarked: boolean;
+}
+
+// Quiz
+export interface Quiz {
+  id: string;
+  videoId: string;
+  questions: QuizQuestion[];
+  passingScore: number;
+}
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+}
+
+export interface QuizResult {
+  quizId: string;
+  score: number;
+  passed: boolean;
+  completedAt: Date;
+  answers: number[];
+}
+
+// ============================================
+// INSTRUCTOR-LERNPLATTFORM (Trainer-Leitfaden v2.3)
+// ============================================
+
+export type InstructorTrackId = 'didaktik' | 'technik' | 'business' | 'karriere';
+
+export interface InstructorQuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string; // Erklärung nach der Antwort (Duolingo-Style)
+}
+
+export interface InstructorQuiz {
+  questions: InstructorQuizQuestion[];
+  passingScore: number; // Prozent, z.B. 80
+}
+
+export interface InstructorLesson {
+  id: string;
+  trackId: InstructorTrackId;
+  title: string;
+  content: string;     // Lerninhalt als Text
+  keyPoints: string[]; // Kernpunkte als Bullet-Liste
+  quiz?: InstructorQuiz;
+  order: number;
+  estimatedMinutes: number;
+}
+
+export interface InstructorTrack {
+  id: InstructorTrackId;
+  title: string;
+  icon: string;
+  description: string;
+  lessons: InstructorLesson[];
+}
+
+export interface InstructorLessonProgress {
+  lessonId: string;
+  completed: boolean;
+  completedAt?: Date;
+  quizScore?: number;
+  quizPassed?: boolean;
+  lastAttemptAt?: Date;
+}
+
+// App State
+export interface AppState {
+  currentUser: Member | null;
+  members: Member[];
+  locations: Location[];
+  modules: Module[];
+  blocks: Block[];
+  videos: Video[];
+  courses: Course[];
+  checkIns: CheckIn[];
+  boardMessages: BoardMessage[];
+  notifications: Notification[];
+}
+
+// Status Display Helpers
+export const STATUS_DISPLAY: Record<TechniqueStatus, { icon: string; label: string; color: string }> = {
+  not_tested: { icon: '❌', label: 'Nicht geprüft', color: 'text-gray-500' },
+  requested: { icon: '🟡', label: 'Prüfung angefragt', color: 'text-yellow-500' },
+  conflict: { icon: '⚪', label: 'Basis bestanden', color: 'text-gray-300' },
+  combat: { icon: '⚫', label: 'Anwendung bestanden', color: 'text-gray-900' },
+  tactical: { icon: '🔴', label: 'Tactical bestanden', color: 'text-red-500' },
+  contact: { icon: '☠️', label: 'Contact Ready', color: 'text-red-700' },
+  assistant_instructor: { icon: '🎓', label: 'Assistant Instructor', color: 'text-yellow-400' },
+  instructor_level: { icon: '👑', label: 'Instructor', color: 'text-purple-400' }
+};
+
+export const LEVEL_DISPLAY: Record<ModuleLevel, { name: string; subtitle: string; color: string; bgColor: string; icon: string }> = {
+  conflict: { name: 'CONFLICT READY', subtitle: 'Beginner', color: 'text-gray-400', bgColor: 'bg-gray-800', icon: '⚪' },
+  combat: { name: 'COMBAT READY', subtitle: 'Advanced', color: 'text-gray-100', bgColor: 'bg-gray-900', icon: '⚫' },
+  tactical: { name: 'TACTICAL READY', subtitle: 'Specialist', color: 'text-red-500', bgColor: 'bg-red-900/30', icon: '🔴' },
+  contact: { name: 'CONTACT READY', subtitle: 'Operator', color: 'text-red-400', bgColor: 'bg-gradient-to-r from-gray-900 to-red-900', icon: '☠️' },
+  assistant_instructor: { name: 'ASSISTANT INSTRUCTOR', subtitle: 'Ausbilder', color: 'text-yellow-400', bgColor: 'bg-gradient-to-r from-yellow-900/30 to-amber-900/30', icon: '🎓' },
+  instructor_level: { name: 'INSTRUCTOR', subtitle: 'Vollausbilder', color: 'text-purple-400', bgColor: 'bg-gradient-to-r from-purple-900/30 to-pink-900/30', icon: '👑' }
+};
+
+export const ROLE_DISPLAY: Record<InstructorRole, { label: string; color: string; bgColor: string }> = {
+  member: { label: 'Member', color: 'text-gray-400', bgColor: 'bg-gray-700' },
+  assistant_instructor: { label: 'Assistant Instructor', color: 'text-yellow-400', bgColor: 'bg-yellow-900/30' },
+  instructor: { label: 'Instructor', color: 'text-blue-400', bgColor: 'bg-blue-900/30' },
+  tactical_instructor: { label: 'Tactical Instructor', color: 'text-orange-400', bgColor: 'bg-orange-900/30' },
+  head_instructor: { label: 'Head Instructor', color: 'text-purple-400', bgColor: 'bg-purple-900/30' },
+  owner: { label: 'Owner', color: 'text-red-400', bgColor: 'bg-red-900/30' },
+  admin: { label: 'Admin', color: 'text-red-400', bgColor: 'bg-red-900/30' }
+};
