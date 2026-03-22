@@ -153,72 +153,93 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const requestCheckIn = useCallback(() => {
     if (!currentUser) return;
-    
-    const newCheckIn: CheckIn = {
-      id: `checkin-${Date.now()}`,
-      memberId: currentUser.id,
-      memberName: currentUser.name,
-      locationId: currentUser.locationId,
-      requestedAt: new Date(),
-      status: 'pending'
-    };
-    
-    setCheckIns(prev => [...prev, newCheckIn]);
-    
-    // Notify instructors
-    const instructorNotification: Notification = {
-      id: `notif-${Date.now()}`,
-      oduserId: 'all-instructors',
-      type: 'checkin',
-      title: 'Check-in Anfrage',
-      message: `${currentUser.name} möchte einchecken`,
-      read: false,
-      createdAt: new Date()
-    };
-    setNotifications(prev => [...prev, instructorNotification]);
+
+    // Guard: kein doppelter Check-in für heute
+    const todayStr = new Date().toDateString();
+    setCheckIns(prev => {
+      const alreadyExists = prev.some(
+        c => c.memberId === currentUser.id &&
+             new Date(c.requestedAt).toDateString() === todayStr &&
+             (c.status === 'pending' || c.status === 'approved')
+      );
+      if (alreadyExists) return prev;
+
+      const newCheckIn: CheckIn = {
+        id: `checkin-${Date.now()}`,
+        memberId: currentUser.id,
+        memberName: currentUser.name,
+        locationId: currentUser.locationId,
+        requestedAt: new Date(),
+        status: 'pending'
+      };
+
+      // Notify instructors
+      const instructorNotification: Notification = {
+        id: `notif-checkin-${Date.now()}`,
+        oduserId: 'all-instructors',
+        type: 'checkin',
+        title: 'Check-in Anfrage',
+        message: `${currentUser.name} möchte einchecken`,
+        read: false,
+        createdAt: new Date()
+      };
+      setNotifications(n => [...n, instructorNotification]);
+
+      return [...prev, newCheckIn];
+    });
   }, [currentUser]);
 
   const approveCheckIn = useCallback((checkInId: string) => {
     if (!currentUser) return;
-    
-    setCheckIns(prev => prev.map(c => 
-      c.id === checkInId 
-        ? { ...c, status: 'approved' as const, approvedById: currentUser.id, approvedByName: currentUser.name, approvedAt: new Date() }
-        : c
-    ));
-    
-    const checkIn = checkIns.find(c => c.id === checkInId);
-    if (checkIn) {
-      setMembers(prev => prev.map(m => 
+
+    const approvedAt = new Date();
+
+    // Finde den CheckIn im aktuellen State
+    setCheckIns(prev => {
+      const checkIn = prev.find(c => c.id === checkInId);
+      if (!checkIn) return prev;
+
+      const updatedCheckIns = prev.map(c =>
+        c.id === checkInId
+          ? { ...c, status: 'approved' as const, approvedById: currentUser.id, approvedByName: currentUser.name, approvedAt }
+          : c
+      );
+
+      // Member-State + currentUser-State aktualisieren
+      const updateMember = (m: import('../types').Member) =>
         m.id === checkIn.memberId
-          ? { 
-              ...m, 
-              isCheckedIn: true, 
-              checkedInAt: new Date(),
-              lastSeenAt: new Date(),
+          ? {
+              ...m,
+              isCheckedIn: true,
+              checkedInAt: approvedAt,
+              lastSeenAt: approvedAt,
               streak: {
                 ...m.streak,
-                lastTrainingDate: new Date(),
+                lastTrainingDate: approvedAt,
                 currentStreak: m.streak.currentStreak + 1,
                 longestStreak: Math.max(m.streak.longestStreak, m.streak.currentStreak + 1)
               }
             }
-          : m
-      ));
-      
-      // Notify member
+          : m;
+
+      setMembers(prev => prev.map(updateMember));
+      setCurrentUser(prev => prev ? updateMember(prev) : null);
+
+      // Member-Benachrichtigung
       const memberNotification: Notification = {
-        id: `notif-${Date.now()}`,
+        id: `notif-approved-${Date.now()}`,
         oduserId: checkIn.memberId,
         type: 'checkin',
         title: 'Eingecheckt!',
-        message: 'Du bist jetzt eingecheckt. Viel Erfolg beim Training!',
+        message: `Du wurdest um ${approvedAt.getHours().toString().padStart(2,'0')}:${approvedAt.getMinutes().toString().padStart(2,'0')} Uhr eingecheckt. Viel Erfolg!`,
         read: false,
-        createdAt: new Date()
+        createdAt: approvedAt
       };
-      setNotifications(prev => [...prev, memberNotification]);
-    }
-  }, [currentUser, checkIns]);
+      setNotifications(n => [...n, memberNotification]);
+
+      return updatedCheckIns;
+    });
+  }, [currentUser]);
 
   const rejectCheckIn = useCallback((checkInId: string) => {
     setCheckIns(prev => prev.map(c => 

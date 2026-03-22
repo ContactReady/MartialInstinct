@@ -4,16 +4,45 @@
 // ============================================
 
 import React, { useState } from 'react';
-import { useApp, MODULES, BLOCKS } from '../../context/AppContext';
+import { useApp, MODULES, BLOCKS, COURSES } from '../../context/AppContext';
 import {
   STATUS_DISPLAY,
   LEVEL_DISPLAY,
   ROLE_DISPLAY,
   EXAM_PERMISSIONS,
-  Member
+  Member,
+  CheckIn,
+  InstructorRole
 } from '../../types';
 import { TechniqueCard } from '../shared/TechniqueCard';
 import { InstructorLearningView } from './InstructorLearningView';
+
+// ── Kurs-Erkennung anhand aktueller Uhrzeit ──────────────────────────────────
+function detectCurrentCourse(locationId: string): string | null {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const hh = now.getHours().toString().padStart(2, '0');
+  const mm = now.getMinutes().toString().padStart(2, '0');
+  const currentTime = `${hh}:${mm}`;
+  const course = COURSES.find(
+    c => c.locationId === locationId &&
+         c.dayOfWeek === dayOfWeek &&
+         c.startTime <= currentTime &&
+         c.endTime >= currentTime
+  );
+  return course ? `${course.name} • ${course.startTime}–${course.endTime}` : null;
+}
+
+// ── Berechtigungsprüfung: darf dieser Instructor diese Anfrage bestätigen? ───
+function canApproveCheckIn(role: InstructorRole, instructorId: string, checkIn: CheckIn): boolean {
+  // tactical_instructor und höher: alles erlaubt
+  if (['tactical_instructor', 'head_instructor', 'owner', 'admin'].includes(role)) return true;
+  // assistant_instructor / instructor: nur eigene Kursteilnehmer
+  const ownCourse = COURSES.find(
+    c => c.instructorId === instructorId && c.participantIds.includes(checkIn.memberId)
+  );
+  return !!ownCourse;
+}
 
 type Tab = 'lernen' | 'live' | 'evaluate' | 'members' | 'requests' | 'applications' | 'board';
 
@@ -50,9 +79,13 @@ export const InstructorView: React.FC = () => {
 
   if (!currentUser) return null;
 
-  const pendingCheckIns = getPendingCheckIns();
+  const allPendingCheckIns = getPendingCheckIns();
+  // Alle sichtbaren Anfragen (nach Standort gefiltert)
+  const visibleCheckIns = allPendingCheckIns.filter(c => c.locationId === currentUser.locationId);
+  const pendingCheckIns = visibleCheckIns; // Alias für Template
   const pendingExamRequests = getPendingExamRequests();
   const checkedInMembers = members.filter(m => m.isCheckedIn);
+  const detectedCourse = detectCurrentCourse(currentUser.locationId);
   
   const pendingContactApps = getPendingContactApplications();
   const pendingInstructorApps = getPendingInstructorApplications();
@@ -97,36 +130,73 @@ export const InstructorView: React.FC = () => {
   // Render Live Tab
   const renderLiveTab = () => (
     <div className="space-y-6">
+      {/* Kurs-Erkennung Banner */}
+      {detectedCourse && (
+        <div className="bg-blue-900/30 border border-blue-700/50 rounded-xl px-4 py-3 flex items-center gap-2">
+          <span className="text-blue-400 text-lg">📅</span>
+          <div>
+            <div className="text-blue-300 font-semibold text-sm">Laufender Kurs</div>
+            <div className="text-blue-400/80 text-xs">{detectedCourse}</div>
+          </div>
+        </div>
+      )}
+
       {/* Pending Check-ins */}
-      {pendingCheckIns.length > 0 && (
+      {pendingCheckIns.length > 0 ? (
         <div className="bg-yellow-900/30 rounded-xl p-4 border border-yellow-700">
           <h3 className="text-lg font-bold text-yellow-400 mb-4">
             🔔 Check-in Anfragen ({pendingCheckIns.length})
           </h3>
           <div className="space-y-3">
-            {pendingCheckIns.map(checkIn => (
-              <div key={checkIn.id} className="bg-gray-800 rounded-lg p-4 flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-white">{checkIn.memberName}</div>
-                  <div className="text-gray-400 text-sm">{formatTimeAgo(checkIn.requestedAt)}</div>
+            {pendingCheckIns.map(checkIn => {
+              const canApprove = canApproveCheckIn(currentUser.role, currentUser.id, checkIn);
+              const member = members.find(m => m.id === checkIn.memberId);
+              return (
+                <div key={checkIn.id} className="bg-gray-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-2xl flex-shrink-0">{member?.avatar ?? '🥋'}</span>
+                      <div className="min-w-0">
+                        <div className="font-medium text-white">{checkIn.memberName}</div>
+                        <div className="text-gray-400 text-xs">{formatTimeAgo(checkIn.requestedAt)}</div>
+                        {detectedCourse && (
+                          <div className="text-blue-400/70 text-xs mt-0.5">{detectedCourse}</div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      {canApprove ? (
+                        <>
+                          <button
+                            onClick={() => approveCheckIn(checkIn.id)}
+                            className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-bold transition-all"
+                            title="Bestätigen"
+                          >
+                            ✓
+                          </button>
+                          <button
+                            onClick={() => rejectCheckIn(checkIn.id)}
+                            className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold transition-all"
+                            title="Ablehnen"
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-500 italic px-2 py-2">
+                          Nicht dein Kurs
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => approveCheckIn(checkIn.id)}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
-                  >
-                    ✓
-                  </button>
-                  <button
-                    onClick={() => rejectCheckIn(checkIn.id)}
-                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+        </div>
+      ) : (
+        <div className="bg-gray-800/30 rounded-xl p-4 border border-gray-700/30 text-center">
+          <p className="text-gray-500 text-sm">Keine offenen Check-in Anfragen</p>
         </div>
       )}
 

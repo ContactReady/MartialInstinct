@@ -69,11 +69,14 @@ export const MemberView: React.FC = () => {
 
   if (!currentUser) return null;
 
-  // Eingecheckt-Status nur gültig wenn checkedInAt heute ist
-  const isCheckedInToday =
-    currentUser.isCheckedIn &&
-    currentUser.checkedInAt != null &&
-    new Date(currentUser.checkedInAt).toDateString() === now.toDateString();
+  // Check-in Status aus dem geteilten checkIns-Array ableiten (aktualisiert sich sofort wenn Trainer bestätigt)
+  const todayStr = now.toDateString();
+  const todayCheckIn = checkIns.find(
+    c => c.memberId === currentUser.id &&
+         new Date(c.requestedAt).toDateString() === todayStr
+  );
+  const checkInStatus = todayCheckIn?.status ?? 'none'; // 'none' | 'pending' | 'approved' | 'rejected'
+  const checkInApprovedAt = todayCheckIn?.approvedAt ? new Date(todayCheckIn.approvedAt) : null;
 
   const userNotifications = notifications.filter(n => n.oduserId === currentUser.id && !n.read);
 
@@ -140,25 +143,35 @@ export const MemberView: React.FC = () => {
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Check-in Card */}
-      <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
-        <div className="flex items-center justify-between">
-          <div>
+      <div className={`rounded-xl p-6 border transition-all ${
+        checkInStatus === 'approved'
+          ? 'bg-green-900/30 border-green-600/50'
+          : 'bg-gray-800/50 border-gray-700'
+      }`}>
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
             <h3 className="text-xl font-bold text-white">Training Check-in</h3>
-            <p className="text-gray-400 text-sm mt-1">
-              {isCheckedInToday ? 'Du bist heute eingecheckt!' : 'Melde dich für das Training an'}
+            <p className={`text-sm mt-1 ${checkInStatus === 'approved' ? 'text-green-400' : 'text-gray-400'}`}>
+              {checkInStatus === 'approved'
+                ? `Eingecheckt um ${checkInApprovedAt
+                    ? `${checkInApprovedAt.getHours().toString().padStart(2,'0')}:${checkInApprovedAt.getMinutes().toString().padStart(2,'0')} Uhr`
+                    : 'heute'}`
+                : checkInStatus === 'pending'
+                ? 'Warte auf Trainer-Bestätigung…'
+                : 'Melde dich für das Training an'}
             </p>
           </div>
-          {isCheckedInToday ? (
+          {checkInStatus === 'approved' ? (
             <button
               disabled
-              className="bg-green-600/80 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 cursor-not-allowed"
+              className="flex-shrink-0 bg-green-600 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 cursor-not-allowed"
             >
               ✅ Eingecheckt
             </button>
-          ) : checkIns.some(c => c.memberId === currentUser.id && c.status === 'pending') ? (
+          ) : checkInStatus === 'pending' ? (
             <button
               disabled
-              className="bg-gray-600 text-gray-300 px-6 py-3 rounded-lg font-bold flex items-center gap-2 cursor-not-allowed opacity-75"
+              className="flex-shrink-0 bg-gray-600 text-gray-300 px-6 py-3 rounded-lg font-bold flex items-center gap-2 cursor-not-allowed opacity-75"
             >
               <Loader2 className="w-4 h-4 animate-spin" />
               Anfrage gesendet…
@@ -166,7 +179,7 @@ export const MemberView: React.FC = () => {
           ) : (
             <button
               onClick={requestCheckIn}
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-all"
+              className="flex-shrink-0 bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-lg font-bold transition-all active:scale-95"
             >
               Einchecken
             </button>
