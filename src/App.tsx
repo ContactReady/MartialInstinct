@@ -147,7 +147,7 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               onClick={toggleDarkMode}
               className={`relative w-12 h-6 rounded-full transition-colors ${darkMode ? 'bg-red-600' : 'bg-gray-400'}`}
             >
-              <span className={`absolute top-1 w-4 h-4 rounded-full shadow transition-transform ${darkMode ? 'bg-white translate-x-7' : 'bg-gray-900 translate-x-1'}`} />
+              <span className={`absolute left-1 top-1 w-4 h-4 rounded-full shadow transition-transform ${darkMode ? 'bg-white translate-x-6' : 'bg-gray-900 translate-x-0'}`} />
             </button>
           </div>
         </div>
