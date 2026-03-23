@@ -22,13 +22,9 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => boolean }>
   };
 
   const demoAccounts = [
-    { email: 'max@email.de', password: 'member123', name: 'Mad Max (Member)' },
-    { email: 'salma@email.de', password: 'member123', name: 'Salma (Member)' },
-    { email: 'hannah@martialinstinct.de', password: 'assist123', name: 'Hannah (Assistant Instructor)' },
-    { email: 'holger@martialinstinct.de', password: 'inst123', name: 'Holger (Instructor)' },
-    { email: 'jay.head@martialinstinct.de', password: 'head123', name: 'Jay I (Head Instructor)' },
-    { email: 'jay1@martialinstinct.de', password: 'owner123', name: 'Jay I (Admin)' },
-    { email: 'jay2@martialinstinct.de', password: 'owner123', name: 'Jay II (Owner & Admin)' },
+    { email: 'jay@martialinstinct.de',    password: 'MI_Admin1!', name: '👑 Jay (Admin)' },
+    { email: 'holger@martialinstinct.de', password: 'Trainer1!',  name: '🥋 Holger (Instructor)' },
+    { email: 'test@martialinstinct.de',   password: 'Member01!',  name: '💪 Test Member' },
   ];
 
   return (
@@ -114,7 +110,12 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setError('Aktuelles Passwort ist falsch.');
         return;
       }
-      if (newPw.length < 6) { setError('Neues Passwort muss mindestens 6 Zeichen haben.'); return; }
+      if (newPw.length < 8) { setError('Neues Passwort muss mindestens 8 Zeichen haben.'); return; }
+      if (!/\d/.test(newPw)) { setError('Neues Passwort muss mindestens eine Zahl enthalten.'); return; }
+      if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(newPw)) {
+        setError('Neues Passwort muss mindestens ein Sonderzeichen enthalten.');
+        return;
+      }
       if (newPw !== confirmPw) { setError('Neue Passwörter stimmen nicht überein.'); return; }
     }
 
@@ -191,7 +192,7 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   type={showPw ? 'text' : 'password'}
                   value={newPw}
                   onChange={e => setNewPw(e.target.value)}
-                  placeholder="Mindestens 6 Zeichen…"
+                  placeholder="Min. 8 Zeichen, Zahl, Sonderzeichen…"
                   className={inputCls}
                 />
               </div>
