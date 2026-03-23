@@ -232,15 +232,13 @@ const AppContent: React.FC = () => {
   const [viewMode, setViewMode] = useState<'member' | 'instructor'>('member');
   const [showSettings, setShowSettings] = useState(false);
 
-  if (!currentUser) {
-    return <Login onLogin={login} />;
-  }
-
-  const isInstructor = currentUser.role !== 'member';
+  const isInstructor = currentUser?.role !== 'member';
   const actualViewMode = isInstructor ? viewMode : 'member';
 
   return (
     <div className="min-h-screen bg-gray-950 text-white" data-theme={darkMode ? 'dark' : 'light'}>
+      {!currentUser && <Login onLogin={login} />}
+      {currentUser && (<>
       {/* Fixed Top Bar */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-800 px-4 py-2">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
@@ -310,6 +308,7 @@ const AppContent: React.FC = () => {
 
       {/* Settings Modal */}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      </>)}
     </div>
   );
 };
