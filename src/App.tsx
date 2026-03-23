@@ -97,26 +97,39 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => boolean }>
 const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { currentUser, updateProfile, toggleDarkMode, darkMode } = useApp();
   const [email, setEmail] = useState(currentUser?.email ?? '');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
   const handleSave = () => {
     setError('');
     if (!email.trim()) { setError('E-Mail darf nicht leer sein.'); return; }
-    if (password && password.length < 6) { setError('Passwort muss mindestens 6 Zeichen haben.'); return; }
-    if (password && password !== confirmPassword) { setError('Passwörter stimmen nicht überein.'); return; }
-    updateProfile(email.trim(), password || (currentUser?.password ?? ''));
+
+    const changingPassword = newPw.length > 0;
+    if (changingPassword) {
+      if (currentPw !== (currentUser?.password ?? '')) {
+        setError('Aktuelles Passwort ist falsch.');
+        return;
+      }
+      if (newPw.length < 6) { setError('Neues Passwort muss mindestens 6 Zeichen haben.'); return; }
+      if (newPw !== confirmPw) { setError('Neue Passwörter stimmen nicht überein.'); return; }
+    }
+
+    updateProfile(email.trim(), changingPassword ? newPw : (currentUser?.password ?? ''));
     setSaved(true);
+    setCurrentPw(''); setNewPw(''); setConfirmPw('');
     setTimeout(() => setSaved(false), 2000);
   };
+
+  const inputCls = 'w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400 placeholder-gray-500';
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-sm p-6 space-y-5"
+        className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-sm p-6 space-y-5 max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -131,59 +144,70 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <span className="text-white text-sm">{darkMode ? '🌙 Dunkel' : '☀️ Hell'}</span>
             <button
               onClick={toggleDarkMode}
-              className={`relative w-12 h-6 rounded-full transition-colors ${darkMode ? 'bg-red-600' : 'bg-gray-600'}`}
+              className={`relative w-12 h-6 rounded-full transition-colors ${darkMode ? 'bg-red-600' : 'bg-gray-400'}`}
             >
-              <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${darkMode ? 'translate-x-7' : 'translate-x-1'}`} />
+              <span className={`absolute top-1 w-4 h-4 rounded-full shadow transition-transform ${darkMode ? 'bg-white translate-x-7' : 'bg-gray-900 translate-x-1'}`} />
             </button>
           </div>
         </div>
 
-        {/* Profile */}
+        {/* Zugangsdaten */}
         <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 space-y-3">
           <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Zugangsdaten</div>
 
+          {/* E-Mail */}
           <div>
             <label className="text-xs text-gray-400 mb-1 block">E-Mail</label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400"
-            />
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
           </div>
 
-          <div>
-            <label className="text-xs text-gray-400 mb-1 block">Neues Passwort <span className="text-gray-600">(leer lassen = unverändert)</span></label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Neues Passwort…"
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 pr-10 text-sm text-white focus:outline-none focus:border-gray-400 placeholder-gray-500"
-              />
+          <div className="border-t border-gray-700/60 pt-3">
+            <div className="text-xs text-gray-500 mb-3 flex items-center justify-between">
+              <span>Passwort ändern</span>
               <button
                 type="button"
-                onClick={() => setShowPassword(v => !v)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-base leading-none"
+                onClick={() => setShowPw(v => !v)}
+                className="text-gray-500 hover:text-gray-300 text-xs"
               >
-                {showPassword ? '🙈' : '👁️'}
+                {showPw ? '🙈 verbergen' : '👁️ anzeigen'}
               </button>
             </div>
-          </div>
 
-          {password && (
-            <div>
-              <label className="text-xs text-gray-400 mb-1 block">Passwort bestätigen</label>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                placeholder="Wiederholen…"
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400 placeholder-gray-500"
-              />
+            {/* Aktuelles Passwort */}
+            <div className="space-y-2">
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Aktuelles Passwort</label>
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  value={currentPw}
+                  onChange={e => setCurrentPw(e.target.value)}
+                  placeholder="Aktuelles Passwort eingeben…"
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Neues Passwort</label>
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  value={newPw}
+                  onChange={e => setNewPw(e.target.value)}
+                  placeholder="Mindestens 6 Zeichen…"
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Neues Passwort bestätigen</label>
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  value={confirmPw}
+                  onChange={e => setConfirmPw(e.target.value)}
+                  placeholder="Wiederholen…"
+                  className={inputCls}
+                />
+              </div>
             </div>
-          )}
+            <p className="text-gray-600 text-xs mt-2">Leer lassen = Passwort bleibt unverändert</p>
+          </div>
 
           {error && <p className="text-red-400 text-xs">{error}</p>}
 
@@ -215,20 +239,20 @@ const AppContent: React.FC = () => {
   const actualViewMode = isInstructor ? viewMode : 'member';
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gray-950 text-white' : 'bg-gray-100 text-gray-900'}`}>
+    <div className="min-h-screen bg-gray-950 text-white" data-theme={darkMode ? 'dark' : 'light'}>
       {/* Fixed Top Bar */}
-      <div className={`fixed top-0 left-0 right-0 z-50 border-b px-4 py-2 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+      <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-800 px-4 py-2">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="text-red-500 font-bold">🥋 MI</span>
 
             {/* View Mode Switcher (only for instructors) */}
             {isInstructor && (
-              <div className={`flex rounded-lg p-1 ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+              <div className="flex bg-gray-800 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('member')}
                   className={`px-3 py-1 rounded text-sm transition-colors ${
-                    viewMode === 'member' ? 'bg-red-600 text-white' : darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
+                    viewMode === 'member' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
                   }`}
                 >
                   Member View
@@ -236,7 +260,7 @@ const AppContent: React.FC = () => {
                 <button
                   onClick={() => setViewMode('instructor')}
                   className={`px-3 py-1 rounded text-sm transition-colors ${
-                    viewMode === 'instructor' ? 'bg-red-600 text-white' : darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
+                    viewMode === 'instructor' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
                   }`}
                 >
                   Instructor View
@@ -250,7 +274,7 @@ const AppContent: React.FC = () => {
             <select
               value={currentUser.id}
               onChange={(e) => switchUser(e.target.value)}
-              className={`text-sm rounded-lg px-3 py-1 border ${darkMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-gray-100 text-gray-900 border-gray-300'}`}
+              className="bg-gray-800 text-white text-sm rounded-lg px-3 py-1 border border-gray-700"
             >
               {members.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -262,7 +286,7 @@ const AppContent: React.FC = () => {
             {/* Settings Button */}
             <button
               onClick={() => setShowSettings(true)}
-              className={`text-lg leading-none transition-colors ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
+              className="text-lg leading-none text-gray-400 hover:text-white transition-colors"
               title="Einstellungen"
             >
               ⚙️
@@ -270,7 +294,7 @@ const AppContent: React.FC = () => {
 
             <button
               onClick={logout}
-              className={`text-sm transition-colors ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
+              className="text-gray-400 hover:text-white text-sm transition-colors"
             >
               Logout
             </button>
