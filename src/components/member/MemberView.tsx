@@ -1370,25 +1370,8 @@ export const MemberView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      {/* Header */}
-      <header className="bg-gray-900 border-b border-gray-800 px-4 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl">{currentUser.avatar}</span>
-            <div>
-              <div className="font-bold text-white">{currentUser.name}</div>
-              <div className="text-sm text-gray-400">{LEVEL_DISPLAY[currentUser.currentLevel]?.subtitle || 'Beginner'}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🔥</span>
-            <span className="font-bold">{currentUser.streak.currentStreak}</span>
-          </div>
-        </div>
-      </header>
-
       {/* Content */}
-      <main className={`max-w-4xl mx-auto pb-24 ${activeTab === 'lernen' ? 'h-[calc(100vh-8rem)] flex flex-col' : 'p-4'}`}>
+      <main className={`max-w-4xl mx-auto pb-24 ${activeTab === 'lernen' ? 'h-[calc(100vh-4rem)] flex flex-col' : 'p-4'}`}>
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'lernen' && <MemberLearningView />}
         {activeTab === 'progress' && (
