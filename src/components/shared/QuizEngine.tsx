@@ -27,7 +27,15 @@ interface QuizEngineProps {
 const QUESTIONS_PER_SESSION = 10;
 const XP_PER_CORRECT = 10;
 
+// Antwortoptionen einer Frage mischen und correctIndex entsprechend aktualisieren
+function shuffleOptions(q: QuizQuestion): QuizQuestion {
+  const correctAnswer = q.options[q.correctIndex];
+  const shuffled = [...q.options].sort(() => Math.random() - 0.5);
+  return { ...q, options: shuffled, correctIndex: shuffled.indexOf(correctAnswer) };
+}
+
 // Fragen zufällig mischen und auf 10 auffüllen (mit Wiederholung wenn nötig)
+// Antworten werden pro Frage ebenfalls gemischt damit die richtige Antwort rotiert.
 function buildSession(pool: QuizQuestion[]): QuizQuestion[] {
   if (pool.length === 0) return [];
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
@@ -37,7 +45,7 @@ function buildSession(pool: QuizQuestion[]): QuizQuestion[] {
     const chunk = [...shuffled].sort(() => Math.random() - 0.5).slice(0, needed);
     session.push(...chunk);
   }
-  return session.slice(0, QUESTIONS_PER_SESSION);
+  return session.slice(0, QUESTIONS_PER_SESSION).map(shuffleOptions);
 }
 
 export const QuizEngine: React.FC<QuizEngineProps> = ({

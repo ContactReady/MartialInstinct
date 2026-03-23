@@ -97,6 +97,9 @@ interface AppContextType {
   // Theme
   toggleDarkMode: () => void;
 
+  // Profile
+  updateProfile: (email: string, password: string) => void;
+
   // Helpers
   // Trainingsreport
   trainingSessions: TrainingSession[];
@@ -987,6 +990,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setDarkMode(prev => !prev);
   }, []);
 
+  const updateProfile = useCallback((email: string, password: string) => {
+    if (!currentUser) return;
+    setMembers(prev => prev.map(m =>
+      m.id === currentUser.id ? { ...m, email, password } : m
+    ));
+    setCurrentUser(prev => prev ? { ...prev, email, password } : null);
+  }, [currentUser]);
+
   // ============================================
   // HELPERS
   // ============================================
@@ -1197,6 +1208,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     awardXP,
     completeModuleQuiz,
     toggleDarkMode,
+    updateProfile,
     trainingSessions,
     completeTrainingSession,
     getSessionsForMember,
