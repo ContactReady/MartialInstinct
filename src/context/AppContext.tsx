@@ -139,7 +139,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [checkIns, setCheckIns] = useState<CheckIn[]>(CHECK_INS);
   const [boardMessages, setBoardMessages] = useState<BoardMessage[]>(BOARD_MESSAGES);
   const [notifications, setNotifications] = useState<Notification[]>(NOTIFICATIONS);
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('mi-theme');
+    return saved !== null ? saved === 'dark' : true; // Standard: Dunkel
+  });
   const [techniqueWishes, setTechniqueWishes] = useState<TechniqueWish[]>([]);
   const [trainingSessions, setTrainingSessions] = useState<TrainingSession[]>([]);
 
@@ -987,7 +990,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // ============================================
 
   const toggleDarkMode = useCallback(() => {
-    setDarkMode(prev => !prev);
+    setDarkMode(prev => {
+      const next = !prev;
+      localStorage.setItem('mi-theme', next ? 'dark' : 'light');
+      return next;
+    });
   }, []);
 
   const updateProfile = useCallback((email: string, password: string) => {
