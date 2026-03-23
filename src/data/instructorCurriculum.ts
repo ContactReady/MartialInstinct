@@ -719,8 +719,8 @@ Strategien situationsabhängig kombinieren und wechseln.
 **Schlüsselposition 1: Neutrale Position**
 Alltägliche Körperhaltung — keine kampfbereite Haltung. Dient der Deeskalation und Unvoreingenommenheit.
 
-**Schlüsselposition 2: Ready Position**
-Kampfbereite Grundhaltung. Füße schulterbreit, dominanter Fuß hinten, Hände auf Brusthöhe.
+**Schlüsselposition 2: Ready Position (Bereitschaftsstellung)**
+Kampfbereite Grundhaltung zur Deeskalation. Füße schulterbreit, in der Regel starker Fuß vorne — situativ kann auch der schwache Fuß vorne stehen. Hände auf Brusthöhe.
 
 **Schlüsselposition 3: Defensive Guard**
 Erhöhte Deckung, Kinn gesenkt, Körper leicht rotiert. Minimiert Trefferfläche.

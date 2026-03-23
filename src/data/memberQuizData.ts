@@ -12,10 +12,15 @@ import { QuizQuestion } from '../components/shared/QuizEngine';
 export const mod1Questions: QuizQuestion[] = [
   {
     id: 'm1q1',
-    question: 'Was ist die fundamentale Kampfstellung im M.I. System?',
-    options: ['Frontale Haltung mit beiden Füßen parallel', 'Richtige Stellung mit versetztem Stand', 'Aufrechte neutrale Position', 'Hände in die Hüften gestützt'],
+    question: 'Welche drei Grundstellungen unterscheidet das M.I. System?',
+    options: [
+      'Angriffs-, Verteidigungs- und Fluchthaltung',
+      'Ready Position, Contact Ready Position und Neutrale Stellung',
+      'Kampfstellung, Ruhehaltung und Laufposition',
+      'Offensiv-, Defensiv- und Neutralhaltung'
+    ],
     correctIndex: 1,
-    explanation: 'Die "Richtige Stellung" ist die fundamentale Kampfstellung — mit versetztem Stand für Stabilität und Mobilität.'
+    explanation: 'Das M.I. System unterscheidet drei Grundstellungen: die Ready Position (Bereitschaftsstellung), die Contact Ready Position (Konfliktstellung) und die Neutrale Stellung.'
   },
   {
     id: 'm1q2',
@@ -47,10 +52,15 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1q6',
-    question: 'Welcher Fuß ist bei der Richtige Stellung hinten?',
-    options: ['Immer der linke', 'Immer der rechte', 'Der dominante/stärkere Fuß', 'Der kürzere Fuß'],
+    question: 'Welcher Fuß steht im M.I. System in der Regel vorne?',
+    options: [
+      'Immer der schwache Fuß — der starke Fuß generiert Kraft von hinten',
+      'Beide Füße stehen parallel — es gibt keine Vorgabe',
+      'In der Regel der starke Fuß, wenn die Situation es erlaubt — aber situativ kann auch der schwache Fuß vorne sein',
+      'Immer der linke Fuß, unabhängig von der Dominanz'
+    ],
     correctIndex: 2,
-    explanation: 'Der dominante (stärkere) Fuß steht hinten — von dort wird die meiste Kraft für Angriffe und Stabilität generiert.'
+    explanation: 'In der Regel steht der starke Fuß vorne, wenn wir die Wahl haben. In der Praxis ist das aber nicht immer steuerbar — die Situation bestimmt manchmal, mit welchem Fuß man vorne steht.'
   },
   {
     id: 'm1q7',
@@ -61,10 +71,15 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1q8',
-    question: 'Was unterscheidet die Ready-Position von der normalen Kampfstellung?',
-    options: ['Keine Unterschied', 'Ready-Position ist weniger offensiv und deeskalierend', 'Ready-Position ist für den Angriff', 'Ready-Position wird nur im Sparring benutzt'],
+    question: 'Was ist der Unterschied zwischen Ready Position und Contact Ready Position?',
+    options: [
+      'Kein Unterschied — beide sind identisch',
+      'Ready Position ist die Bereitschaftsstellung zur Deeskalation; Contact Ready Position ist die Konfliktstellung wenn Kontakt unmittelbar bevorsteht',
+      'Die Contact Ready Position ist defensiver als die Ready Position',
+      'Die Ready Position wird nur im Sparring verwendet'
+    ],
     correctIndex: 1,
-    explanation: 'Die Ready-Position ist weniger offensiv — sie hält dich kampfbereit ohne Aggressivität zu signalisieren. Ideal für die Deeskalationsphase.'
+    explanation: 'Die Ready Position (Bereitschaftsstellung) signalisiert keine Aggression und hält dich kampfbereit. Die Contact Ready Position (Konfliktstellung) ist die aktivere Stellung, wenn physischer Kontakt unmittelbar bevorsteht oder bereits stattfindet.'
   },
   {
     id: 'm1q9',
