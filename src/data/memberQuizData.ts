@@ -60,7 +60,7 @@ export const mod1Questions: QuizQuestion[] = [
       'Immer der linke Fuß, unabhängig von der Dominanz'
     ],
     correctIndex: 2,
-    explanation: 'In der Regel steht der starke Fuß vorne, wenn wir die Wahl haben. In der Praxis ist das aber nicht immer steuerbar — die Situation bestimmt manchmal, mit welchem Fuß man vorne steht.'
+    explanation: 'Trainiert wird hauptsächlich Strong Side Forward — starker Fuß vorne. Das ist die bevorzugte Ausgangsposition. In der Realität kann man das jedoch nicht immer steuern: die Situation zwingt einen manchmal in die andere Auslage. Daher muss man beide Seiten kennen.'
   },
   {
     id: 'm1q7',
