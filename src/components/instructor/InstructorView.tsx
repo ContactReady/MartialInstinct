@@ -86,6 +86,10 @@ export const InstructorView: React.FC = () => {
   const [memberSearch, setMemberSearch] = useState('');
   const [memberSort, setMemberSort] = useState<'name' | 'lastSeen' | 'lastTraining'>('lastSeen');
 
+  // Sub-Tab States (an Top-Level wegen Rules of Hooks)
+  const [liveSubTab, setLiveSubTab] = useState<'online' | 'training'>('training');
+  const [requestSubTab, setRequestSubTab] = useState<'exams' | 'wishes' | 'checkins'>('exams');
+
   // Session-Builder State (alle an Top-Level wegen Rules of Hooks)
   const [showSessionBuilder, setShowSessionBuilder] = useState(false);
   const [sessionAttendees, setSessionAttendees] = useState<string[]>([]);
@@ -93,7 +97,6 @@ export const InstructorView: React.FC = () => {
   const [sessionNotes, setSessionNotes] = useState('');
   const [sessionDone, setSessionDone] = useState(false);
   const [sessionModuleFilter, setSessionModuleFilter] = useState<string>('all');
-  const [manualMemberInput, setManualMemberInput] = useState('');
 
   // 30s Auto-Refresh für den Live-Tab
   useEffect(() => {
@@ -109,7 +112,6 @@ export const InstructorView: React.FC = () => {
   const pendingCheckIns = visibleCheckIns; // Alias für Template
   const pendingExamRequests = getPendingExamRequests();
   const pendingWishes = getPendingTechniqueWishes();
-  const checkedInMembers = members.filter(m => m.isCheckedIn);
   const detectedCourse = detectCurrentCourse(currentUser.locationId);
   
   const pendingContactApps = getPendingContactApplications();
@@ -189,7 +191,7 @@ export const InstructorView: React.FC = () => {
     );
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Kurs-Erkennung Banner */}
         {detectedCourse && (
           <div className="bg-blue-900/30 border border-blue-700/50 rounded-xl px-4 py-3 flex items-center gap-2">
@@ -201,137 +203,159 @@ export const InstructorView: React.FC = () => {
           </div>
         )}
 
-        {/* ── Bereich 1: In der Plattform ─────────────────────────────────── */}
-        <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-700/60 flex items-center justify-between">
-            <h3 className="font-bold text-white flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-400 inline-block animate-pulse" />
-              In der Plattform
-              <span className="text-gray-500 font-normal text-sm">({onlineMembers.length})</span>
-            </h3>
-            <span className="text-gray-600 text-xs">aktualisiert vor {liveTick === 0 ? '0' : liveTick}×30s</span>
+        {/* Sub-Tab Switcher */}
+        <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
+          <button
+            onClick={() => setLiveSubTab('online')}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+              liveSubTab === 'online' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
+            Online
+            {onlineMembers.length > 0 && (
+              <span className="bg-gray-600 text-gray-300 text-xs px-1.5 py-0.5 rounded-full">{onlineMembers.length}</span>
+            )}
+          </button>
+          <button
+            onClick={() => setLiveSubTab('training')}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+              liveSubTab === 'training' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            📍 Beim Training
+            {todayCheckIns.length > 0 && (
+              <span className="bg-gray-600 text-gray-300 text-xs px-1.5 py-0.5 rounded-full">{todayCheckIns.length}</span>
+            )}
+          </button>
+        </div>
+
+        {/* ── Tab: Online ─────────────────────────────────────────────────── */}
+        {liveSubTab === 'online' && (
+          <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-700/60 flex items-center justify-between">
+              <h3 className="font-bold text-white flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-400 inline-block animate-pulse" />
+                Online
+                <span className="text-gray-500 font-normal text-sm">({onlineMembers.length})</span>
+              </h3>
+              <span className="text-gray-600 text-xs">{liveTick > 0 ? `aktualisiert ×${liveTick}` : 'live'}</span>
+            </div>
+
+            {onlineMembers.length === 0 ? (
+              <div className="px-4 py-6 text-center text-gray-500 text-sm">Niemand ist gerade online</div>
+            ) : (
+              <div className="divide-y divide-gray-700/40">
+                {onlineInstructors.length > 0 && (
+                  <div className="px-4 py-3">
+                    <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">
+                      Trainer ({onlineInstructors.length})
+                    </div>
+                    <div className="space-y-2">
+                      {onlineInstructors.map(m => (
+                        <div key={m.id} className="flex items-center gap-3">
+                          <OnlineDot member={m} />
+                          <span className="text-xl">{m.avatar}</span>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-white font-medium text-sm">{m.name}</span>
+                            <span className={`ml-2 text-xs ${ROLE_DISPLAY[m.role].color}`}>
+                              {ROLE_DISPLAY[m.role].label}
+                            </span>
+                          </div>
+                          <span className="text-gray-500 text-xs flex-shrink-0">{formatOnlineSince(m)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {onlineRegularMembers.length > 0 && (
+                  <div className="px-4 py-3">
+                    <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">
+                      Members ({onlineRegularMembers.length})
+                    </div>
+                    <div className="space-y-2">
+                      {onlineRegularMembers.map(m => (
+                        <div key={m.id} className="flex items-center gap-3">
+                          <OnlineDot member={m} />
+                          <span className="text-xl">{m.avatar}</span>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-white font-medium text-sm">{m.name}</span>
+                            <span className="ml-2 text-xs text-gray-500">{LEVEL_DISPLAY[m.currentLevel].subtitle}</span>
+                          </div>
+                          <span className="text-gray-500 text-xs flex-shrink-0">{formatOnlineSince(m)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="px-4 py-2 border-t border-gray-700/40 flex items-center gap-4">
+              <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                <span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> Aktiv
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> Inaktiv (&lt;10 Min)
+              </span>
+            </div>
           </div>
+        )}
 
-          {onlineMembers.length === 0 ? (
-            <div className="px-4 py-6 text-center text-gray-500 text-sm">Niemand ist gerade online</div>
-          ) : (
-            <div className="divide-y divide-gray-700/40">
-              {/* Trainer-Sektion */}
-              {onlineInstructors.length > 0 && (
-                <div className="px-4 py-3">
-                  <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">
-                    Trainer ({onlineInstructors.length})
-                  </div>
-                  <div className="space-y-2">
-                    {onlineInstructors.map(m => (
-                      <div key={m.id} className="flex items-center gap-3">
-                        <OnlineDot member={m} />
-                        <span className="text-xl">{m.avatar}</span>
+        {/* ── Tab: Beim Training ───────────────────────────────────────────── */}
+        {liveSubTab === 'training' && (
+          <div className="space-y-4">
+            <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-700/60">
+                <h3 className="font-bold text-white flex items-center gap-2">
+                  📍 Beim Training
+                  <span className="text-gray-500 font-normal text-sm">({todayCheckIns.length})</span>
+                </h3>
+              </div>
+              {todayCheckIns.length === 0 ? (
+                <div className="px-4 py-6 text-center text-gray-500 text-sm">Niemand ist heute eingecheckt</div>
+              ) : (
+                <div className="divide-y divide-gray-700/40">
+                  {todayCheckIns.map(ci => {
+                    const member = members.find(m => m.id === ci.memberId);
+                    if (!member) return null;
+                    const checkedInTime = ci.approvedAt
+                      ? new Date(ci.approvedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+                      : '–';
+                    return (
+                      <div key={ci.id} className="px-4 py-3 flex items-center gap-3">
+                        <span className="text-xl flex-shrink-0">{member.avatar}</span>
                         <div className="flex-1 min-w-0">
-                          <span className="text-white font-medium text-sm">{m.name}</span>
-                          <span className={`ml-2 text-xs ${ROLE_DISPLAY[m.role].color}`}>
-                            {ROLE_DISPLAY[m.role].label}
-                          </span>
+                          <div className="text-white font-medium text-sm">{member.name}</div>
+                          <div className="text-gray-500 text-xs">
+                            {LEVEL_DISPLAY[member.currentLevel].subtitle}
+                            {detectedCourse && <span> · {detectedCourse.split(' •')[0]}</span>}
+                          </div>
                         </div>
-                        <span className="text-gray-500 text-xs flex-shrink-0">{formatOnlineSince(m)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Member-Sektion */}
-              {onlineRegularMembers.length > 0 && (
-                <div className="px-4 py-3">
-                  <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">
-                    Members ({onlineRegularMembers.length})
-                  </div>
-                  <div className="space-y-2">
-                    {onlineRegularMembers.map(m => (
-                      <div key={m.id} className="flex items-center gap-3">
-                        <OnlineDot member={m} />
-                        <span className="text-xl">{m.avatar}</span>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-white font-medium text-sm">{m.name}</span>
-                          <span className="ml-2 text-xs text-gray-500">
-                            {LEVEL_DISPLAY[m.currentLevel].subtitle}
-                          </span>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-green-400 text-sm font-medium">✅ {checkedInTime} Uhr</div>
                         </div>
-                        <span className="text-gray-500 text-xs flex-shrink-0">{formatOnlineSince(m)}</span>
+                        <div className="flex gap-1 flex-shrink-0">
+                          {canAccessTab('evaluate') && (
+                            <button
+                              onClick={() => { setSelectedMember(member); setActiveTab('evaluate'); }}
+                              className="bg-blue-600/80 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs"
+                            >
+                              Bewerten
+                            </button>
+                          )}
+                          <button
+                            onClick={() => checkOut(member.id)}
+                            className="bg-gray-600/80 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg text-xs"
+                          >
+                            Auschecken
+                          </button>
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
-          )}
-
-          {/* Legende */}
-          <div className="px-4 py-2 border-t border-gray-700/40 flex items-center gap-4">
-            <span className="flex items-center gap-1.5 text-xs text-gray-500">
-              <span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> Aktiv
-            </span>
-            <span className="flex items-center gap-1.5 text-xs text-gray-500">
-              <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> Inaktiv (&lt;10 Min)
-            </span>
-          </div>
-        </div>
-
-        {/* ── Bereich 2: Beim Training ─────────────────────────────────────── */}
-        <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-700/60">
-            <h3 className="font-bold text-white flex items-center gap-2">
-              📍 Beim Training
-              <span className="text-gray-500 font-normal text-sm">({todayCheckIns.length})</span>
-            </h3>
-          </div>
-
-          {todayCheckIns.length === 0 ? (
-            <div className="px-4 py-6 text-center text-gray-500 text-sm">Niemand ist heute eingecheckt</div>
-          ) : (
-            <div className="divide-y divide-gray-700/40">
-              {todayCheckIns.map(ci => {
-                const member = members.find(m => m.id === ci.memberId);
-                if (!member) return null;
-                const checkedInTime = ci.approvedAt
-                  ? new Date(ci.approvedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
-                  : '–';
-
-                return (
-                  <div key={ci.id} className="px-4 py-3 flex items-center gap-3">
-                    <span className="text-xl flex-shrink-0">{member.avatar}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-white font-medium text-sm">{member.name}</div>
-                      <div className="text-gray-500 text-xs">
-                        {LEVEL_DISPLAY[member.currentLevel].subtitle}
-                        {detectedCourse && <span> · {detectedCourse.split(' •')[0]}</span>}
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-green-400 text-sm font-medium">✅ {checkedInTime} Uhr</div>
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      {canAccessTab('evaluate') && (
-                        <button
-                          onClick={() => { setSelectedMember(member); setActiveTab('evaluate'); }}
-                          className="bg-blue-600/80 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs"
-                        >
-                          Bewerten
-                        </button>
-                      )}
-                      <button
-                        onClick={() => checkOut(member.id)}
-                        className="bg-gray-600/80 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg text-xs"
-                      >
-                        Auschecken
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
 
         {/* ── Training dokumentieren ────────────────────────────────────── */}
         {(() => {
@@ -596,6 +620,8 @@ export const InstructorView: React.FC = () => {
           </div>
           <p className="text-gray-400 mt-4 text-sm">Mitglieder scannen diesen Code zum Einchecken</p>
         </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -927,219 +953,234 @@ export const InstructorView: React.FC = () => {
   };
 
   // Render Requests Tab
-  const renderRequestsTab = () => (
-    <div className="space-y-6">
+  const renderRequestsTab = () => {
+    const subTabItems: { id: typeof requestSubTab; label: string; badge: number }[] = [
+      { id: 'exams', label: 'Prüfungen', badge: pendingExamRequests.length },
+      { id: 'wishes', label: 'Wunschtechniken', badge: pendingWishes.length },
+      { id: 'checkins', label: 'Check-ins', badge: pendingCheckIns.length },
+    ];
 
-      {/* ── Prüfungsanfragen ──────────────────────────────────────────────── */}
-      <div>
-        <h3 className="text-lg font-bold text-white mb-3">
-          🔷 Prüfungsanfragen ({pendingExamRequests.length})
-        </h3>
+    return (
+      <div className="space-y-4">
+        {/* Sub-Tab Switcher */}
+        <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
+          {subTabItems.map(item => (
+            <button
+              key={item.id}
+              onClick={() => setRequestSubTab(item.id)}
+              className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
+                requestSubTab === item.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              {item.label}
+              {item.badge > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                  requestSubTab === item.id ? 'bg-red-500 text-white' : 'bg-gray-600 text-gray-300'
+                }`}>
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
 
-        {pendingExamRequests.length === 0 ? (
-          <div className="bg-gray-800/30 rounded-xl p-4 border border-gray-700/30 text-center">
-            <p className="text-gray-500 text-sm">Keine offenen Anfragen</p>
-          </div>
-        ) : (
+        {/* ── Prüfungsanfragen ──────────────────────────────────────────────── */}
+        {requestSubTab === 'exams' && (
           <div className="space-y-4">
-            {pendingExamRequests.map(req => {
-              const member = members.find(m => m.id === req.memberId);
-              const canProcess = currentUser.role !== 'member';
-              const feedback = rejectionFeedback[req.id] ?? '';
-              const hasComment = feedback.trim().length >= 5;
-              const canPass = canProcess;
-              const canReject = canProcess && hasComment;
+            {pendingExamRequests.length === 0 ? (
+              <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/30 text-center">
+                <p className="text-gray-500 text-sm">Keine offenen Prüfungsanfragen</p>
+              </div>
+            ) : (
+              pendingExamRequests.map(req => {
+                const member = members.find(m => m.id === req.memberId);
+                const canProcess = currentUser.role !== 'member';
+                const feedback = rejectionFeedback[req.id] ?? '';
+                const hasComment = feedback.trim().length >= 5;
+                const canPass = canProcess;
+                const canReject = canProcess && hasComment;
 
-              const levelBadge = req.examLevel === 'technical'
-                ? <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-medium">🔷 Technisch</span>
-                : <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded border border-orange-500/20 font-medium">🔶 Taktisch</span>;
+                const levelBadge = req.examLevel === 'technical'
+                  ? <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-medium">🔷 Technisch</span>
+                  : <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded border border-orange-500/20 font-medium">🔶 Taktisch</span>;
 
-              return (
-                <div key={req.id} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
-                  <div className="p-4 pb-3">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="text-2xl flex-shrink-0">{member?.avatar ?? '🥋'}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-white">{req.memberName}</div>
-                        <div className="text-gray-400 text-xs">{req.moduleName}</div>
+                return (
+                  <div key={req.id} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+                    <div className="p-4 pb-3">
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="text-2xl flex-shrink-0">{member?.avatar ?? '🥋'}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-white">{req.memberName}</div>
+                          <div className="text-gray-400 text-xs">{req.moduleName}</div>
+                        </div>
+                        {levelBadge}
                       </div>
-                      {levelBadge}
+                      <div className="bg-gray-700/40 rounded-lg px-3 py-2 flex items-center justify-between">
+                        <span className="text-white text-sm font-medium">{req.techniqueName}</span>
+                        <span className="text-gray-500 text-xs flex-shrink-0">{formatTimeAgo(req.requestedAt)}</span>
+                      </div>
                     </div>
-                    <div className="bg-gray-700/40 rounded-lg px-3 py-2 flex items-center justify-between">
-                      <span className="text-white text-sm font-medium">{req.techniqueName}</span>
-                      <span className="text-gray-500 text-xs flex-shrink-0">{formatTimeAgo(req.requestedAt)}</span>
-                    </div>
+                    {canProcess ? (
+                      <div className="border-t border-gray-700/50 px-4 pt-3 pb-4 space-y-3">
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1 block">
+                            Kommentar
+                            <span className="text-gray-600 ml-1">(optional bei Bestanden — Pflicht bei Nachtrainieren)</span>
+                          </label>
+                          <textarea
+                            rows={2}
+                            placeholder="Feedback für den Member… (Pflicht bei Nachtrainieren)"
+                            value={feedback}
+                            onChange={e => setRejectionFeedback(prev => ({ ...prev, [req.id]: e.target.value }))}
+                            className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 resize-none focus:outline-none focus:border-gray-400 transition-colors"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            disabled={!canPass}
+                            onClick={() => {
+                              approveExam(req.memberId, req.id, feedback);
+                              setRejectionFeedback(prev => { const n = { ...prev }; delete n[req.id]; return n; });
+                            }}
+                            className="flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all bg-green-600 hover:bg-green-500 text-white"
+                          >
+                            ✅ Bestanden
+                          </button>
+                          <button
+                            disabled={!canReject}
+                            onClick={() => {
+                              rejectExam(req.memberId, req.id, feedback);
+                              setRejectionFeedback(prev => { const n = { ...prev }; delete n[req.id]; return n; });
+                            }}
+                            className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                              canReject
+                                ? 'bg-orange-600 hover:bg-orange-500 text-white'
+                                : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                            }`}
+                          >
+                            ↩ Nachtrainieren
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="border-t border-gray-700/50 px-4 py-3">
+                        <p className="text-yellow-500/80 text-sm">⚠️ Keine Berechtigung zur Prüfung</p>
+                      </div>
+                    )}
                   </div>
-                  {canProcess ? (
-                    <div className="border-t border-gray-700/50 px-4 pt-3 pb-4 space-y-3">
-                      <div>
-                        <label className="text-xs text-gray-400 mb-1 block">
-                          Kommentar
-                          <span className="text-gray-600 ml-1">(optional bei Bestanden — Pflicht bei Nachtrainieren)</span>
-                        </label>
-                        <textarea
-                          rows={2}
-                          placeholder="Feedback für den Member… (Pflicht bei Nachtrainieren)"
-                          value={feedback}
-                          onChange={e => setRejectionFeedback(prev => ({ ...prev, [req.id]: e.target.value }))}
-                          className="w-full bg-gray-700/60 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 resize-none focus:outline-none focus:border-gray-400 transition-colors"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          disabled={!canPass}
-                          onClick={() => {
-                            approveExam(req.memberId, req.id, feedback);
-                            setRejectionFeedback(prev => { const n = { ...prev }; delete n[req.id]; return n; });
-                          }}
-                          className="flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all bg-green-600 hover:bg-green-500 text-white"
-                        >
-                          ✅ Bestanden
-                        </button>
-                        <button
-                          disabled={!canReject}
-                          onClick={() => {
-                            rejectExam(req.memberId, req.id, feedback);
-                            setRejectionFeedback(prev => { const n = { ...prev }; delete n[req.id]; return n; });
-                          }}
-                          className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
-                            canReject
-                              ? 'bg-orange-600 hover:bg-orange-500 text-white'
-                              : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                          }`}
-                        >
-                          ↩ Nachtrainieren
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="border-t border-gray-700/50 px-4 py-3">
-                      <p className="text-yellow-500/80 text-sm">⚠️ Keine Berechtigung zur Prüfung</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         )}
-      </div>
 
-      {/* ── Wunschtechniken ───────────────────────────────────────────────── */}
-      <div>
-        <h3 className="text-lg font-bold text-white mb-3">
-          💡 Wunschtechniken ({pendingWishes.length})
-        </h3>
-        {pendingWishes.length === 0 ? (
-          <div className="bg-gray-800/30 rounded-xl p-4 border border-gray-700/30 text-center">
-            <p className="text-gray-500 text-sm">Keine Wunschtechniken gemeldet</p>
-          </div>
-        ) : (
+        {/* ── Wunschtechniken ───────────────────────────────────────────────── */}
+        {requestSubTab === 'wishes' && (
           <div className="space-y-3">
-            {/* Gruppieren nach techniqueId */}
-            {Object.entries(
-              pendingWishes.reduce<Record<string, typeof pendingWishes>>((acc, w) => {
-                if (!acc[w.techniqueId]) acc[w.techniqueId] = [];
-                acc[w.techniqueId].push(w);
-                return acc;
-              }, {})
-            )
-              .sort(([, a], [, b]) => b.length - a.length)
-              .map(([techniqueId, wishes]) => (
-                <div key={techniqueId} className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="font-medium text-white text-sm">{wishes[0].techniqueName}</div>
-                      <div className="text-gray-500 text-xs">{wishes[0].moduleName}</div>
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <span className="bg-purple-500/20 text-purple-300 border border-purple-500/20 rounded-full px-3 py-1 text-sm font-bold">
-                        {wishes.length}×
-                      </span>
-                      <button
-                        onClick={() => wishes.forEach(w => acknowledgeWish(w.id))}
-                        className="bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs px-3 py-2 rounded-lg transition-all"
-                      >
-                        ✓ Gesehen
-                      </button>
-                    </div>
-                  </div>
-                  {/* Member-Avatare */}
-                  <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-gray-700/50">
-                    {wishes.map(w => (
-                      <span key={w.id} title={w.memberName} className="text-lg">{w.memberAvatar}</span>
-                    ))}
-                    <span className="text-gray-500 text-xs ml-1">
-                      {wishes.map(w => w.memberName).join(', ')}
-                    </span>
-                  </div>
-                </div>
-              ))
-            }
-          </div>
-        )}
-      </div>
-
-      {/* ── Check-in Anfragen ─────────────────────────────────────────────── */}
-      <div>
-        <h3 className="text-lg font-bold text-white mb-3">
-          📥 Check-in Anfragen ({pendingCheckIns.length})
-        </h3>
-        {pendingCheckIns.length === 0 ? (
-          <div className="bg-gray-800/30 rounded-xl p-4 border border-gray-700/30 text-center">
-            <p className="text-gray-500 text-sm">Keine offenen Check-in Anfragen</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {pendingCheckIns.map(checkIn => {
-              const canApprove = canApproveCheckIn(currentUser.role, currentUser.id, checkIn);
-              const member = members.find(m => m.id === checkIn.memberId);
-              return (
-                <div key={checkIn.id} className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-2xl flex-shrink-0">{member?.avatar ?? '🥋'}</span>
+            {pendingWishes.length === 0 ? (
+              <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/30 text-center">
+                <p className="text-gray-500 text-sm">Keine Wunschtechniken gemeldet</p>
+              </div>
+            ) : (
+              Object.entries(
+                pendingWishes.reduce<Record<string, typeof pendingWishes>>((acc, w) => {
+                  if (!acc[w.techniqueId]) acc[w.techniqueId] = [];
+                  acc[w.techniqueId].push(w);
+                  return acc;
+                }, {})
+              )
+                .sort(([, a], [, b]) => b.length - a.length)
+                .map(([techniqueId, wishes]) => (
+                  <div key={techniqueId} className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
+                    <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="font-medium text-white">{checkIn.memberName}</div>
-                        <div className="text-gray-400 text-xs">{formatTimeAgo(checkIn.requestedAt)}</div>
-                        {detectedCourse && (
-                          <div className="text-blue-400/70 text-xs mt-0.5">📅 {detectedCourse}</div>
+                        <div className="font-medium text-white text-sm">{wishes[0].techniqueName}</div>
+                        <div className="text-gray-500 text-xs">{wishes[0].moduleName}</div>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span className="bg-purple-500/20 text-purple-300 border border-purple-500/20 rounded-full px-3 py-1 text-sm font-bold">
+                          {wishes.length}×
+                        </span>
+                        <button
+                          onClick={() => wishes.forEach(w => acknowledgeWish(w.id))}
+                          className="bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs px-3 py-2 rounded-lg transition-all"
+                        >
+                          ✓ Gesehen
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-gray-700/50">
+                      {wishes.map(w => (
+                        <span key={w.id} title={w.memberName} className="text-lg">{w.memberAvatar}</span>
+                      ))}
+                      <span className="text-gray-500 text-xs ml-1">
+                        {wishes.map(w => w.memberName).join(', ')}
+                      </span>
+                    </div>
+                  </div>
+                ))
+            )}
+          </div>
+        )}
+
+        {/* ── Check-in Anfragen ─────────────────────────────────────────────── */}
+        {requestSubTab === 'checkins' && (
+          <div className="space-y-3">
+            {pendingCheckIns.length === 0 ? (
+              <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/30 text-center">
+                <p className="text-gray-500 text-sm">Keine offenen Check-in Anfragen</p>
+              </div>
+            ) : (
+              pendingCheckIns.map(checkIn => {
+                const canApprove = canApproveCheckIn(currentUser.role, currentUser.id, checkIn);
+                const member = members.find(m => m.id === checkIn.memberId);
+                return (
+                  <div key={checkIn.id} className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="text-2xl flex-shrink-0">{member?.avatar ?? '🥋'}</span>
+                        <div className="min-w-0">
+                          <div className="font-medium text-white">{checkIn.memberName}</div>
+                          <div className="text-gray-400 text-xs">{formatTimeAgo(checkIn.requestedAt)}</div>
+                          {detectedCourse && (
+                            <div className="text-blue-400/70 text-xs mt-0.5">📅 {detectedCourse}</div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        {canApprove ? (
+                          <>
+                            <button
+                              onClick={() => approveCheckIn(checkIn.id)}
+                              className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-bold transition-all"
+                              title="Bestätigen"
+                            >
+                              ✓
+                            </button>
+                            <button
+                              onClick={() => rejectCheckIn(checkIn.id)}
+                              className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold transition-all"
+                              title="Ablehnen"
+                            >
+                              ✕
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-gray-500 italic px-2 py-2">
+                            Nicht dein Kurs
+                          </span>
                         )}
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      {canApprove ? (
-                        <>
-                          <button
-                            onClick={() => approveCheckIn(checkIn.id)}
-                            className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-bold transition-all"
-                            title="Bestätigen"
-                          >
-                            ✓
-                          </button>
-                          <button
-                            onClick={() => rejectCheckIn(checkIn.id)}
-                            className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold transition-all"
-                            title="Ablehnen"
-                          >
-                            ✕
-                          </button>
-                        </>
-                      ) : (
-                        <span className="text-xs text-gray-500 italic px-2 py-2">
-                          Nicht dein Kurs
-                        </span>
-                      )}
-                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         )}
       </div>
-
-    </div>
-  );
+    );
+  };
 
   // Render Applications Tab (Owner only)
   const renderApplicationsTab = () => (
@@ -1306,18 +1347,9 @@ export const InstructorView: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       {/* Header */}
-      <header className="bg-gray-900 border-b border-gray-800 px-4 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl">{currentUser.avatar}</span>
-            <div>
-              <div className="font-bold text-white">{currentUser.name}</div>
-              <div className={`text-sm ${ROLE_DISPLAY[currentUser.role].color}`}>
-                {ROLE_DISPLAY[currentUser.role].label}
-              </div>
-            </div>
-          </div>
-          <div className="text-xl font-bold text-red-500">INSTRUCTOR DASHBOARD</div>
+      <header className="bg-gray-900 border-b border-gray-800 px-4 py-3">
+        <div className="max-w-6xl mx-auto text-center">
+          <div className="text-sm font-semibold text-gray-300 tracking-widest uppercase">Instructor View</div>
         </div>
       </header>
 
