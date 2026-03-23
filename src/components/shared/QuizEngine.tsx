@@ -88,7 +88,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   if (done) {
     const passed = score >= 70;
     return (
-      <div className="flex flex-col items-center justify-center py-10 px-6 text-center space-y-5">
+      <div className="flex flex-col items-center justify-center py-10 px-6 pb-28 text-center space-y-5">
         <div className={`w-24 h-24 rounded-full flex items-center justify-center text-5xl ${passed ? 'bg-green-500/20' : 'bg-orange-500/20'}`}>
           {passed ? '🏆' : '💪'}
         </div>
@@ -203,7 +203,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
 
       {/* Next */}
       {answered && (
-        <div className="px-4 pb-4 pt-2 flex-shrink-0">
+        <div className="px-4 pb-24 pt-2 flex-shrink-0">
           <button
             onClick={handleNext}
             className={`w-full text-white py-3.5 rounded-xl font-bold text-base transition-all ${accentColor} hover:opacity-90`}
