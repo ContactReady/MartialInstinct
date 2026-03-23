@@ -12,7 +12,8 @@ import {
   EXAM_PERMISSIONS,
   Member,
   CheckIn,
-  InstructorRole
+  InstructorRole,
+  TrainingGroup
 } from '../../types';
 import { TechniqueCard } from '../shared/TechniqueCard';
 import { InstructorLearningView } from './InstructorLearningView';
@@ -73,6 +74,7 @@ export const InstructorView: React.FC = () => {
     getOnlineMembers,
     getPendingTechniqueWishes,
     acknowledgeWish,
+    completeTrainingSession,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>('lernen');
@@ -83,6 +85,15 @@ export const InstructorView: React.FC = () => {
   const [liveTick, setLiveTick] = useState(0);
   const [memberSearch, setMemberSearch] = useState('');
   const [memberSort, setMemberSort] = useState<'name' | 'lastSeen' | 'lastTraining'>('lastSeen');
+
+  // Session-Builder State (alle an Top-Level wegen Rules of Hooks)
+  const [showSessionBuilder, setShowSessionBuilder] = useState(false);
+  const [sessionAttendees, setSessionAttendees] = useState<string[]>([]);
+  const [sessionGroups, setSessionGroups] = useState<TrainingGroup[]>([]);
+  const [sessionNotes, setSessionNotes] = useState('');
+  const [sessionDone, setSessionDone] = useState(false);
+  const [sessionModuleFilter, setSessionModuleFilter] = useState<string>('all');
+  const [manualMemberInput, setManualMemberInput] = useState('');
 
   // 30s Auto-Refresh für den Live-Tab
   useEffect(() => {
@@ -321,6 +332,259 @@ export const InstructorView: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* ── Training dokumentieren ────────────────────────────────────── */}
+        {(() => {
+          // Anwesende = bestätigte Check-ins heute
+          const todayAttendees = todayCheckIns
+            .map(c => members.find(m => m.id === c.memberId))
+            .filter((m): m is Member => !!m);
+
+          const allTechs = MODULES.flatMap(mod => mod.techniques.map(t => ({ ...t, moduleId: mod.id, moduleName: mod.name, moduleIcon: mod.icon })));
+          const filteredTechs = sessionModuleFilter === 'all'
+            ? allTechs
+            : allTechs.filter(t => t.moduleId === sessionModuleFilter);
+
+          const initSession = () => {
+            const defaultGroup: TrainingGroup = {
+              id: 'group-all',
+              name: 'Alle',
+              memberIds: todayAttendees.map(m => m.id),
+              techniqueIds: []
+            };
+            setSessionAttendees(todayAttendees.map(m => m.id));
+            setSessionGroups([defaultGroup]);
+            setSessionNotes('');
+            setSessionDone(false);
+            setShowSessionBuilder(true);
+          };
+
+          const toggleTechInGroup = (groupId: string, techId: string) => {
+            setSessionGroups(prev => prev.map(g =>
+              g.id === groupId
+                ? { ...g, techniqueIds: g.techniqueIds.includes(techId) ? g.techniqueIds.filter(id => id !== techId) : [...g.techniqueIds, techId] }
+                : g
+            ));
+          };
+
+          const addGroup = () => {
+            const newGroup: TrainingGroup = {
+              id: `group-${Date.now()}`,
+              name: `Gruppe ${sessionGroups.length + 1}`,
+              memberIds: [],
+              techniqueIds: []
+            };
+            setSessionGroups(prev => [...prev, newGroup]);
+          };
+
+          const moveMemberToGroup = (memberId: string, targetGroupId: string) => {
+            setSessionGroups(prev => prev.map(g => ({
+              ...g,
+              memberIds: g.id === targetGroupId
+                ? [...g.memberIds.filter(id => id !== memberId), memberId]
+                : g.memberIds.filter(id => id !== memberId)
+            })));
+          };
+
+          const removeGroup = (groupId: string) => {
+            if (sessionGroups.length <= 1) return;
+            const group = sessionGroups.find(g => g.id === groupId);
+            const firstGroupId = sessionGroups[0].id;
+            setSessionGroups(prev => prev
+              .filter(g => g.id !== groupId)
+              .map(g => g.id === firstGroupId
+                ? { ...g, memberIds: [...g.memberIds, ...(group?.memberIds ?? [])] }
+                : g
+              )
+            );
+          };
+
+          const submitSession = () => {
+            const totalTechs = [...new Set(sessionGroups.flatMap(g => g.techniqueIds))].length;
+            if (totalTechs === 0) return;
+            const course = COURSES.find(c =>
+              c.locationId === currentUser.locationId &&
+              sessionGroups[0]?.memberIds.some(id => c.participantIds.includes(id))
+            );
+            completeTrainingSession(
+              sessionAttendees,
+              sessionGroups,
+              sessionNotes || undefined,
+              course?.id,
+              course?.name
+            );
+            setSessionDone(true);
+            setShowSessionBuilder(false);
+          };
+
+          if (sessionDone) {
+            return (
+              <div className="bg-green-900/20 border border-green-700/40 rounded-xl p-5 text-center">
+                <div className="text-3xl mb-2">✅</div>
+                <div className="text-green-300 font-bold text-lg">Training dokumentiert!</div>
+                <div className="text-green-400/70 text-sm mt-1">Alle Techniken wurden den Members gutgeschrieben.</div>
+                <button
+                  onClick={() => setSessionDone(false)}
+                  className="mt-3 text-xs text-gray-500 hover:text-gray-300 underline"
+                >
+                  Neues Training dokumentieren
+                </button>
+              </div>
+            );
+          }
+
+          if (!showSessionBuilder) {
+            return (
+              <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-5">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-bold text-white flex items-center gap-2">📝 Training dokumentieren</h3>
+                  {todayAttendees.length > 0 && (
+                    <span className="text-gray-400 text-xs">{todayAttendees.length} Anwesende</span>
+                  )}
+                </div>
+                <p className="text-gray-500 text-sm mb-4">
+                  {todayAttendees.length === 0
+                    ? 'Noch niemand eingecheckt. Du kannst Members auch manuell hinzufügen.'
+                    : 'Welche Techniken wurden heute trainiert?'}
+                </p>
+                <button
+                  onClick={initSession}
+                  className="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-semibold transition-all"
+                >
+                  📝 Training jetzt dokumentieren
+                </button>
+              </div>
+            );
+          }
+
+          // ── Session-Builder ──────────────────────────────────────────────
+          return (
+            <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-700/60 flex items-center justify-between">
+                <h3 className="font-bold text-white">📝 Training dokumentieren</h3>
+                <button onClick={() => setShowSessionBuilder(false)} className="text-gray-500 hover:text-gray-300 text-sm">✕ Abbrechen</button>
+              </div>
+
+              <div className="p-4 space-y-5">
+                {/* Gruppen */}
+                {sessionGroups.map((group, gIdx) => (
+                  <div key={group.id} className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 font-semibold text-white text-sm">{group.name}</div>
+                      {sessionGroups.length > 1 && (
+                        <button onClick={() => removeGroup(group.id)} className="text-gray-600 hover:text-red-400 text-xs">✕ Entfernen</button>
+                      )}
+                    </div>
+
+                    {/* Members in dieser Gruppe */}
+                    <div>
+                      <div className="text-xs text-gray-500 mb-2">Members:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {group.memberIds.map(mid => {
+                          const m = members.find(m => m.id === mid);
+                          if (!m) return null;
+                          return (
+                            <div key={mid} className="flex items-center gap-1.5 bg-gray-700 rounded-lg px-2.5 py-1.5 text-sm">
+                              <span>{m.avatar}</span>
+                              <span className="text-white">{m.name}</span>
+                              {sessionGroups.length > 1 && (
+                                <select
+                                  value={group.id}
+                                  onChange={e => moveMemberToGroup(mid, e.target.value)}
+                                  className="ml-1 bg-gray-600 text-gray-300 text-xs rounded px-1 py-0.5 border-0 outline-none"
+                                >
+                                  {sessionGroups.map(g => (
+                                    <option key={g.id} value={g.id}>{g.name}</option>
+                                  ))}
+                                </select>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {group.memberIds.length === 0 && (
+                          <span className="text-gray-600 text-xs italic">Keine Members — Members aus anderen Gruppen hierher verschieben</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Techniken-Auswahl */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="text-xs text-gray-500">Techniken:</div>
+                        {gIdx === 0 && (
+                          <select
+                            value={sessionModuleFilter}
+                            onChange={e => setSessionModuleFilter(e.target.value)}
+                            className="ml-auto bg-gray-700 text-gray-300 text-xs rounded-lg px-2 py-1 border border-gray-600 outline-none"
+                          >
+                            <option value="all">Alle Module</option>
+                            {MODULES.map(m => <option key={m.id} value={m.id}>{m.icon} {m.name}</option>)}
+                          </select>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+                        {filteredTechs.map(tech => {
+                          const selected = group.techniqueIds.includes(tech.id);
+                          return (
+                            <button
+                              key={tech.id}
+                              onClick={() => toggleTechInGroup(group.id, tech.id)}
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                                selected
+                                  ? 'bg-red-600/30 border-red-500/50 text-red-300'
+                                  : 'bg-gray-700/50 border-gray-600/30 text-gray-400 hover:bg-gray-700 hover:text-gray-200'
+                              }`}
+                            >
+                              {selected ? '✓ ' : ''}{tech.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        {group.techniqueIds.length} Technik{group.techniqueIds.length !== 1 ? 'en' : ''} ausgewählt
+                      </div>
+                    </div>
+
+                    {gIdx < sessionGroups.length - 1 && <div className="border-t border-gray-700/40" />}
+                  </div>
+                ))}
+
+                {/* Gruppe hinzufügen */}
+                <button
+                  onClick={addGroup}
+                  className="text-gray-500 hover:text-gray-300 text-sm flex items-center gap-1.5 transition-all"
+                >
+                  + Gruppe aufteilen
+                </button>
+
+                {/* Notiz */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Trainer-Notiz (optional)</label>
+                  <textarea
+                    rows={2}
+                    value={sessionNotes}
+                    onChange={e => setSessionNotes(e.target.value)}
+                    placeholder="Was war der Fokus? Besonderheiten?"
+                    className="w-full bg-gray-700/60 border border-gray-600 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 resize-none focus:outline-none focus:border-gray-400"
+                  />
+                </div>
+
+                {/* Abschließen */}
+                <button
+                  onClick={submitSession}
+                  disabled={sessionGroups.every(g => g.techniqueIds.length === 0)}
+                  className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${
+                    sessionGroups.every(g => g.techniqueIds.length === 0)
+                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-500 text-white'
+                  }`}
+                >
+                  ✅ Training abschließen ({[...new Set(sessionGroups.flatMap(g => g.techniqueIds))].length} Techniken)
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* QR Code */}
         <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700 text-center">
@@ -1057,8 +1321,19 @@ export const InstructorView: React.FC = () => {
         </div>
       </header>
 
-      {/* Tab Navigation */}
-      <div className="bg-gray-900 border-b border-gray-800">
+      {/* Content */}
+      <main className="max-w-6xl mx-auto p-4 pb-24">
+        {activeTab === 'lernen' && <InstructorLearningView />}
+        {activeTab === 'live' && renderLiveTab()}
+        {activeTab === 'evaluate' && renderEvaluateTab()}
+        {activeTab === 'members' && renderMembersTab()}
+        {activeTab === 'requests' && renderRequestsTab()}
+        {activeTab === 'applications' && renderApplicationsTab()}
+        {activeTab === 'board' && renderBoardTab()}
+      </main>
+
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-40">
         <div className="max-w-6xl mx-auto flex overflow-x-auto">
           {tabs.map(tab => (
             <button
@@ -1070,34 +1345,21 @@ export const InstructorView: React.FC = () => {
                   setSelectedModule(null);
                 }
               }}
-              className={`px-4 py-3 flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab.id 
-                  ? 'border-red-500 text-red-500' 
-                  : 'border-transparent text-gray-400 hover:text-white'
+              className={`flex-1 min-w-[60px] py-3 flex flex-col items-center gap-0.5 transition-colors relative ${
+                activeTab === tab.id ? 'text-red-500' : 'text-gray-400'
               }`}
             >
-              <span>{tab.icon}</span>
-              <span>{tab.label}</span>
-              {tab.badge && tab.badge > 0 && (
-                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                  {tab.badge}
+              <span className="text-lg leading-tight">{tab.icon}</span>
+              <span className="text-[10px] leading-tight whitespace-nowrap">{tab.label}</span>
+              {tab.badge && tab.badge > 0 ? (
+                <span className="absolute top-1.5 right-1/2 translate-x-3 bg-red-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-bold">
+                  {tab.badge > 9 ? '9+' : tab.badge}
                 </span>
-              )}
+              ) : null}
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Content */}
-      <main className="max-w-6xl mx-auto p-4">
-        {activeTab === 'lernen' && <InstructorLearningView />}
-        {activeTab === 'live' && renderLiveTab()}
-        {activeTab === 'evaluate' && renderEvaluateTab()}
-        {activeTab === 'members' && renderMembersTab()}
-        {activeTab === 'requests' && renderRequestsTab()}
-        {activeTab === 'applications' && renderApplicationsTab()}
-        {activeTab === 'board' && renderBoardTab()}
-      </main>
+      </nav>
     </div>
   );
 };

@@ -17,7 +17,9 @@ import {
   BandaidEvent,
   InstructorLessonProgress,
   MemberQuizProgress,
-  TechniqueWish
+  TechniqueWish,
+  TrainingSession,
+  TrainingGroup
 } from '../types';
 import { MEMBERS, CHECK_INS, BOARD_MESSAGES, NOTIFICATIONS, LOCATIONS, VIDEOS, COURSES } from '../data/mockData';
 import { MODULES, BLOCKS, getAllTechniques, getModuleById } from '../data/modules';
@@ -96,6 +98,11 @@ interface AppContextType {
   toggleDarkMode: () => void;
 
   // Helpers
+  // Trainingsreport
+  trainingSessions: TrainingSession[];
+  completeTrainingSession: (attendeeIds: string[], groups: TrainingGroup[], notes?: string, courseId?: string, courseName?: string) => void;
+  getSessionsForMember: (memberId: string) => TrainingSession[];
+
   // Wunschtechniken
   techniqueWishes: TechniqueWish[];
   submitTechniqueWish: (techniqueId: string, techniqueName: string, moduleId: string, moduleName: string) => void;
@@ -131,6 +138,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [notifications, setNotifications] = useState<Notification[]>(NOTIFICATIONS);
   const [darkMode, setDarkMode] = useState(true);
   const [techniqueWishes, setTechniqueWishes] = useState<TechniqueWish[]>([]);
+  const [trainingSessions, setTrainingSessions] = useState<TrainingSession[]>([]);
 
   // ============================================
   // AUTH
@@ -310,9 +318,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!technique || !module) return;
 
     const currentStatus = currentUser.techniqueProgress[techniqueId]?.status ?? 'not_tested';
+    const practiceCount = currentUser.techniqueProgress[techniqueId]?.practiceCount ?? 0;
+    const MIN_PRACTICE = 5;
 
-    // Guard: keine neue Anfrage wenn bereits pending oder vollständig bestanden
+    // Guard: keine neue Anfrage wenn pending oder vollständig bestanden
     if (currentStatus === 'tech_pending' || currentStatus === 'tac_pending' || currentStatus === 'tac_passed') return;
+    // Guard: needs_training → erst nach genug Nachtraining erneut anfragen
+    if (currentStatus === 'needs_training' && practiceCount < MIN_PRACTICE) return;
 
     // Auto-Erkennung: welche Ebene kommt als nächstes?
     const examLevel: 'technical' | 'tactical' =
@@ -844,6 +856,91 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [currentUser]);
 
   // ============================================
+  // TRAININGSREPORT
+  // ============================================
+
+  const XP_PER_TRAINED_TECHNIQUE = 10;
+
+  const completeTrainingSession = useCallback((
+    attendeeIds: string[],
+    groups: TrainingGroup[],
+    notes?: string,
+    courseId?: string,
+    courseName?: string
+  ) => {
+    if (!currentUser) return;
+    const now = new Date();
+
+    const session: TrainingSession = {
+      id: `session-${Date.now()}`,
+      locationId: currentUser.locationId,
+      instructorId: currentUser.id,
+      instructorName: currentUser.name,
+      courseId,
+      courseName,
+      date: now,
+      attendeeIds,
+      groups,
+      notes,
+      createdAt: now,
+      status: 'completed'
+    };
+
+    setTrainingSessions(prev => [...prev, session]);
+
+    // Bulk-Update: practiceCount + XP + trainedTechniqueLog für jeden Member in jeder Gruppe
+    setMembers(prev => prev.map(member => {
+      const memberGroups = groups.filter(g => g.memberIds.includes(member.id));
+      if (memberGroups.length === 0) return member;
+
+      const trainedTechniqueIds = [...new Set(memberGroups.flatMap(g => g.techniqueIds))];
+      const xpGained = trainedTechniqueIds.length * XP_PER_TRAINED_TECHNIQUE;
+
+      const updatedProgress = { ...member.techniqueProgress };
+      const updatedLog = { ...(member.trainedTechniqueLog ?? {}) };
+
+      for (const techniqueId of trainedTechniqueIds) {
+        const prev = updatedProgress[techniqueId] ?? { techniqueId, status: 'not_tested' as TechniqueStatus };
+        const newStatus: TechniqueStatus =
+          prev.status === 'needs_training' ? 'not_tested' : prev.status;
+
+        updatedProgress[techniqueId] = {
+          ...prev,
+          status: newStatus,
+          practiceCount: (prev.practiceCount ?? 0) + 1,
+          lastPracticedAt: now,
+          // NICHT lastSelfPracticedAt — das ist nur für Selbst-Markierung reserviert
+        };
+        updatedLog[techniqueId] = now;
+      }
+
+      return {
+        ...member,
+        xp: (member.xp ?? 0) + xpGained,
+        techniqueProgress: updatedProgress,
+        trainedTechniqueLog: updatedLog,
+      };
+    }));
+
+    // Notifications an alle Anwesenden
+    const techniqueCount = [...new Set(groups.flatMap(g => g.techniqueIds))].length;
+    const newNotifs: Notification[] = attendeeIds.map(memberId => ({
+      id: `notif-session-${Date.now()}-${memberId}`,
+      oduserId: memberId,
+      type: 'system' as const,
+      title: '🥋 Training dokumentiert',
+      message: `${currentUser.name} hat das Training eingetragen — ${techniqueCount} Technik${techniqueCount !== 1 ? 'en' : ''} (+${techniqueCount * XP_PER_TRAINED_TECHNIQUE} XP)`,
+      read: false,
+      createdAt: now,
+    }));
+    setNotifications(prev => [...prev, ...newNotifs]);
+  }, [currentUser]);
+
+  const getSessionsForMember = useCallback((memberId: string): TrainingSession[] => {
+    return trainingSessions.filter(s => s.attendeeIds.includes(memberId));
+  }, [trainingSessions]);
+
+  // ============================================
   // WUNSCHTECHNIKEN
   // ============================================
 
@@ -1100,6 +1197,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     awardXP,
     completeModuleQuiz,
     toggleDarkMode,
+    trainingSessions,
+    completeTrainingSession,
+    getSessionsForMember,
     techniqueWishes,
     submitTechniqueWish,
     acknowledgeWish,

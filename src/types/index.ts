@@ -234,6 +234,9 @@ export interface Member {
   // Defizit-Hinweise (nach Instructor-Bestätigung)
   deficitHints?: DeficitHint[];
 
+  // Trainings-Log (techniqueId → letztes Datum aus Trainer-Session)
+  trainedTechniqueLog?: Record<string, Date>;
+
   // Instructor-Lernfortschritt (nur für Instructor-Rollen relevant)
   instructorLessonProgress?: Record<string, InstructorLessonProgress>;
 
@@ -331,6 +334,29 @@ export interface DeficitHint {
   confirmedByInstructorId?: string;
   confirmedAt?: Date;
   resolved: boolean;
+}
+
+// Trainings-Session (Instructor dokumentiert Training-Inhalte)
+export interface TrainingGroup {
+  id: string;
+  name: string;           // z.B. "Alle", "Gruppe 1 – Anfänger"
+  memberIds: string[];    // Teilmenge der Anwesenden
+  techniqueIds: string[]; // Welche Techniken diese Gruppe trainiert hat
+}
+
+export interface TrainingSession {
+  id: string;
+  locationId: string;
+  instructorId: string;
+  instructorName: string;
+  courseId?: string;      // Auto-erkannt via detectCurrentCourse
+  courseName?: string;
+  date: Date;
+  attendeeIds: string[];  // Alle bestätigten + manuell hinzugefügten Members
+  groups: TrainingGroup[];
+  notes?: string;
+  createdAt: Date;
+  status: 'draft' | 'completed';
 }
 
 // Check-in

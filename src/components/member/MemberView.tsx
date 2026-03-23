@@ -32,7 +32,8 @@ export const MemberView: React.FC = () => {
     notifications,
     markNotificationRead,
     submitTechniqueWish,
-    techniqueWishes
+    techniqueWishes,
+    getSessionsForMember
   } = useApp();
   
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -232,6 +233,43 @@ export const MemberView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Training-Log */}
+      {(() => {
+        const mySessions = getSessionsForMember(currentUser.id)
+          .filter(s => s.status === 'completed')
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          .slice(0, 3);
+
+        if (mySessions.length === 0) return null;
+
+        return (
+          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+            <h3 className="text-base font-bold text-white mb-3">🥋 Zuletzt trainiert</h3>
+            <div className="space-y-2">
+              {mySessions.map(session => {
+                const myGroup = session.groups.find(g => g.memberIds.includes(currentUser.id));
+                const techCount = myGroup?.techniqueIds.length ?? 0;
+                const xpGained = techCount * 10;
+                const dateStr = new Date(session.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                return (
+                  <div key={session.id} className="flex items-center justify-between gap-3 py-1.5">
+                    <div className="min-w-0">
+                      <div className="text-gray-300 text-sm font-medium">
+                        {dateStr} — {session.courseName ?? 'Training'}{session.instructorName ? ` mit ${session.instructorName}` : ''}
+                      </div>
+                      <div className="text-gray-500 text-xs">
+                        {techCount} Technik{techCount !== 1 ? 'en' : ''} trainiert
+                      </div>
+                    </div>
+                    <span className="text-yellow-400 text-xs font-bold flex-shrink-0">+{xpGained} XP</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Block Overview */}
       <div className="space-y-4">
