@@ -17,6 +17,7 @@ import {
 } from '../../types';
 import { TechniqueCard } from '../shared/TechniqueCard';
 import { InstructorLearningView } from './InstructorLearningView';
+import { ProfileView } from '../shared/ProfileView';
 
 // ── Kurs-Erkennung anhand aktueller Uhrzeit ──────────────────────────────────
 function detectCurrentCourse(locationId: string): string | null {
@@ -45,7 +46,7 @@ function canApproveCheckIn(role: InstructorRole, instructorId: string, checkIn: 
   return !!ownCourse;
 }
 
-type Tab = 'lernen' | 'live' | 'evaluate' | 'members' | 'requests' | 'applications' | 'board';
+type Tab = 'lernen' | 'live' | 'evaluate' | 'members' | 'requests' | 'applications' | 'board' | 'admin';
 
 export const InstructorView: React.FC = () => {
   const {
@@ -75,6 +76,7 @@ export const InstructorView: React.FC = () => {
     getPendingTechniqueWishes,
     acknowledgeWish,
     completeTrainingSession,
+    updateMemberRole,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>('lernen');
@@ -85,6 +87,7 @@ export const InstructorView: React.FC = () => {
   const [liveTick, setLiveTick] = useState(0);
   const [memberSearch, setMemberSearch] = useState('');
   const [memberSort, setMemberSort] = useState<'name' | 'lastSeen' | 'lastTraining'>('lastSeen');
+  const [profileMember, setProfileMember] = useState<Member | null>(null);
 
   // Sub-Tab States (an Top-Level wegen Rules of Hooks)
   const [liveSubTab, setLiveSubTab] = useState<'online' | 'training'>('training');
@@ -135,6 +138,8 @@ export const InstructorView: React.FC = () => {
         return currentUser.role === 'owner' || currentUser.role === 'admin';
       case 'board':
         return currentUser.role !== 'member';
+      case 'admin':
+        return currentUser.role === 'admin';
       default:
         return false;
     }
@@ -918,6 +923,13 @@ export const InstructorView: React.FC = () => {
                         🩹+
                       </button>
                       <button
+                        onClick={() => setProfileMember(member)}
+                        className="bg-gray-700/60 hover:bg-gray-700 text-gray-300 px-2.5 py-1.5 rounded-lg text-xs transition-all"
+                        title="Profil anzeigen"
+                      >
+                        👤
+                      </button>
+                      <button
                         onClick={() => { setSelectedMember(member); setActiveTab('evaluate'); }}
                         className="bg-blue-600/80 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                       >
@@ -1332,6 +1344,70 @@ export const InstructorView: React.FC = () => {
     </div>
   );
 
+  // Render Admin Tab
+  const renderAdminTab = () => {
+    const roleOptions: { value: InstructorRole; label: string }[] = [
+      { value: 'member', label: 'Member' },
+      { value: 'assistant_instructor', label: 'Assistant Instructor' },
+      { value: 'instructor', label: 'Instructor' },
+      { value: 'tactical_instructor', label: 'Tactical Instructor' },
+      { value: 'head_instructor', label: 'Head Instructor' },
+      { value: 'owner', label: 'Owner' },
+    ];
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-2xl">🔐</span>
+          <div>
+            <h2 className="text-white font-bold text-lg">Admin-Bereich</h2>
+            <p className="text-gray-400 text-sm">Rollen aller Mitglieder verwalten</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {members.map(m => {
+            const roleInfo = ROLE_DISPLAY[m.role];
+            return (
+              <div key={m.id} className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 flex items-center gap-3">
+                {/* Avatar */}
+                <div className="w-10 h-10 rounded-full bg-gray-700 border border-gray-600 flex items-center justify-center text-xl flex-shrink-0 overflow-hidden">
+                  {m.profileImageUrl
+                    ? <img src={m.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                    : <span>{m.avatar}</span>
+                  }
+                </div>
+
+                {/* Info */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-white font-semibold text-sm">{m.name}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${roleInfo.bgColor} ${roleInfo.color}`}>
+                      {roleInfo.label}
+                    </span>
+                  </div>
+                  <div className="text-gray-500 text-xs mt-0.5 truncate">{m.email}</div>
+                  <div className="text-gray-600 text-xs">Level: {m.currentLevel}</div>
+                </div>
+
+                {/* Rolle-Dropdown */}
+                <select
+                  value={m.role}
+                  onChange={e => updateMemberRole(m.id, e.target.value as InstructorRole)}
+                  className="bg-gray-700 border border-gray-600 text-white text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-red-500 flex-shrink-0"
+                >
+                  {roleOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   // Tab configuration
   const allTabs: { id: Tab; label: string; icon: string; badge?: number }[] = [
     { id: 'lernen' as Tab, label: 'Lernen', icon: '📚' },
@@ -1341,6 +1417,7 @@ export const InstructorView: React.FC = () => {
     { id: 'requests' as Tab, label: 'Anfragen', icon: '🟡', badge: pendingCheckIns.length + pendingExamRequests.length + pendingWishes.length },
     { id: 'applications' as Tab, label: 'Bewerbungen', icon: '💀', badge: totalPendingApps },
     { id: 'board' as Tab, label: 'Board', icon: '💬' },
+    { id: 'admin' as Tab, label: 'Admin', icon: '🔐' },
   ];
   const tabs = allTabs.filter(tab => canAccessTab(tab.id));
 
@@ -1355,7 +1432,13 @@ export const InstructorView: React.FC = () => {
         {activeTab === 'requests' && renderRequestsTab()}
         {activeTab === 'applications' && renderApplicationsTab()}
         {activeTab === 'board' && renderBoardTab()}
+        {activeTab === 'admin' && renderAdminTab()}
       </main>
+
+      {/* Profil Modal */}
+      {profileMember && (
+        <ProfileView member={profileMember} isModal onClose={() => setProfileMember(null)} />
+      )}
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-40">

@@ -190,6 +190,15 @@ export type BandaidReason =
   | 'referral'
   | 'event_participation';
 
+// Badge (live-computed aus Fortschrittsdaten)
+export interface Badge {
+  id: string;
+  label: string;
+  icon: string;
+  description: string;
+  earnedAt: Date;
+}
+
 // Mitglied
 export interface Member {
   id: string;
@@ -239,6 +248,9 @@ export interface Member {
 
   // Instructor-Lernfortschritt (nur für Instructor-Rollen relevant)
   instructorLessonProgress?: Record<string, InstructorLessonProgress>;
+
+  // Profilbild (base64)
+  profileImageUrl?: string;
 
   // XP (Erfahrungspunkte aus Quiz-Sessions)
   xp?: number;

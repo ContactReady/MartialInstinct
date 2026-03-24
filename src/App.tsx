@@ -2,7 +2,7 @@
 // MARTIAL INSTINCT - MAIN APP
 // ============================================
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { MemberView } from './components/member/MemberView';
 import { InstructorView } from './components/instructor/InstructorView';
@@ -226,11 +226,107 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
+// ── Notifications Dropdown ──────────────────────────────────────────────────────
+const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { currentUser, notifications, markNotificationRead, clearNotifications } = useApp();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+
+  if (!currentUser) return null;
+
+  const userNotifs = notifications
+    .filter(n => n.oduserId === currentUser.id)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const unreadCount = userNotifs.filter(n => !n.read).length;
+
+  const formatTime = (date: Date) => {
+    const d = new Date(date);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const mins = Math.floor(diffMs / 60_000);
+    if (mins < 1) return 'Gerade eben';
+    if (mins < 60) return `vor ${mins} Min`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `vor ${hours} Std`;
+    return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  };
+
+  return (
+    <div
+      ref={ref}
+      className="absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-1rem)] bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+        <h3 className="text-white font-bold text-sm">
+          Benachrichtigungen
+          {unreadCount > 0 && (
+            <span className="ml-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">{unreadCount}</span>
+          )}
+        </h3>
+        {userNotifs.length > 0 && (
+          <button
+            onClick={() => { clearNotifications(); onClose(); }}
+            className="text-gray-400 hover:text-white text-xs transition-colors"
+          >
+            Alle gelesen
+          </button>
+        )}
+      </div>
+
+      {/* List */}
+      <div className="max-h-96 overflow-y-auto">
+        {userNotifs.length === 0 ? (
+          <div className="px-4 py-8 text-center">
+            <div className="text-3xl mb-2">🔔</div>
+            <p className="text-gray-500 text-sm">Keine Benachrichtigungen</p>
+          </div>
+        ) : (
+          userNotifs.map(notif => (
+            <div
+              key={notif.id}
+              className={`px-4 py-3 border-b border-gray-800/60 last:border-0 transition-colors ${
+                notif.read ? 'opacity-60' : 'bg-gray-800/30'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="text-white text-sm font-semibold leading-tight">{notif.title}</div>
+                  <div className="text-gray-400 text-xs mt-0.5 leading-snug">{notif.message}</div>
+                  <div className="text-gray-600 text-xs mt-1">{formatTime(notif.createdAt)}</div>
+                </div>
+                {!notif.read && (
+                  <button
+                    onClick={() => markNotificationRead(notif.id)}
+                    className="text-gray-500 hover:text-green-400 text-xs transition-colors flex-shrink-0 mt-0.5"
+                    title="Als gelesen markieren"
+                  >
+                    ✓
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ── Main App Content ───────────────────────────────────────────────────────────
 const AppContent: React.FC = () => {
-  const { currentUser, login, logout, switchUser, members, darkMode } = useApp();
+  const { currentUser, login, logout, switchUser, members, darkMode, notifications } = useApp();
   const [viewMode, setViewMode] = useState<'member' | 'instructor'>('member');
   const [showSettings, setShowSettings] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const isInstructor = currentUser?.role !== 'member';
   const actualViewMode = isInstructor ? viewMode : 'member';
@@ -281,6 +377,30 @@ const AppContent: React.FC = () => {
                 </option>
               ))}
             </select>
+
+            {/* Notifications Bell */}
+            <div className="relative">
+              {(() => {
+                const unread = notifications.filter(n => n.oduserId === currentUser.id && !n.read).length;
+                return (
+                  <button
+                    onClick={() => setShowNotifications(v => !v)}
+                    className="relative text-lg leading-none text-gray-400 hover:text-white transition-colors"
+                    title="Benachrichtigungen"
+                  >
+                    🔔
+                    {unread > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] min-w-[16px] h-4 flex items-center justify-center rounded-full font-bold px-0.5">
+                        {unread > 9 ? '9+' : unread}
+                      </span>
+                    )}
+                  </button>
+                );
+              })()}
+              {showNotifications && (
+                <NotificationsDropdown onClose={() => setShowNotifications(false)} />
+              )}
+            </div>
 
             {/* Settings Button */}
             <button

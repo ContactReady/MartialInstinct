@@ -11,8 +11,9 @@ import { STATUS_DISPLAY, LEVEL_DISPLAY, TechniqueStatus, ModuleLevel } from '../
 import { TechniqueCard } from '../shared/TechniqueCard';
 import { ProgressBar } from '../shared/ProgressBar';
 import { MemberLearningView } from './MemberLearningView';
+import { ProfileView } from '../shared/ProfileView';
 
-type Tab = 'dashboard' | 'lernen' | 'progress' | 'streak' | 'requests';
+type Tab = 'dashboard' | 'lernen' | 'progress' | 'streak' | 'requests' | 'profil';
 type ApplicationType = 'contact' | 'assistant_instructor' | null;
 
 export const MemberView: React.FC = () => {
@@ -242,32 +243,34 @@ export const MemberView: React.FC = () => {
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
           .slice(0, 3);
 
-        if (mySessions.length === 0) return null;
-
         return (
           <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
             <h3 className="text-base font-bold text-white mb-3">🥋 Zuletzt trainiert</h3>
-            <div className="space-y-2">
-              {mySessions.map(session => {
-                const myGroup = session.groups.find(g => g.memberIds.includes(currentUser.id));
-                const techCount = myGroup?.techniqueIds.length ?? 0;
-                const xpGained = techCount * 10;
-                const dateStr = new Date(session.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-                return (
-                  <div key={session.id} className="flex items-center justify-between gap-3 py-1.5">
-                    <div className="min-w-0">
-                      <div className="text-gray-300 text-sm font-medium">
-                        {dateStr} — {session.courseName ?? 'Training'}{session.instructorName ? ` mit ${session.instructorName}` : ''}
+            {mySessions.length === 0 ? (
+              <p className="text-gray-500 text-sm">Noch kein Training dokumentiert</p>
+            ) : (
+              <div className="space-y-2">
+                {mySessions.map(session => {
+                  const myGroup = session.groups.find(g => g.memberIds.includes(currentUser.id));
+                  const techCount = myGroup?.techniqueIds.length ?? 0;
+                  const xpGained = techCount * 10;
+                  const dateStr = new Date(session.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                  return (
+                    <div key={session.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-gray-700/40 last:border-0">
+                      <div className="min-w-0">
+                        <div className="text-gray-300 text-sm font-medium">
+                          {dateStr} — {session.courseName ?? 'Training'}{session.instructorName ? ` mit ${session.instructorName}` : ''}
+                        </div>
+                        <div className="text-gray-500 text-xs">
+                          {techCount} Technik{techCount !== 1 ? 'en' : ''} trainiert
+                        </div>
                       </div>
-                      <div className="text-gray-500 text-xs">
-                        {techCount} Technik{techCount !== 1 ? 'en' : ''} trainiert
-                      </div>
+                      <span className="text-yellow-400 text-xs font-bold flex-shrink-0">+{xpGained} XP</span>
                     </div>
-                    <span className="text-yellow-400 text-xs font-bold flex-shrink-0">+{xpGained} XP</span>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         );
       })()}
@@ -1371,7 +1374,7 @@ export const MemberView: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       {/* Content */}
-      <main className={`max-w-4xl mx-auto pb-24 ${activeTab === 'lernen' ? 'h-[calc(100vh-4rem)] flex flex-col' : 'p-4'}`}>
+      <main className={`max-w-4xl mx-auto ${activeTab === 'lernen' ? 'h-[calc(100vh-4rem)] flex flex-col' : activeTab === 'profil' ? '' : 'p-4 pb-24'}`}>
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'lernen' && <MemberLearningView />}
         {activeTab === 'progress' && (
@@ -1400,17 +1403,19 @@ export const MemberView: React.FC = () => {
         )}
         {activeTab === 'streak' && renderStreak()}
         {activeTab === 'requests' && renderRequests()}
+        {activeTab === 'profil' && <ProfileView member={currentUser} />}
       </main>
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800">
         <div className="max-w-4xl mx-auto flex">
           {[
-            { id: 'dashboard' as Tab, icon: '🏠', label: 'Dashboard' },
+            { id: 'dashboard' as Tab, icon: '🏠', label: 'Home' },
             { id: 'lernen' as Tab, icon: '🎓', label: 'Lernen' },
-            { id: 'progress' as Tab, icon: '🏆', label: 'Rangliste' },
+            { id: 'progress' as Tab, icon: '🏆', label: 'Rang' },
             { id: 'streak' as Tab, icon: '🔥', label: 'Streak' },
             { id: 'requests' as Tab, icon: '📝', label: 'Anfragen' },
+            { id: 'profil' as Tab, icon: '👤', label: 'Profil' },
           ].map(tab => (
             <button
               key={tab.id}

@@ -5,11 +5,13 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import {
   Member,
+  Badge,
   CheckIn,
   BoardMessage,
   Notification,
   TechniqueStatus,
   ModuleLevel,
+  InstructorRole,
   ExamRequest,
   EXAM_PERMISSIONS,
   ContactApplication,
@@ -99,6 +101,11 @@ interface AppContextType {
 
   // Profile
   updateProfile: (email: string, password: string) => void;
+  updateProfileImage: (base64: string) => void;
+  computeBadges: (member: Member) => Badge[];
+
+  // Admin
+  updateMemberRole: (memberId: string, role: InstructorRole) => void;
 
   // Helpers
   // Trainingsreport
@@ -121,6 +128,9 @@ interface AppContextType {
   getModuleProgress: (memberId: string, moduleId: string) => { total: number; completed: number; percentage: number };
   getBlockProgress: (memberId: string, blockLevel: ModuleLevel) => { total: number; completed: number; percentage: number };
   isBlockUnlocked: (memberId: string, blockLevel: ModuleLevel) => boolean;
+
+  // Admin
+  updateMemberRole: (memberId: string, role: InstructorRole) => void;
 }
 
 // ============================================
@@ -1005,6 +1015,50 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(prev => prev ? { ...prev, email, password } : null);
   }, [currentUser]);
 
+  const updateProfileImage = useCallback((base64: string) => {
+    if (!currentUser) return;
+    setMembers(prev => prev.map(m =>
+      m.id === currentUser.id ? { ...m, profileImageUrl: base64 } : m
+    ));
+    setCurrentUser(prev => prev ? { ...prev, profileImageUrl: base64 } : null);
+  }, [currentUser]);
+
+  const computeBadges = useCallback((member: Member): Badge[] => {
+    const badges: Badge[] = [];
+    const tp = member.techniqueProgress;
+    const streak = member.streak;
+
+    const techPassedCount = Object.values(tp).filter(p => p.status === 'tech_passed' || p.status === 'tac_passed' || p.status === 'tac_pending').length;
+    const tacPassedCount = Object.values(tp).filter(p => p.status === 'tac_passed').length;
+
+    if (techPassedCount >= 1) {
+      badges.push({ id: 'first_tech', label: 'Erste Prüfung', icon: '🎯', description: 'Erste technische Prüfung bestanden', earnedAt: new Date() });
+    }
+    if (tacPassedCount >= 1) {
+      badges.push({ id: 'first_tac', label: 'Taktik-Meister', icon: '⚔️', description: 'Erste taktische Prüfung bestanden', earnedAt: new Date() });
+    }
+    if (streak.currentStreak >= 4) {
+      badges.push({ id: 'streak_4', label: '4-Wochen Streak', icon: '🔥', description: '4 Wochen am Stück trainiert', earnedAt: new Date() });
+    }
+    if (streak.currentStreak >= 10) {
+      badges.push({ id: 'streak_10', label: '10-Wochen Krieger', icon: '💪', description: '10 Wochen am Stück trainiert', earnedAt: new Date() });
+    }
+    if (streak.longestStreak >= 20) {
+      badges.push({ id: 'streak_20', label: 'Eiserner Wille', icon: '🏆', description: '20 Wochen Streak erreicht', earnedAt: new Date() });
+    }
+    if ((member.xp ?? 0) >= 500) {
+      badges.push({ id: 'xp_500', label: 'XP-Veteran', icon: '⚡', description: '500 XP gesammelt', earnedAt: new Date() });
+    }
+    if (member.certificates.length >= 1) {
+      badges.push({ id: 'certified', label: 'Zertifiziert', icon: '📜', description: 'Erstes Zertifikat erhalten', earnedAt: new Date() });
+    }
+    if (member.role !== 'member') {
+      badges.push({ id: 'instructor', label: 'Instructor', icon: '🎓', description: 'Ausbilderrang erreicht', earnedAt: new Date() });
+    }
+
+    return badges;
+  }, []);
+
   // ============================================
   // HELPERS
   // ============================================
@@ -1173,6 +1227,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [currentUser]);
 
   // ============================================
+  // ADMIN
+  // ============================================
+
+  const updateMemberRole = useCallback((memberId: string, role: InstructorRole) => {
+    setMembers(prev => prev.map(m =>
+      m.id === memberId ? { ...m, role } : m
+    ));
+    if (currentUser?.id === memberId) {
+      setCurrentUser(prev => prev ? { ...prev, role } : null);
+    }
+  }, [currentUser]);
+
+  // ============================================
   // VALUE
   // ============================================
 
@@ -1216,6 +1283,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     completeModuleQuiz,
     toggleDarkMode,
     updateProfile,
+    updateProfileImage,
+    computeBadges,
     trainingSessions,
     completeTrainingSession,
     getSessionsForMember,
@@ -1231,7 +1300,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     getMemberProgress,
     getModuleProgress,
     getBlockProgress,
-    isBlockUnlocked
+    isBlockUnlocked,
+    updateMemberRole,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
