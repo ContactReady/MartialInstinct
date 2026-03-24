@@ -134,34 +134,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
         </div>
 
         <div className="px-5 pb-28 space-y-5 mt-1">
-          {/* Stats */}
+          {/* Stats — kompakt */}
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
-              <div className="text-2xl font-black text-orange-400">{member.streak.currentStreak}</div>
+              <div className="text-xl font-black text-orange-400">{member.streak.currentStreak}W</div>
               <div className="text-xs text-gray-400 mt-0.5">🔥 Streak</div>
             </div>
             <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
-              <div className="text-2xl font-black text-yellow-400">{member.xp ?? 0}</div>
-              <div className="text-xs text-gray-400 mt-0.5">⚡ XP</div>
+              <div className="text-xl font-black text-blue-400">{techPassedCount}</div>
+              <div className="text-xs text-gray-400 mt-0.5">◐ Technisch</div>
             </div>
             <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
-              <div className="text-2xl font-black text-green-400">{tacPassedCount}</div>
+              <div className="text-xl font-black text-green-400">{tacPassedCount}</div>
               <div className="text-xs text-gray-400 mt-0.5">● Vollständig</div>
-            </div>
-          </div>
-
-          {/* Technik-Überblick */}
-          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-            <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Techniken</div>
-            <div className="flex gap-4 text-sm">
-              <div>
-                <span className="text-blue-400 font-bold">{techPassedCount}</span>
-                <span className="text-gray-400 ml-1">technisch bestanden</span>
-              </div>
-              <div>
-                <span className="text-green-400 font-bold">{tacPassedCount}</span>
-                <span className="text-gray-400 ml-1">vollständig</span>
-              </div>
             </div>
           </div>
 

@@ -193,48 +193,23 @@ export const MemberView: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-          <div className="text-3xl mb-2">🔥</div>
-          <div className="text-2xl font-bold text-white">{currentUser.streak.currentStreak}</div>
-          <div className="text-gray-400 text-sm">Wochen Streak</div>
-        </div>
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-          <div className="text-3xl mb-2">🩹</div>
-          <div className="text-2xl font-bold text-white">{currentUser.streak.bandaids}/{currentUser.streak.maxBandaids}</div>
-          <div className="text-gray-400 text-sm">Pflaster</div>
-        </div>
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-          <div className="text-3xl mb-2">✅</div>
-          <div className="text-2xl font-bold text-white">{getCompletedCount()}</div>
-          <div className="text-gray-400 text-sm">Techniken bestanden</div>
-        </div>
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-          <div className="text-3xl mb-2">{LEVEL_DISPLAY[currentUser.currentLevel]?.icon || '⚪'}</div>
-          <div className="text-lg font-bold text-white">{LEVEL_DISPLAY[currentUser.currentLevel]?.subtitle || 'Beginner'}</div>
-          <div className="text-gray-400 text-sm">Aktuelles Level</div>
-        </div>
-      </div>
-
-      {/* Notifications */}
-      {userNotifications.length > 0 && (
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-          <h3 className="text-lg font-bold text-white mb-3">Neue Benachrichtigungen</h3>
-          <div className="space-y-2">
-            {userNotifications.slice(0, 5).map(notif => (
-              <div 
-                key={notif.id}
-                onClick={() => markNotificationRead(notif.id)}
-                className="bg-gray-700/50 p-3 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors"
-              >
-                <div className="font-medium text-white">{notif.title}</div>
-                <div className="text-gray-400 text-sm">{notif.message}</div>
-              </div>
-            ))}
+      {/* Stats Grid — kompakt, Streak/Level sind in der Status-Leiste */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 flex items-center gap-3">
+          <span className="text-2xl">🩹</span>
+          <div>
+            <div className="text-xl font-bold text-white">{currentUser.streak.bandaids}/{currentUser.streak.maxBandaids}</div>
+            <div className="text-gray-400 text-sm">Pflaster verfügbar</div>
           </div>
         </div>
-      )}
+        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 flex items-center gap-3">
+          <span className="text-2xl">✅</span>
+          <div>
+            <div className="text-xl font-bold text-white">{getCompletedCount()}</div>
+            <div className="text-gray-400 text-sm">Techniken bestanden</div>
+          </div>
+        </div>
+      </div>
 
       {/* Training-Log */}
       {(() => {
@@ -924,19 +899,15 @@ export const MemberView: React.FC = () => {
   // Render Streak Tab
   const renderStreak = () => (
     <div className="space-y-6">
-      {/* Streak Card */}
-      <div className="bg-gradient-to-r from-orange-900/50 to-red-900/50 rounded-xl p-6 border border-orange-700">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-5xl mb-2">🔥</div>
-            <div className="text-4xl font-bold text-white">{currentUser.streak.currentStreak}</div>
-            <div className="text-orange-400">Wochen Streak</div>
-          </div>
-          <div className="text-right">
-            <div className="text-gray-400 text-sm">Längster Streak</div>
-            <div className="text-2xl font-bold text-white">{currentUser.streak.longestStreak}</div>
-            <div className="text-gray-400 text-sm">Wochen</div>
-          </div>
+      {/* Streak Übersicht — kompakt */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-gradient-to-br from-orange-900/50 to-red-900/50 rounded-xl p-4 border border-orange-700/50 text-center">
+          <div className="text-3xl font-black text-orange-400">{currentUser.streak.currentStreak}</div>
+          <div className="text-xs text-orange-300/70 mt-0.5">🔥 Aktueller Streak</div>
+        </div>
+        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 text-center">
+          <div className="text-3xl font-black text-white">{currentUser.streak.longestStreak}</div>
+          <div className="text-xs text-gray-400 mt-0.5">🏅 Längster Streak</div>
         </div>
       </div>
 

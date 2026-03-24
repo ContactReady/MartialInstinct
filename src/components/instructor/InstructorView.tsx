@@ -10,6 +10,7 @@ import {
   LEVEL_DISPLAY,
   ROLE_DISPLAY,
   EXAM_PERMISSIONS,
+  hasAdminAccess,
   Member,
   CheckIn,
   InstructorRole,
@@ -37,8 +38,8 @@ function detectCurrentCourse(locationId: string): string | null {
 
 // ── Berechtigungsprüfung: darf dieser Instructor diese Anfrage bestätigen? ───
 function canApproveCheckIn(role: InstructorRole, instructorId: string, checkIn: CheckIn): boolean {
-  // tactical_instructor und höher: alles erlaubt
-  if (['tactical_instructor', 'head_instructor', 'owner', 'admin'].includes(role)) return true;
+  // full_instructor und höher: alles erlaubt
+  if (['full_instructor', 'head_instructor', 'owner', 'admin'].includes(role)) return true;
   // assistant_instructor / instructor: nur eigene Kursteilnehmer
   const ownCourse = COURSES.find(
     c => c.instructorId === instructorId && c.participantIds.includes(checkIn.memberId)
@@ -77,6 +78,7 @@ export const InstructorView: React.FC = () => {
     acknowledgeWish,
     completeTrainingSession,
     updateMemberRole,
+    updateAdminAccess,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>('lernen');
@@ -131,7 +133,7 @@ export const InstructorView: React.FC = () => {
       case 'evaluate':
         return EXAM_PERMISSIONS[currentUser.role].length > 0;
       case 'members':
-        return ['head_instructor', 'owner'].includes(currentUser.role);
+        return hasAdminAccess(currentUser) || ['head_instructor'].includes(currentUser.role);
       case 'requests':
         return EXAM_PERMISSIONS[currentUser.role].length > 0;
       case 'applications':
@@ -139,7 +141,7 @@ export const InstructorView: React.FC = () => {
       case 'board':
         return currentUser.role !== 'member';
       case 'admin':
-        return currentUser.role === 'admin';
+        return hasAdminAccess(currentUser);
       default:
         return false;
     }
@@ -173,7 +175,7 @@ export const InstructorView: React.FC = () => {
 
     const onlineMembers = getOnlineMembers().filter(m => isOnline(m) || isInactive(m));
 
-    const instructorRoles = ['assistant_instructor', 'instructor', 'tactical_instructor', 'head_instructor', 'owner', 'admin'];
+    const instructorRoles = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'owner', 'admin'];
     const onlineInstructors = onlineMembers.filter(m => instructorRoles.includes(m.role));
     const onlineRegularMembers = onlineMembers.filter(m => m.role === 'member');
 
@@ -1350,10 +1352,12 @@ export const InstructorView: React.FC = () => {
       { value: 'member', label: 'Member' },
       { value: 'assistant_instructor', label: 'Assistant Instructor' },
       { value: 'instructor', label: 'Instructor' },
-      { value: 'tactical_instructor', label: 'Tactical Instructor' },
+      { value: 'full_instructor', label: 'Full Instructor' },
       { value: 'head_instructor', label: 'Head Instructor' },
       { value: 'owner', label: 'Owner' },
     ];
+
+    const isOwnerOrAdmin = currentUser.role === 'owner' || currentUser.role === 'admin';
 
     return (
       <div className="space-y-4">
@@ -1361,45 +1365,80 @@ export const InstructorView: React.FC = () => {
           <span className="text-2xl">🔐</span>
           <div>
             <h2 className="text-white font-bold text-lg">Admin-Bereich</h2>
-            <p className="text-gray-400 text-sm">Rollen aller Mitglieder verwalten</p>
+            <p className="text-gray-400 text-sm">Rollen und Admin-Zugang verwalten</p>
           </div>
+        </div>
+
+        {/* Legende */}
+        <div className="bg-gray-800/30 rounded-xl p-3 border border-gray-700/50 text-xs text-gray-400 space-y-1">
+          <div className="flex items-center gap-2"><span className="text-green-400 font-bold">✓ Admin</span> Owner & Admin: immer. Head Instructor: standardmäßig, individuell entziehbar.</div>
         </div>
 
         <div className="space-y-3">
           {members.map(m => {
             const roleInfo = ROLE_DISPLAY[m.role];
+            const memberHasAdmin = hasAdminAccess(m);
+            const canToggleAdmin = isOwnerOrAdmin && m.role === 'head_instructor' && m.id !== currentUser.id;
+            const adminFixed = m.role === 'owner' || m.role === 'admin';
+
             return (
-              <div key={m.id} className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 flex items-center gap-3">
-                {/* Avatar */}
-                <div className="w-10 h-10 rounded-full bg-gray-700 border border-gray-600 flex items-center justify-center text-xl flex-shrink-0 overflow-hidden">
-                  {m.profileImageUrl
-                    ? <img src={m.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                    : <span>{m.avatar}</span>
-                  }
-                </div>
-
-                {/* Info */}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-white font-semibold text-sm">{m.name}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${roleInfo.bgColor} ${roleInfo.color}`}>
-                      {roleInfo.label}
-                    </span>
+              <div key={m.id} className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                <div className="flex items-center gap-3">
+                  {/* Avatar */}
+                  <div className="w-10 h-10 rounded-full bg-gray-700 border border-gray-600 flex items-center justify-center text-xl flex-shrink-0 overflow-hidden">
+                    {m.profileImageUrl
+                      ? <img src={m.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                      : <span>{m.avatar}</span>
+                    }
                   </div>
-                  <div className="text-gray-500 text-xs mt-0.5 truncate">{m.email}</div>
-                  <div className="text-gray-600 text-xs">Level: {m.currentLevel}</div>
-                </div>
 
-                {/* Rolle-Dropdown */}
-                <select
-                  value={m.role}
-                  onChange={e => updateMemberRole(m.id, e.target.value as InstructorRole)}
-                  className="bg-gray-700 border border-gray-600 text-white text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-red-500 flex-shrink-0"
-                >
-                  {roleOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+                  {/* Info */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-white font-semibold text-sm">{m.name}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${roleInfo.bgColor} ${roleInfo.color}`}>
+                        {roleInfo.label}
+                      </span>
+                      {memberHasAdmin && (
+                        <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-red-900/30 text-red-400">
+                          {adminFixed ? '🔐 Admin (fix)' : '🔐 Admin'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-gray-500 text-xs mt-0.5 truncate">{m.email}</div>
+                  </div>
+
+                  {/* Controls */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Admin-Toggle (nur für Head Instructors, nur Owner/Admin darf toggeln) */}
+                    {canToggleAdmin && (
+                      <button
+                        onClick={() => updateAdminAccess(m.id, !memberHasAdmin)}
+                        className={`text-xs px-2.5 py-1.5 rounded-lg font-medium transition-all ${
+                          memberHasAdmin
+                            ? 'bg-red-900/40 text-red-400 hover:bg-red-900/60'
+                            : 'bg-gray-700/60 text-gray-400 hover:bg-gray-700'
+                        }`}
+                        title={memberHasAdmin ? 'Admin-Zugang entziehen' : 'Admin-Zugang erteilen'}
+                      >
+                        {memberHasAdmin ? '🔓 Entziehen' : '🔐 Admin'}
+                      </button>
+                    )}
+
+                    {/* Rolle-Dropdown (nur Owner/Admin) */}
+                    {isOwnerOrAdmin && m.id !== currentUser.id && (
+                      <select
+                        value={m.role}
+                        onChange={e => updateMemberRole(m.id, e.target.value as InstructorRole)}
+                        className="bg-gray-700 border border-gray-600 text-white text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-red-500"
+                      >
+                        {roleOptions.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </div>
               </div>
             );
           })}

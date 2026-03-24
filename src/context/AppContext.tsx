@@ -106,6 +106,7 @@ interface AppContextType {
 
   // Admin
   updateMemberRole: (memberId: string, role: InstructorRole) => void;
+  updateAdminAccess: (memberId: string, hasAccess: boolean) => void;
 
   // Helpers
   // Trainingsreport
@@ -128,9 +129,6 @@ interface AppContextType {
   getModuleProgress: (memberId: string, moduleId: string) => { total: number; completed: number; percentage: number };
   getBlockProgress: (memberId: string, blockLevel: ModuleLevel) => { total: number; completed: number; percentage: number };
   isBlockUnlocked: (memberId: string, blockLevel: ModuleLevel) => boolean;
-
-  // Admin
-  updateMemberRole: (memberId: string, role: InstructorRole) => void;
 }
 
 // ============================================
@@ -1155,7 +1153,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     
     // Instructor level requires being assistant instructor first
     if (blockLevel === 'instructor_level') {
-      return member.role === 'instructor' || member.role === 'tactical_instructor' || 
+      return member.role === 'instructor' || member.role === 'full_instructor' ||
              member.role === 'head_instructor' || member.role === 'owner';
     }
     
@@ -1239,6 +1237,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [currentUser]);
 
+  const updateAdminAccess = useCallback((memberId: string, hasAccess: boolean) => {
+    setMembers(prev => prev.map(m =>
+      m.id === memberId ? { ...m, adminAccess: hasAccess } : m
+    ));
+    if (currentUser?.id === memberId) {
+      setCurrentUser(prev => prev ? { ...prev, adminAccess: hasAccess } : null);
+    }
+  }, [currentUser]);
+
   // ============================================
   // VALUE
   // ============================================
@@ -1302,6 +1309,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     getBlockProgress,
     isBlockUnlocked,
     updateMemberRole,
+    updateAdminAccess,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

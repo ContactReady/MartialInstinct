@@ -18,11 +18,11 @@ export type TechniqueStatus =
 export type ModuleLevel = 'conflict' | 'combat' | 'tactical' | 'contact' | 'assistant_instructor' | 'instructor_level';
 
 // Instructor-Hierarchie
-export type InstructorRole = 
+export type InstructorRole =
   | 'member'              // Normales Mitglied
   | 'assistant_instructor' // Unterstützt, keine Prüfberechtigung
   | 'instructor'          // Leitet Trainings, keine Prüfungsfreigabe Combat+
-  | 'tactical_instructor' // Alle Level unterrichten, keine Tactical-Prüfung
+  | 'full_instructor'     // Alle Level unterrichten, keine Tactical-Prüfung
   | 'head_instructor'     // Darf Conflict, Combat, Tactical prüfen
   | 'owner'               // Darf Contact Ready freigeben, Systemautorität
   | 'admin';              // Administrator mit allen Rechten (Jay I)
@@ -32,7 +32,7 @@ export const EXAM_PERMISSIONS: Record<InstructorRole, ModuleLevel[]> = {
   member: [],
   assistant_instructor: [],
   instructor: [],
-  tactical_instructor: ['conflict'],
+  full_instructor: ['conflict'],
   head_instructor: ['conflict', 'combat', 'tactical'],
   owner: ['conflict', 'combat', 'tactical', 'contact', 'assistant_instructor', 'instructor_level'],
   admin: ['conflict', 'combat', 'tactical', 'contact', 'assistant_instructor', 'instructor_level']
@@ -43,10 +43,17 @@ export const TEACHING_PERMISSIONS: Record<InstructorRole, ModuleLevel[]> = {
   member: [],
   assistant_instructor: ['conflict'],
   instructor: ['conflict', 'combat'],
-  tactical_instructor: ['conflict', 'combat', 'tactical', 'contact'],
+  full_instructor: ['conflict', 'combat', 'tactical', 'contact'],
   head_instructor: ['conflict', 'combat', 'tactical', 'contact'],
   owner: ['conflict', 'combat', 'tactical', 'contact', 'assistant_instructor', 'instructor_level'],
   admin: ['conflict', 'combat', 'tactical', 'contact', 'assistant_instructor', 'instructor_level']
+};
+
+// Admin-Zugang: Owner & Admin immer, Head Instructor individuell entziehbar
+export const hasAdminAccess = (member: { role: InstructorRole; adminAccess?: boolean }): boolean => {
+  if (member.role === 'admin' || member.role === 'owner') return true;
+  if (member.role === 'head_instructor') return member.adminAccess !== false; // default true
+  return false;
 };
 
 // Standort
@@ -248,6 +255,9 @@ export interface Member {
 
   // Instructor-Lernfortschritt (nur für Instructor-Rollen relevant)
   instructorLessonProgress?: Record<string, InstructorLessonProgress>;
+
+  // Admin-Zugang (nur relevant für head_instructor — owner/admin immer admin)
+  adminAccess?: boolean;
 
   // Profilbild (base64)
   profileImageUrl?: string;
@@ -554,7 +564,7 @@ export const ROLE_DISPLAY: Record<InstructorRole, { label: string; color: string
   member: { label: 'Member', color: 'text-gray-400', bgColor: 'bg-gray-700' },
   assistant_instructor: { label: 'Assistant Instructor', color: 'text-yellow-400', bgColor: 'bg-yellow-900/30' },
   instructor: { label: 'Instructor', color: 'text-blue-400', bgColor: 'bg-blue-900/30' },
-  tactical_instructor: { label: 'Tactical Instructor', color: 'text-orange-400', bgColor: 'bg-orange-900/30' },
+  full_instructor: { label: 'Full Instructor', color: 'text-orange-400', bgColor: 'bg-orange-900/30' },
   head_instructor: { label: 'Head Instructor', color: 'text-purple-400', bgColor: 'bg-purple-900/30' },
   owner: { label: 'Owner', color: 'text-red-400', bgColor: 'bg-red-900/30' },
   admin: { label: 'Admin', color: 'text-red-400', bgColor: 'bg-red-900/30' }

@@ -6,7 +6,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { MemberView } from './components/member/MemberView';
 import { InstructorView } from './components/instructor/InstructorView';
-import { ROLE_DISPLAY } from './types';
+import { ROLE_DISPLAY, LEVEL_DISPLAY } from './types';
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 const Login: React.FC<{ onLogin: (email: string, password: string) => boolean }> = ({ onLogin }) => {
@@ -421,8 +421,27 @@ const AppContent: React.FC = () => {
         </div>
       </div>
 
+      {/* Persistent Status Strip — nur für Members im Member-View */}
+      {actualViewMode === 'member' && (
+        <div className="fixed top-10 left-0 right-0 z-40 bg-gray-900/95 backdrop-blur border-b border-gray-800/60 px-4 py-1.5">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4 text-xs">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 text-orange-400 font-semibold">
+                🔥 <span>{currentUser.streak.currentStreak}W</span>
+              </span>
+              <span className="flex items-center gap-1 text-yellow-400 font-semibold">
+                ⚡ <span>{currentUser.xp ?? 0} XP</span>
+              </span>
+            </div>
+            <span className={`text-xs font-semibold ${LEVEL_DISPLAY[currentUser.currentLevel].color}`}>
+              {LEVEL_DISPLAY[currentUser.currentLevel].icon} {LEVEL_DISPLAY[currentUser.currentLevel].name}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
-      <div className="pt-10">
+      <div className={actualViewMode === 'member' ? 'pt-16' : 'pt-10'}>
         {actualViewMode === 'member' ? <MemberView /> : <InstructorView />}
       </div>
 
