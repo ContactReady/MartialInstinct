@@ -6,7 +6,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { MemberView } from './components/member/MemberView';
 import { InstructorView } from './components/instructor/InstructorView';
-import { ROLE_DISPLAY, LEVEL_DISPLAY } from './types';
+import { ROLE_DISPLAY, LEVEL_DISPLAY, hasAdminAccess } from './types';
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 const Login: React.FC<{ onLogin: (email: string, password: string) => boolean }> = ({ onLogin }) => {
@@ -156,7 +156,6 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 space-y-3">
           <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Zugangsdaten</div>
 
-          {/* E-Mail */}
           <div>
             <label className="text-xs text-gray-400 mb-1 block">E-Mail</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
@@ -165,46 +164,22 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           <div className="border-t border-gray-700/60 pt-3">
             <div className="text-xs text-gray-500 mb-3 flex items-center justify-between">
               <span>Passwort ändern</span>
-              <button
-                type="button"
-                onClick={() => setShowPw(v => !v)}
-                className="text-gray-500 hover:text-gray-300 text-xs"
-              >
+              <button type="button" onClick={() => setShowPw(v => !v)} className="text-gray-500 hover:text-gray-300 text-xs">
                 {showPw ? '🙈 verbergen' : '👁️ anzeigen'}
               </button>
             </div>
-
-            {/* Aktuelles Passwort */}
             <div className="space-y-2">
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Aktuelles Passwort</label>
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  value={currentPw}
-                  onChange={e => setCurrentPw(e.target.value)}
-                  placeholder="Aktuelles Passwort eingeben…"
-                  className={inputCls}
-                />
+                <input type={showPw ? 'text' : 'password'} value={currentPw} onChange={e => setCurrentPw(e.target.value)} placeholder="Aktuelles Passwort eingeben…" className={inputCls} />
               </div>
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Neues Passwort</label>
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  value={newPw}
-                  onChange={e => setNewPw(e.target.value)}
-                  placeholder="Min. 8 Zeichen, Zahl, Sonderzeichen…"
-                  className={inputCls}
-                />
+                <input type={showPw ? 'text' : 'password'} value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Min. 8 Zeichen, Zahl, Sonderzeichen…" className={inputCls} />
               </div>
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Neues Passwort bestätigen</label>
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  value={confirmPw}
-                  onChange={e => setConfirmPw(e.target.value)}
-                  placeholder="Wiederholen…"
-                  className={inputCls}
-                />
+                <input type={showPw ? 'text' : 'password'} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Wiederholen…" className={inputCls} />
               </div>
             </div>
             <p className="text-gray-600 text-xs mt-2">Leer lassen = Passwort bleibt unverändert</p>
@@ -214,9 +189,7 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
           <button
             onClick={handleSave}
-            className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all ${
-              saved ? 'bg-green-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'
-            }`}
+            className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all ${saved ? 'bg-green-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'}`}
           >
             {saved ? '✅ Gespeichert!' : 'Speichern'}
           </button>
@@ -226,7 +199,7 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
-// ── Notifications Dropdown ──────────────────────────────────────────────────────
+// ── Notifications Dropdown ─────────────────────────────────────────────────────
 const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { currentUser, notifications, markNotificationRead, clearNotifications } = useApp();
   const ref = useRef<HTMLDivElement>(null);
@@ -249,8 +222,7 @@ const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) =
 
   const formatTime = (date: Date) => {
     const d = new Date(date);
-    const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
+    const diffMs = Date.now() - d.getTime();
     const mins = Math.floor(diffMs / 60_000);
     if (mins < 1) return 'Gerade eben';
     if (mins < 60) return `vor ${mins} Min`;
@@ -260,62 +232,150 @@ const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) =
   };
 
   return (
-    <div
-      ref={ref}
-      className="absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-1rem)] bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden"
-    >
-      {/* Header */}
+    <div ref={ref} className="absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-1rem)] bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
         <h3 className="text-white font-bold text-sm">
           Benachrichtigungen
-          {unreadCount > 0 && (
-            <span className="ml-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">{unreadCount}</span>
-          )}
+          {unreadCount > 0 && <span className="ml-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">{unreadCount}</span>}
         </h3>
         {userNotifs.length > 0 && (
-          <button
-            onClick={() => { clearNotifications(); onClose(); }}
-            className="text-gray-400 hover:text-white text-xs transition-colors"
-          >
+          <button onClick={() => { clearNotifications(); onClose(); }} className="text-gray-400 hover:text-white text-xs transition-colors">
             Alle gelesen
           </button>
         )}
       </div>
-
-      {/* List */}
       <div className="max-h-96 overflow-y-auto">
         {userNotifs.length === 0 ? (
           <div className="px-4 py-8 text-center">
             <div className="text-3xl mb-2">🔔</div>
             <p className="text-gray-500 text-sm">Keine Benachrichtigungen</p>
           </div>
-        ) : (
-          userNotifs.map(notif => (
-            <div
-              key={notif.id}
-              className={`px-4 py-3 border-b border-gray-800/60 last:border-0 transition-colors ${
-                notif.read ? 'opacity-60' : 'bg-gray-800/30'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="text-white text-sm font-semibold leading-tight">{notif.title}</div>
-                  <div className="text-gray-400 text-xs mt-0.5 leading-snug">{notif.message}</div>
-                  <div className="text-gray-600 text-xs mt-1">{formatTime(notif.createdAt)}</div>
-                </div>
-                {!notif.read && (
-                  <button
-                    onClick={() => markNotificationRead(notif.id)}
-                    className="text-gray-500 hover:text-green-400 text-xs transition-colors flex-shrink-0 mt-0.5"
-                    title="Als gelesen markieren"
-                  >
-                    ✓
-                  </button>
-                )}
+        ) : userNotifs.map(notif => (
+          <div key={notif.id} className={`px-4 py-3 border-b border-gray-800/60 last:border-0 transition-colors ${notif.read ? 'opacity-60' : 'bg-gray-800/30'}`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="text-white text-sm font-semibold leading-tight">{notif.title}</div>
+                <div className="text-gray-400 text-xs mt-0.5 leading-snug">{notif.message}</div>
+                <div className="text-gray-600 text-xs mt-1">{formatTime(notif.createdAt)}</div>
               </div>
+              {!notif.read && (
+                <button onClick={() => markNotificationRead(notif.id)} className="text-gray-500 hover:text-green-400 text-xs transition-colors flex-shrink-0 mt-0.5" title="Als gelesen markieren">✓</button>
+              )}
             </div>
-          ))
-        )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ── User Dropdown ──────────────────────────────────────────────────────────────
+interface UserDropdownProps {
+  viewMode: 'member' | 'instructor';
+  setViewMode: (v: 'member' | 'instructor') => void;
+  onSettings: () => void;
+  onClose: () => void;
+}
+
+const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onSettings, onClose }) => {
+  const { currentUser, members, switchUser, logout } = useApp();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+
+  if (!currentUser) return null;
+
+  const isInstructor = currentUser.role !== 'member';
+  const canSwitchProfiles = hasAdminAccess(currentUser);
+  const roleInfo = ROLE_DISPLAY[currentUser.role];
+
+  return (
+    <div ref={ref} className="absolute top-full right-0 mt-2 w-72 max-w-[calc(100vw-1rem)] bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden">
+
+      {/* User Info */}
+      <div className="px-4 py-3 border-b border-gray-800 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-xl overflow-hidden flex-shrink-0">
+          {currentUser.profileImageUrl
+            ? <img src={currentUser.profileImageUrl} alt="" className="w-full h-full object-cover" />
+            : <span>{currentUser.avatar}</span>
+          }
+        </div>
+        <div className="min-w-0">
+          <div className="text-white font-semibold text-sm truncate">{currentUser.name}</div>
+          <span className={`text-xs font-medium ${roleInfo.color}`}>{roleInfo.label}</span>
+        </div>
+      </div>
+
+      {/* View Switcher — nur für Instructors */}
+      {isInstructor && (
+        <div className="px-4 py-3 border-b border-gray-800">
+          <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Ansicht</div>
+          <div className="flex bg-gray-800 rounded-lg p-1 gap-1">
+            <button
+              onClick={() => { setViewMode('member'); onClose(); }}
+              className={`flex-1 py-1.5 rounded text-xs font-medium transition-colors ${viewMode === 'member' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            >
+              👤 Member
+            </button>
+            <button
+              onClick={() => { setViewMode('instructor'); onClose(); }}
+              className={`flex-1 py-1.5 rounded text-xs font-medium transition-colors ${viewMode === 'instructor' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            >
+              🥋 Instructor
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Profil-Switcher — nur Admin/Owner */}
+      {canSwitchProfiles && (
+        <div className="px-4 py-3 border-b border-gray-800">
+          <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Profil wechseln</div>
+          <div className="space-y-1 max-h-40 overflow-y-auto">
+            {members.map(m => (
+              <button
+                key={m.id}
+                onClick={() => { switchUser(m.id); onClose(); }}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors text-left ${
+                  m.id === currentUser.id
+                    ? 'bg-gray-700 text-white'
+                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                }`}
+              >
+                <span className="text-base flex-shrink-0">{m.avatar}</span>
+                <span className="truncate flex-1">{m.name}</span>
+                <span className={`flex-shrink-0 text-[10px] font-medium ${ROLE_DISPLAY[m.role].color}`}>
+                  {ROLE_DISPLAY[m.role].label}
+                </span>
+                {m.id === currentUser.id && <span className="text-green-400 text-[10px]">✓</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="px-2 py-2 space-y-0.5">
+        <button
+          onClick={() => { onSettings(); onClose(); }}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors text-left"
+        >
+          <span>⚙️</span>
+          <span>Einstellungen</span>
+        </button>
+        <button
+          onClick={() => { logout(); onClose(); }}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-900/20 transition-colors text-left"
+        >
+          <span>🚪</span>
+          <span>Logout</span>
+        </button>
       </div>
     </div>
   );
@@ -323,125 +383,103 @@ const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) =
 
 // ── Main App Content ───────────────────────────────────────────────────────────
 const AppContent: React.FC = () => {
-  const { currentUser, login, logout, switchUser, members, darkMode, notifications } = useApp();
+  const { currentUser, login, darkMode, notifications } = useApp();
   const [viewMode, setViewMode] = useState<'member' | 'instructor'>('member');
   const [showSettings, setShowSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   const isInstructor = currentUser?.role !== 'member';
   const actualViewMode = isInstructor ? viewMode : 'member';
+
+  const unreadCount = currentUser
+    ? notifications.filter(n => n.oduserId === currentUser.id && !n.read).length
+    : 0;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white" data-theme={darkMode ? 'dark' : 'light'}>
       {!currentUser && <Login onLogin={login} />}
       {currentUser && (<>
-      {/* Fixed Top Bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-800 px-4 py-2">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <span className="text-red-500 font-bold">🥋 MI</span>
 
-            {/* View Mode Switcher (only for instructors) */}
-            {isInstructor && (
-              <div className="flex bg-gray-800 rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode('member')}
-                  className={`px-3 py-1 rounded text-sm transition-colors ${
-                    viewMode === 'member' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Member View
-                </button>
-                <button
-                  onClick={() => setViewMode('instructor')}
-                  className={`px-3 py-1 rounded text-sm transition-colors ${
-                    viewMode === 'instructor' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Instructor View
-                </button>
-              </div>
-            )}
-          </div>
+      {/* ── Fixed Top Bar ── */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-800 px-3 py-2">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
 
-          <div className="flex items-center gap-3">
-            {/* User Switcher (for demo) */}
-            <select
-              value={currentUser.id}
-              onChange={(e) => switchUser(e.target.value)}
-              className="bg-gray-800 text-white text-sm rounded-lg px-3 py-1 border border-gray-700"
-            >
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.avatar} {m.name} ({ROLE_DISPLAY[m.role].label})
-                </option>
-              ))}
-            </select>
+          {/* Left: Logo */}
+          <span className="text-red-500 font-bold text-sm flex-shrink-0">🥋 MI</span>
+
+          {/* Center: Streak + XP — nur Member-View */}
+          {actualViewMode === 'member' && (
+            <div className="flex items-center gap-3 flex-1 justify-center">
+              <span className="flex items-center gap-1 text-orange-400 font-bold text-xs sm:text-sm">
+                🔥 <span>{currentUser.streak.currentStreak}W</span>
+              </span>
+              <span className="w-px h-3 bg-gray-700 flex-shrink-0" />
+              <span className="flex items-center gap-1 text-yellow-400 font-bold text-xs sm:text-sm">
+                ⚡ <span>{currentUser.xp ?? 0} XP</span>
+              </span>
+              <span className="w-px h-3 bg-gray-700 flex-shrink-0 hidden sm:block" />
+              <span className={`text-xs font-semibold hidden sm:block ${LEVEL_DISPLAY[currentUser.currentLevel].color}`}>
+                {LEVEL_DISPLAY[currentUser.currentLevel].icon} {LEVEL_DISPLAY[currentUser.currentLevel].name}
+              </span>
+            </div>
+          )}
+
+          {/* Instructor-View: kein Center-Content, flex-1 als Spacer */}
+          {actualViewMode === 'instructor' && <div className="flex-1" />}
+
+          {/* Right: Bell + Avatar */}
+          <div className="flex items-center gap-2 flex-shrink-0">
 
             {/* Notifications Bell */}
             <div className="relative">
-              {(() => {
-                const unread = notifications.filter(n => n.oduserId === currentUser.id && !n.read).length;
-                return (
-                  <button
-                    onClick={() => setShowNotifications(v => !v)}
-                    className="relative text-lg leading-none text-gray-400 hover:text-white transition-colors"
-                    title="Benachrichtigungen"
-                  >
-                    🔔
-                    {unread > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] min-w-[16px] h-4 flex items-center justify-center rounded-full font-bold px-0.5">
-                        {unread > 9 ? '9+' : unread}
-                      </span>
-                    )}
-                  </button>
-                );
-              })()}
+              <button
+                onClick={() => { setShowNotifications(v => !v); setShowUserDropdown(false); }}
+                className="relative p-1.5 text-gray-400 hover:text-white transition-colors"
+                title="Benachrichtigungen"
+              >
+                <span className="text-lg leading-none">🔔</span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-red-600 text-white text-[9px] min-w-[15px] h-[15px] flex items-center justify-center rounded-full font-bold px-0.5 leading-none">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
               {showNotifications && (
                 <NotificationsDropdown onClose={() => setShowNotifications(false)} />
               )}
             </div>
 
-            {/* Settings Button */}
-            <button
-              onClick={() => setShowSettings(true)}
-              className="text-lg leading-none text-gray-400 hover:text-white transition-colors"
-              title="Einstellungen"
-            >
-              ⚙️
-            </button>
-
-            <button
-              onClick={logout}
-              className="text-gray-400 hover:text-white text-sm transition-colors"
-            >
-              Logout
-            </button>
+            {/* Avatar Button → User Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => { setShowUserDropdown(v => !v); setShowNotifications(false); }}
+                className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl px-2 py-1.5 transition-colors"
+              >
+                <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-sm overflow-hidden flex-shrink-0">
+                  {currentUser.profileImageUrl
+                    ? <img src={currentUser.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                    : <span>{currentUser.avatar}</span>
+                  }
+                </div>
+                <span className="text-white text-xs font-medium hidden sm:block max-w-[80px] truncate">{currentUser.name.split(' ')[0]}</span>
+                <span className="text-gray-400 text-xs">▾</span>
+              </button>
+              {showUserDropdown && (
+                <UserDropdown
+                  viewMode={viewMode}
+                  setViewMode={setViewMode}
+                  onSettings={() => setShowSettings(true)}
+                  onClose={() => setShowUserDropdown(false)}
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Persistent Status Strip — nur für Members im Member-View */}
-      {actualViewMode === 'member' && (
-        <div className="fixed top-10 left-0 right-0 z-40 bg-gray-900/95 backdrop-blur border-b border-gray-800/60 px-4 py-1.5">
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4 text-xs">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1 text-orange-400 font-semibold">
-                🔥 <span>{currentUser.streak.currentStreak}W</span>
-              </span>
-              <span className="flex items-center gap-1 text-yellow-400 font-semibold">
-                ⚡ <span>{currentUser.xp ?? 0} XP</span>
-              </span>
-            </div>
-            <span className={`text-xs font-semibold ${LEVEL_DISPLAY[currentUser.currentLevel].color}`}>
-              {LEVEL_DISPLAY[currentUser.currentLevel].icon} {LEVEL_DISPLAY[currentUser.currentLevel].name}
-            </span>
-          </div>
-        </div>
-      )}
-
       {/* Main Content */}
-      <div className={actualViewMode === 'member' ? 'pt-16' : 'pt-10'}>
+      <div className="pt-10">
         {actualViewMode === 'member' ? <MemberView /> : <InstructorView />}
       </div>
 
