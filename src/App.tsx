@@ -31,9 +31,10 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => boolean }>
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
       <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md border border-gray-800">
         <div className="text-center mb-8">
-          <div className="text-6xl mb-4">🥋</div>
-          <h1 className="text-2xl font-bold text-white">MARTIAL INSTINCT</h1>
-          <p className="text-gray-400 mt-2">Training Management System</p>
+          <div className="flex justify-center mb-4">
+            <img src="/logos/mi-logo-dark.jpg" alt="Martial Instinct" className="h-16 w-auto object-contain rounded-md" />
+          </div>
+          <p className="text-gray-500 text-xs tracking-widest uppercase">Training Management</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -300,11 +301,12 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onSe
 
       {/* User Info */}
       <div className="px-4 py-3 border-b border-gray-800 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-xl overflow-hidden flex-shrink-0">
-          {currentUser.profileImageUrl
-            ? <img src={currentUser.profileImageUrl} alt="" className="w-full h-full object-cover" />
-            : <span>{currentUser.avatar}</span>
-          }
+        <div className="w-10 h-10 rounded-full bg-white border border-gray-700 overflow-hidden flex-shrink-0">
+          <img
+            src={currentUser.profileImageUrl || '/logos/mi-icon.jpg'}
+            alt=""
+            className="w-full h-full object-cover"
+          />
         </div>
         <div className="min-w-0">
           <div className="text-white font-semibold text-sm truncate">{currentUser.name}</div>
@@ -405,8 +407,14 @@ const AppContent: React.FC = () => {
       <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-800 px-3 py-2">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
 
-          {/* Left: Logo */}
-          <span className="text-red-500 font-bold text-sm flex-shrink-0">🥋 MI</span>
+          {/* Left: Logo — WHT_RED auf dunklem Hintergrund, BLK_RED auf hellem */}
+          {darkMode ? (
+            <img src="/logos/mi-logo-dark.jpg" alt="Martial Instinct" className="h-8 w-auto object-contain flex-shrink-0 rounded-sm" />
+          ) : (
+            <div className="flex-shrink-0 bg-white rounded-md px-2 py-0.5">
+              <img src="/logos/mi-logo-light.jpg" alt="Martial Instinct" className="h-7 w-auto object-contain" />
+            </div>
+          )}
 
           {/* Center: Streak + XP — nur Member-View */}
           {actualViewMode === 'member' && (
@@ -456,11 +464,12 @@ const AppContent: React.FC = () => {
                 onClick={() => { setShowUserDropdown(v => !v); setShowNotifications(false); }}
                 className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl px-2 py-1.5 transition-colors"
               >
-                <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-sm overflow-hidden flex-shrink-0">
-                  {currentUser.profileImageUrl
-                    ? <img src={currentUser.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                    : <span>{currentUser.avatar}</span>
-                  }
+                <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-sm overflow-hidden flex-shrink-0">
+                  <img
+                    src={currentUser.profileImageUrl || '/logos/mi-icon.jpg'}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <span className="text-white text-xs font-medium hidden sm:block max-w-[80px] truncate">{currentUser.name.split(' ')[0]}</span>
                 <span className="text-gray-400 text-xs">▾</span>

@@ -94,14 +94,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
         <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 px-6 pt-6 pb-5 flex flex-col items-center">
           {/* Avatar / Foto */}
           <div
-            className={`relative w-24 h-24 rounded-full overflow-hidden border-4 border-gray-700 bg-gray-800 flex items-center justify-center text-5xl ${canEditImage ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+            className={`relative w-24 h-24 rounded-full overflow-hidden border-4 border-gray-700 bg-white flex items-center justify-center text-5xl ${canEditImage ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
             onClick={handleImageClick}
           >
-            {member.profileImageUrl ? (
-              <img src={member.profileImageUrl} alt="Profil" className="w-full h-full object-cover" />
-            ) : (
-              <span>{member.avatar}</span>
-            )}
+            <img
+              src={member.profileImageUrl || '/logos/mi-icon.jpg'}
+              alt="Profil"
+              className="w-full h-full object-cover"
+            />
             {canEditImage && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                 <span className="text-white text-2xl">📷</span>

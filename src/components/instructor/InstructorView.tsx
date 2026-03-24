@@ -1385,11 +1385,12 @@ export const InstructorView: React.FC = () => {
               <div key={m.id} className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
                 <div className="flex items-center gap-3">
                   {/* Avatar */}
-                  <div className="w-10 h-10 rounded-full bg-gray-700 border border-gray-600 flex items-center justify-center text-xl flex-shrink-0 overflow-hidden">
-                    {m.profileImageUrl
-                      ? <img src={m.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                      : <span>{m.avatar}</span>
-                    }
+                  <div className="w-10 h-10 rounded-full bg-white border border-gray-600 flex-shrink-0 overflow-hidden">
+                    <img
+                      src={m.profileImageUrl || '/logos/mi-icon.jpg'}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
                   </div>
 
                   {/* Info */}

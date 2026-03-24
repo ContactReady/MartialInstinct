@@ -10,6 +10,7 @@ import {
   BoardMessage,
   Notification,
   TechniqueStatus,
+  TechniqueProgress,
   ModuleLevel,
   InstructorRole,
   ExamRequest,
@@ -377,7 +378,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(prev => prev ? updateMember(prev) : null);
   }, [currentUser]);
 
-  const approveExam = useCallback((memberId: string, requestId: string, feedback: string) => {
+  const approveExam = useCallback((memberId: string, requestId: string, feedback?: string) => {
     if (!currentUser) return;
 
     const member = members.find(m => m.id === memberId);
