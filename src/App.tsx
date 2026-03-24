@@ -32,7 +32,7 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => boolean }>
       <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md border border-gray-800">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <img src="/logos/mi-logo-dark.jpg" alt="Martial Instinct" className="h-16 w-auto object-contain rounded-md" />
+            <img src="/logos/mi-logo-landscape-dark.svg" alt="Martial Instinct" className="h-16 w-auto object-contain" />
           </div>
           <p className="text-gray-500 text-xs tracking-widest uppercase">Training Management</p>
         </div>
@@ -407,14 +407,12 @@ const AppContent: React.FC = () => {
       <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-800 px-3 py-2">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
 
-          {/* Left: Logo — WHT_RED auf dunklem Hintergrund, BLK_RED auf hellem */}
-          {darkMode ? (
-            <img src="/logos/mi-logo-dark.jpg" alt="Martial Instinct" className="h-8 w-auto object-contain flex-shrink-0 rounded-sm" />
-          ) : (
-            <div className="flex-shrink-0 bg-white rounded-md px-2 py-0.5">
-              <img src="/logos/mi-logo-light.jpg" alt="Martial Instinct" className="h-7 w-auto object-contain" />
-            </div>
-          )}
+          {/* Left: Logo — transparente SVGs, kein Badge nötig */}
+          <img
+            src={darkMode ? '/logos/mi-logo-landscape-dark.svg' : '/logos/mi-logo-landscape-light.svg'}
+            alt="Martial Instinct"
+            className="h-8 w-auto object-contain flex-shrink-0"
+          />
 
           {/* Center: Streak + XP — nur Member-View */}
           {actualViewMode === 'member' && (
