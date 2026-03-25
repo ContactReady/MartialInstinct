@@ -404,7 +404,7 @@ const AppContent: React.FC = () => {
       {currentUser && (<>
 
       {/* ── Fixed Top Bar ── */}
-      <div className={`fixed top-0 left-0 right-0 z-50 border-b px-3 py-2 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+      <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-800 px-3 py-2">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
 
           {/* Left: Logo — transparente SVGs, kein Badge nötig */}
@@ -441,7 +441,7 @@ const AppContent: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => { setShowNotifications(v => !v); setShowUserDropdown(false); }}
-                className={`relative p-1.5 transition-colors ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
+                className="relative p-1.5 text-gray-400 hover:text-white transition-colors"
                 title="Benachrichtigungen"
               >
                 <span className="text-lg leading-none">🔔</span>
@@ -460,7 +460,7 @@ const AppContent: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => { setShowUserDropdown(v => !v); setShowNotifications(false); }}
-                className={`flex items-center gap-2 border rounded-xl px-2 py-1.5 transition-colors ${darkMode ? 'bg-gray-800 hover:bg-gray-700 border-gray-700' : 'bg-gray-100 hover:bg-gray-200 border-gray-300'}`}
+                className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl px-2 py-1.5 transition-colors"
               >
                 <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-sm overflow-hidden flex-shrink-0">
                   <img
@@ -469,8 +469,8 @@ const AppContent: React.FC = () => {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <span className={`text-xs font-medium hidden sm:block max-w-[80px] truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{currentUser.name.split(' ')[0]}</span>
-                <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>▾</span>
+                <span className="text-white text-xs font-medium hidden sm:block max-w-[80px] truncate">{currentUser.name.split(' ')[0]}</span>
+                <span className="text-gray-400 text-xs">▾</span>
               </button>
               {showUserDropdown && (
                 <UserDropdown
