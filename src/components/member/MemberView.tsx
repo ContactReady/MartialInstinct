@@ -166,59 +166,50 @@ export const MemberView: React.FC = () => {
       .filter(m => m.id !== currentUser.id && m.role === 'member')
       .sort((a, b) => (b.xp ?? 0) - (a.xp ?? 0))[0];
 
+    const mySessions = getSessionsForMember(currentUser.id)
+      .filter(s => s.status === 'completed')
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 3);
+
     return (
     <div className="space-y-4">
-      {/* Community Impuls */}
-      {todayCount > 0 && (
-        <div className="bg-gray-800/40 rounded-xl px-4 py-3 border border-gray-700/60 flex items-center gap-3">
-          <span className="text-lg flex-shrink-0">🏟️</span>
-          <p className="text-gray-300 text-sm">
-            <span className="text-white font-semibold">{todayCount} Member{todayCount !== 1 ? 's' : ''}</span> {todayCount === 1 ? 'war' : 'waren'} heute im Training
-            {thisWeekXpLeader && (thisWeekXpLeader.xp ?? 0) > 0 && (
-              <span className="text-gray-500"> · {thisWeekXpLeader.name.split(' ')[0]} führt mit {thisWeekXpLeader.xp} XP</span>
-            )}
-          </p>
-        </div>
-      )}
 
-      {/* Check-in Card */}
-      <div className={`rounded-xl p-6 border transition-all ${
+      {/* ── 1. Check-in — Hauptaktion ───────────────────────── */}
+      <div className={`rounded-xl p-5 border transition-all ${
         checkInStatus === 'approved'
-          ? 'bg-green-900/30 border-green-600/50'
+          ? 'bg-green-900/20 border-green-600/40'
+          : checkInStatus === 'pending'
+          ? 'bg-gray-800/50 border-gray-700'
           : 'bg-gray-800/50 border-gray-700'
       }`}>
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <h3 className="text-xl font-bold text-white">Training Check-in</h3>
-            <p className={`text-sm mt-1 ${checkInStatus === 'approved' ? 'text-green-400' : 'text-gray-400'}`}>
+            <h3 className="text-base font-bold text-white">Training Check-in</h3>
+            <p className={`text-sm mt-0.5 ${
+              checkInStatus === 'approved' ? 'text-green-400' : 'text-gray-400'
+            }`}>
               {checkInStatus === 'approved'
-                ? `Eingecheckt um ${checkInApprovedAt
+                ? `✅ Eingecheckt um ${checkInApprovedAt
                     ? `${checkInApprovedAt.getHours().toString().padStart(2,'0')}:${checkInApprovedAt.getMinutes().toString().padStart(2,'0')} Uhr`
                     : 'heute'}`
                 : checkInStatus === 'pending'
                 ? 'Warte auf Trainer-Bestätigung…'
-                : 'Melde dich für das Training an'}
+                : 'Heute im Training? Jetzt einchecken.'}
             </p>
           </div>
           {checkInStatus === 'approved' ? (
-            <button
-              disabled
-              className="flex-shrink-0 bg-green-600 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 cursor-not-allowed"
-            >
-              ✅ Eingecheckt
+            <button disabled className="flex-shrink-0 bg-green-700/60 text-green-300 px-5 py-2.5 rounded-lg font-semibold text-sm cursor-not-allowed">
+              Eingecheckt
             </button>
           ) : checkInStatus === 'pending' ? (
-            <button
-              disabled
-              className="flex-shrink-0 bg-gray-600 text-gray-300 px-6 py-3 rounded-lg font-bold flex items-center gap-2 cursor-not-allowed opacity-75"
-            >
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Anfrage gesendet…
+            <button disabled className="flex-shrink-0 bg-gray-700 text-gray-400 px-5 py-2.5 rounded-lg font-semibold text-sm cursor-not-allowed flex items-center gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Gesendet
             </button>
           ) : (
             <button
               onClick={requestCheckIn}
-              className="flex-shrink-0 bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-lg font-bold transition-all active:scale-95"
+              className="flex-shrink-0 bg-red-600 hover:bg-red-500 active:scale-95 text-white px-5 py-2.5 rounded-lg font-bold text-sm transition-all"
             >
               Einchecken
             </button>
@@ -226,135 +217,92 @@ export const MemberView: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Grid — kompakt, Streak/Level sind in der Status-Leiste */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 flex items-center gap-3">
-          <span className="text-2xl">🩹</span>
-          <div>
-            <div className="text-xl font-bold text-white">{currentUser.streak.bandaids}/{currentUser.streak.maxBandaids}</div>
-            <div className="text-gray-400 text-sm">Pflaster verfügbar</div>
-          </div>
+      {/* ── 2. Stats — 4 Kacheln ────────────────────────────── */}
+      <div className="grid grid-cols-4 gap-2">
+        <div className="bg-gradient-to-b from-orange-900/40 to-orange-900/20 rounded-xl p-3 border border-orange-800/40 text-center">
+          <div className="text-2xl font-black text-orange-400 leading-none">{currentUser.streak.currentStreak}</div>
+          <div className="text-[10px] text-orange-300/60 mt-1 leading-tight">🔥 Streak</div>
         </div>
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 flex items-center gap-3">
-          <span className="text-2xl">✅</span>
-          <div>
-            <div className="text-xl font-bold text-white">{getCompletedCount()}</div>
-            <div className="text-gray-400 text-sm">Techniken bestanden</div>
+        <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 text-center">
+          <div className="text-2xl font-black text-gray-300 leading-none">{currentUser.streak.longestStreak}</div>
+          <div className="text-[10px] text-gray-500 mt-1 leading-tight">🏅 Rekord</div>
+        </div>
+        <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 text-center">
+          <div className="text-2xl font-black text-white leading-none">{getCompletedCount()}</div>
+          <div className="text-[10px] text-gray-500 mt-1 leading-tight">✅ Techniken</div>
+        </div>
+        <div className={`rounded-xl p-3 border text-center ${
+          currentUser.streak.bandaids > 0
+            ? 'bg-green-900/20 border-green-800/40'
+            : 'bg-gray-800/50 border-gray-700/80'
+        }`}>
+          <div className={`text-2xl font-black leading-none ${currentUser.streak.bandaids > 0 ? 'text-green-400' : 'text-gray-500'}`}>
+            {currentUser.streak.bandaids}
+          </div>
+          <div className={`text-[10px] mt-1 leading-tight ${currentUser.streak.bandaids > 0 ? 'text-green-500/70' : 'text-gray-600'}`}>
+            🩹 Pflaster
           </div>
         </div>
       </div>
 
-      {/* Training-Log */}
-      {(() => {
-        const mySessions = getSessionsForMember(currentUser.id)
-          .filter(s => s.status === 'completed')
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-          .slice(0, 3);
-
-        return (
-          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-            <h3 className="text-base font-bold text-white mb-3">🥋 Zuletzt trainiert</h3>
-            {mySessions.length === 0 ? (
-              <p className="text-gray-500 text-sm">Noch kein Training dokumentiert</p>
-            ) : (
-              <div className="space-y-2">
-                {mySessions.map(session => {
-                  const myGroup = session.groups.find(g => g.memberIds.includes(currentUser.id));
-                  const techCount = myGroup?.techniqueIds.length ?? 0;
-                  const xpGained = techCount * 10;
-                  const dateStr = new Date(session.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-                  return (
-                    <div key={session.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-gray-700/40 last:border-0">
-                      <div className="min-w-0">
-                        <div className="text-gray-300 text-sm font-medium">
-                          {dateStr} — {session.courseName ?? 'Training'}{session.instructorName ? ` mit ${session.instructorName}` : ''}
-                        </div>
-                        <div className="text-gray-500 text-xs">
-                          {techCount} Technik{techCount !== 1 ? 'en' : ''} trainiert
-                        </div>
-                      </div>
-                      <span className="text-yellow-400 text-xs font-bold flex-shrink-0">+{xpGained} XP</span>
-                    </div>
-                  );
-                })}
-              </div>
+      {/* ── 3. Community Impuls ─────────────────────────────── */}
+      {todayCount > 0 && (
+        <div className="bg-gray-800/30 rounded-lg px-3 py-2.5 border border-gray-700/40 flex items-center gap-2">
+          <span className="text-sm flex-shrink-0">🏟️</span>
+          <p className="text-gray-400 text-xs">
+            <span className="text-gray-200 font-medium">{todayCount} Member{todayCount !== 1 ? 's' : ''}</span> {todayCount === 1 ? 'war' : 'waren'} heute im Training
+            {thisWeekXpLeader && (thisWeekXpLeader.xp ?? 0) > 0 && (
+              <span className="text-gray-600"> · {thisWeekXpLeader.name.split(' ')[0]} führt mit {thisWeekXpLeader.xp} XP</span>
             )}
-          </div>
-        );
-      })()}
+          </p>
+        </div>
+      )}
 
-      {/* Block Overview */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-bold text-white">Dein Fortschritt</h3>
-        {BLOCKS.map(block => {
-          const progress = getBlockProgress(currentUser.id, block.level);
-          const unlocked = isBlockUnlocked(currentUser.id, block.level);
-          
-          return (
-            <div 
-              key={block.id}
-              className={`${block.bgColor} rounded-xl p-4 border ${block.borderColor} ${!unlocked ? 'opacity-50' : ''}`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{block.icon}</span>
-                  <div>
-                    <div className={`font-bold ${block.color}`}>{block.name}</div>
-                    <div className="text-gray-400 text-sm">{block.subtitle}</div>
+      {/* ── 4. Training-Log + Pflaster — 2-col auf Desktop ─── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Training-Log */}
+        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+          <h3 className="text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider">🥋 Letzte Trainings</h3>
+          {mySessions.length === 0 ? (
+            <p className="text-gray-600 text-sm">Noch kein Training dokumentiert</p>
+          ) : (
+            <div className="space-y-2.5">
+              {mySessions.map(session => {
+                const myGroup = session.groups.find(g => g.memberIds.includes(currentUser.id));
+                const techCount = myGroup?.techniqueIds.length ?? 0;
+                const xpGained = techCount * 10;
+                const dateStr = new Date(session.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                return (
+                  <div key={session.id} className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-gray-200 text-sm font-medium truncate">
+                        {dateStr} — {session.courseName ?? 'Training'}
+                      </div>
+                      <div className="text-gray-500 text-xs">
+                        {techCount} Technik{techCount !== 1 ? 'en' : ''}
+                        {session.instructorName ? ` · ${session.instructorName}` : ''}
+                      </div>
+                    </div>
+                    <span className="text-yellow-500 text-xs font-bold flex-shrink-0">+{xpGained} XP</span>
                   </div>
-                </div>
-                <div className="text-right">
-                  {unlocked ? (
-                    <>
-                      <div className="text-white font-bold">{progress.completed}/{progress.total}</div>
-                      <div className="text-gray-400 text-sm">Techniken</div>
-                    </>
-                  ) : (
-                    <div className="text-gray-500">🔒 Gesperrt</div>
-                  )}
-                </div>
-              </div>
-              {unlocked && (
-                <div className="mt-3 bg-gray-900/50 rounded-full h-2">
-                  <div 
-                    className="bg-red-500 h-2 rounded-full transition-all"
-                    style={{ width: `${progress.percentage}%` }}
-                  />
-                </div>
-              )}
+                );
+              })}
             </div>
-          );
-        })}
-      </div>
-
-      {/* ── Streak ─────────────────────────────────────────── */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-bold text-white">🔥 Streak</h3>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gradient-to-br from-orange-900/50 to-red-900/50 rounded-xl p-4 border border-orange-700/50 text-center">
-            <div className="text-3xl font-black text-orange-400">{currentUser.streak.currentStreak}</div>
-            <div className="text-xs text-orange-300/70 mt-0.5">🔥 Aktueller Streak</div>
-          </div>
-          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 text-center">
-            <div className="text-3xl font-black text-white">{currentUser.streak.longestStreak}</div>
-            <div className="text-xs text-gray-400 mt-0.5">🏅 Längster Streak</div>
-          </div>
+          )}
         </div>
 
-        <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-xl font-bold text-white">🩹 Pflaster</h3>
-              <p className="text-gray-400 text-sm">Rette deinen Streak wenn du eine Woche verpasst</p>
-            </div>
-            <div className="flex gap-2">
+        {/* Pflaster — kompakt */}
+        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">🩹 Pflaster</h3>
+            <div className="flex gap-1.5">
               {Array.from({ length: currentUser.streak.maxBandaids }).map((_, i) => (
                 <div
                   key={i}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-sm ${
                     i < currentUser.streak.bandaids
                       ? 'bg-green-500/20 text-green-400'
-                      : 'bg-gray-700 text-gray-500'
+                      : 'bg-gray-700/60 text-gray-600'
                   }`}
                 >
                   🩹
@@ -362,46 +310,82 @@ export const MemberView: React.FC = () => {
               ))}
             </div>
           </div>
-          {currentUser.streak.bandaids > 0 && (
+          <p className="text-gray-500 text-xs mb-3 leading-relaxed">
+            Rette deinen Streak wenn du eine Woche verpasst.
+          </p>
+          {currentUser.streak.bandaids > 0 ? (
             <button
               onClick={useBandaid}
-              className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition-all"
+              className="w-full bg-green-700 hover:bg-green-600 text-white py-2 rounded-lg text-sm font-medium transition-all"
             >
               Pflaster einsetzen
             </button>
-          )}
-        </div>
-
-        <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
-          <h3 className="text-lg font-bold text-white mb-4">So verdienst du Pflaster:</h3>
-          <ul className="space-y-3 text-gray-300">
-            <li className="flex items-center gap-3"><span className="text-green-400">✓</span>4 Wochen Streak erreichen</li>
-            <li className="flex items-center gap-3"><span className="text-green-400">✓</span>10 Check-ins gesamt</li>
-            <li className="flex items-center gap-3"><span className="text-green-400">✓</span>Modul zu 100% abschließen</li>
-            <li className="flex items-center gap-3"><span className="text-green-400">✓</span>5 Techniken an einem Tag bestehen</li>
-            <li className="flex items-center gap-3"><span className="text-green-400">✓</span>Instructor Bonus</li>
-          </ul>
-        </div>
-
-        {currentUser.streak.bandaidHistory.length > 0 && (
-          <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
-            <h3 className="text-lg font-bold text-white mb-4">Pflaster-Historie</h3>
-            <div className="space-y-2">
-              {currentUser.streak.bandaidHistory.slice(-5).reverse().map(event => (
-                <div key={event.id} className="flex items-center justify-between py-2 border-b border-gray-700 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <span className={event.type === 'earned' ? 'text-green-400' : 'text-red-400'}>
-                      {event.type === 'earned' ? '+1 🩹' : '-1 🩹'}
-                    </span>
-                    <span className="text-gray-300">{event.reason}</span>
-                  </div>
-                  <span className="text-gray-500 text-sm">{new Date(event.date).toLocaleDateString('de-DE')}</span>
+          ) : (
+            <div className="grid grid-cols-2 gap-1">
+              {['4 Wochen Streak', '10 Check-ins', 'Modul 100%', 'Instructor'].map(tip => (
+                <div key={tip} className="text-[11px] text-gray-600 bg-gray-700/30 rounded px-2 py-1 flex items-center gap-1">
+                  <span className="text-gray-700">+</span>{tip}
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+          {currentUser.streak.bandaidHistory.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-gray-700/60 space-y-1.5">
+              {currentUser.streak.bandaidHistory.slice(-3).reverse().map(event => (
+                <div key={event.id} className="flex items-center justify-between text-xs">
+                  <span className={event.type === 'earned' ? 'text-green-500' : 'text-red-400'}>
+                    {event.type === 'earned' ? '+1 🩹' : '-1 🩹'} {event.reason}
+                  </span>
+                  <span className="text-gray-600">{new Date(event.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* ── 5. Block-Fortschritt ─────────────────────────────── */}
+      <div>
+        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Dein Fortschritt</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {BLOCKS.map(block => {
+            const progress = getBlockProgress(currentUser.id, block.level);
+            const unlocked = isBlockUnlocked(currentUser.id, block.level);
+            return (
+              <div
+                key={block.id}
+                className={`${block.bgColor} rounded-xl p-4 border ${block.borderColor} ${!unlocked ? 'opacity-40' : ''}`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">{block.icon}</span>
+                    <div>
+                      <div className={`font-bold text-sm ${block.color}`}>{block.name}</div>
+                      <div className="text-gray-500 text-xs">{block.subtitle}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    {unlocked ? (
+                      <div className="text-white font-bold text-sm">{progress.completed}<span className="text-gray-500 font-normal">/{progress.total}</span></div>
+                    ) : (
+                      <div className="text-gray-600 text-sm">🔒</div>
+                    )}
+                  </div>
+                </div>
+                {unlocked && (
+                  <div className="bg-gray-900/50 rounded-full h-1.5">
+                    <div
+                      className="bg-red-500 h-1.5 rounded-full transition-all"
+                      style={{ width: `${progress.percentage}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
     </div>
     );
   };
