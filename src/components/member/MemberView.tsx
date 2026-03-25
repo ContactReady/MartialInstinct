@@ -13,7 +13,7 @@ import { ProgressBar } from '../shared/ProgressBar';
 import { MemberLearningView } from './MemberLearningView';
 import { ProfileView } from '../shared/ProfileView';
 
-type Tab = 'dashboard' | 'lernen' | 'progress' | 'streak' | 'requests' | 'profil';
+type Tab = 'dashboard' | 'lernen' | 'progress' | 'requests' | 'profil';
 type ApplicationType = 'contact' | 'assistant_instructor' | null;
 
 export const MemberView: React.FC = () => {
@@ -325,6 +325,82 @@ export const MemberView: React.FC = () => {
             </div>
           );
         })}
+      </div>
+
+      {/* ── Streak ─────────────────────────────────────────── */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-bold text-white">🔥 Streak</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gradient-to-br from-orange-900/50 to-red-900/50 rounded-xl p-4 border border-orange-700/50 text-center">
+            <div className="text-3xl font-black text-orange-400">{currentUser.streak.currentStreak}</div>
+            <div className="text-xs text-orange-300/70 mt-0.5">🔥 Aktueller Streak</div>
+          </div>
+          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 text-center">
+            <div className="text-3xl font-black text-white">{currentUser.streak.longestStreak}</div>
+            <div className="text-xs text-gray-400 mt-0.5">🏅 Längster Streak</div>
+          </div>
+        </div>
+
+        <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-xl font-bold text-white">🩹 Pflaster</h3>
+              <p className="text-gray-400 text-sm">Rette deinen Streak wenn du eine Woche verpasst</p>
+            </div>
+            <div className="flex gap-2">
+              {Array.from({ length: currentUser.streak.maxBandaids }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${
+                    i < currentUser.streak.bandaids
+                      ? 'bg-green-500/20 text-green-400'
+                      : 'bg-gray-700 text-gray-500'
+                  }`}
+                >
+                  🩹
+                </div>
+              ))}
+            </div>
+          </div>
+          {currentUser.streak.bandaids > 0 && (
+            <button
+              onClick={useBandaid}
+              className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition-all"
+            >
+              Pflaster einsetzen
+            </button>
+          )}
+        </div>
+
+        <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+          <h3 className="text-lg font-bold text-white mb-4">So verdienst du Pflaster:</h3>
+          <ul className="space-y-3 text-gray-300">
+            <li className="flex items-center gap-3"><span className="text-green-400">✓</span>4 Wochen Streak erreichen</li>
+            <li className="flex items-center gap-3"><span className="text-green-400">✓</span>10 Check-ins gesamt</li>
+            <li className="flex items-center gap-3"><span className="text-green-400">✓</span>Modul zu 100% abschließen</li>
+            <li className="flex items-center gap-3"><span className="text-green-400">✓</span>5 Techniken an einem Tag bestehen</li>
+            <li className="flex items-center gap-3"><span className="text-green-400">✓</span>Instructor Bonus</li>
+          </ul>
+        </div>
+
+        {currentUser.streak.bandaidHistory.length > 0 && (
+          <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+            <h3 className="text-lg font-bold text-white mb-4">Pflaster-Historie</h3>
+            <div className="space-y-2">
+              {currentUser.streak.bandaidHistory.slice(-5).reverse().map(event => (
+                <div key={event.id} className="flex items-center justify-between py-2 border-b border-gray-700 last:border-0">
+                  <div className="flex items-center gap-3">
+                    <span className={event.type === 'earned' ? 'text-green-400' : 'text-red-400'}>
+                      {event.type === 'earned' ? '+1 🩹' : '-1 🩹'}
+                    </span>
+                    <span className="text-gray-300">{event.reason}</span>
+                  </div>
+                  <span className="text-gray-500 text-sm">{new Date(event.date).toLocaleDateString('de-DE')}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
     );
@@ -959,105 +1035,6 @@ export const MemberView: React.FC = () => {
     );
   };
 
-  // Render Streak Tab
-  const renderStreak = () => (
-    <div className="space-y-6">
-      {/* Streak Übersicht — kompakt */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-gradient-to-br from-orange-900/50 to-red-900/50 rounded-xl p-4 border border-orange-700/50 text-center">
-          <div className="text-3xl font-black text-orange-400">{currentUser.streak.currentStreak}</div>
-          <div className="text-xs text-orange-300/70 mt-0.5">🔥 Aktueller Streak</div>
-        </div>
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 text-center">
-          <div className="text-3xl font-black text-white">{currentUser.streak.longestStreak}</div>
-          <div className="text-xs text-gray-400 mt-0.5">🏅 Längster Streak</div>
-        </div>
-      </div>
-
-      {/* Bandaids Card */}
-      <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-xl font-bold text-white">🩹 Pflaster</h3>
-            <p className="text-gray-400 text-sm">Rette deinen Streak wenn du eine Woche verpasst</p>
-          </div>
-          <div className="flex gap-2">
-            {Array.from({ length: currentUser.streak.maxBandaids }).map((_, i) => (
-              <div 
-                key={i}
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${
-                  i < currentUser.streak.bandaids 
-                    ? 'bg-green-500/20 text-green-400' 
-                    : 'bg-gray-700 text-gray-500'
-                }`}
-              >
-                🩹
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        {currentUser.streak.bandaids > 0 && (
-          <button
-            onClick={useBandaid}
-            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition-all"
-          >
-            Pflaster einsetzen
-          </button>
-        )}
-      </div>
-
-      {/* How to earn bandaids */}
-      <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
-        <h3 className="text-lg font-bold text-white mb-4">So verdienst du Pflaster:</h3>
-        <ul className="space-y-3 text-gray-300">
-          <li className="flex items-center gap-3">
-            <span className="text-green-400">✓</span>
-            4 Wochen Streak erreichen
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="text-green-400">✓</span>
-            10 Check-ins gesamt
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="text-green-400">✓</span>
-            Modul zu 100% abschließen
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="text-green-400">✓</span>
-            5 Techniken an einem Tag bestehen
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="text-green-400">✓</span>
-            Instructor Bonus
-          </li>
-        </ul>
-      </div>
-
-      {/* Bandaid History */}
-      {currentUser.streak.bandaidHistory.length > 0 && (
-        <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
-          <h3 className="text-lg font-bold text-white mb-4">Pflaster-Historie</h3>
-          <div className="space-y-2">
-            {currentUser.streak.bandaidHistory.slice(-5).reverse().map(event => (
-              <div key={event.id} className="flex items-center justify-between py-2 border-b border-gray-700 last:border-0">
-                <div className="flex items-center gap-3">
-                  <span className={event.type === 'earned' ? 'text-green-400' : 'text-red-400'}>
-                    {event.type === 'earned' ? '+1 🩹' : '-1 🩹'}
-                  </span>
-                  <span className="text-gray-300">{event.reason}</span>
-                </div>
-                <span className="text-gray-500 text-sm">
-                  {new Date(event.date).toLocaleDateString('de-DE')}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
   // Render Requests Tab
   const renderRequests = () => {
     const pendingRequests = currentUser.examRequests.filter(r => r.status === 'pending');
@@ -1435,7 +1412,6 @@ export const MemberView: React.FC = () => {
             {progressView === 'ranking' ? renderRanking() : renderProgress()}
           </div>
         )}
-        {activeTab === 'streak' && renderStreak()}
         {activeTab === 'requests' && renderRequests()}
         {activeTab === 'profil' && <ProfileView member={currentUser} />}
       </main>
@@ -1444,10 +1420,9 @@ export const MemberView: React.FC = () => {
       <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800">
         <div className="max-w-4xl mx-auto flex">
           {[
-            { id: 'dashboard' as Tab, icon: '🏠', label: 'Home' },
+            { id: 'dashboard' as Tab, icon: '🏠', label: 'Dashboard' },
             { id: 'lernen' as Tab, icon: '🎓', label: 'Lernen' },
             { id: 'progress' as Tab, icon: '🏆', label: 'Rang' },
-            { id: 'streak' as Tab, icon: '🔥', label: 'Streak' },
             { id: 'requests' as Tab, icon: '📝', label: 'Anfragen' },
             { id: 'profil' as Tab, icon: '👤', label: 'Profil' },
           ].map(tab => (
