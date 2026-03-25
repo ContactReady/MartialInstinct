@@ -87,47 +87,8 @@ export const MemberView: React.FC = () => {
     return s;
   };
 
-  const thisWeekStart = getWeekStart(new Date());
 
-  const getActivityStatus = (): 'aktiv' | 'dran' | 'pause' => {
-    const lastTraining = currentUser.streak.lastTrainingDate
-      ? new Date(currentUser.streak.lastTrainingDate)
-      : null;
-    if (!lastTraining || (Date.now() - lastTraining.getTime()) / 86400000 > 14) return 'pause';
-    const trainedThisWeek = checkIns.some(
-      c => c.memberId === currentUser.id &&
-           c.status === 'approved' &&
-           c.approvedAt != null &&
-           new Date(c.approvedAt).getTime() >= thisWeekStart.getTime()
-    );
-    const appActionThisWeek = !!(currentUser.lastSeenAt &&
-      new Date(currentUser.lastSeenAt).getTime() >= thisWeekStart.getTime());
-    if (trainedThisWeek && appActionThisWeek) return 'aktiv';
-    if (trainedThisWeek || appActionThisWeek) return 'dran';
-    return 'pause';
-  };
 
-  const activityStatus = getActivityStatus();
-
-  const ACTIVITY_CONFIG = {
-    aktiv:  { label: 'Aktiv',        sub: 'Du bist diese Woche im Rhythmus.',        dot: 'bg-green-400',  card: 'bg-green-900/20 border-green-700/40',  text: 'text-green-400'  },
-    dran:   { label: 'Dran bleiben', sub: 'Training oder App-Aktivität fehlt noch.', dot: 'bg-yellow-400', card: 'bg-yellow-900/20 border-yellow-700/40', text: 'text-yellow-400' },
-    pause:  { label: 'Pause',        sub: 'Du warst länger nicht im Training.',       dot: 'bg-red-400',    card: 'bg-red-900/20 border-red-700/40',       text: 'text-red-400'    },
-  };
-
-  const getNextStep = (): string => {
-    if (checkIns.some(c => c.memberId === currentUser.id && c.status === 'approved' && new Date(c.requestedAt).toDateString() === new Date().toDateString())) {
-      const hasUntrained = Object.values(currentUser.techniqueProgress).some(p => p.status === 'not_tested');
-      if (hasUntrained) return 'Trainiert? Markiere deine geübten Techniken im Fortschritt-Board.';
-      return 'Gut gemacht! Schau dir deinen Fortschritt an oder mach ein Quiz.';
-    }
-    if (checkIns.some(c => c.memberId === currentUser.id && c.status === 'pending' && new Date(c.requestedAt).toDateString() === new Date().toDateString())) {
-      return 'Check-in läuft — warte auf Bestätigung deines Trainers.';
-    }
-    if (activityStatus === 'pause') return 'Du warst länger nicht dabei. Komm einfach wieder zum Training.';
-    if (activityStatus === 'dran') return 'Fast da — noch ein Training oder eine Aktion in der App.';
-    return 'Komm zum nächsten Training und checke ein.';
-  };
 
   // Check-in Status aus dem geteilten checkIns-Array ableiten (aktualisiert sich sofort wenn Trainer bestätigt)
   const todayStr = now.toDateString();
@@ -204,19 +165,9 @@ export const MemberView: React.FC = () => {
     const thisWeekXpLeader = [...members]
       .filter(m => m.id !== currentUser.id && m.role === 'member')
       .sort((a, b) => (b.xp ?? 0) - (a.xp ?? 0))[0];
-    const ac = ACTIVITY_CONFIG[activityStatus];
 
     return (
     <div className="space-y-4">
-      {/* Aktivitätsstatus + Nächster Schritt */}
-      <div className={`rounded-xl p-4 border ${ac.card}`}>
-        <div className="flex items-center gap-2 mb-2">
-          <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${ac.dot} ${activityStatus === 'aktiv' ? 'animate-pulse' : ''}`} />
-          <span className={`font-bold text-sm ${ac.text}`}>{ac.label}</span>
-        </div>
-        <p className="text-gray-300 text-sm leading-snug">{getNextStep()}</p>
-      </div>
-
       {/* Community Impuls */}
       {todayCount > 0 && (
         <div className="bg-gray-800/40 rounded-xl px-4 py-3 border border-gray-700/60 flex items-center gap-3">
