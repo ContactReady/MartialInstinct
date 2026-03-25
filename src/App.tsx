@@ -9,7 +9,7 @@ import { InstructorView } from './components/instructor/InstructorView';
 import { ROLE_DISPLAY, LEVEL_DISPLAY, hasAdminAccess } from './types';
 
 // ── Login ─────────────────────────────────────────────────────────────────────
-const Login: React.FC<{ onLogin: (email: string, password: string) => boolean }> = ({ onLogin }) => {
+const Login: React.FC<{ onLogin: (email: string, password: string) => boolean; darkMode: boolean }> = ({ onLogin, darkMode }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -32,7 +32,7 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => boolean }>
       <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md border border-gray-800">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <img src="/logos/mi-logo-landscape-dark.svg" alt="Martial Instinct" className="h-16 w-auto object-contain" />
+            <img src={darkMode ? '/logos/mi-logo-landscape-dark.svg' : '/logos/mi-logo-landscape-light.svg'} alt="Martial Instinct" className="h-16 w-auto object-contain" />
           </div>
           <p className="text-gray-500 text-xs tracking-widest uppercase">Training Management</p>
         </div>
@@ -400,7 +400,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white" data-theme={darkMode ? 'dark' : 'light'}>
-      {!currentUser && <Login onLogin={login} />}
+      {!currentUser && <Login onLogin={login} darkMode={darkMode} />}
       {currentUser && (<>
 
       {/* ── Fixed Top Bar ── */}
