@@ -83,6 +83,14 @@ export const InstructorView: React.FC = () => {
     restoreStreak,
     saveModuleOrder,
     moduleOrder,
+    getTechniquesForModule,
+    getQuizQuestionsForModule,
+    getQuizCountForModule,
+    saveTechnique,
+    deleteTechnique,
+    saveQuizQuestion,
+    deleteQuizQuestion,
+    saveModuleSettings,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>('lernen');
@@ -108,6 +116,21 @@ export const InstructorView: React.FC = () => {
   const [dndDragId, setDndDragId] = useState<string | null>(null);
   const [dndIndicator, setDndIndicator] = useState<{ moduleId: string; insertBefore: boolean } | null>(null);
   const [dndSaved, setDndSaved] = useState(false);
+
+  // Content Editor State (Rules of Hooks: alle auf Top-Level)
+  const [contentModuleId, setContentModuleId] = useState<string | null>(null);
+  const [contentSubTab, setContentSubTab] = useState<'techniques' | 'quiz'>('techniques');
+  const [editingTechniqueId, setEditingTechniqueId] = useState<string | null>(null);
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [bulkImportText, setBulkImportText] = useState('');
+  const [techEditName, setTechEditName] = useState('');
+  const [techEditDesc, setTechEditDesc] = useState('');
+  const [qEditQuestion, setQEditQuestion] = useState('');
+  const [qEditOptions, setQEditOptions] = useState(['', '', '', '']);
+  const [qEditCorrectIndex, setQEditCorrectIndex] = useState(0);
+  const [qEditExplanation, setQEditExplanation] = useState('');
+  const [contentQuizCount, setContentQuizCount] = useState(10);
 
   // Sub-Tab States (an Top-Level wegen Rules of Hooks)
   const [liveSubTab, setLiveSubTab] = useState<'online' | 'training'>('training');
@@ -1606,87 +1629,315 @@ export const InstructorView: React.FC = () => {
         )}
 
         {/* ── LERNBEREICH ─────────────────────────────────────────────── */}
-        {adminSubTab === 'lernbereich' && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-gray-500 text-xs">Ziehe Module per Drag & Drop an jede Position innerhalb oder zwischen Blöcken.</p>
-              <button
-                onClick={handleSave}
-                className={`text-sm px-4 py-2 rounded-lg font-medium transition-all flex-shrink-0 ml-3 ${
-                  dndSaved ? 'bg-green-700/40 text-green-400 cursor-default' : 'bg-red-600 hover:bg-red-500 text-white'
-                }`}
-              >
-                {dndSaved ? '✓ Gespeichert' : 'Speichern'}
-              </button>
+        {adminSubTab === 'lernbereich' && (() => {
+          // ── Content editor helpers ──
+          const selectedModule = contentModuleId ? MODULES.find(m => m.id === contentModuleId) : null;
+          const moduleTechniques = contentModuleId ? getTechniquesForModule(contentModuleId) : [];
+          const moduleQuestions = contentModuleId ? getQuizQuestionsForModule(contentModuleId) : [];
+
+          const openEditTechnique = (id: string, name = '', desc = '') => {
+            setEditingTechniqueId(id);
+            setTechEditName(name);
+            setTechEditDesc(desc);
+          };
+
+          const handleSaveTechnique = async () => {
+            if (!contentModuleId || !techEditName.trim()) return;
+            const selectedMod = MODULES.find(m => m.id === contentModuleId);
+            if (!selectedMod) return;
+            const isNew = editingTechniqueId === 'new';
+            const id = isNew ? `t-${contentModuleId}-${Date.now()}` : editingTechniqueId!;
+            const maxPos = isNew ? moduleTechniques.length : (moduleTechniques.find(t => t.id === id)?.position ?? moduleTechniques.length);
+            await saveTechnique({ id, moduleId: contentModuleId, name: techEditName.trim(), description: techEditDesc.trim(), isRequired: true, position: maxPos });
+            setEditingTechniqueId(null);
+          };
+
+          const handleDeleteTechnique = async (id: string) => {
+            if (!confirm('Technik wirklich löschen?')) return;
+            await deleteTechnique(id);
+          };
+
+          const openEditQuestion = (id: string, question = '', options = ['', '', '', ''], correctIndex = 0, explanation = '') => {
+            setEditingQuestionId(id);
+            setQEditQuestion(question);
+            setQEditOptions([...options, '', '', '', ''].slice(0, 4));
+            setQEditCorrectIndex(correctIndex);
+            setQEditExplanation(explanation);
+          };
+
+          const handleSaveQuestion = async () => {
+            if (!contentModuleId || !qEditQuestion.trim()) return;
+            const isNew = editingQuestionId === 'new';
+            const id = isNew ? undefined : editingQuestionId ?? undefined;
+            const maxPos = isNew ? moduleQuestions.length : (moduleQuestions.find(q => q.id === id)?.position ?? moduleQuestions.length);
+            await saveQuizQuestion({ id: id ?? '', moduleId: contentModuleId, question: qEditQuestion.trim(), options: qEditOptions.map(o => o.trim()), correctIndex: qEditCorrectIndex, explanation: qEditExplanation.trim(), position: maxPos });
+            setEditingQuestionId(null);
+          };
+
+          const handleDeleteQuestion = async (id: string) => {
+            if (!confirm('Frage wirklich löschen?')) return;
+            await deleteQuizQuestion(id);
+          };
+
+          const handleBulkImport = async () => {
+            if (!contentModuleId) return;
+            const lines = bulkImportText.split('\n').map(l => l.trim()).filter(Boolean);
+            const startPos = moduleTechniques.length;
+            for (let i = 0; i < lines.length; i++) {
+              const [namePart, ...descParts] = lines[i].split(':');
+              const name = namePart.trim();
+              const desc = descParts.join(':').trim();
+              if (!name) continue;
+              await saveTechnique({ id: `t-${contentModuleId}-${Date.now()}-${i}`, moduleId: contentModuleId, name, description: desc, isRequired: true, position: startPos + i });
+            }
+            setBulkImportText('');
+            setShowBulkImport(false);
+          };
+
+          const handleQuizCountChange = async (val: number) => {
+            if (!contentModuleId) return;
+            setContentQuizCount(val);
+            await saveModuleSettings(contentModuleId, val);
+          };
+
+          return (
+          <div className="space-y-4">
+            {/* ── Modul-Reihenfolge ── */}
+            <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 p-3">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-gray-300 text-sm font-semibold">Modul-Reihenfolge</span>
+                <button
+                  onClick={handleSave}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${
+                    dndSaved ? 'bg-green-700/40 text-green-400 cursor-default' : 'bg-red-600 hover:bg-red-500 text-white'
+                  }`}
+                >
+                  {dndSaved ? '✓ Gespeichert' : 'Speichern'}
+                </button>
+              </div>
+              <p className="text-gray-600 text-xs mb-3">Ziehe Module per Drag & Drop innerhalb oder zwischen Blöcken.</p>
+
+              {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level').map(block => (
+                <div
+                  key={block.id}
+                  className={`rounded-xl border ${block.borderColor} ${block.bgColor} p-3 mb-2`}
+                  onDragOver={handleDragOverBlock}
+                  onDrop={e => handleDrop(e, block.level)}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span>{block.icon}</span>
+                    <span className={`font-bold text-sm ${block.color}`}>{block.name}</span>
+                    <span className="text-gray-500 text-xs">({getModulesForBlock(block.level).length})</span>
+                  </div>
+                  <div className={`space-y-0 transition-all ${dndDragId && dndIndicator === null ? 'min-h-[40px]' : ''}`}>
+                    {getModulesForBlock(block.level).map(module => (
+                      <div key={module.id} className="relative">
+                        {dndIndicator?.moduleId === module.id && dndIndicator.insertBefore && <div className="h-0.5 bg-red-500 rounded-full mx-1 mb-0.5" />}
+                        <div
+                          draggable
+                          onDragStart={() => handleDragStart(module.id)}
+                          onDragOver={e => handleDragOverModule(e, module.id)}
+                          onDrop={e => handleDrop(e, block.level)}
+                          className={`flex items-center gap-3 bg-gray-900/60 rounded-lg px-3 py-2 cursor-grab active:cursor-grabbing border my-0.5 transition-all select-none ${dndDragId === module.id ? 'border-red-500/50 opacity-40 scale-95' : 'border-gray-700/40 hover:border-gray-500/60'}`}
+                        >
+                          <span className="text-gray-500 select-none">⠿</span>
+                          <span className="text-base flex-shrink-0">{module.icon}</span>
+                          <span className="text-gray-200 text-sm flex-1 truncate">{module.name}</span>
+                          <select
+                            value={block.level}
+                            onChange={e => handleBlockChange(module.id, e.target.value)}
+                            onClick={e => e.stopPropagation()}
+                            onMouseDown={e => e.stopPropagation()}
+                            className="bg-gray-700 border border-gray-600 text-gray-300 text-xs rounded px-1.5 py-1 focus:outline-none"
+                          >
+                            {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level').map(b => (
+                              <option key={b.level} value={b.level}>{b.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        {dndIndicator?.moduleId === module.id && !dndIndicator.insertBefore && <div className="h-0.5 bg-red-500 rounded-full mx-1 mt-0.5" />}
+                      </div>
+                    ))}
+                    {getModulesForBlock(block.level).length === 0 && (
+                      <div className="text-center text-gray-600 text-xs py-4 border border-dashed border-gray-700/40 rounded-lg" onDragOver={e => { e.preventDefault(); setDndIndicator(null); }} onDrop={e => handleDrop(e, block.level)}>Hierher ziehen</div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level').map(block => (
-              <div
-                key={block.id}
-                className={`rounded-xl border ${block.borderColor} ${block.bgColor} p-3`}
-                onDragOver={handleDragOverBlock}
-                onDrop={e => handleDrop(e, block.level)}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <span>{block.icon}</span>
-                  <span className={`font-bold text-sm ${block.color}`}>{block.name}</span>
-                  <span className="text-gray-500 text-xs">({getModulesForBlock(block.level).length})</span>
-                </div>
-                <div
-                  className={`space-y-0 transition-all ${dndDragId && dndIndicator === null ? 'min-h-[40px]' : ''}`}
-                >
-                  {getModulesForBlock(block.level).map(module => (
-                    <div key={module.id} className="relative">
-                      {/* Insert-before Indicator */}
-                      {dndIndicator?.moduleId === module.id && dndIndicator.insertBefore && (
-                        <div className="h-0.5 bg-red-500 rounded-full mx-1 mb-0.5" />
-                      )}
-                      <div
-                        draggable
-                        onDragStart={() => handleDragStart(module.id)}
-                        onDragOver={e => handleDragOverModule(e, module.id)}
-                        onDrop={e => handleDrop(e, block.level)}
-                        className={`flex items-center gap-3 bg-gray-900/60 rounded-lg px-3 py-2.5 cursor-grab active:cursor-grabbing border my-0.5 transition-all select-none ${
-                          dndDragId === module.id
-                            ? 'border-red-500/50 opacity-40 scale-95'
-                            : 'border-gray-700/40 hover:border-gray-500/60'
-                        }`}
-                      >
-                        <span className="text-gray-500 select-none">⠿</span>
-                        <span className="text-base flex-shrink-0">{module.icon}</span>
-                        <span className="text-gray-200 text-sm flex-1 truncate">{module.name}</span>
-                        <select
-                          value={block.level}
-                          onChange={e => handleBlockChange(module.id, e.target.value)}
-                          onClick={e => e.stopPropagation()}
-                          onMouseDown={e => e.stopPropagation()}
-                          className="bg-gray-700 border border-gray-600 text-gray-300 text-xs rounded px-1.5 py-1 focus:outline-none"
-                        >
-                          {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level').map(b => (
-                            <option key={b.level} value={b.level}>{b.name}</option>
-                          ))}
-                        </select>
+            {/* ── Modul-Inhalt bearbeiten ── */}
+            <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 p-3">
+              <span className="text-gray-300 text-sm font-semibold block mb-3">Modul-Inhalt bearbeiten</span>
+
+              {/* Modul-Auswahl */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {MODULES.map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => { setContentModuleId(m.id); setEditingTechniqueId(null); setEditingQuestionId(null); setShowBulkImport(false); setContentQuizCount(getQuizCountForModule(m.id)); }}
+                    className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
+                      contentModuleId === m.id ? 'bg-red-600 border-red-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
+                    }`}
+                  >
+                    {m.icon} {m.name}
+                  </button>
+                ))}
+              </div>
+
+              {/* Editor Panel */}
+              {selectedModule && (
+                <div className="space-y-3">
+                  {/* Sub-Tab */}
+                  <div className="flex bg-gray-900/50 rounded-lg p-0.5 gap-0.5">
+                    {(['techniques', 'quiz'] as const).map(tab => (
+                      <button key={tab} onClick={() => setContentSubTab(tab)} className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all ${contentSubTab === tab ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}>
+                        {tab === 'techniques' ? `🥋 Techniken (${moduleTechniques.length})` : `📝 Quiz (${moduleQuestions.length})`}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* ── TECHNIKEN ── */}
+                  {contentSubTab === 'techniques' && (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <button onClick={() => openEditTechnique('new')} className="flex-1 text-xs bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg">+ Neue Technik</button>
+                        <button onClick={() => setShowBulkImport(v => !v)} className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 py-2 px-3 rounded-lg">Bulk</button>
                       </div>
-                      {/* Insert-after Indicator */}
-                      {dndIndicator?.moduleId === module.id && !dndIndicator.insertBefore && (
-                        <div className="h-0.5 bg-red-500 rounded-full mx-1 mt-0.5" />
+
+                      {showBulkImport && (
+                        <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700 space-y-2">
+                          <p className="text-gray-500 text-xs">Eine Technik pro Zeile. Format: <span className="text-gray-300">Name: Beschreibung</span></p>
+                          <textarea value={bulkImportText} onChange={e => setBulkImportText(e.target.value)} rows={5} placeholder={"Richtige Stellung: Die fundamentale Kampfstellung\nGuard Position: Schutzhaltung\n..."} className="w-full bg-gray-800 text-white text-xs rounded px-2 py-2 border border-gray-600 resize-none font-mono" />
+                          <div className="flex gap-2">
+                            <button onClick={handleBulkImport} className="flex-1 text-xs bg-green-700 hover:bg-green-600 text-white py-1.5 rounded-lg">Importieren</button>
+                            <button onClick={() => { setShowBulkImport(false); setBulkImportText(''); }} className="text-xs text-gray-400 py-1.5 px-3">Abbrechen</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {editingTechniqueId === 'new' && (
+                        <div className="bg-gray-700/50 rounded-lg p-3 border border-gray-600 space-y-2">
+                          <input value={techEditName} onChange={e => setTechEditName(e.target.value)} placeholder="Technik-Name *" className="w-full bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500" />
+                          <textarea value={techEditDesc} onChange={e => setTechEditDesc(e.target.value)} placeholder="Beschreibung (optional)" rows={2} className="w-full bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none" />
+                          <div className="flex gap-2 justify-end">
+                            <button onClick={() => setEditingTechniqueId(null)} className="text-xs text-gray-400 px-3 py-1">Abbrechen</button>
+                            <button onClick={handleSaveTechnique} className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded">Speichern</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {moduleTechniques.map(t => (
+                        editingTechniqueId === t.id ? (
+                          <div key={t.id} className="bg-gray-700/50 rounded-lg p-3 border border-gray-600 space-y-2">
+                            <input value={techEditName} onChange={e => setTechEditName(e.target.value)} placeholder="Technik-Name *" className="w-full bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500" />
+                            <textarea value={techEditDesc} onChange={e => setTechEditDesc(e.target.value)} placeholder="Beschreibung (optional)" rows={2} className="w-full bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none" />
+                            <div className="flex gap-2 justify-between">
+                              <button onClick={() => handleDeleteTechnique(t.id)} className="text-xs bg-red-900/50 hover:bg-red-800 text-red-400 px-3 py-1 rounded">Löschen</button>
+                              <div className="flex gap-2">
+                                <button onClick={() => setEditingTechniqueId(null)} className="text-xs text-gray-400 px-3 py-1">Abbrechen</button>
+                                <button onClick={handleSaveTechnique} className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded">Speichern</button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div key={t.id} className="flex items-start gap-2 bg-gray-800/50 rounded-lg px-3 py-2.5 group border border-gray-700/30 hover:border-gray-600/50">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-gray-200 text-sm">{t.name}</div>
+                              {t.description && <div className="text-gray-500 text-xs mt-0.5 leading-relaxed">{t.description}</div>}
+                            </div>
+                            <button onClick={() => openEditTechnique(t.id, t.name, t.description)} className="text-gray-500 hover:text-white text-xs flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">✏️</button>
+                          </div>
+                        )
+                      ))}
+
+                      {moduleTechniques.length === 0 && editingTechniqueId !== 'new' && (
+                        <div className="text-gray-600 text-xs text-center py-4 border border-dashed border-gray-700/40 rounded-lg">Noch keine Techniken — füge die erste hinzu.</div>
                       )}
                     </div>
-                  ))}
-                  {getModulesForBlock(block.level).length === 0 && (
-                    <div
-                      className="text-center text-gray-600 text-xs py-4 border border-dashed border-gray-700/40 rounded-lg"
-                      onDragOver={e => { e.preventDefault(); setDndIndicator(null); }}
-                      onDrop={e => handleDrop(e, block.level)}
-                    >
-                      Hierher ziehen
+                  )}
+
+                  {/* ── QUIZ ── */}
+                  {contentSubTab === 'quiz' && (
+                    <div className="space-y-2">
+                      {/* Quiz-Einstellungen */}
+                      <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-gray-300 text-xs font-semibold">Fragen pro Sitzung</div>
+                          <div className="text-gray-600 text-xs">{moduleQuestions.length} im Pool</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => handleQuizCountChange(Math.max(1, (contentModuleId ? getQuizCountForModule(contentModuleId) : contentQuizCount) - 1))} className="w-7 h-7 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">−</button>
+                          <span className="text-white font-bold w-8 text-center">{contentModuleId ? getQuizCountForModule(contentModuleId) : contentQuizCount}</span>
+                          <button onClick={() => handleQuizCountChange(Math.min(moduleQuestions.length || 50, (contentModuleId ? getQuizCountForModule(contentModuleId) : contentQuizCount) + 1))} className="w-7 h-7 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">+</button>
+                        </div>
+                      </div>
+
+                      <button onClick={() => openEditQuestion('new')} className="w-full text-xs bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg">+ Neue Frage</button>
+
+                      {editingQuestionId === 'new' && (
+                        <div className="bg-gray-700/50 rounded-lg p-3 border border-gray-600 space-y-2">
+                          <textarea value={qEditQuestion} onChange={e => setQEditQuestion(e.target.value)} placeholder="Frage *" rows={2} className="w-full bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none" />
+                          {qEditOptions.map((opt, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <button onClick={() => setQEditCorrectIndex(i)} className={`w-6 h-6 rounded-full border-2 flex-shrink-0 text-xs font-bold transition-all ${i === qEditCorrectIndex ? 'bg-green-500 border-green-500 text-white' : 'border-gray-500 text-gray-500'}`}>{String.fromCharCode(65 + i)}</button>
+                              <input value={opt} onChange={e => { const o = [...qEditOptions]; o[i] = e.target.value; setQEditOptions(o); }} placeholder={`Option ${String.fromCharCode(65 + i)}`} className="flex-1 bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500" />
+                            </div>
+                          ))}
+                          <input value={qEditExplanation} onChange={e => setQEditExplanation(e.target.value)} placeholder="Erklärung nach der Antwort (optional)" className="w-full bg-gray-800 text-gray-300 text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-gray-500" />
+                          <div className="flex gap-2 justify-end">
+                            <button onClick={() => setEditingQuestionId(null)} className="text-xs text-gray-400 px-3 py-1">Abbrechen</button>
+                            <button onClick={handleSaveQuestion} className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded">Speichern</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {moduleQuestions.map((q, idx) => (
+                        editingQuestionId === q.id ? (
+                          <div key={q.id} className="bg-gray-700/50 rounded-lg p-3 border border-gray-600 space-y-2">
+                            <div className="text-gray-500 text-xs">Frage {idx + 1}</div>
+                            <textarea value={qEditQuestion} onChange={e => setQEditQuestion(e.target.value)} rows={2} className="w-full bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none" />
+                            {qEditOptions.map((opt, i) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <button onClick={() => setQEditCorrectIndex(i)} className={`w-6 h-6 rounded-full border-2 flex-shrink-0 text-xs font-bold transition-all ${i === qEditCorrectIndex ? 'bg-green-500 border-green-500 text-white' : 'border-gray-500 text-gray-500'}`}>{String.fromCharCode(65 + i)}</button>
+                                <input value={opt} onChange={e => { const o = [...qEditOptions]; o[i] = e.target.value; setQEditOptions(o); }} className="flex-1 bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500" />
+                              </div>
+                            ))}
+                            <input value={qEditExplanation} onChange={e => setQEditExplanation(e.target.value)} placeholder="Erklärung (optional)" className="w-full bg-gray-800 text-gray-300 text-sm rounded px-2 py-1.5 border border-gray-600 outline-none" />
+                            <div className="flex gap-2 justify-between">
+                              <button onClick={() => handleDeleteQuestion(q.id)} className="text-xs bg-red-900/50 hover:bg-red-800 text-red-400 px-3 py-1 rounded">Löschen</button>
+                              <div className="flex gap-2">
+                                <button onClick={() => setEditingQuestionId(null)} className="text-xs text-gray-400 px-3 py-1">Abbrechen</button>
+                                <button onClick={handleSaveQuestion} className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded">Speichern</button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div key={q.id} className="flex items-start gap-2 bg-gray-800/50 rounded-lg px-3 py-2.5 group border border-gray-700/30 hover:border-gray-600/50">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-gray-200 text-sm leading-relaxed">{q.question}</div>
+                              <div className="text-gray-500 text-xs mt-0.5">✓ {q.options[q.correctIndex]}</div>
+                            </div>
+                            <button onClick={() => openEditQuestion(q.id, q.question, q.options, q.correctIndex, q.explanation ?? '')} className="text-gray-500 hover:text-white text-xs flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">✏️</button>
+                          </div>
+                        )
+                      ))}
+
+                      {moduleQuestions.length === 0 && editingQuestionId !== 'new' && (
+                        <div className="text-gray-600 text-xs text-center py-4 border border-dashed border-gray-700/40 rounded-lg">Noch keine Fragen — füge die erste hinzu.</div>
+                      )}
                     </div>
                   )}
                 </div>
-              </div>
-            ))}
+              )}
+
+              {!selectedModule && (
+                <div className="text-gray-600 text-xs text-center py-6 border border-dashed border-gray-700/40 rounded-lg">Wähle ein Modul oben aus, um Inhalte zu bearbeiten.</div>
+              )}
+            </div>
           </div>
-        )}
+          );
+        })()}
       </div>
     );
   };

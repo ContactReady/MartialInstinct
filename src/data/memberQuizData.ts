@@ -4,7 +4,7 @@
 // Quiz-Engine wählt immer 10 zufällig aus (mit Wiederholung)
 // ============================================
 
-import { QuizQuestion } from '../components/shared/QuizEngine';
+import { QuizQuestion } from '../types';
 
 // ============================================
 // MODUL 1 — Mission Begins (Grundlagen)

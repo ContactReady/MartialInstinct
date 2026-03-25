@@ -7,14 +7,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { ProgressBar } from './ProgressBar';
-
-export interface QuizQuestion {
-  id: string;
-  question: string;
-  options: string[];
-  correctIndex: number;
-  explanation: string;
-}
+import { QuizQuestion } from '../../types';
+export type { QuizQuestion };
 
 interface QuizEngineProps {
   title: string;
@@ -22,9 +16,10 @@ interface QuizEngineProps {
   onComplete: (score: number, xpEarned: number) => void;
   onBack: () => void;
   accentColor?: string;        // Tailwind bg class, z.B. 'bg-green-600'
+  questionsPerSession?: number; // Standard: 10
 }
 
-const QUESTIONS_PER_SESSION = 10;
+const DEFAULT_QUESTIONS_PER_SESSION = 10;
 const XP_PER_CORRECT = 10;
 
 // Antwortoptionen einer Frage mischen und correctIndex entsprechend aktualisieren
@@ -34,18 +29,17 @@ function shuffleOptions(q: QuizQuestion): QuizQuestion {
   return { ...q, options: shuffled, correctIndex: shuffled.indexOf(correctAnswer) };
 }
 
-// Fragen zufällig mischen und auf 10 auffüllen (mit Wiederholung wenn nötig)
-// Antworten werden pro Frage ebenfalls gemischt damit die richtige Antwort rotiert.
-function buildSession(pool: QuizQuestion[]): QuizQuestion[] {
+// Fragen zufällig mischen und auf sessionCount auffüllen (mit Wiederholung wenn nötig)
+function buildSession(pool: QuizQuestion[], sessionCount: number): QuizQuestion[] {
   if (pool.length === 0) return [];
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   const session: QuizQuestion[] = [];
-  while (session.length < QUESTIONS_PER_SESSION) {
-    const needed = QUESTIONS_PER_SESSION - session.length;
+  while (session.length < sessionCount) {
+    const needed = sessionCount - session.length;
     const chunk = [...shuffled].sort(() => Math.random() - 0.5).slice(0, needed);
     session.push(...chunk);
   }
-  return session.slice(0, QUESTIONS_PER_SESSION).map(shuffleOptions);
+  return session.slice(0, sessionCount).map(shuffleOptions);
 }
 
 export const QuizEngine: React.FC<QuizEngineProps> = ({
@@ -53,9 +47,11 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   questions,
   onComplete,
   onBack,
-  accentColor = 'bg-green-600'
+  accentColor = 'bg-green-600',
+  questionsPerSession
 }) => {
-  const session = useMemo(() => buildSession(questions), [questions]);
+  const sessionCount = questionsPerSession ?? DEFAULT_QUESTIONS_PER_SESSION;
+  const session = useMemo(() => buildSession(questions, sessionCount), [questions, sessionCount]);
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -64,7 +60,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
 
   const q = session[index];
   const isCorrect = selected === q?.correctIndex;
-  const score = done ? Math.round((correct / QUESTIONS_PER_SESSION) * 100) : 0;
+  const score = done ? Math.round((correct / sessionCount) * 100) : 0;
   const xpEarned = correct * XP_PER_CORRECT;
 
   const handleSelect = (idx: number) => {
@@ -75,7 +71,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   };
 
   const handleNext = () => {
-    if (index + 1 >= QUESTIONS_PER_SESSION) {
+    if (index + 1 >= sessionCount) {
       setDone(true);
     } else {
       setIndex(i => i + 1);
@@ -94,7 +90,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
         </div>
         <div>
           <div className={`text-4xl font-black ${passed ? 'text-green-400' : 'text-orange-400'}`}>{score}%</div>
-          <div className="text-gray-400 mt-1">{correct} von {QUESTIONS_PER_SESSION} richtig</div>
+          <div className="text-gray-400 mt-1">{correct} von {sessionCount} richtig</div>
         </div>
 
         {/* XP Badge */}
@@ -143,14 +139,14 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
           <div className="text-white font-semibold text-sm truncate">{title}</div>
         </div>
         <div className="text-sm font-bold text-gray-400 flex-shrink-0">
-          {index + 1} / {QUESTIONS_PER_SESSION}
+          {index + 1} / {sessionCount}
         </div>
       </div>
 
       {/* Progress + XP counter */}
       <div className="px-4 pt-3 pb-2 flex-shrink-0 space-y-1.5">
         <ProgressBar
-          progress={((index) / QUESTIONS_PER_SESSION) * 100}
+          progress={((index) / sessionCount) * 100}
           color="bg-yellow-500"
           height="h-2"
         />
@@ -196,7 +192,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
             <div className={`font-bold mb-1.5 ${isCorrect ? 'text-green-400' : 'text-orange-400'}`}>
               {isCorrect ? '✅ Richtig!' : '❌ Nicht ganz...'}
             </div>
-            <p className="text-sm text-gray-300 leading-relaxed">{q.explanation}</p>
+            <p className="text-sm text-gray-300 leading-relaxed">{q.explanation || 'Keine weitere Erklärung.'}</p>
           </div>
         )}
       </div>
@@ -208,7 +204,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
             onClick={handleNext}
             className={`w-full text-white py-3.5 rounded-xl font-bold text-base transition-all ${accentColor} hover:opacity-90`}
           >
-            {index + 1 >= QUESTIONS_PER_SESSION ? 'Ergebnis sehen →' : 'Weiter →'}
+            {index + 1 >= sessionCount ? 'Ergebnis sehen →' : 'Weiter →'}
           </button>
         </div>
       )}

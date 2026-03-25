@@ -23,8 +23,12 @@ import {
   TechniqueWish,
   TrainingSession,
   TrainingGroup,
-  ModuleOrder
+  ModuleOrder,
+  ContentTechnique,
+  ModuleSettings,
+  QuizQuestion
 } from '../types';
+import { MODULE_QUIZ_DATA } from '../data/memberQuizData';
 import { supabase } from '../lib/supabase';
 import { MEMBERS, CHECK_INS, BOARD_MESSAGES, NOTIFICATIONS, LOCATIONS, VIDEOS, COURSES } from '../data/mockData';
 import { MODULES, BLOCKS, getAllTechniques, getModuleById } from '../data/modules';
@@ -117,6 +121,21 @@ interface AppContextType {
   getOrderedModules: () => typeof MODULES;
   saveModuleOrder: (orders: ModuleOrder[]) => Promise<void>;
 
+  // Content Management (Techniken + Quiz)
+  contentTechniques: ContentTechnique[];
+  quizQuestions: QuizQuestion[];
+  moduleSettings: Record<string, ModuleSettings>;
+  getTechniquesForModule: (moduleId: string) => ContentTechnique[];
+  getQuizQuestionsForModule: (moduleId: string) => QuizQuestion[];
+  getQuizCountForModule: (moduleId: string) => number;
+  saveTechnique: (t: ContentTechnique) => Promise<void>;
+  deleteTechnique: (id: string) => Promise<void>;
+  reorderTechniques: (moduleId: string, orderedIds: string[]) => Promise<void>;
+  saveQuizQuestion: (q: QuizQuestion & { moduleId: string }) => Promise<void>;
+  deleteQuizQuestion: (id: string) => Promise<void>;
+  reorderQuizQuestions: (moduleId: string, orderedIds: string[]) => Promise<void>;
+  saveModuleSettings: (moduleId: string, quizCount: number) => Promise<void>;
+
   // Helpers
   // Trainingsreport
   trainingSessions: TrainingSession[];
@@ -163,6 +182,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [techniqueWishes, setTechniqueWishes] = useState<TechniqueWish[]>([]);
   const [trainingSessions, setTrainingSessions] = useState<TrainingSession[]>([]);
   const [moduleOrder, setModuleOrder] = useState<ModuleOrder[]>([]);
+  const [contentTechniques, setContentTechniques] = useState<ContentTechnique[]>([]);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [moduleSettings, setModuleSettings] = useState<Record<string, ModuleSettings>>({});
 
   // Beim Start: Modulreihenfolge aus Supabase laden
   // SQL: CREATE TABLE module_order (module_id text PRIMARY KEY, block_level text NOT NULL, position integer NOT NULL);
@@ -180,6 +202,76 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           })));
         }
       } catch (_) { /* Fallback auf hardcoded Reihenfolge */ }
+    })();
+  }, []);
+
+  // Beim Start: Lerninhalte (Techniken + Quiz) aus Supabase laden
+  // Mit localStorage-Cache für Offline-Betrieb, Fallback auf hardcoded Daten
+  useEffect(() => {
+    const CACHE_KEY = 'mi_content_v1';
+
+    const mapTech = (r: { id: string; module_id: string; name: string; description: string; is_required: boolean; position: number }): ContentTechnique => ({
+      id: r.id, moduleId: r.module_id, name: r.name, description: r.description ?? '', isRequired: r.is_required, position: r.position
+    });
+    const mapQ = (r: { id: string; module_id: string; question: string; options: string[]; correct_index: number; explanation: string; position: number }): QuizQuestion => ({
+      id: r.id, moduleId: r.module_id, question: r.question, options: r.options, correctIndex: r.correct_index, explanation: r.explanation ?? '', position: r.position
+    });
+
+    const buildHardcoded = () => {
+      const techniques: ContentTechnique[] = [];
+      MODULES.forEach(mod => mod.techniques.forEach(t => techniques.push({ id: t.id, moduleId: t.moduleId, name: t.name, description: t.description, isRequired: t.isRequired, position: t.order })));
+      const questions: QuizQuestion[] = [];
+      Object.entries(MODULE_QUIZ_DATA).forEach(([moduleId, qs]) => qs.forEach((q, i) => questions.push({ id: q.id, moduleId, question: q.question, options: q.options, correctIndex: q.correctIndex, explanation: q.explanation ?? '', position: i })));
+      return { techniques, questions };
+    };
+
+    (async () => {
+      try {
+        const [techRes, quizRes, settRes] = await Promise.all([
+          supabase.from('content_techniques').select('*').order('module_id').order('position'),
+          supabase.from('content_quiz_questions').select('*').order('module_id').order('position'),
+          supabase.from('module_settings').select('*'),
+        ]);
+
+        let techniques: ContentTechnique[] = (techRes.data ?? []).map(mapTech);
+        let questions: QuizQuestion[] = (quizRes.data ?? []).map(mapQ);
+        const settings: Record<string, ModuleSettings> = {};
+        (settRes.data ?? []).forEach((r: { module_id: string; quiz_count: number }) => { settings[r.module_id] = { moduleId: r.module_id, quizCount: r.quiz_count }; });
+
+        // Auto-Seed: falls Tabellen leer, hardcoded Daten einspielen
+        if (techniques.length === 0) {
+          const { techniques: fallT } = buildHardcoded();
+          await supabase.from('content_techniques').insert(fallT.map(t => ({ id: t.id, module_id: t.moduleId, name: t.name, description: t.description, is_required: t.isRequired, position: t.position })));
+          techniques = fallT;
+        }
+        if (questions.length === 0) {
+          const { questions: fallQ } = buildHardcoded();
+          await supabase.from('content_quiz_questions').insert(fallQ.map(q => ({ module_id: q.moduleId, question: q.question, options: q.options, correct_index: q.correctIndex, explanation: q.explanation ?? '', position: q.position ?? 0 })));
+          const { data: freshQ } = await supabase.from('content_quiz_questions').select('*').order('module_id').order('position');
+          questions = (freshQ ?? []).map(mapQ);
+        }
+
+        setContentTechniques(techniques);
+        setQuizQuestions(questions);
+        setModuleSettings(settings);
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ techniques, questions, settings }));
+      } catch (_) {
+        // Offline: localStorage-Cache
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          try {
+            const { techniques, questions, settings } = JSON.parse(cached) as { techniques: ContentTechnique[]; questions: QuizQuestion[]; settings: Record<string, ModuleSettings> };
+            setContentTechniques(techniques);
+            setQuizQuestions(questions);
+            setModuleSettings(settings);
+            return;
+          } catch (_) { /* ignore parse errors */ }
+        }
+        // Letzter Fallback: hardcoded
+        const { techniques, questions } = buildHardcoded();
+        setContentTechniques(techniques);
+        setQuizQuestions(questions);
+      }
     })();
   }, []);
 
@@ -1123,28 +1215,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const member = members.find(m => m.id === memberId);
     if (!member) return { total: 0, completed: 0, percentage: 0 };
 
-    const allTechs = getAllTechniques();
-    const total = allTechs.length;
-    const completed = Object.values(member.techniqueProgress).filter(
-      p => isTechniqueCompleted(p.status)
-    ).length;
+    const total = contentTechniques.length > 0 ? contentTechniques.length : getAllTechniques().length;
+    const completed = Object.values(member.techniqueProgress).filter(p => isTechniqueCompleted(p.status)).length;
 
     return { total, completed, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
-  }, [members]);
+  }, [members, contentTechniques]);
 
   const getModuleProgress = useCallback((memberId: string, moduleId: string): { total: number; completed: number; percentage: number } => {
     const member = members.find(m => m.id === memberId);
-    const module = MODULES.find(m => m.id === moduleId);
+    if (!member) return { total: 0, completed: 0, percentage: 0 };
 
-    if (!member || !module) return { total: 0, completed: 0, percentage: 0 };
-
-    const total = module.techniques.length;
-    const completed = module.techniques.filter(
-      t => isTechniqueCompleted(member.techniqueProgress[t.id]?.status ?? 'not_tested')
-    ).length;
+    const techs = contentTechniques.length > 0
+      ? contentTechniques.filter(t => t.moduleId === moduleId)
+      : (MODULES.find(m => m.id === moduleId)?.techniques ?? []);
+    const total = techs.length;
+    const completed = techs.filter(t => isTechniqueCompleted(member.techniqueProgress[t.id]?.status ?? 'not_tested')).length;
 
     return { total, completed, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
-  }, [members]);
+  }, [members, contentTechniques]);
 
   const getBlockProgress = useCallback((memberId: string, blockLevel: ModuleLevel): { total: number; completed: number; percentage: number } => {
     const member = members.find(m => m.id === memberId);
@@ -1152,8 +1240,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     if (!member || !block) return { total: 0, completed: 0, percentage: 0 };
 
-    const blockModules = MODULES.filter(m => block.moduleIds.includes(m.id));
-    const allTechs = blockModules.flatMap(m => m.techniques);
+    const allTechs = contentTechniques.length > 0
+      ? contentTechniques.filter(t => block.moduleIds.includes(t.moduleId))
+      : MODULES.filter(m => block.moduleIds.includes(m.id)).flatMap(m => m.techniques);
 
     const total = allTechs.length;
     const completed = allTechs.filter(
@@ -1161,7 +1250,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     ).length;
 
     return { total, completed, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
-  }, [members]);
+  }, [members, contentTechniques]);
 
   const isBlockUnlocked = useCallback((memberId: string, blockLevel: ModuleLevel): boolean => {
     const member = members.find(m => m.id === memberId);
@@ -1252,6 +1341,72 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setMembers(prev => prev.map(m => m.id === currentUser.id ? update(m) : m));
     setCurrentUser(prev => prev ? update(prev) : null);
   }, [currentUser]);
+
+  // ============================================
+  // CONTENT MANAGEMENT — Getter
+  // ============================================
+
+  const getTechniquesForModule = useCallback((moduleId: string): ContentTechnique[] =>
+    contentTechniques.filter(t => t.moduleId === moduleId).sort((a, b) => a.position - b.position),
+  [contentTechniques]);
+
+  const getQuizQuestionsForModule = useCallback((moduleId: string): QuizQuestion[] =>
+    quizQuestions.filter(q => q.moduleId === moduleId).sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
+  [quizQuestions]);
+
+  const getQuizCountForModule = useCallback((moduleId: string): number =>
+    moduleSettings[moduleId]?.quizCount ?? 10,
+  [moduleSettings]);
+
+  // ============================================
+  // CONTENT MANAGEMENT — Admin CRUD
+  // ============================================
+
+  const saveTechnique = useCallback(async (t: ContentTechnique) => {
+    const isNew = !contentTechniques.find(x => x.id === t.id);
+    await supabase.from('content_techniques').upsert([{ id: t.id, module_id: t.moduleId, name: t.name, description: t.description, is_required: t.isRequired, position: t.position }], { onConflict: 'id' });
+    setContentTechniques(prev => isNew ? [...prev, t] : prev.map(x => x.id === t.id ? t : x));
+  }, [contentTechniques]);
+
+  const deleteTechnique = useCallback(async (id: string) => {
+    await supabase.from('content_techniques').delete().eq('id', id);
+    setContentTechniques(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const reorderTechniques = useCallback(async (_moduleId: string, orderedIds: string[]) => {
+    const updates = orderedIds.map((id, i) => ({ id, position: i }));
+    setContentTechniques(prev => prev.map(t => { const u = updates.find(x => x.id === t.id); return u ? { ...t, position: u.position } : t; }));
+    await Promise.all(updates.map(u => supabase.from('content_techniques').update({ position: u.position }).eq('id', u.id)));
+  }, []);
+
+  const saveQuizQuestion = useCallback(async (q: QuizQuestion & { moduleId: string }) => {
+    const existing = q.id ? quizQuestions.find(x => x.id === q.id) : null;
+    const row = { module_id: q.moduleId, question: q.question, options: q.options, correct_index: q.correctIndex, explanation: q.explanation ?? '', position: q.position ?? 0 };
+    if (existing) {
+      await supabase.from('content_quiz_questions').update(row).eq('id', q.id);
+      setQuizQuestions(prev => prev.map(x => x.id === q.id ? { ...q } : x));
+    } else {
+      const { data } = await supabase.from('content_quiz_questions').insert([row]).select();
+      const newQ: QuizQuestion = { ...q, id: data?.[0]?.id ?? `tmp-${Date.now()}` };
+      setQuizQuestions(prev => [...prev, newQ]);
+    }
+  }, [quizQuestions]);
+
+  const deleteQuizQuestion = useCallback(async (id: string) => {
+    await supabase.from('content_quiz_questions').delete().eq('id', id);
+    setQuizQuestions(prev => prev.filter(q => q.id !== id));
+  }, []);
+
+  const reorderQuizQuestions = useCallback(async (_moduleId: string, orderedIds: string[]) => {
+    const updates = orderedIds.map((id, i) => ({ id, position: i }));
+    setQuizQuestions(prev => prev.map(q => { const u = updates.find(x => x.id === q.id); return u ? { ...q, position: u.position } : q; }));
+    await Promise.all(updates.map(u => supabase.from('content_quiz_questions').update({ position: u.position }).eq('id', u.id)));
+  }, []);
+
+  const saveModuleSettings = useCallback(async (moduleId: string, quizCount: number) => {
+    setModuleSettings(prev => ({ ...prev, [moduleId]: { moduleId, quizCount } }));
+    await supabase.from('module_settings').upsert([{ module_id: moduleId, quiz_count: quizCount, updated_at: new Date().toISOString() }], { onConflict: 'module_id' });
+  }, []);
 
   // ============================================
   // MODUL-REIHENFOLGE
@@ -1395,6 +1550,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     moduleOrder,
     getOrderedModules,
     saveModuleOrder,
+    contentTechniques,
+    quizQuestions,
+    moduleSettings,
+    getTechniquesForModule,
+    getQuizQuestionsForModule,
+    getQuizCountForModule,
+    saveTechnique,
+    deleteTechnique,
+    reorderTechniques,
+    saveQuizQuestion,
+    deleteQuizQuestion,
+    reorderQuizQuestions,
+    saveModuleSettings,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

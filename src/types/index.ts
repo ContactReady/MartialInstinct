@@ -470,6 +470,25 @@ export interface QuizQuestion {
   question: string;
   options: string[];
   correctIndex: number;
+  explanation?: string;
+  moduleId?: string;
+  position?: number;
+}
+
+// Dynamische Technik (aus Supabase, ersetzt hardcoded Techniques in modules.ts)
+export interface ContentTechnique {
+  id: string;
+  moduleId: string;
+  name: string;
+  description: string;
+  isRequired: boolean;
+  position: number;
+}
+
+// Pro-Modul Quiz-Einstellungen
+export interface ModuleSettings {
+  moduleId: string;
+  quizCount: number;
 }
 
 export interface QuizResult {

@@ -6,7 +6,6 @@
 import React, { useState } from 'react';
 import { ChevronLeft, Star, Zap, BookOpen, Trophy, ChevronDown, ChevronRight } from 'lucide-react';
 import { useApp, BLOCKS } from '../../context/AppContext';
-import { MODULE_QUIZ_DATA } from '../../data/memberQuizData';
 import { QuizEngine } from '../shared/QuizEngine';
 import { ProgressBar } from '../shared/ProgressBar';
 import { Module, Block, TechniqueProgress } from '../../types';
@@ -36,11 +35,12 @@ interface ModuleCardProps {
   block: Block;
   bestScore: number | null;
   sessions: number;
+  questionCount: number;
   onStart: () => void;
 }
 
-const ModuleCard: React.FC<ModuleCardProps> = ({ module, bestScore, sessions, onStart }) => {
-  const hasQuestions = (MODULE_QUIZ_DATA[module.id]?.length ?? 0) > 0;
+const ModuleCard: React.FC<ModuleCardProps> = ({ module, bestScore, sessions, questionCount, onStart }) => {
+  const hasQuestions = questionCount > 0;
   const passed = (bestScore ?? 0) >= 70;
 
   return (
@@ -113,10 +113,11 @@ interface BlockSectionProps {
   block: Block;
   modules: Module[];
   quizProgress: Record<string, { lastScore: number; bestScore: number; totalSessions: number }>;
+  getQuestionCount: (moduleId: string) => number;
   onSelectModule: (module: Module) => void;
 }
 
-const BlockSection: React.FC<BlockSectionProps> = ({ block, modules, quizProgress, onSelectModule }) => {
+const BlockSection: React.FC<BlockSectionProps> = ({ block, modules, quizProgress, getQuestionCount, onSelectModule }) => {
   const blockModules = modules.filter(m => block.moduleIds.includes(m.id));
   const masteredCount = blockModules.filter(m => (quizProgress[m.id]?.bestScore ?? 0) >= 70).length;
 
@@ -141,6 +142,7 @@ const BlockSection: React.FC<BlockSectionProps> = ({ block, modules, quizProgres
           block={block}
           bestScore={quizProgress[module.id]?.bestScore ?? null}
           sessions={quizProgress[module.id]?.totalSessions ?? 0}
+          questionCount={getQuestionCount(module.id)}
           onStart={() => onSelectModule(module)}
         />
       ))}
@@ -153,7 +155,7 @@ const BlockSection: React.FC<BlockSectionProps> = ({ block, modules, quizProgres
 // ============================================
 
 export const MemberLearningView: React.FC = () => {
-  const { currentUser, completeModuleQuiz, getOrderedModules } = useApp();
+  const { currentUser, completeModuleQuiz, getOrderedModules, getTechniquesForModule, getQuizQuestionsForModule, getQuizCountForModule } = useApp();
   const [activeModule, setActiveModule] = useState<Module | null>(null);
   const [showQuiz, setShowQuiz] = useState(false);
   const [learningTab, setLearningTab] = useState<'theorie' | 'praxis'>('theorie');
@@ -175,18 +177,20 @@ export const MemberLearningView: React.FC = () => {
   };
 
   // Overall stats
-  const allModulesWithQuiz = orderedModules.filter(m => (MODULE_QUIZ_DATA[m.id]?.length ?? 0) > 0);
+  const allModulesWithQuiz = orderedModules.filter(m => getQuizQuestionsForModule(m.id).length > 0);
   const masteredModules = allModulesWithQuiz.filter(m => (quizProgress[m.id]?.bestScore ?? 0) >= 70).length;
   const totalSessions = Object.values(quizProgress).reduce((sum, p) => sum + (p.totalSessions ?? 0), 0);
 
   // Quiz screen
   if (showQuiz && activeModule) {
-    const questions = MODULE_QUIZ_DATA[activeModule.id] ?? [];
+    const questions = getQuizQuestionsForModule(activeModule.id);
+    const quizCount = getQuizCountForModule(activeModule.id);
     return (
       <div className="flex flex-col h-screen bg-gray-950">
         <QuizEngine
           title={`${activeModule.icon} ${activeModule.name}`}
           questions={questions}
+          questionsPerSession={quizCount}
           accentColor="bg-red-600"
           onComplete={(score, xpEarned) => {
             completeModuleQuiz(activeModule.id, score, xpEarned);
@@ -200,7 +204,8 @@ export const MemberLearningView: React.FC = () => {
 
   // Module detail
   if (activeModule) {
-    const q = MODULE_QUIZ_DATA[activeModule.id] ?? [];
+    const q = getQuizQuestionsForModule(activeModule.id);
+    const quizCount = getQuizCountForModule(activeModule.id);
     const progress = quizProgress[activeModule.id];
     return (
       <div className="flex flex-col h-full">
@@ -261,8 +266,8 @@ export const MemberLearningView: React.FC = () => {
               Quiz-Details
             </div>
             <ul className="space-y-1 text-sm text-gray-300">
-              <li>• {q.length} Fragen im Pool — 10 werden zufällig gewählt</li>
-              <li>• 10 XP pro richtige Antwort (max. 100 XP)</li>
+              <li>• {q.length} Fragen im Pool — {quizCount} werden zufällig gewählt</li>
+              <li>• 10 XP pro richtige Antwort (max. {quizCount * 10} XP)</li>
               <li>• Mindestens 70% für "Gemeistert"</li>
               <li>• Wiederholung empfohlen für echten Lernerfolg</li>
             </ul>
@@ -275,7 +280,7 @@ export const MemberLearningView: React.FC = () => {
             className="w-full bg-red-600 hover:bg-red-500 text-white py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2"
           >
             <Zap className="w-5 h-5" />
-            {progress ? 'Nochmal üben' : 'Quiz starten'} — 10 Fragen
+            {progress ? 'Nochmal üben' : 'Quiz starten'} — {quizCount} Fragen
           </button>
         </div>
       </div>
@@ -283,14 +288,14 @@ export const MemberLearningView: React.FC = () => {
   }
 
   // ── Praxis-Tab Hilfsfunktionen ───────────────────────────────────────────
-  const getTechniquesDone = (module: Module): number =>
-    module.techniques.filter(t => {
+  const getTechniquesDone = (moduleId: string): number =>
+    getTechniquesForModule(moduleId).filter(t => {
       const s = currentUser.techniqueProgress[t.id]?.status;
       return s === 'tech_passed' || s === 'tac_passed';
     }).length;
 
-  const totalTechniquesDone = orderedModules.reduce((sum, m) => sum + getTechniquesDone(m), 0);
-  const totalTechniques = orderedModules.reduce((sum, m) => sum + m.techniques.length, 0);
+  const totalTechniquesDone = orderedModules.reduce((sum, m) => sum + getTechniquesDone(m.id), 0);
+  const totalTechniques = orderedModules.reduce((sum, m) => sum + getTechniquesForModule(m.id).length, 0);
   const totalPct = totalTechniques > 0 ? Math.round((totalTechniquesDone / totalTechniques) * 100) : 0;
 
   // Main overview
@@ -354,6 +359,7 @@ export const MemberLearningView: React.FC = () => {
                 block={block}
                 modules={orderedModules}
                 quizProgress={quizProgress}
+                getQuestionCount={(id) => getQuizQuestionsForModule(id).length}
                 onSelectModule={setActiveModule}
               />
             ))}
@@ -384,8 +390,9 @@ export const MemberLearningView: React.FC = () => {
 
           {/* Module als Akkordeon — geordnet nach Admin-Reihenfolge */}
           {orderedModules.map(module => {
-            const done = getTechniquesDone(module);
-            const total = module.techniques.length;
+            const techniques = getTechniquesForModule(module.id);
+            const done = getTechniquesDone(module.id);
+            const total = techniques.length;
             const pct = total > 0 ? Math.round((done / total) * 100) : 0;
             const isOpen = expandedModules.has(module.id);
 
@@ -418,7 +425,7 @@ export const MemberLearningView: React.FC = () => {
                 {/* Techniken-Liste */}
                 {isOpen && (
                   <div className="border-t border-gray-700/50 divide-y divide-gray-700/30">
-                    {module.techniques.map(technique => {
+                    {techniques.map(technique => {
                       const progress = currentUser.techniqueProgress[technique.id];
                       const { label, color, bg } = getPraxisStatus(progress);
                       return (
