@@ -39,7 +39,7 @@ interface ModuleCardProps {
   onStart: () => void;
 }
 
-const ModuleCard: React.FC<ModuleCardProps> = ({ module, block, bestScore, sessions, onStart }) => {
+const ModuleCard: React.FC<ModuleCardProps> = ({ module, bestScore, sessions, onStart }) => {
   const hasQuestions = (MODULE_QUIZ_DATA[module.id]?.length ?? 0) > 0;
   const passed = (bestScore ?? 0) >= 70;
 

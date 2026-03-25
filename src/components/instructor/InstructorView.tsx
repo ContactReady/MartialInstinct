@@ -3,11 +3,10 @@
 // Strukturiert, autoritätsbasiert und skalierbar
 // ============================================
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp, MODULES, BLOCKS, COURSES } from '../../context/AppContext';
 import { ModuleOrder } from '../../types';
 import {
-  STATUS_DISPLAY,
   LEVEL_DISPLAY,
   ROLE_DISPLAY,
   EXAM_PERMISSIONS,
@@ -48,7 +47,8 @@ function canApproveCheckIn(role: InstructorRole, instructorId: string, checkIn: 
   return !!ownCourse;
 }
 
-type Tab = 'lernen' | 'live' | 'evaluate' | 'members' | 'requests' | 'applications' | 'board' | 'admin';
+type Tab = 'lernen' | 'live' | 'evaluate' | 'members' | 'requests' | 'board' | 'admin';
+type AdminSubTab = 'members' | 'bewerbungen' | 'lernbereich';
 
 export const InstructorView: React.FC = () => {
   const {
@@ -80,6 +80,7 @@ export const InstructorView: React.FC = () => {
     completeTrainingSession,
     updateMemberRole,
     updateAdminAccess,
+    restoreStreak,
     saveModuleOrder,
     moduleOrder,
   } = useApp();
@@ -94,11 +95,19 @@ export const InstructorView: React.FC = () => {
   const [memberSort, setMemberSort] = useState<'name' | 'lastSeen' | 'lastTraining'>('lastSeen');
   const [profileMember, setProfileMember] = useState<Member | null>(null);
 
+  // Admin Sub-Tab State
+  const [adminSubTab, setAdminSubTab] = useState<AdminSubTab>('members');
+
+  // Streak Restore State
+  const [streakRestoreOpen, setStreakRestoreOpen] = useState<string | null>(null);
+  const [streakRestoreValue, setStreakRestoreValue] = useState(1);
+  const [streakRestoreReason, setStreakRestoreReason] = useState('');
+
   // Modul-Verwaltung DnD State
   const [localModuleOrder, setLocalModuleOrder] = useState<ModuleOrder[]>([]);
   const [dndDragId, setDndDragId] = useState<string | null>(null);
+  const [dndIndicator, setDndIndicator] = useState<{ moduleId: string; insertBefore: boolean } | null>(null);
   const [dndSaved, setDndSaved] = useState(false);
-  const dndDragOverId = useRef<string | null>(null);
 
   // Sub-Tab States (an Top-Level wegen Rules of Hooks)
   const [liveSubTab, setLiveSubTab] = useState<'online' | 'training'>('training');
@@ -145,8 +154,6 @@ export const InstructorView: React.FC = () => {
         return hasAdminAccess(currentUser) || ['head_instructor'].includes(currentUser.role);
       case 'requests':
         return EXAM_PERMISSIONS[currentUser.role].length > 0;
-      case 'applications':
-        return currentUser.role === 'owner' || currentUser.role === 'admin';
       case 'board':
         return currentUser.role !== 'member';
       case 'admin':
@@ -1205,111 +1212,6 @@ export const InstructorView: React.FC = () => {
     );
   };
 
-  // Render Applications Tab (Owner only)
-  const renderApplicationsTab = () => (
-    <div className="space-y-6">
-      <h3 className="text-lg font-bold text-white">
-        Bewerbungen ({totalPendingApps})
-      </h3>
-      
-      {totalPendingApps === 0 ? (
-        <p className="text-gray-400">Keine offenen Bewerbungen</p>
-      ) : (
-        <div className="space-y-8">
-          {/* Contact Ready Applications */}
-          {pendingContactApps.length > 0 && (
-            <div className="space-y-4">
-              <h4 className="text-red-400 font-bold flex items-center gap-2">
-                ☠️ Contact Ready ({pendingContactApps.length})
-              </h4>
-              {pendingContactApps.map(member => {
-                const app = member.contactApplication!;
-                return (
-                  <div key={member.id} className="bg-gradient-to-r from-gray-900 to-red-900/30 rounded-xl p-6 border border-red-700">
-                    <div className="flex items-center gap-4 mb-4">
-                      <span className="text-3xl">{member.avatar}</span>
-                      <div>
-                        <div className="text-xl font-bold text-white">{member.name}</div>
-                        <div className="text-gray-400">{LEVEL_DISPLAY[member.currentLevel].subtitle}</div>
-                      </div>
-                    </div>
-                    <div className="space-y-3 mb-6">
-                      <div className="bg-gray-800/50 rounded-lg p-3">
-                        <div className="text-gray-400 text-sm">Motivation</div>
-                        <div className="text-white">{app.answers.motivation}</div>
-                      </div>
-                      <div className="bg-gray-800/50 rounded-lg p-3">
-                        <div className="text-gray-400 text-sm">Erfahrung</div>
-                        <div className="text-white">{app.answers.experience}</div>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <button onClick={() => approveContactApplication(member.id, 'Angenommen')} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg">✅ Annehmen</button>
-                      <button onClick={() => rejectContactApplication(member.id, 'Abgelehnt')} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg">❌ Ablehnen</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Instructor Applications */}
-          {pendingInstructorApps.length > 0 && (
-            <div className="space-y-4">
-              <h4 className="text-yellow-400 font-bold flex items-center gap-2">
-                🎓 Assistant Instructor ({pendingInstructorApps.length})
-              </h4>
-              {pendingInstructorApps.map(member => {
-                const app = member.assistantInstructorApplication!;
-                return (
-                  <div key={member.id} className="bg-gradient-to-r from-gray-900 to-yellow-900/30 rounded-xl p-6 border border-yellow-700">
-                    <div className="flex items-center gap-4 mb-4">
-                      <span className="text-3xl">{member.avatar}</span>
-                      <div>
-                        <div className="text-xl font-bold text-white">{member.name}</div>
-                        <div className="text-gray-400">{LEVEL_DISPLAY[member.currentLevel].subtitle}</div>
-                      </div>
-                    </div>
-                    <div className="space-y-3 mb-6">
-                      <div className="bg-gray-800/50 rounded-lg p-3">
-                        <div className="text-gray-400 text-xs mb-1">Warum möchtest du Instructor werden?</div>
-                        <div className="text-white text-sm">{app.answers.motivation}</div>
-                      </div>
-                      <div className="bg-gray-800/50 rounded-lg p-3">
-                        <div className="text-gray-400 text-xs mb-1">Hast du bereits Unterrichtserfahrung?</div>
-                        <div className="text-white text-sm">{app.answers.teachingExperience}</div>
-                      </div>
-                      <div className="bg-gray-800/50 rounded-lg p-3">
-                        <div className="text-gray-400 text-xs mb-1">Stärken und Schwächen</div>
-                        <div className="text-white text-sm">{app.answers.strengthsWeaknesses}</div>
-                      </div>
-                      <div className="bg-gray-800/50 rounded-lg p-3">
-                        <div className="text-gray-400 text-xs mb-1">Verfügbarkeit</div>
-                        <div className="text-white text-sm">{app.answers.availability}</div>
-                      </div>
-                      <div className="bg-gray-800/50 rounded-lg p-3">
-                        <div className="text-gray-400 text-xs mb-1">Ziele als Instructor</div>
-                        <div className="text-white text-sm">{app.answers.goals}</div>
-                      </div>
-                      <div className="bg-gray-800/50 rounded-lg p-3">
-                        <div className="text-gray-400 text-xs mb-1">Was macht einen guten Instructor aus?</div>
-                        <div className="text-white text-sm">{app.answers.roleModel}</div>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <button onClick={() => approveInstructorApplication(member.id, 'Willkommen im Team!')} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg">✅ Annehmen</button>
-                      <button onClick={() => rejectInstructorApplication(member.id, 'Noch nicht bereit.')} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg">❌ Ablehnen</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-
   // Render Board Tab
   const renderBoardTab = () => (
     <div className="space-y-6">
@@ -1357,18 +1259,15 @@ export const InstructorView: React.FC = () => {
 
   // Render Admin Tab
   const renderAdminTab = () => {
-    // ── Modul-Verwaltung DnD Helpers ───────────────────────────────────────
+    // ── DnD Helpers ────────────────────────────────────────────────────────
     const getWorkingOrder = (): ModuleOrder[] => {
       if (localModuleOrder.length > 0) return localModuleOrder;
       if (moduleOrder.length > 0) return moduleOrder;
-      // Fallback: aus hardcoded Daten ableiten
       return MODULES.map((m, i) => ({ moduleId: m.id, blockLevel: m.level, position: i }));
     };
 
-    const workingOrder = getWorkingOrder();
-
     const getModulesForBlock = (blockLevel: string) =>
-      workingOrder
+      getWorkingOrder()
         .filter(o => o.blockLevel === blockLevel)
         .sort((a, b) => a.position - b.position)
         .map(o => MODULES.find(m => m.id === o.moduleId))
@@ -1377,68 +1276,68 @@ export const InstructorView: React.FC = () => {
     const handleDragStart = (moduleId: string) => {
       setDndDragId(moduleId);
       setDndSaved(false);
+      setDndIndicator(null);
     };
 
-    const handleDragOver = (e: React.DragEvent, moduleId: string) => {
+    const handleDragOverModule = (e: React.DragEvent<HTMLDivElement>, moduleId: string) => {
       e.preventDefault();
-      dndDragOverId.current = moduleId;
+      e.stopPropagation();
+      const rect = e.currentTarget.getBoundingClientRect();
+      const insertBefore = e.clientY < rect.top + rect.height / 2;
+      setDndIndicator({ moduleId, insertBefore });
+    };
+
+    const handleDragOverBlock = (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      // wenn man über den leeren Teil des Blocks zieht → ans Ende
     };
 
     const handleDrop = (e: React.DragEvent, targetBlockLevel: string) => {
       e.preventDefault();
-      if (!dndDragId) return;
+      if (!dndDragId) { setDndIndicator(null); return; }
 
       const current = getWorkingOrder();
       const draggedEntry = current.find(o => o.moduleId === dndDragId);
-      if (!draggedEntry) return;
+      if (!draggedEntry) { setDndIndicator(null); return; }
 
-      const targetId = dndDragOverId.current;
-      const targetEntry = targetId ? current.find(o => o.moduleId === targetId) : null;
-
-      // Neues Block-Level setzen (bei Block-Wechsel via Dropdown wird das separat gehandhabt)
+      const ind = dndIndicator;
+      const targetEntry = ind ? current.find(o => o.moduleId === ind.moduleId) : null;
       const newBlockLevel = targetEntry ? targetEntry.blockLevel : targetBlockLevel;
 
-      // Bestimme neue Position innerhalb des Ziel-Blocks
-      const blockItems = current.filter(o => o.blockLevel === newBlockLevel && o.moduleId !== dndDragId);
-      let insertPos = blockItems.length;
+      const blockItems = current
+        .filter(o => o.blockLevel === newBlockLevel && o.moduleId !== dndDragId)
+        .sort((a, b) => a.position - b.position);
+
+      let insertIdx = blockItems.length;
       if (targetEntry && targetEntry.blockLevel === newBlockLevel) {
-        const targetIdx = blockItems.findIndex(o => o.moduleId === targetId);
-        insertPos = targetIdx >= 0 ? targetIdx : blockItems.length;
+        const targetIdx = blockItems.findIndex(o => o.moduleId === ind!.moduleId);
+        if (targetIdx >= 0) insertIdx = ind!.insertBefore ? targetIdx : targetIdx + 1;
       }
 
-      // Neue Reihenfolge berechnen
-      const updated = current.map(o => {
-        if (o.moduleId === dndDragId) return { ...o, blockLevel: newBlockLevel };
-        return o;
-      });
+      const newBlockItems = [...blockItems];
+      newBlockItems.splice(insertIdx, 0, { ...draggedEntry, blockLevel: newBlockLevel });
 
-      // Positionen neu nummerieren pro Block
-      const reindexed = BLOCKS.flatMap(block => {
-        const items = updated.filter(o => o.blockLevel === block.level).sort((a, b) => a.position - b.position);
-        const dragged = items.find(o => o.moduleId === dndDragId);
-        const rest = items.filter(o => o.moduleId !== dndDragId);
-        if (dragged && dragged.blockLevel === block.level) {
-          rest.splice(insertPos, 0, dragged);
+      const newOrder: ModuleOrder[] = BLOCKS.flatMap(block => {
+        if (block.level === newBlockLevel) {
+          return newBlockItems.map((o, i) => ({ ...o, position: i }));
         }
-        return rest.map((o, i) => ({ ...o, position: i }));
+        return current
+          .filter(o => o.blockLevel === block.level && o.moduleId !== dndDragId)
+          .sort((a, b) => a.position - b.position)
+          .map((o, i) => ({ ...o, position: i }));
       });
 
-      setLocalModuleOrder(reindexed);
+      setLocalModuleOrder(newOrder);
       setDndDragId(null);
-      dndDragOverId.current = null;
+      setDndIndicator(null);
     };
 
     const handleBlockChange = (moduleId: string, newBlockLevel: string) => {
       const current = getWorkingOrder();
       const blockItems = current.filter(o => o.blockLevel === newBlockLevel);
-      const updated = current.map(o =>
-        o.moduleId === moduleId
-          ? { ...o, blockLevel: newBlockLevel, position: blockItems.length }
-          : o
-      );
-      // Positionen im alten Block neu nummerieren
       const reindexed = BLOCKS.flatMap(block =>
-        updated
+        current
+          .map(o => o.moduleId === moduleId ? { ...o, blockLevel: newBlockLevel, position: blockItems.length } : o)
           .filter(o => o.blockLevel === block.level)
           .sort((a, b) => a.position - b.position)
           .map((o, i) => ({ ...o, position: i }))
@@ -1448,11 +1347,11 @@ export const InstructorView: React.FC = () => {
     };
 
     const handleSave = async () => {
-      const toSave = getWorkingOrder();
-      await saveModuleOrder(toSave);
+      await saveModuleOrder(getWorkingOrder());
       setDndSaved(true);
     };
 
+    // ── Role options ────────────────────────────────────────────────────────
     const roleOptions: { value: InstructorRole; label: string }[] = [
       { value: 'member', label: 'Member' },
       { value: 'assistant_instructor', label: 'Assistant Instructor' },
@@ -1461,170 +1360,333 @@ export const InstructorView: React.FC = () => {
       { value: 'head_instructor', label: 'Head Instructor' },
       { value: 'owner', label: 'Owner' },
     ];
-
     const isOwnerOrAdmin = currentUser.role === 'owner' || currentUser.role === 'admin';
 
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-3 mb-2">
+        {/* Header */}
+        <div className="flex items-center gap-3">
           <span className="text-2xl">🔐</span>
-          <div>
-            <h2 className="text-white font-bold text-lg">Admin-Bereich</h2>
-            <p className="text-gray-400 text-sm">Rollen und Admin-Zugang verwalten</p>
-          </div>
+          <h2 className="text-white font-bold text-lg">Admin-Bereich</h2>
         </div>
 
-        {/* Legende */}
-        <div className="bg-gray-800/30 rounded-xl p-3 border border-gray-700/50 text-xs text-gray-400 space-y-1">
-          <div className="flex items-center gap-2"><span className="text-green-400 font-bold">✓ Admin</span> Owner & Admin: immer. Head Instructor: standardmäßig, individuell entziehbar.</div>
-        </div>
-
-        <div className="space-y-3">
-          {members.map(m => {
-            const roleInfo = ROLE_DISPLAY[m.role];
-            const memberHasAdmin = hasAdminAccess(m);
-            const canToggleAdmin = isOwnerOrAdmin && m.role === 'head_instructor' && m.id !== currentUser.id;
-            const adminFixed = m.role === 'owner' || m.role === 'admin';
-
-            return (
-              <div key={m.id} className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-                <div className="flex items-center gap-3">
-                  {/* Avatar */}
-                  <div className="w-10 h-10 rounded-full bg-white border border-gray-600 flex-shrink-0 overflow-hidden">
-                    <img
-                      src={m.profileImageUrl || '/logos/mi-icon.jpg'}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  {/* Info */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-white font-semibold text-sm">{m.name}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${roleInfo.bgColor} ${roleInfo.color}`}>
-                        {roleInfo.label}
-                      </span>
-                      {memberHasAdmin && (
-                        <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-red-900/30 text-red-400">
-                          {adminFixed ? '🔐 Admin (fix)' : '🔐 Admin'}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-gray-500 text-xs mt-0.5 truncate">{m.email}</div>
-                  </div>
-
-                  {/* Controls */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* Admin-Toggle (nur für Head Instructors, nur Owner/Admin darf toggeln) */}
-                    {canToggleAdmin && (
-                      <button
-                        onClick={() => updateAdminAccess(m.id, !memberHasAdmin)}
-                        className={`text-xs px-2.5 py-1.5 rounded-lg font-medium transition-all ${
-                          memberHasAdmin
-                            ? 'bg-red-900/40 text-red-400 hover:bg-red-900/60'
-                            : 'bg-gray-700/60 text-gray-400 hover:bg-gray-700'
-                        }`}
-                        title={memberHasAdmin ? 'Admin-Zugang entziehen' : 'Admin-Zugang erteilen'}
-                      >
-                        {memberHasAdmin ? '🔓 Entziehen' : '🔐 Admin'}
-                      </button>
-                    )}
-
-                    {/* Rolle-Dropdown (nur Owner/Admin) */}
-                    {isOwnerOrAdmin && m.id !== currentUser.id && (
-                      <select
-                        value={m.role}
-                        onChange={e => updateMemberRole(m.id, e.target.value as InstructorRole)}
-                        className="bg-gray-700 border border-gray-600 text-white text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-red-500"
-                      >
-                        {roleOptions.map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* ── Lernbereich verwalten ────────────────────────────────────── */}
-        <div className="mt-6 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">📚</span>
-              <div>
-                <h3 className="text-white font-bold">Lernbereich verwalten</h3>
-                <p className="text-gray-500 text-xs">Modulreihenfolge per Drag & Drop anpassen</p>
-              </div>
-            </div>
+        {/* Sub-Tab Switcher */}
+        <div className="flex bg-gray-800/50 rounded-xl p-1 gap-1 border border-gray-700/50">
+          {([
+            ['members', '👥 Mitglieder'],
+            ['bewerbungen', `💼 Bewerbungen${totalPendingApps > 0 ? ` (${totalPendingApps})` : ''}`],
+            ['lernbereich', '📚 Lernbereich'],
+          ] as [AdminSubTab, string][]).map(([id, label]) => (
             <button
-              onClick={handleSave}
-              className={`text-sm px-4 py-2 rounded-lg font-medium transition-all ${
-                dndSaved
-                  ? 'bg-green-700/40 text-green-400 cursor-default'
-                  : 'bg-red-600 hover:bg-red-500 text-white'
+              key={id}
+              onClick={() => setAdminSubTab(id)}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                adminSubTab === id ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
               }`}
             >
-              {dndSaved ? '✓ Gespeichert' : 'Speichern'}
+              {label}
             </button>
-          </div>
+          ))}
+        </div>
 
-          <p className="text-gray-600 text-xs">
-            Drag-Handle (⠿) ziehen zum Verschieben. Block-Wechsel über das Dropdown.
-          </p>
+        {/* ── MITGLIEDER ──────────────────────────────────────────────── */}
+        {adminSubTab === 'members' && (
+          <div className="space-y-3">
+            <div className="bg-gray-800/30 rounded-xl p-3 border border-gray-700/50 text-xs text-gray-500">
+              Owner & Admin: immer Admin-Zugang. Head Instructor: standardmäßig, individuell entziehbar.
+            </div>
+            {members.map(m => {
+              const roleInfo = ROLE_DISPLAY[m.role];
+              const memberHasAdmin = hasAdminAccess(m);
+              const canToggleAdmin = isOwnerOrAdmin && m.role === 'head_instructor' && m.id !== currentUser.id;
+              const adminFixed = m.role === 'owner' || m.role === 'admin';
+              const isStreakOpen = streakRestoreOpen === m.id;
 
-          {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level').map(block => (
-            <div
-              key={block.id}
-              className={`rounded-xl border ${block.borderColor} ${block.bgColor} p-3`}
-              onDragOver={e => handleDragOver(e, `block-${block.level}`)}
-              onDrop={e => handleDrop(e, block.level)}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <span>{block.icon}</span>
-                <span className={`font-bold text-sm ${block.color}`}>{block.name}</span>
-                <span className="text-gray-500 text-xs">({getModulesForBlock(block.level).length} Module)</span>
-              </div>
-              <div className="space-y-1.5">
-                {getModulesForBlock(block.level).map(module => (
-                  <div
-                    key={module.id}
-                    draggable
-                    onDragStart={() => handleDragStart(module.id)}
-                    onDragOver={e => handleDragOver(e, module.id)}
-                    className={`flex items-center gap-3 bg-gray-900/60 rounded-lg px-3 py-2 cursor-grab active:cursor-grabbing border transition-all ${
-                      dndDragId === module.id
-                        ? 'border-red-500/50 opacity-50'
-                        : 'border-gray-700/40 hover:border-gray-600/60'
-                    }`}
-                  >
-                    <span className="text-gray-500 text-sm select-none">⠿</span>
-                    <span className="text-base flex-shrink-0">{module.icon}</span>
-                    <span className="text-gray-200 text-sm flex-1">{module.name}</span>
-                    <select
-                      value={block.level}
-                      onChange={e => handleBlockChange(module.id, e.target.value)}
-                      onClick={e => e.stopPropagation()}
-                      className="bg-gray-700 border border-gray-600 text-gray-300 text-xs rounded px-1.5 py-1 focus:outline-none"
-                    >
-                      {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level').map(b => (
-                        <option key={b.level} value={b.level}>{b.name}</option>
-                      ))}
-                    </select>
+              return (
+                <div key={m.id} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+                  <div className="flex items-center gap-3 p-4">
+                    <div className="w-10 h-10 rounded-full bg-white border border-gray-600 flex-shrink-0 overflow-hidden">
+                      <img src={m.profileImageUrl || '/logos/mi-icon.jpg'} alt="" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-white font-semibold text-sm">{m.name}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${roleInfo.bgColor} ${roleInfo.color}`}>
+                          {roleInfo.label}
+                        </span>
+                        {memberHasAdmin && (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-red-900/30 text-red-400">
+                            {adminFixed ? '🔐 fix' : '🔐 Admin'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-gray-500 text-xs mt-0.5 flex items-center gap-2">
+                        <span className="truncate">{m.email}</span>
+                        <span className="text-orange-400/70 flex-shrink-0">🔥 {m.streak.currentStreak}W</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {canToggleAdmin && (
+                        <button
+                          onClick={() => updateAdminAccess(m.id, !memberHasAdmin)}
+                          className={`text-xs px-2 py-1.5 rounded-lg font-medium transition-all ${
+                            memberHasAdmin ? 'bg-red-900/40 text-red-400' : 'bg-gray-700/60 text-gray-400'
+                          }`}
+                        >
+                          {memberHasAdmin ? '🔓' : '🔐'}
+                        </button>
+                      )}
+                      {isOwnerOrAdmin && m.id !== currentUser.id && (
+                        <select
+                          value={m.role}
+                          onChange={e => updateMemberRole(m.id, e.target.value as InstructorRole)}
+                          className="bg-gray-700 border border-gray-600 text-white text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-red-500"
+                        >
+                          {roleOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      )}
+                      {isOwnerOrAdmin && (
+                        <button
+                          onClick={() => {
+                            if (isStreakOpen) { setStreakRestoreOpen(null); }
+                            else { setStreakRestoreOpen(m.id); setStreakRestoreValue(m.streak.currentStreak); setStreakRestoreReason(''); }
+                          }}
+                          className="text-xs px-2 py-1.5 rounded-lg bg-orange-900/30 text-orange-400 hover:bg-orange-900/50 transition-all"
+                          title="Streak wiederherstellen"
+                        >
+                          🔥
+                        </button>
+                      )}
+                    </div>
                   </div>
-                ))}
-                {getModulesForBlock(block.level).length === 0 && (
-                  <div className="text-center text-gray-600 text-xs py-3 border border-dashed border-gray-700/40 rounded-lg">
-                    Kein Modul — hierher ziehen
+                  {/* Streak Restore Form */}
+                  {isStreakOpen && (
+                    <div className="border-t border-gray-700/50 px-4 py-3 bg-gray-800/30 space-y-3">
+                      <p className="text-xs text-gray-400 font-medium">Streak wiederherstellen für {m.name}</p>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <label className="text-xs text-gray-500 block mb-1">Wochen</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={52}
+                            value={streakRestoreValue}
+                            onChange={e => setStreakRestoreValue(Number(e.target.value))}
+                            className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500"
+                          />
+                        </div>
+                        <div className="flex-[3]">
+                          <label className="text-xs text-gray-500 block mb-1">Grund</label>
+                          <input
+                            type="text"
+                            placeholder="z.B. War 4 Wochen im Urlaub"
+                            value={streakRestoreReason}
+                            onChange={e => setStreakRestoreReason(e.target.value)}
+                            className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            if (!streakRestoreReason.trim()) return;
+                            restoreStreak(m.id, streakRestoreValue, streakRestoreReason);
+                            setStreakRestoreOpen(null);
+                          }}
+                          disabled={!streakRestoreReason.trim()}
+                          className="flex-1 bg-orange-600 hover:bg-orange-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 rounded-lg text-sm font-medium transition-all"
+                        >
+                          Streak auf {streakRestoreValue}W setzen
+                        </button>
+                        <button
+                          onClick={() => setStreakRestoreOpen(null)}
+                          className="px-4 bg-gray-700 text-gray-300 py-2 rounded-lg text-sm"
+                        >
+                          Abbrechen
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── BEWERBUNGEN ─────────────────────────────────────────────── */}
+        {adminSubTab === 'bewerbungen' && (
+          <div className="space-y-6">
+            {totalPendingApps === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <div className="text-4xl mb-3">✅</div>
+                <p>Keine offenen Bewerbungen</p>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {pendingContactApps.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="text-red-400 font-bold flex items-center gap-2">
+                      ☠️ Contact Ready ({pendingContactApps.length})
+                    </h4>
+                    {pendingContactApps.map(member => {
+                      const app = member.contactApplication!;
+                      return (
+                        <div key={member.id} className="bg-gradient-to-r from-gray-900 to-red-900/30 rounded-xl p-6 border border-red-700">
+                          <div className="flex items-center gap-4 mb-4">
+                            <span className="text-3xl">{member.avatar}</span>
+                            <div>
+                              <div className="text-xl font-bold text-white">{member.name}</div>
+                              <div className="text-gray-400">{LEVEL_DISPLAY[member.currentLevel].subtitle}</div>
+                            </div>
+                          </div>
+                          <div className="space-y-3 mb-6">
+                            <div className="bg-gray-800/50 rounded-lg p-3">
+                              <div className="text-gray-400 text-sm">Motivation</div>
+                              <div className="text-white">{app.answers.motivation}</div>
+                            </div>
+                            <div className="bg-gray-800/50 rounded-lg p-3">
+                              <div className="text-gray-400 text-sm">Erfahrung</div>
+                              <div className="text-white">{app.answers.experience}</div>
+                            </div>
+                          </div>
+                          <div className="flex gap-3">
+                            <button onClick={() => approveContactApplication(member.id, 'Angenommen')} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg">✅ Annehmen</button>
+                            <button onClick={() => rejectContactApplication(member.id, 'Abgelehnt')} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg">❌ Ablehnen</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {pendingInstructorApps.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="text-yellow-400 font-bold flex items-center gap-2">
+                      🎓 Assistant Instructor ({pendingInstructorApps.length})
+                    </h4>
+                    {pendingInstructorApps.map(member => {
+                      const app = member.assistantInstructorApplication!;
+                      return (
+                        <div key={member.id} className="bg-gradient-to-r from-gray-900 to-yellow-900/30 rounded-xl p-6 border border-yellow-700">
+                          <div className="flex items-center gap-4 mb-4">
+                            <span className="text-3xl">{member.avatar}</span>
+                            <div>
+                              <div className="text-xl font-bold text-white">{member.name}</div>
+                              <div className="text-gray-400">{LEVEL_DISPLAY[member.currentLevel].subtitle}</div>
+                            </div>
+                          </div>
+                          <div className="space-y-3 mb-6">
+                            {[
+                              ['Warum Instructor werden?', app.answers.motivation],
+                              ['Unterrichtserfahrung', app.answers.teachingExperience],
+                              ['Stärken & Schwächen', app.answers.strengthsWeaknesses],
+                              ['Verfügbarkeit', app.answers.availability],
+                              ['Ziele als Instructor', app.answers.goals],
+                              ['Guter Instructor?', app.answers.roleModel],
+                            ].map(([q, a]) => (
+                              <div key={q} className="bg-gray-800/50 rounded-lg p-3">
+                                <div className="text-gray-400 text-xs mb-1">{q}</div>
+                                <div className="text-white text-sm">{a}</div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex gap-3">
+                            <button onClick={() => approveInstructorApplication(member.id, 'Willkommen im Team!')} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg">✅ Annehmen</button>
+                            <button onClick={() => rejectInstructorApplication(member.id, 'Noch nicht bereit.')} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg">❌ Ablehnen</button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
+            )}
+          </div>
+        )}
+
+        {/* ── LERNBEREICH ─────────────────────────────────────────────── */}
+        {adminSubTab === 'lernbereich' && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-gray-500 text-xs">Ziehe Module per Drag & Drop an jede Position innerhalb oder zwischen Blöcken.</p>
+              <button
+                onClick={handleSave}
+                className={`text-sm px-4 py-2 rounded-lg font-medium transition-all flex-shrink-0 ml-3 ${
+                  dndSaved ? 'bg-green-700/40 text-green-400 cursor-default' : 'bg-red-600 hover:bg-red-500 text-white'
+                }`}
+              >
+                {dndSaved ? '✓ Gespeichert' : 'Speichern'}
+              </button>
             </div>
-          ))}
-        </div>
+
+            {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level').map(block => (
+              <div
+                key={block.id}
+                className={`rounded-xl border ${block.borderColor} ${block.bgColor} p-3`}
+                onDragOver={handleDragOverBlock}
+                onDrop={e => handleDrop(e, block.level)}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span>{block.icon}</span>
+                  <span className={`font-bold text-sm ${block.color}`}>{block.name}</span>
+                  <span className="text-gray-500 text-xs">({getModulesForBlock(block.level).length})</span>
+                </div>
+                <div
+                  className={`space-y-0 transition-all ${dndDragId && dndIndicator === null ? 'min-h-[40px]' : ''}`}
+                >
+                  {getModulesForBlock(block.level).map(module => (
+                    <div key={module.id} className="relative">
+                      {/* Insert-before Indicator */}
+                      {dndIndicator?.moduleId === module.id && dndIndicator.insertBefore && (
+                        <div className="h-0.5 bg-red-500 rounded-full mx-1 mb-0.5" />
+                      )}
+                      <div
+                        draggable
+                        onDragStart={() => handleDragStart(module.id)}
+                        onDragOver={e => handleDragOverModule(e, module.id)}
+                        onDrop={e => handleDrop(e, block.level)}
+                        className={`flex items-center gap-3 bg-gray-900/60 rounded-lg px-3 py-2.5 cursor-grab active:cursor-grabbing border my-0.5 transition-all select-none ${
+                          dndDragId === module.id
+                            ? 'border-red-500/50 opacity-40 scale-95'
+                            : 'border-gray-700/40 hover:border-gray-500/60'
+                        }`}
+                      >
+                        <span className="text-gray-500 select-none">⠿</span>
+                        <span className="text-base flex-shrink-0">{module.icon}</span>
+                        <span className="text-gray-200 text-sm flex-1 truncate">{module.name}</span>
+                        <select
+                          value={block.level}
+                          onChange={e => handleBlockChange(module.id, e.target.value)}
+                          onClick={e => e.stopPropagation()}
+                          onMouseDown={e => e.stopPropagation()}
+                          className="bg-gray-700 border border-gray-600 text-gray-300 text-xs rounded px-1.5 py-1 focus:outline-none"
+                        >
+                          {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level').map(b => (
+                            <option key={b.level} value={b.level}>{b.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {/* Insert-after Indicator */}
+                      {dndIndicator?.moduleId === module.id && !dndIndicator.insertBefore && (
+                        <div className="h-0.5 bg-red-500 rounded-full mx-1 mt-0.5" />
+                      )}
+                    </div>
+                  ))}
+                  {getModulesForBlock(block.level).length === 0 && (
+                    <div
+                      className="text-center text-gray-600 text-xs py-4 border border-dashed border-gray-700/40 rounded-lg"
+                      onDragOver={e => { e.preventDefault(); setDndIndicator(null); }}
+                      onDrop={e => handleDrop(e, block.level)}
+                    >
+                      Hierher ziehen
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
@@ -1636,7 +1698,6 @@ export const InstructorView: React.FC = () => {
     { id: 'evaluate' as Tab, label: 'Bewerten', icon: '✏️' },
     { id: 'members' as Tab, label: 'Mitglieder', icon: '👥' },
     { id: 'requests' as Tab, label: 'Anfragen', icon: '🟡', badge: pendingCheckIns.length + pendingExamRequests.length + pendingWishes.length },
-    { id: 'applications' as Tab, label: 'Bewerbungen', icon: '💀', badge: totalPendingApps },
     { id: 'board' as Tab, label: 'Board', icon: '💬' },
     { id: 'admin' as Tab, label: 'Admin', icon: '🔐' },
   ];
@@ -1651,7 +1712,6 @@ export const InstructorView: React.FC = () => {
         {activeTab === 'evaluate' && renderEvaluateTab()}
         {activeTab === 'members' && renderMembersTab()}
         {activeTab === 'requests' && renderRequestsTab()}
-        {activeTab === 'applications' && renderApplicationsTab()}
         {activeTab === 'board' && renderBoardTab()}
         {activeTab === 'admin' && renderAdminTab()}
       </main>

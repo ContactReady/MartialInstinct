@@ -204,8 +204,9 @@ export const MemberView: React.FC = () => {
             ? 'bg-green-900/20 border-green-800/40'
             : 'bg-gray-800/50 border-gray-700/80'
         }`}>
-          <div className={`text-2xl font-black leading-none ${currentUser.streak.bandaids > 0 ? 'text-green-400' : 'text-gray-500'}`}>
-            {currentUser.streak.bandaids}
+          <div className={`font-black leading-none flex items-baseline justify-center gap-0.5 ${currentUser.streak.bandaids > 0 ? 'text-green-400' : 'text-gray-500'}`}>
+            <span className="text-2xl">{currentUser.streak.bandaids}</span>
+            <span className="text-sm font-medium opacity-50">/{currentUser.streak.maxBandaids}</span>
           </div>
           <div className={`text-[10px] mt-1 leading-tight ${currentUser.streak.bandaids > 0 ? 'text-green-500/70' : 'text-gray-600'}`}>
             🩹 Pflaster

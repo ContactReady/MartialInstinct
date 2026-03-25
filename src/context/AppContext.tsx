@@ -110,6 +110,7 @@ interface AppContextType {
   // Admin
   updateMemberRole: (memberId: string, role: InstructorRole) => void;
   updateAdminAccess: (memberId: string, hasAccess: boolean) => void;
+  restoreStreak: (memberId: string, streakValue: number, reason: string) => void;
 
   // Modul-Reihenfolge
   moduleOrder: ModuleOrder[];
@@ -1293,6 +1294,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [currentUser]);
 
+  const restoreStreak = useCallback((memberId: string, streakValue: number, reason: string) => {
+    const update = (m: Member): Member => ({
+      ...m,
+      streak: {
+        ...m.streak,
+        currentStreak: streakValue,
+        longestStreak: Math.max(m.streak.longestStreak, streakValue),
+        lastTrainingDate: new Date(),
+      }
+    });
+    setMembers(prev => prev.map(m => m.id === memberId ? update(m) : m));
+    if (currentUser?.id === memberId) setCurrentUser(prev => prev ? update(prev) : null);
+    const notif: Notification = {
+      id: `notif-${Date.now()}`,
+      oduserId: memberId,
+      type: 'bandaid',
+      title: 'Streak wiederhergestellt 🔥',
+      message: reason,
+      read: false,
+      createdAt: new Date()
+    };
+    setNotifications(prev => [...prev, notif]);
+  }, [currentUser]);
+
   const updateAdminAccess = useCallback((memberId: string, hasAccess: boolean) => {
     setMembers(prev => prev.map(m =>
       m.id === memberId ? { ...m, adminAccess: hasAccess } : m
@@ -1366,6 +1391,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     isBlockUnlocked,
     updateMemberRole,
     updateAdminAccess,
+    restoreStreak,
     moduleOrder,
     getOrderedModules,
     saveModuleOrder,
