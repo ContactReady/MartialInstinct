@@ -3,8 +3,9 @@
 // Strukturiert, autoritätsbasiert und skalierbar
 // ============================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp, MODULES, BLOCKS, COURSES } from '../../context/AppContext';
+import { ModuleOrder } from '../../types';
 import {
   STATUS_DISPLAY,
   LEVEL_DISPLAY,
@@ -79,6 +80,8 @@ export const InstructorView: React.FC = () => {
     completeTrainingSession,
     updateMemberRole,
     updateAdminAccess,
+    saveModuleOrder,
+    moduleOrder,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>('lernen');
@@ -90,6 +93,12 @@ export const InstructorView: React.FC = () => {
   const [memberSearch, setMemberSearch] = useState('');
   const [memberSort, setMemberSort] = useState<'name' | 'lastSeen' | 'lastTraining'>('lastSeen');
   const [profileMember, setProfileMember] = useState<Member | null>(null);
+
+  // Modul-Verwaltung DnD State
+  const [localModuleOrder, setLocalModuleOrder] = useState<ModuleOrder[]>([]);
+  const [dndDragId, setDndDragId] = useState<string | null>(null);
+  const [dndSaved, setDndSaved] = useState(false);
+  const dndDragOverId = useRef<string | null>(null);
 
   // Sub-Tab States (an Top-Level wegen Rules of Hooks)
   const [liveSubTab, setLiveSubTab] = useState<'online' | 'training'>('training');
@@ -1348,6 +1357,102 @@ export const InstructorView: React.FC = () => {
 
   // Render Admin Tab
   const renderAdminTab = () => {
+    // ── Modul-Verwaltung DnD Helpers ───────────────────────────────────────
+    const getWorkingOrder = (): ModuleOrder[] => {
+      if (localModuleOrder.length > 0) return localModuleOrder;
+      if (moduleOrder.length > 0) return moduleOrder;
+      // Fallback: aus hardcoded Daten ableiten
+      return MODULES.map((m, i) => ({ moduleId: m.id, blockLevel: m.level, position: i }));
+    };
+
+    const workingOrder = getWorkingOrder();
+
+    const getModulesForBlock = (blockLevel: string) =>
+      workingOrder
+        .filter(o => o.blockLevel === blockLevel)
+        .sort((a, b) => a.position - b.position)
+        .map(o => MODULES.find(m => m.id === o.moduleId))
+        .filter(Boolean) as typeof MODULES;
+
+    const handleDragStart = (moduleId: string) => {
+      setDndDragId(moduleId);
+      setDndSaved(false);
+    };
+
+    const handleDragOver = (e: React.DragEvent, moduleId: string) => {
+      e.preventDefault();
+      dndDragOverId.current = moduleId;
+    };
+
+    const handleDrop = (e: React.DragEvent, targetBlockLevel: string) => {
+      e.preventDefault();
+      if (!dndDragId) return;
+
+      const current = getWorkingOrder();
+      const draggedEntry = current.find(o => o.moduleId === dndDragId);
+      if (!draggedEntry) return;
+
+      const targetId = dndDragOverId.current;
+      const targetEntry = targetId ? current.find(o => o.moduleId === targetId) : null;
+
+      // Neues Block-Level setzen (bei Block-Wechsel via Dropdown wird das separat gehandhabt)
+      const newBlockLevel = targetEntry ? targetEntry.blockLevel : targetBlockLevel;
+
+      // Bestimme neue Position innerhalb des Ziel-Blocks
+      const blockItems = current.filter(o => o.blockLevel === newBlockLevel && o.moduleId !== dndDragId);
+      let insertPos = blockItems.length;
+      if (targetEntry && targetEntry.blockLevel === newBlockLevel) {
+        const targetIdx = blockItems.findIndex(o => o.moduleId === targetId);
+        insertPos = targetIdx >= 0 ? targetIdx : blockItems.length;
+      }
+
+      // Neue Reihenfolge berechnen
+      const updated = current.map(o => {
+        if (o.moduleId === dndDragId) return { ...o, blockLevel: newBlockLevel };
+        return o;
+      });
+
+      // Positionen neu nummerieren pro Block
+      const reindexed = BLOCKS.flatMap(block => {
+        const items = updated.filter(o => o.blockLevel === block.level).sort((a, b) => a.position - b.position);
+        const dragged = items.find(o => o.moduleId === dndDragId);
+        const rest = items.filter(o => o.moduleId !== dndDragId);
+        if (dragged && dragged.blockLevel === block.level) {
+          rest.splice(insertPos, 0, dragged);
+        }
+        return rest.map((o, i) => ({ ...o, position: i }));
+      });
+
+      setLocalModuleOrder(reindexed);
+      setDndDragId(null);
+      dndDragOverId.current = null;
+    };
+
+    const handleBlockChange = (moduleId: string, newBlockLevel: string) => {
+      const current = getWorkingOrder();
+      const blockItems = current.filter(o => o.blockLevel === newBlockLevel);
+      const updated = current.map(o =>
+        o.moduleId === moduleId
+          ? { ...o, blockLevel: newBlockLevel, position: blockItems.length }
+          : o
+      );
+      // Positionen im alten Block neu nummerieren
+      const reindexed = BLOCKS.flatMap(block =>
+        updated
+          .filter(o => o.blockLevel === block.level)
+          .sort((a, b) => a.position - b.position)
+          .map((o, i) => ({ ...o, position: i }))
+      );
+      setLocalModuleOrder(reindexed);
+      setDndSaved(false);
+    };
+
+    const handleSave = async () => {
+      const toSave = getWorkingOrder();
+      await saveModuleOrder(toSave);
+      setDndSaved(true);
+    };
+
     const roleOptions: { value: InstructorRole; label: string }[] = [
       { value: 'member', label: 'Member' },
       { value: 'assistant_instructor', label: 'Assistant Instructor' },
@@ -1443,6 +1548,82 @@ export const InstructorView: React.FC = () => {
               </div>
             );
           })}
+        </div>
+
+        {/* ── Lernbereich verwalten ────────────────────────────────────── */}
+        <div className="mt-6 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📚</span>
+              <div>
+                <h3 className="text-white font-bold">Lernbereich verwalten</h3>
+                <p className="text-gray-500 text-xs">Modulreihenfolge per Drag & Drop anpassen</p>
+              </div>
+            </div>
+            <button
+              onClick={handleSave}
+              className={`text-sm px-4 py-2 rounded-lg font-medium transition-all ${
+                dndSaved
+                  ? 'bg-green-700/40 text-green-400 cursor-default'
+                  : 'bg-red-600 hover:bg-red-500 text-white'
+              }`}
+            >
+              {dndSaved ? '✓ Gespeichert' : 'Speichern'}
+            </button>
+          </div>
+
+          <p className="text-gray-600 text-xs">
+            Drag-Handle (⠿) ziehen zum Verschieben. Block-Wechsel über das Dropdown.
+          </p>
+
+          {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level').map(block => (
+            <div
+              key={block.id}
+              className={`rounded-xl border ${block.borderColor} ${block.bgColor} p-3`}
+              onDragOver={e => handleDragOver(e, `block-${block.level}`)}
+              onDrop={e => handleDrop(e, block.level)}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span>{block.icon}</span>
+                <span className={`font-bold text-sm ${block.color}`}>{block.name}</span>
+                <span className="text-gray-500 text-xs">({getModulesForBlock(block.level).length} Module)</span>
+              </div>
+              <div className="space-y-1.5">
+                {getModulesForBlock(block.level).map(module => (
+                  <div
+                    key={module.id}
+                    draggable
+                    onDragStart={() => handleDragStart(module.id)}
+                    onDragOver={e => handleDragOver(e, module.id)}
+                    className={`flex items-center gap-3 bg-gray-900/60 rounded-lg px-3 py-2 cursor-grab active:cursor-grabbing border transition-all ${
+                      dndDragId === module.id
+                        ? 'border-red-500/50 opacity-50'
+                        : 'border-gray-700/40 hover:border-gray-600/60'
+                    }`}
+                  >
+                    <span className="text-gray-500 text-sm select-none">⠿</span>
+                    <span className="text-base flex-shrink-0">{module.icon}</span>
+                    <span className="text-gray-200 text-sm flex-1">{module.name}</span>
+                    <select
+                      value={block.level}
+                      onChange={e => handleBlockChange(module.id, e.target.value)}
+                      onClick={e => e.stopPropagation()}
+                      className="bg-gray-700 border border-gray-600 text-gray-300 text-xs rounded px-1.5 py-1 focus:outline-none"
+                    >
+                      {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level').map(b => (
+                        <option key={b.level} value={b.level}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+                {getModulesForBlock(block.level).length === 0 && (
+                  <div className="text-center text-gray-600 text-xs py-3 border border-dashed border-gray-700/40 rounded-lg">
+                    Kein Modul — hierher ziehen
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );

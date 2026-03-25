@@ -6,10 +6,8 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { MODULES, BLOCKS } from '../../data/modules';
-import { LEVEL_DISPLAY, TechniqueStatus, ModuleLevel } from '../../types';
-import { TechniqueCard } from '../shared/TechniqueCard';
-import { ProgressBar } from '../shared/ProgressBar';
+import { BLOCKS } from '../../data/modules';
+import { LEVEL_DISPLAY } from '../../types';
 import { MemberLearningView } from './MemberLearningView';
 import { ProfileView } from '../shared/ProfileView';
 
@@ -22,25 +20,16 @@ export const MemberView: React.FC = () => {
     members,
     requestCheckIn,
     checkIns,
-    requestExam,
-    logPractice,
     useBandaid,
     getBlockProgress,
-    getModuleProgress,
     isBlockUnlocked,
     submitContactApplication,
     submitInstructorApplication,
-    submitTechniqueWish,
-    techniqueWishes,
     getSessionsForMember
   } = useApp();
   
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
-  const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
-  const [selectedModule, setSelectedModule] = useState<string | null>(null);
-  const [selectedTechniqueId, setSelectedTechniqueId] = useState<string | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState<ApplicationType>(null);
-  const [progressView, setProgressView] = useState<'ranking' | 'myProgress'>('ranking');
   const [rankSort, setRankSort] = useState<'streak' | 'techniques' | 'xp'>('streak');
   const [rankFilter, setRankFilter] = useState<'alle' | 'diese_woche' | 'mein_level'>('alle');
   const [memberRequestSubTab, setMemberRequestSubTab] = useState<'exams' | 'checkins'>('exams');
@@ -99,32 +88,11 @@ export const MemberView: React.FC = () => {
   const checkInStatus = todayCheckIn?.status ?? 'none'; // 'none' | 'pending' | 'approved' | 'rejected'
   const checkInApprovedAt = todayCheckIn?.approvedAt ? new Date(todayCheckIn.approvedAt) : null;
 
-  // Get technique status for display
-  const getTechStatus = (techniqueId: string): TechniqueStatus => {
-    return currentUser.techniqueProgress[techniqueId]?.status || 'not_tested';
-  };
-
   // Count completed techniques (mindestens technisch bestanden)
   const getCompletedCount = (): number => {
     return Object.values(currentUser.techniqueProgress).filter(
       p => p.status === 'tech_passed' || p.status === 'tac_passed'
     ).length;
-  };
-
-  // Handle exam request — AppContext bestimmt automatisch welche Ebene als nächstes dran ist
-  const handleRequestExam = (techniqueId: string) => {
-    requestExam(techniqueId);
-  };
-
-  // Check if application exists for block
-  const getApplicationStatus = (level: ModuleLevel): 'none' | 'pending' | 'approved' | 'rejected' => {
-    if (level === 'contact') {
-      return currentUser.contactApplication?.status || 'none';
-    }
-    if (level === 'assistant_instructor') {
-      return currentUser.assistantInstructorApplication?.status || 'none';
-    }
-    return 'none';
   };
 
   // Submit contact application
@@ -579,446 +547,6 @@ export const MemberView: React.FC = () => {
     );
   };
 
-  // Render Progress Tab
-  const renderProgress = () => {
-    // ── Technik-Detail ────────────────────────────────────────────────────────
-    if (selectedTechniqueId && selectedModule) {
-      const module = MODULES.find(m => m.id === selectedModule);
-      const tech = module?.techniques.find(t => t.id === selectedTechniqueId);
-      if (!tech || !module) return null;
-
-      const progress = currentUser.techniqueProgress[tech.id];
-      const status = progress?.status ?? 'not_tested';
-      const techPassed = status === 'tech_passed' || status === 'tac_passed';
-      const tacPassed = status === 'tac_passed';
-      const isPending = status === 'tech_pending' || status === 'tac_pending';
-      const canRequest = !isPending && !tacPassed;
-
-      return (
-        <div className="space-y-4">
-          <button
-            onClick={() => setSelectedTechniqueId(null)}
-            className="text-gray-400 hover:text-white flex items-center gap-2 text-sm"
-          >
-            ← Zurück zu {module.name}
-          </button>
-
-          {/* Titel */}
-          <div className="bg-gray-800/50 rounded-xl p-5 border border-gray-700">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-2xl">{module.icon}</span>
-              <div>
-                <div className="text-xs text-gray-500">{module.name}</div>
-                <div className="text-white font-bold text-lg">{tech.name}</div>
-              </div>
-              {tech.isRequired && (
-                <span className="ml-auto flex-shrink-0 bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded border border-red-500/20">Pflicht</span>
-              )}
-            </div>
-            {tech.description && (
-              <p className="text-gray-400 text-sm leading-relaxed">{tech.description}</p>
-            )}
-          </div>
-
-          {/* Zwei-Ebenen Status */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className={`rounded-xl p-4 border text-center ${techPassed ? 'bg-blue-500/10 border-blue-500/30' : 'bg-gray-800/50 border-gray-700'}`}>
-              <div className={`text-2xl font-bold mb-1 ${techPassed ? 'text-blue-400' : 'text-gray-600'}`}>◐</div>
-              <div className={`text-sm font-semibold ${techPassed ? 'text-blue-300' : 'text-gray-500'}`}>Technisch</div>
-              {progress?.techPassedAt && (
-                <div className="text-xs text-blue-400/70 mt-1">
-                  {new Date(progress.techPassedAt).toLocaleDateString('de-DE')}
-                </div>
-              )}
-              {progress?.techExaminerName && (
-                <div className="text-xs text-gray-500 mt-0.5">{progress.techExaminerName}</div>
-              )}
-              {!techPassed && <div className="text-xs text-gray-600 mt-1">Nicht bestanden</div>}
-            </div>
-            <div className={`rounded-xl p-4 border text-center ${tacPassed ? 'bg-green-500/10 border-green-500/30' : 'bg-gray-800/50 border-gray-700'}`}>
-              <div className={`text-2xl font-bold mb-1 ${tacPassed ? 'text-green-400' : techPassed ? 'text-gray-500' : 'text-gray-700'}`}>●</div>
-              <div className={`text-sm font-semibold ${tacPassed ? 'text-green-300' : 'text-gray-500'}`}>Taktisch</div>
-              {progress?.tacPassedAt && (
-                <div className="text-xs text-green-400/70 mt-1">
-                  {new Date(progress.tacPassedAt).toLocaleDateString('de-DE')}
-                </div>
-              )}
-              {progress?.tacExaminerName && (
-                <div className="text-xs text-gray-500 mt-0.5">{progress.tacExaminerName}</div>
-              )}
-              {!tacPassed && <div className="text-xs text-gray-600 mt-1">{techPassed ? 'Offen' : 'Gesperrt'}</div>}
-            </div>
-          </div>
-
-          {/* Trainer-Feedback */}
-          {progress?.lastFeedback && (
-            <div className="bg-gray-800/50 rounded-xl p-4 border border-yellow-500/20">
-              <div className="text-xs text-gray-500 mb-1">Letztes Trainer-Feedback</div>
-              <p className="text-gray-300 text-sm italic">"{progress.lastFeedback}"</p>
-            </div>
-          )}
-
-          {/* Aktions-Buttons */}
-          {(() => {
-            const practiceCount = progress?.practiceCount ?? 0;
-            const MIN_PRACTICE = 5;
-            const hasEnough = practiceCount >= MIN_PRACTICE;
-            const todayStr2 = new Date().toDateString();
-            const practicedToday = !!progress?.lastSelfPracticedAt &&
-              new Date(progress.lastSelfPracticedAt).toDateString() === todayStr2;
-
-            return (
-              <div className="space-y-3">
-                {/* Üben-Zeile mit Fortschritt */}
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => { if (!practicedToday) logPractice(tech.id); }}
-                    disabled={practicedToday}
-                    className={`flex-shrink-0 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                      practicedToday
-                        ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
-                        : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
-                    }`}
-                  >
-                    🏋️ Als geübt markieren
-                  </button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: MIN_PRACTICE }).map((_, i) => (
-                      <span key={i} className={`w-3 h-3 rounded-full ${i < practiceCount ? 'bg-blue-400' : 'bg-gray-600'}`} />
-                    ))}
-                    <span className="text-sm text-gray-400 ml-1">{Math.min(practiceCount, MIN_PRACTICE)}/{MIN_PRACTICE}</span>
-                  </div>
-                  {practicedToday && <span className="text-xs text-gray-500 italic">Heute erledigt</span>}
-                </div>
-
-                {/* Prüfungsanfrage */}
-                {canRequest && !isPending && (
-                  hasEnough ? (
-                    <button
-                      onClick={() => { handleRequestExam(tech.id); setSelectedTechniqueId(null); }}
-                      className="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-semibold transition-all text-sm"
-                    >
-                      {techPassed ? '🔶 Taktische Prüfung anfragen' : '🔷 Technische Prüfung anfragen'}
-                    </button>
-                  ) : (
-                    <div className="w-full bg-gray-700/40 border border-gray-600/30 rounded-xl py-3 text-center">
-                      <span className="text-gray-500 text-sm">
-                        🔒 Mindestens {MIN_PRACTICE}× üben für Prüfungsanfrage ({practiceCount}/{MIN_PRACTICE})
-                      </span>
-                    </div>
-                  )
-                )}
-                {isPending && (
-                  <div className="w-full flex items-center justify-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl py-3">
-                    <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
-                    <span className="text-yellow-400 text-sm font-medium">Prüfung ausstehend…</span>
-                  </div>
-                )}
-                {tacPassed && (
-                  <div className="w-full flex items-center justify-center gap-2 bg-green-500/10 border border-green-500/20 rounded-xl py-3">
-                    <span className="text-green-400 font-semibold text-sm">✅ Vollständig gemeistert</span>
-                  </div>
-                )}
-
-                {/* Wunschtechnik */}
-                {(() => {
-                  const alreadyWished = techniqueWishes.some(
-                    w => w.techniqueId === tech.id && w.memberId === currentUser.id && w.status === 'pending'
-                  );
-                  return alreadyWished ? (
-                    <div className="w-full flex items-center justify-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-xl py-2.5">
-                      <span className="text-purple-400 text-sm">💡 Wunsch gemeldet</span>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => submitTechniqueWish(tech.id, tech.name, module.id, module.name)}
-                      className="w-full bg-gray-700/40 hover:bg-gray-700/70 border border-gray-600/30 hover:border-purple-500/30 text-gray-400 hover:text-purple-300 py-2.5 rounded-xl text-sm transition-all"
-                    >
-                      💡 Als Wunschtechnik melden
-                    </button>
-                  );
-                })()}
-              </div>
-            );
-          })()}
-        </div>
-      );
-    }
-
-    // ── Modul-Detail ──────────────────────────────────────────────────────────
-    if (selectedModule) {
-      const module = MODULES.find(m => m.id === selectedModule);
-      if (!module) return null;
-
-      return (
-        <div className="space-y-4">
-          <button
-            onClick={() => setSelectedModule(null)}
-            className="text-gray-400 hover:text-white flex items-center gap-2"
-          >
-            ← Zurück zu Modulen
-          </button>
-
-          <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-3xl">{module.icon}</span>
-              <div>
-                <h2 className="text-xl font-bold text-white">{module.name}</h2>
-                <p className="text-gray-400">{module.subtitle}</p>
-              </div>
-            </div>
-            <p className="text-gray-400 text-sm">{module.description}</p>
-          </div>
-
-          {/* Technik-Karten — mit Click für Detail-Ansicht */}
-          <div className="space-y-3">
-            {module.techniques.map(tech => (
-              <TechniqueCard
-                key={tech.id}
-                technique={tech}
-                progress={currentUser.techniqueProgress[tech.id]}
-                mode="member"
-                onLogPractice={() => logPractice(tech.id)}
-                onRequestExam={() => handleRequestExam(tech.id)}
-                onClick={() => setSelectedTechniqueId(tech.id)}
-              />
-            ))}
-          </div>
-
-          {/* Nächste Schritte */}
-          {(() => {
-            const requiredTechs = module.techniques.filter(t => t.isRequired);
-            const passedRequired = requiredTechs.filter(t => {
-              const s = getTechStatus(t.id);
-              return s === 'tech_passed' || s === 'tac_passed';
-            });
-            const missingRequired = requiredTechs.filter(t => {
-              const s = getTechStatus(t.id);
-              return s !== 'tech_passed' && s !== 'tac_passed';
-            });
-
-            if (requiredTechs.length === 0) return null;
-
-            const percentage = Math.round((passedRequired.length / requiredTechs.length) * 100);
-            const levelDisplay = LEVEL_DISPLAY[module.level];
-
-            return (
-              <div className="bg-gray-900/60 rounded-xl border border-gray-700 p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🎯</span>
-                  <h4 className="text-white font-bold text-sm">
-                    Was du für <span className={levelDisplay.color}>{levelDisplay.name}</span> brauchst
-                  </h4>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-gray-400 mb-1">
-                    <span>Pflicht-Techniken erfüllt</span>
-                    <span className="text-white font-medium">{passedRequired.length} / {requiredTechs.length}</span>
-                  </div>
-                  <ProgressBar progress={percentage} color="bg-green-500" height="h-2" />
-                </div>
-
-                {missingRequired.length > 0 && (
-                  <div>
-                    <div className="text-xs font-medium text-red-400 mb-2">Noch fehlend:</div>
-                    <div className="space-y-1">
-                      {missingRequired.map(t => {
-                        const s = getTechStatus(t.id);
-                        const isPending = s === 'tech_pending' || s === 'tac_pending';
-                        return (
-                          <div key={t.id} className="flex items-center justify-between bg-gray-800/50 rounded-lg px-3 py-2">
-                            <div
-                              className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer flex-1"
-                              onClick={() => { setSelectedTechniqueId(t.id); }}
-                            >
-                              <span>{s === 'needs_training' ? '↩' : s === 'tech_passed' ? '◐' : '○'}</span>
-                              <span>{t.name}</span>
-                            </div>
-                            {!isPending ? (
-                              <button
-                                onClick={() => handleRequestExam(t.id)}
-                                className="text-xs bg-yellow-600/70 hover:bg-yellow-600 text-white px-2 py-1 rounded transition-all flex-shrink-0"
-                              >
-                                {s === 'tech_passed' ? 'Taktisch' : 'Prüfen'}
-                              </button>
-                            ) : (
-                              <span className="text-xs text-yellow-400 flex items-center gap-1 flex-shrink-0">
-                                <Loader2 className="w-3 h-3 animate-spin" /> Offen
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {passedRequired.length > 0 && (
-                  <div>
-                    <div className="text-xs font-medium text-green-400 mb-2">Bereits erfüllt:</div>
-                    <div className="space-y-1">
-                      {passedRequired.map(t => (
-                        <div key={t.id} className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-400">
-                          <span>✅</span>
-                          <span>{t.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-        </div>
-      );
-    }
-    
-    if (selectedBlock) {
-      const block = BLOCKS.find(b => b.id === selectedBlock);
-      if (!block) return null;
-      
-      const blockModules = MODULES.filter(m => block.moduleIds.includes(m.id));
-      
-      return (
-        <div className="space-y-4">
-          <button 
-            onClick={() => setSelectedBlock(null)}
-            className="text-gray-400 hover:text-white flex items-center gap-2"
-          >
-            ← Zurück zu Blocks
-          </button>
-          
-          <div className={`${block.bgColor} rounded-xl p-6 border ${block.borderColor}`}>
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">{block.icon}</span>
-              <div>
-                <h2 className={`text-xl font-bold ${block.color}`}>{block.name}</h2>
-                <p className="text-gray-400">{block.subtitle}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="space-y-3">
-            {blockModules.map(module => {
-              const progress = getModuleProgress(currentUser.id, module.id);
-              
-              return (
-                <button
-                  key={module.id}
-                  onClick={() => setSelectedModule(module.id)}
-                  className="w-full bg-gray-800/50 rounded-lg p-4 border border-gray-700 flex items-center justify-between hover:bg-gray-700/50 transition-all text-left"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{module.icon}</span>
-                    <div>
-                      <div className="text-white font-medium">{module.number}. {module.name}</div>
-                      <div className="text-gray-400 text-sm">{module.subtitle}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-white font-bold">{progress.completed}/{progress.total}</div>
-                    <div className="text-gray-400 text-sm">Techniken</div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold text-white mb-4">Alle Ausbildungsstufen</h2>
-        
-        {BLOCKS.map(block => {
-          const unlocked = isBlockUnlocked(currentUser.id, block.level);
-          const progress = getBlockProgress(currentUser.id, block.level);
-          const applicationStatus = getApplicationStatus(block.level);
-          const needsApplication = block.requiresApplication && applicationStatus === 'none';
-          const applicationPending = block.requiresApplication && applicationStatus === 'pending';
-          const applicationRejected = block.requiresApplication && applicationStatus === 'rejected';
-          
-          // Determine which application type
-          const applicationType: ApplicationType = block.level === 'contact' 
-            ? 'contact' 
-            : block.level === 'assistant_instructor' 
-              ? 'assistant_instructor' 
-              : null;
-          
-          return (
-            <button
-              key={block.id}
-              onClick={() => unlocked && setSelectedBlock(block.id)}
-              disabled={!unlocked && !needsApplication}
-              className={`w-full ${block.bgColor} rounded-xl p-6 border ${block.borderColor} text-left transition-all ${
-                unlocked ? 'hover:scale-[1.02] cursor-pointer' : needsApplication ? 'cursor-pointer opacity-80' : 'opacity-60 cursor-not-allowed'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <span className="text-4xl">{block.icon}</span>
-                  <div>
-                    <div className={`text-xl font-bold ${block.color}`}>{block.name}</div>
-                    <div className="text-gray-400">{block.subtitle}</div>
-                  </div>
-                </div>
-                {unlocked ? (
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-white">{progress.completed}/{progress.total}</div>
-                    <div className="text-gray-400 text-sm">→</div>
-                  </div>
-                ) : needsApplication && applicationType ? (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowApplicationModal(applicationType);
-                    }}
-                    className={`px-4 py-2 rounded-lg font-medium ${
-                      block.level === 'contact' 
-                        ? 'bg-red-600 hover:bg-red-700 text-white' 
-                        : 'bg-yellow-600 hover:bg-yellow-700 text-white'
-                    }`}
-                  >
-                    🎓 Jetzt bewerben
-                  </button>
-                ) : applicationPending ? (
-                  <div className="text-yellow-500 text-sm">
-                    ⏳ Bewerbung wird geprüft...
-                  </div>
-                ) : applicationRejected ? (
-                  <div className="text-red-400 text-sm">
-                    ❌ Bewerbung abgelehnt
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (applicationType) setShowApplicationModal(applicationType);
-                      }}
-                      className="block text-xs text-gray-400 hover:text-white mt-1"
-                    >
-                      Erneut bewerben
-                    </button>
-                  </div>
-                ) : (
-                  <div className="text-gray-500">🔒</div>
-                )}
-              </div>
-              {unlocked && (
-                <div className="mt-4 bg-gray-900/50 rounded-full h-3">
-                  <div 
-                    className="bg-red-500 h-3 rounded-full transition-all"
-                    style={{ width: `${progress.percentage}%` }}
-                  />
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    );
-  };
-
   // Render Requests Tab
   const renderRequests = () => {
     const pendingRequests = currentUser.examRequests.filter(r => r.status === 'pending');
@@ -1372,30 +900,7 @@ export const MemberView: React.FC = () => {
       <main className={`max-w-4xl mx-auto ${activeTab === 'lernen' ? 'h-[calc(100vh-4rem)] flex flex-col' : activeTab === 'profil' ? '' : 'p-4 pb-24'}`}>
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'lernen' && <MemberLearningView />}
-        {activeTab === 'progress' && (
-          <div className="space-y-4">
-            {/* Sub-Nav */}
-            <div className="flex gap-2 bg-gray-800/50 rounded-xl p-1 border border-gray-700">
-              <button
-                onClick={() => { setProgressView('ranking'); setSelectedBlock(null); setSelectedModule(null); setSelectedTechniqueId(null); }}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                  progressView === 'ranking' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                🏆 Rangliste
-              </button>
-              <button
-                onClick={() => setProgressView('myProgress')}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                  progressView === 'myProgress' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                📊 Mein Fortschritt
-              </button>
-            </div>
-            {progressView === 'ranking' ? renderRanking() : renderProgress()}
-          </div>
-        )}
+        {activeTab === 'progress' && renderRanking()}
         {activeTab === 'requests' && renderRequests()}
         {activeTab === 'profil' && <ProfileView member={currentUser} />}
       </main>
@@ -1414,9 +919,6 @@ export const MemberView: React.FC = () => {
               key={tab.id}
               onClick={() => {
                 setActiveTab(tab.id);
-                setSelectedBlock(null);
-                setSelectedModule(null);
-                setSelectedTechniqueId(null);
               }}
               className={`flex-1 py-4 flex flex-col items-center gap-1 transition-colors ${
                 activeTab === tab.id ? 'text-red-500' : 'text-gray-400 hover:text-white'

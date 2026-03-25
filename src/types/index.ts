@@ -560,6 +560,13 @@ export const LEVEL_DISPLAY: Record<ModuleLevel, { name: string; subtitle: string
   instructor_level: { name: 'INSTRUCTOR', subtitle: 'Vollausbilder', color: 'text-purple-400', bgColor: 'bg-gradient-to-r from-purple-900/30 to-pink-900/30', icon: '👑' }
 };
 
+// Reihenfolge der Module (wird in Supabase persistiert)
+export interface ModuleOrder {
+  moduleId: string;
+  blockLevel: string;
+  position: number;
+}
+
 export const ROLE_DISPLAY: Record<InstructorRole, { label: string; color: string; bgColor: string }> = {
   member: { label: 'Member', color: 'text-gray-400', bgColor: 'bg-gray-700' },
   assistant_instructor: { label: 'Assistant Instructor', color: 'text-yellow-400', bgColor: 'bg-yellow-900/30' },

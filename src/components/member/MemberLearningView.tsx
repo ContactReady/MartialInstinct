@@ -4,12 +4,28 @@
 // ============================================
 
 import React, { useState } from 'react';
-import { ChevronLeft, Star, Zap, BookOpen, Trophy } from 'lucide-react';
-import { useApp, MODULES, BLOCKS } from '../../context/AppContext';
+import { ChevronLeft, Star, Zap, BookOpen, Trophy, ChevronDown, ChevronRight } from 'lucide-react';
+import { useApp, BLOCKS } from '../../context/AppContext';
 import { MODULE_QUIZ_DATA } from '../../data/memberQuizData';
 import { QuizEngine } from '../shared/QuizEngine';
 import { ProgressBar } from '../shared/ProgressBar';
-import { Module, Block } from '../../types';
+import { Module, Block, TechniqueProgress } from '../../types';
+
+// ============================================
+// PRAXIS STATUS HELPER
+// ============================================
+
+function getPraxisStatus(progress: TechniqueProgress | undefined): { label: string; color: string; bg: string } {
+  if (!progress || progress.status === 'not_tested') {
+    if ((progress?.practiceCount ?? 0) > 0) return { label: 'Im Training', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' };
+    return { label: 'Noch nicht trainiert', color: 'text-gray-500', bg: 'bg-gray-700/20 border-gray-700/30' };
+  }
+  if (progress.status === 'needs_training') return { label: 'Im Training', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' };
+  if (progress.status === 'tech_pending' || progress.status === 'tac_pending') return { label: 'Prüfung ausstehend', color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20' };
+  if (progress.status === 'tech_passed') return { label: 'Technisch ✓', color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20' };
+  if (progress.status === 'tac_passed') return { label: 'Bestanden ✓', color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20' };
+  return { label: '–', color: 'text-gray-500', bg: 'bg-gray-700/20 border-gray-700/30' };
+}
 
 // ============================================
 // MODULE CARD
@@ -137,17 +153,29 @@ const BlockSection: React.FC<BlockSectionProps> = ({ block, modules, quizProgres
 // ============================================
 
 export const MemberLearningView: React.FC = () => {
-  const { currentUser, completeModuleQuiz } = useApp();
+  const { currentUser, completeModuleQuiz, getOrderedModules } = useApp();
   const [activeModule, setActiveModule] = useState<Module | null>(null);
   const [showQuiz, setShowQuiz] = useState(false);
+  const [learningTab, setLearningTab] = useState<'theorie' | 'praxis'>('theorie');
+  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
 
   if (!currentUser) return null;
 
+  const orderedModules = getOrderedModules();
   const quizProgress = currentUser.quizProgress ?? {};
   const totalXP = currentUser.xp ?? 0;
 
+  const toggleModule = (moduleId: string) => {
+    setExpandedModules(prev => {
+      const next = new Set(prev);
+      if (next.has(moduleId)) next.delete(moduleId);
+      else next.add(moduleId);
+      return next;
+    });
+  };
+
   // Overall stats
-  const allModulesWithQuiz = MODULES.filter(m => (MODULE_QUIZ_DATA[m.id]?.length ?? 0) > 0);
+  const allModulesWithQuiz = orderedModules.filter(m => (MODULE_QUIZ_DATA[m.id]?.length ?? 0) > 0);
   const masteredModules = allModulesWithQuiz.filter(m => (quizProgress[m.id]?.bestScore ?? 0) >= 70).length;
   const totalSessions = Object.values(quizProgress).reduce((sum, p) => sum + (p.totalSessions ?? 0), 0);
 
@@ -254,57 +282,166 @@ export const MemberLearningView: React.FC = () => {
     );
   }
 
+  // ── Praxis-Tab Hilfsfunktionen ───────────────────────────────────────────
+  const getTechniquesDone = (module: Module): number =>
+    module.techniques.filter(t => {
+      const s = currentUser.techniqueProgress[t.id]?.status;
+      return s === 'tech_passed' || s === 'tac_passed';
+    }).length;
+
+  const totalTechniquesDone = orderedModules.reduce((sum, m) => sum + getTechniquesDone(m), 0);
+  const totalTechniques = orderedModules.reduce((sum, m) => sum + m.techniques.length, 0);
+  const totalPct = totalTechniques > 0 ? Math.round((totalTechniquesDone / totalTechniques) * 100) : 0;
+
   // Main overview
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      {/* Header Stats */}
+      {/* Tab-Switcher */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-700/50">
-        <h2 className="text-white font-black text-xl mb-3">Lernplattform</h2>
-        <div className="grid grid-cols-3 gap-2">
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 text-center">
-            <div className="text-yellow-400 font-black text-xl">{totalXP}</div>
-            <div className="text-xs text-gray-500">Total XP</div>
-          </div>
-          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 text-center">
-            <div className="text-green-400 font-black text-xl">{masteredModules}</div>
-            <div className="text-xs text-gray-500">Gemeistert</div>
-          </div>
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-center">
-            <div className="text-blue-400 font-black text-xl">{totalSessions}</div>
-            <div className="text-xs text-gray-500">Sessions</div>
-          </div>
-        </div>
-
-        {/* XP level indicator */}
-        <div className="mt-3">
-          <div className="flex justify-between text-xs text-gray-500 mb-1">
-            <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400" /> Level {Math.floor(totalXP / 500) + 1}</span>
-            <span>{totalXP % 500} / 500 XP</span>
-          </div>
-          <ProgressBar progress={(totalXP % 500) / 5} color="bg-yellow-500" height="h-1.5" />
+        <div className="flex bg-gray-800/60 rounded-xl p-1 gap-1">
+          <button
+            onClick={() => setLearningTab('theorie')}
+            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+              learningTab === 'theorie' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            📖 Theorie
+          </button>
+          <button
+            onClick={() => setLearningTab('praxis')}
+            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+              learningTab === 'praxis' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            🥋 Praxis
+          </button>
         </div>
       </div>
 
-      {/* Module list by block */}
-      <div className="px-4 py-4 space-y-6">
-        {BLOCKS.map(block => (
-          <BlockSection
-            key={block.id}
-            block={block}
-            modules={MODULES}
-            quizProgress={quizProgress}
-            onSelectModule={setActiveModule}
-          />
-        ))}
+      {/* ── THEORIE ─────────────────────────────────────────────────────── */}
+      {learningTab === 'theorie' && (
+        <>
+          {/* Header Stats */}
+          <div className="px-4 pt-4 pb-3 border-b border-gray-700/30">
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 text-center">
+                <div className="text-yellow-400 font-black text-xl">{totalXP}</div>
+                <div className="text-xs text-gray-500">Total XP</div>
+              </div>
+              <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 text-center">
+                <div className="text-green-400 font-black text-xl">{masteredModules}</div>
+                <div className="text-xs text-gray-500">Gemeistert</div>
+              </div>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-center">
+                <div className="text-blue-400 font-black text-xl">{totalSessions}</div>
+                <div className="text-xs text-gray-500">Sessions</div>
+              </div>
+            </div>
+            <div className="mt-3">
+              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400" /> Level {Math.floor(totalXP / 500) + 1}</span>
+                <span>{totalXP % 500} / 500 XP</span>
+              </div>
+              <ProgressBar progress={(totalXP % 500) / 5} color="bg-yellow-500" height="h-1.5" />
+            </div>
+          </div>
 
-        {/* Tip */}
-        <div className="bg-gray-800/30 rounded-xl p-4 border border-gray-700/30 text-center">
-          <Trophy className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
-          <p className="text-gray-400 text-xs leading-relaxed">
-            Lernerfolg durch Wiederholung. Spiel jedes Quiz mehrmals — die Fragen wechseln zufällig.
-          </p>
+          {/* Module list by block */}
+          <div className="px-4 py-4 space-y-6">
+            {BLOCKS.map(block => (
+              <BlockSection
+                key={block.id}
+                block={block}
+                modules={orderedModules}
+                quizProgress={quizProgress}
+                onSelectModule={setActiveModule}
+              />
+            ))}
+            <div className="bg-gray-800/30 rounded-xl p-4 border border-gray-700/30 text-center">
+              <Trophy className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
+              <p className="text-gray-400 text-xs leading-relaxed">
+                Lernerfolg durch Wiederholung. Spiel jedes Quiz mehrmals — die Fragen wechseln zufällig.
+              </p>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── PRAXIS ──────────────────────────────────────────────────────── */}
+      {learningTab === 'praxis' && (
+        <div className="px-4 py-4 space-y-4">
+          {/* Gesamtfortschritt */}
+          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-bold text-white">Gesamtfortschritt</span>
+              <span className="text-sm font-bold text-white">{totalTechniquesDone}<span className="text-gray-500 font-normal">/{totalTechniques}</span></span>
+            </div>
+            <div className="bg-gray-900/50 rounded-full h-2">
+              <div className="bg-red-500 h-2 rounded-full transition-all" style={{ width: `${totalPct}%` }} />
+            </div>
+            <p className="text-gray-500 text-xs mt-2">{totalPct}% der Techniken technisch bestanden</p>
+          </div>
+
+          {/* Module als Akkordeon — geordnet nach Admin-Reihenfolge */}
+          {orderedModules.map(module => {
+            const done = getTechniquesDone(module);
+            const total = module.techniques.length;
+            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+            const isOpen = expandedModules.has(module.id);
+
+            return (
+              <div key={module.id} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+                {/* Header */}
+                <button
+                  onClick={() => toggleModule(module.id)}
+                  className="w-full flex items-center gap-3 p-4 hover:bg-gray-700/30 transition-colors"
+                >
+                  <span className="text-xl flex-shrink-0">{module.icon}</span>
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-semibold text-sm">{module.name}</span>
+                      {done === total && <span className="text-green-400 text-xs">✓ Alle bestanden</span>}
+                    </div>
+                    <div className="mt-1.5 bg-gray-900/50 rounded-full h-1.5 w-full">
+                      <div className="h-1.5 rounded-full transition-all bg-red-500" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-gray-400 text-xs">{done}/{total}</span>
+                    {isOpen
+                      ? <ChevronDown className="w-4 h-4 text-gray-400" />
+                      : <ChevronRight className="w-4 h-4 text-gray-400" />
+                    }
+                  </div>
+                </button>
+
+                {/* Techniken-Liste */}
+                {isOpen && (
+                  <div className="border-t border-gray-700/50 divide-y divide-gray-700/30">
+                    {module.techniques.map(technique => {
+                      const progress = currentUser.techniqueProgress[technique.id];
+                      const { label, color, bg } = getPraxisStatus(progress);
+                      return (
+                        <div key={technique.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                          <div className="min-w-0">
+                            <div className="text-gray-200 text-sm">{technique.name}</div>
+                            {progress?.practiceCount ? (
+                              <div className="text-gray-600 text-xs">{progress.practiceCount}× trainiert</div>
+                            ) : null}
+                          </div>
+                          <span className={`text-xs px-2 py-1 rounded-lg border flex-shrink-0 font-medium ${color} ${bg}`}>
+                            {label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -22,8 +22,10 @@ import {
   MemberQuizProgress,
   TechniqueWish,
   TrainingSession,
-  TrainingGroup
+  TrainingGroup,
+  ModuleOrder
 } from '../types';
+import { supabase } from '../lib/supabase';
 import { MEMBERS, CHECK_INS, BOARD_MESSAGES, NOTIFICATIONS, LOCATIONS, VIDEOS, COURSES } from '../data/mockData';
 import { MODULES, BLOCKS, getAllTechniques, getModuleById } from '../data/modules';
 
@@ -109,6 +111,11 @@ interface AppContextType {
   updateMemberRole: (memberId: string, role: InstructorRole) => void;
   updateAdminAccess: (memberId: string, hasAccess: boolean) => void;
 
+  // Modul-Reihenfolge
+  moduleOrder: ModuleOrder[];
+  getOrderedModules: () => typeof MODULES;
+  saveModuleOrder: (orders: ModuleOrder[]) => Promise<void>;
+
   // Helpers
   // Trainingsreport
   trainingSessions: TrainingSession[];
@@ -154,6 +161,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
   const [techniqueWishes, setTechniqueWishes] = useState<TechniqueWish[]>([]);
   const [trainingSessions, setTrainingSessions] = useState<TrainingSession[]>([]);
+  const [moduleOrder, setModuleOrder] = useState<ModuleOrder[]>([]);
+
+  // Beim Start: Modulreihenfolge aus Supabase laden
+  // SQL: CREATE TABLE module_order (module_id text PRIMARY KEY, block_level text NOT NULL, position integer NOT NULL);
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('module_order')
+          .select('module_id, block_level, position');
+        if (data && data.length > 0) {
+          setModuleOrder(data.map((r: { module_id: string; block_level: string; position: number }) => ({
+            moduleId: r.module_id,
+            blockLevel: r.block_level,
+            position: r.position
+          })));
+        }
+      } catch (_) { /* Fallback auf hardcoded Reihenfolge */ }
+    })();
+  }, []);
 
   // ============================================
   // AUTH
@@ -1226,6 +1253,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [currentUser]);
 
   // ============================================
+  // MODUL-REIHENFOLGE
+  // ============================================
+
+  const getOrderedModules = useCallback(() => {
+    if (moduleOrder.length === 0) return MODULES; // Fallback: hardcoded Reihenfolge
+    const ordered = [...MODULES].sort((a, b) => {
+      const aOrder = moduleOrder.find(o => o.moduleId === a.id);
+      const bOrder = moduleOrder.find(o => o.moduleId === b.id);
+      if (!aOrder && !bOrder) return 0;
+      if (!aOrder) return 1;
+      if (!bOrder) return -1;
+      return aOrder.position - bOrder.position;
+    });
+    return ordered;
+  }, [moduleOrder]);
+
+  const saveModuleOrder = useCallback(async (orders: ModuleOrder[]) => {
+    setModuleOrder(orders);
+    await supabase
+      .from('module_order')
+      .upsert(orders.map(o => ({
+        module_id: o.moduleId,
+        block_level: o.blockLevel,
+        position: o.position
+      })), { onConflict: 'module_id' });
+  }, []);
+
+  // ============================================
   // ADMIN
   // ============================================
 
@@ -1311,6 +1366,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     isBlockUnlocked,
     updateMemberRole,
     updateAdminAccess,
+    moduleOrder,
+    getOrderedModules,
+    saveModuleOrder,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
