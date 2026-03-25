@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { MODULES, BLOCKS } from '../../data/modules';
-import { STATUS_DISPLAY, LEVEL_DISPLAY, TechniqueStatus, ModuleLevel } from '../../types';
+import { LEVEL_DISPLAY, TechniqueStatus, ModuleLevel } from '../../types';
 import { TechniqueCard } from '../shared/TechniqueCard';
 import { ProgressBar } from '../shared/ProgressBar';
 import { MemberLearningView } from './MemberLearningView';
@@ -30,8 +30,6 @@ export const MemberView: React.FC = () => {
     isBlockUnlocked,
     submitContactApplication,
     submitInstructorApplication,
-    notifications,
-    markNotificationRead,
     submitTechniqueWish,
     techniqueWishes,
     getSessionsForMember
@@ -44,6 +42,7 @@ export const MemberView: React.FC = () => {
   const [showApplicationModal, setShowApplicationModal] = useState<ApplicationType>(null);
   const [progressView, setProgressView] = useState<'ranking' | 'myProgress'>('ranking');
   const [rankSort, setRankSort] = useState<'streak' | 'techniques' | 'xp'>('streak');
+  const [rankFilter, setRankFilter] = useState<'alle' | 'diese_woche' | 'mein_level'>('alle');
   const [memberRequestSubTab, setMemberRequestSubTab] = useState<'exams' | 'checkins'>('exams');
   
   // Contact Application Answers
@@ -78,6 +77,58 @@ export const MemberView: React.FC = () => {
 
   if (!currentUser) return null;
 
+  // ── Aktivitätsstatus ──────────────────────────────────────────────────────
+  const getWeekStart = (d: Date): Date => {
+    const s = new Date(d);
+    const day = s.getDay();
+    const diff = (day === 0 ? -6 : 1) - day; // Montag als Wochenstart
+    s.setDate(s.getDate() + diff);
+    s.setHours(0, 0, 0, 0);
+    return s;
+  };
+
+  const thisWeekStart = getWeekStart(new Date());
+
+  const getActivityStatus = (): 'aktiv' | 'dran' | 'pause' => {
+    const lastTraining = currentUser.streak.lastTrainingDate
+      ? new Date(currentUser.streak.lastTrainingDate)
+      : null;
+    if (!lastTraining || (Date.now() - lastTraining.getTime()) / 86400000 > 14) return 'pause';
+    const trainedThisWeek = checkIns.some(
+      c => c.memberId === currentUser.id &&
+           c.status === 'approved' &&
+           c.approvedAt != null &&
+           new Date(c.approvedAt).getTime() >= thisWeekStart.getTime()
+    );
+    const appActionThisWeek = !!(currentUser.lastSeenAt &&
+      new Date(currentUser.lastSeenAt).getTime() >= thisWeekStart.getTime());
+    if (trainedThisWeek && appActionThisWeek) return 'aktiv';
+    if (trainedThisWeek || appActionThisWeek) return 'dran';
+    return 'pause';
+  };
+
+  const activityStatus = getActivityStatus();
+
+  const ACTIVITY_CONFIG = {
+    aktiv:  { label: 'Aktiv',        sub: 'Du bist diese Woche im Rhythmus.',        dot: 'bg-green-400',  card: 'bg-green-900/20 border-green-700/40',  text: 'text-green-400'  },
+    dran:   { label: 'Dran bleiben', sub: 'Training oder App-Aktivität fehlt noch.', dot: 'bg-yellow-400', card: 'bg-yellow-900/20 border-yellow-700/40', text: 'text-yellow-400' },
+    pause:  { label: 'Pause',        sub: 'Du warst länger nicht im Training.',       dot: 'bg-red-400',    card: 'bg-red-900/20 border-red-700/40',       text: 'text-red-400'    },
+  };
+
+  const getNextStep = (): string => {
+    if (checkIns.some(c => c.memberId === currentUser.id && c.status === 'approved' && new Date(c.requestedAt).toDateString() === new Date().toDateString())) {
+      const hasUntrained = Object.values(currentUser.techniqueProgress).some(p => p.status === 'not_tested');
+      if (hasUntrained) return 'Trainiert? Markiere deine geübten Techniken im Fortschritt-Board.';
+      return 'Gut gemacht! Schau dir deinen Fortschritt an oder mach ein Quiz.';
+    }
+    if (checkIns.some(c => c.memberId === currentUser.id && c.status === 'pending' && new Date(c.requestedAt).toDateString() === new Date().toDateString())) {
+      return 'Check-in läuft — warte auf Bestätigung deines Trainers.';
+    }
+    if (activityStatus === 'pause') return 'Du warst länger nicht dabei. Komm einfach wieder zum Training.';
+    if (activityStatus === 'dran') return 'Fast da — noch ein Training oder eine Aktion in der App.';
+    return 'Komm zum nächsten Training und checke ein.';
+  };
+
   // Check-in Status aus dem geteilten checkIns-Array ableiten (aktualisiert sich sofort wenn Trainer bestätigt)
   const todayStr = now.toDateString();
   const todayCheckIn = checkIns.find(
@@ -86,8 +137,6 @@ export const MemberView: React.FC = () => {
   );
   const checkInStatus = todayCheckIn?.status ?? 'none'; // 'none' | 'pending' | 'approved' | 'rejected'
   const checkInApprovedAt = todayCheckIn?.approvedAt ? new Date(todayCheckIn.approvedAt) : null;
-
-  const userNotifications = notifications.filter(n => n.oduserId === currentUser.id && !n.read);
 
   // Get technique status for display
   const getTechStatus = (techniqueId: string): TechniqueStatus => {
@@ -146,8 +195,41 @@ export const MemberView: React.FC = () => {
   };
 
   // Render Dashboard Tab
-  const renderDashboard = () => (
-    <div className="space-y-6">
+  const renderDashboard = () => {
+    // Community Impuls: Members die heute eingecheckt haben
+    const todayCheckIns = checkIns.filter(
+      c => c.status === 'approved' && new Date(c.approvedAt!).toDateString() === new Date().toDateString()
+    );
+    const todayCount = new Set(todayCheckIns.map(c => c.memberId)).size;
+    const thisWeekXpLeader = [...members]
+      .filter(m => m.id !== currentUser.id && m.role === 'member')
+      .sort((a, b) => (b.xp ?? 0) - (a.xp ?? 0))[0];
+    const ac = ACTIVITY_CONFIG[activityStatus];
+
+    return (
+    <div className="space-y-4">
+      {/* Aktivitätsstatus + Nächster Schritt */}
+      <div className={`rounded-xl p-4 border ${ac.card}`}>
+        <div className="flex items-center gap-2 mb-2">
+          <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${ac.dot} ${activityStatus === 'aktiv' ? 'animate-pulse' : ''}`} />
+          <span className={`font-bold text-sm ${ac.text}`}>{ac.label}</span>
+        </div>
+        <p className="text-gray-300 text-sm leading-snug">{getNextStep()}</p>
+      </div>
+
+      {/* Community Impuls */}
+      {todayCount > 0 && (
+        <div className="bg-gray-800/40 rounded-xl px-4 py-3 border border-gray-700/60 flex items-center gap-3">
+          <span className="text-lg flex-shrink-0">🏟️</span>
+          <p className="text-gray-300 text-sm">
+            <span className="text-white font-semibold">{todayCount} Member{todayCount !== 1 ? 's' : ''}</span> {todayCount === 1 ? 'war' : 'waren'} heute im Training
+            {thisWeekXpLeader && (thisWeekXpLeader.xp ?? 0) > 0 && (
+              <span className="text-gray-500"> · {thisWeekXpLeader.name.split(' ')[0]} führt mit {thisWeekXpLeader.xp} XP</span>
+            )}
+          </p>
+        </div>
+      )}
+
       {/* Check-in Card */}
       <div className={`rounded-xl p-6 border transition-all ${
         checkInStatus === 'approved'
@@ -294,7 +376,8 @@ export const MemberView: React.FC = () => {
         })}
       </div>
     </div>
-  );
+    );
+  };
 
   // ── Rangliste ─────────────────────────────────────────────────────────────
   const renderRanking = () => {
@@ -306,7 +389,21 @@ export const MemberView: React.FC = () => {
         p => p.status === 'tech_passed' || p.status === 'tac_passed'
       ).length;
 
-    const sorted = [...rankMembers].sort((a, b) => {
+    // Filter anwenden
+    const weekStart = getWeekStart(new Date());
+    const filteredMembers = rankMembers.filter(m => {
+      if (rankFilter === 'mein_level') return m.currentLevel === currentUser.currentLevel;
+      if (rankFilter === 'diese_woche') {
+        return checkIns.some(c =>
+          c.memberId === m.id && c.status === 'approved' && c.approvedAt != null &&
+          new Date(c.approvedAt).getTime() >= weekStart.getTime()
+        );
+      }
+      return true;
+    });
+
+    // Sortierung — bei "Diese Woche": nach XP dieser Woche (approximiert durch Gesamt-XP, da keine wöchentliche XP-Trennung)
+    const sorted = [...filteredMembers].sort((a, b) => {
       if (rankSort === 'streak') {
         const diff = b.streak.currentStreak - a.streak.currentStreak;
         if (diff !== 0) return diff;
@@ -365,12 +462,27 @@ export const MemberView: React.FC = () => {
               <p className="text-sm text-gray-400 mt-0.5">Du bist auf Platz {myRank}</p>
             )}
           </div>
-          {/* Sortier-Buttons — gleiche Breite wie Stats-Spalten */}
+          {/* Sortier-Buttons */}
           <div className="flex gap-1.5 flex-shrink-0">
             <SortBtn k="streak" label="🔥 Streak" />
             <SortBtn k="techniques" label="✅ Tech." />
             <SortBtn k="xp" label="⭐ XP" />
           </div>
+        </div>
+
+        {/* Filter-Tabs */}
+        <div className="flex bg-gray-800/50 rounded-xl p-1 gap-1">
+          {([['alle', 'Alle'], ['diese_woche', 'Diese Woche'], ['mein_level', 'Mein Level']] as const).map(([k, label]) => (
+            <button
+              key={k}
+              onClick={() => setRankFilter(k)}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                rankFilter === k ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         {/* Liste */}
