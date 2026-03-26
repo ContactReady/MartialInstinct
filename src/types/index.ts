@@ -270,6 +270,12 @@ export interface Member {
 
   // Member-Quiz-Fortschritt (moduleId → letzte Session)
   quizProgress?: Record<string, MemberQuizProgress>;
+
+  // Stop The Bleed Zertifizierung
+  stopTheBleedCertified?: boolean;
+
+  // Vorfortschritt beim Anlegen (gesetzt vom Admin)
+  initialModuleProgress?: Record<number, { tactics: boolean; combat: boolean }>; // Modul 1-10
 }
 
 export interface MemberQuizProgress {
@@ -278,6 +284,27 @@ export interface MemberQuizProgress {
   bestScore: number;
   completedAt: Date;
   totalSessions: number;
+}
+
+// Beitrittsanfrage (via QR-Code / Join-Seite)
+export interface JoinRequest {
+  id: string;
+  name: string;
+  email: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: Date;
+  processedAt?: Date;
+}
+
+// Daten für Profil-Erstellung durch Admin
+export interface CreateMemberData {
+  name: string;
+  email: string;
+  password: string;
+  memberId: string; // MI-XXXX
+  moduleProgress: Record<number, { tactics: boolean; combat: boolean }>; // 1-10
+  stopTheBleedCertified: boolean;
+  joinRequestId?: string;
 }
 
 // Contact Ready Bewerbung

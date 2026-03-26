@@ -4,8 +4,9 @@
 // ============================================
 
 import React, { useState, useEffect } from 'react';
+import QRCode from 'react-qr-code';
 import { useApp, MODULES, BLOCKS, COURSES } from '../../context/AppContext';
-import { ModuleOrder, RolePermissions, InstructorTabId, MemberTabId } from '../../types';
+import { ModuleOrder, RolePermissions, InstructorTabId, MemberTabId, JoinRequest, CreateMemberData } from '../../types';
 import {
   LEVEL_DISPLAY,
   ROLE_DISPLAY,
@@ -101,6 +102,9 @@ export const InstructorView: React.FC = () => {
     saveQuizQuestion,
     deleteQuizQuestion,
     saveModuleSettings,
+    joinRequests,
+    createMemberFromRequest,
+    rejectJoinRequest,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>('lernen');
@@ -156,7 +160,16 @@ export const InstructorView: React.FC = () => {
 
   // Sub-Tab States (an Top-Level wegen Rules of Hooks)
   const [communitySubTab, setCommunitySubTab] = useState<CommunitySubTab>('training');
-  const [requestSubTab, setRequestSubTab] = useState<'exams' | 'wishes' | 'checkins'>('exams');
+  const [requestSubTab, setRequestSubTab] = useState<'exams' | 'wishes' | 'checkins' | 'beitritt'>('exams');
+
+  // Beitrittsanfragen Modal State
+  const [createMemberRequest, setCreateMemberRequest] = useState<JoinRequest | null>(null);
+  const [createMemberName, setCreateMemberName] = useState('');
+  const [createMemberEmail, setCreateMemberEmail] = useState('');
+  const [createMemberId, setCreateMemberId] = useState('');
+  const [createMemberPassword, setCreateMemberPassword] = useState('');
+  const [createMemberProgress, setCreateMemberProgress] = useState<Record<number, { tactics: boolean; combat: boolean }>>({});
+  const [createMemberSTB, setCreateMemberSTB] = useState(false);
 
   // Session-Builder State (alle an Top-Level wegen Rules of Hooks)
   const [showSessionBuilder, setShowSessionBuilder] = useState(false);
@@ -825,7 +838,12 @@ export const InstructorView: React.FC = () => {
                         </span>
                         <span className="text-xl flex-shrink-0">{m.avatar}</span>
                         <div className="flex-1 min-w-0">
-                          <div className="text-white font-medium text-sm">{m.name}</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-white font-medium text-sm">{m.name}</span>
+                            {m.stopTheBleedCertified && (
+                              <span className="text-[9px] bg-red-900/40 text-red-400 border border-red-800/40 px-1.5 py-0.5 rounded font-semibold">STB</span>
+                            )}
+                          </div>
                           <div className={`text-xs ${LEVEL_DISPLAY[m.currentLevel].color}`}>{LEVEL_DISPLAY[m.currentLevel].subtitle}</div>
                         </div>
                         <div className="text-right flex-shrink-0">
@@ -994,13 +1012,52 @@ export const InstructorView: React.FC = () => {
 
   // Render Requests Tab
   const renderRequestsTab = () => {
+    const pendingJoinRequests = joinRequests.filter(r => r.status === 'pending');
+    const isAdmin = hasAdminAccess(currentUser);
+
+    const openCreateModal = (req: JoinRequest) => {
+      setCreateMemberRequest(req);
+      setCreateMemberName(req.name);
+      setCreateMemberEmail(req.email);
+      const randId = `MI-${Math.floor(1000 + Math.random() * 9000)}`;
+      const randPw = Math.random().toString(36).slice(2, 10).toUpperCase();
+      setCreateMemberId(randId);
+      setCreateMemberPassword(randPw);
+      setCreateMemberProgress({});
+      setCreateMemberSTB(false);
+    };
+
+    const handleCreateMember = () => {
+      if (!createMemberRequest) return;
+      const data: CreateMemberData = {
+        name: createMemberName,
+        email: createMemberEmail,
+        password: createMemberPassword,
+        memberId: createMemberId,
+        moduleProgress: createMemberProgress,
+        stopTheBleedCertified: createMemberSTB,
+        joinRequestId: createMemberRequest.id,
+      };
+      createMemberFromRequest(data);
+      setCreateMemberRequest(null);
+    };
+
+    const toggleProgress = (moduleNum: number, field: 'tactics' | 'combat') => {
+      setCreateMemberProgress(prev => {
+        const cur = prev[moduleNum] ?? { tactics: false, combat: false };
+        return { ...prev, [moduleNum]: { ...cur, [field]: !cur[field] } };
+      });
+    };
+
     const subTabItems: { id: typeof requestSubTab; label: string; badge: number }[] = [
       { id: 'exams', label: 'Prüfungen', badge: pendingExamRequests.length },
       { id: 'wishes', label: 'Wunschtechniken', badge: pendingWishes.length },
       { id: 'checkins', label: 'Check-ins', badge: pendingCheckIns.length },
+      ...(isAdmin ? [{ id: 'beitritt' as const, label: 'Beitrittsanfragen', badge: pendingJoinRequests.length }] : []),
     ];
 
     return (
+      <>
       <div className="space-y-4">
         {/* Sub-Tab Switcher */}
         <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
@@ -1218,7 +1275,190 @@ export const InstructorView: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* ── Beitrittsanfragen ─────────────────────────────────────────────── */}
+        {requestSubTab === 'beitritt' && (
+          <div className="space-y-3">
+            {joinRequests.length === 0 ? (
+              <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/30 text-center">
+                <p className="text-gray-500 text-sm">Keine Beitrittsanfragen vorhanden</p>
+                <p className="text-gray-600 text-xs mt-1">Teile den QR-Code im Admin → Plattform-Bereich</p>
+              </div>
+            ) : (
+              joinRequests.map(req => (
+                <div key={req.id} className={`bg-gray-800/50 rounded-xl border overflow-hidden ${
+                  req.status === 'pending' ? 'border-gray-700' : req.status === 'approved' ? 'border-green-800/40' : 'border-gray-700/30 opacity-60'
+                }`}>
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="font-semibold text-white">{req.name}</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                            req.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                            req.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                            'bg-gray-700 text-gray-500'
+                          }`}>
+                            {req.status === 'pending' ? 'Ausstehend' : req.status === 'approved' ? 'Angenommen' : 'Abgelehnt'}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-400">{req.email}</div>
+                        <div className="text-[10px] text-gray-600 mt-1">
+                          {new Date(req.submittedAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                      {req.status === 'pending' && (
+                        <div className="flex gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => openCreateModal(req)}
+                            className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+                          >
+                            Profil erstellen
+                          </button>
+                          <button
+                            onClick={() => rejectJoinRequest(req.id)}
+                            className="bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs px-3 py-1.5 rounded-lg transition-all"
+                          >
+                            Ablehnen
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
+
+      {/* ── Profil-Erstellen Modal ──────────────────────────────────────────── */}
+      {createMemberRequest && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-start justify-center overflow-y-auto py-6 px-4">
+          <div className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-md shadow-2xl">
+            <div className="px-5 py-4 border-b border-gray-700/50">
+              <div className="text-sm font-bold text-white">Mitglied anlegen</div>
+              <div className="text-xs text-gray-500 mt-0.5">Beitrittsanfrage von {createMemberRequest.name}</div>
+            </div>
+            <div className="p-5 space-y-4">
+              {/* Name + Email */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Name</label>
+                  <input
+                    value={createMemberName}
+                    onChange={e => setCreateMemberName(e.target.value)}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">E-Mail</label>
+                  <input
+                    value={createMemberEmail}
+                    onChange={e => setCreateMemberEmail(e.target.value)}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"
+                  />
+                </div>
+              </div>
+              {/* ID + Passwort */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Mitglieds-ID</label>
+                  <input
+                    value={createMemberId}
+                    onChange={e => setCreateMemberId(e.target.value)}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Passwort</label>
+                  <input
+                    value={createMemberPassword}
+                    onChange={e => setCreateMemberPassword(e.target.value)}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Modulfortschritt */}
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-2">Bestehender Fortschritt</label>
+                <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 overflow-hidden">
+                  <div className="grid grid-cols-[1fr_auto_auto] text-[9px] text-gray-500 font-semibold uppercase tracking-wider px-3 py-2 border-b border-gray-700/30">
+                    <span>Modul</span>
+                    <span className="w-16 text-center">Tactics</span>
+                    <span className="w-16 text-center">Combat</span>
+                  </div>
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map(num => {
+                    const prog = createMemberProgress[num] ?? { tactics: false, combat: false };
+                    const romanNums = ['I','II','III','IV','V','VI','VII','VIII','IX','X'];
+                    return (
+                      <div key={num} className={`grid grid-cols-[1fr_auto_auto] items-center px-3 py-1.5 ${num < 10 ? 'border-b border-gray-700/20' : ''}`}>
+                        <span className="text-xs text-gray-300">
+                          <span className="text-gray-500 font-mono text-[10px] mr-1.5">{romanNums[num - 1]}</span>
+                          Modul {num}
+                        </span>
+                        <div className="w-16 flex justify-center">
+                          <button
+                            onClick={() => toggleProgress(num, 'tactics')}
+                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                              prog.tactics ? 'bg-gray-900 border-gray-700' : 'border-gray-700 hover:border-gray-500'
+                            }`}
+                          >
+                            {prog.tactics && <span className="text-white font-bold" style={{ fontSize: '9px' }}>T</span>}
+                          </button>
+                        </div>
+                        <div className="w-16 flex justify-center">
+                          <button
+                            onClick={() => toggleProgress(num, 'combat')}
+                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                              prog.combat ? 'bg-red-600 border-red-500' : 'border-gray-700 hover:border-gray-500'
+                            }`}
+                          >
+                            {prog.combat && <span className="text-white font-bold" style={{ fontSize: '9px' }}>C</span>}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Stop The Bleed */}
+              <div className="flex items-center justify-between py-2 px-3 bg-gray-800/50 rounded-xl border border-gray-700/50">
+                <div>
+                  <div className="text-sm text-gray-200">Stop The Bleed® Certified</div>
+                  <div className="text-[10px] text-gray-500">Erste-Hilfe Zertifizierung bestätigen</div>
+                </div>
+                <button
+                  onClick={() => setCreateMemberSTB(v => !v)}
+                  className={`relative w-10 h-5 rounded-full transition-all flex-shrink-0 ${createMemberSTB ? 'bg-red-600' : 'bg-gray-700'}`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${createMemberSTB ? 'left-5' : 'left-0.5'}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="px-5 pb-5 flex gap-3">
+              <button
+                onClick={() => setCreateMemberRequest(null)}
+                className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-all"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleCreateMember}
+                disabled={!createMemberName || !createMemberEmail || !createMemberId || !createMemberPassword}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-sm font-bold transition-all"
+              >
+                Mitglied anlegen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
     );
   };
 
@@ -2362,8 +2602,25 @@ export const InstructorView: React.FC = () => {
 
           const localTab = tabConfig;
 
+          const joinUrl = typeof window !== 'undefined' ? `${window.location.origin}?join=true` : '';
+
           return (
             <div className="space-y-6">
+              {/* QR-Code Beitritt */}
+              <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-700/50">
+                  <div className="text-sm font-semibold text-white">Beitritts-QR-Code</div>
+                  <div className="text-xs text-gray-500 mt-0.5">Schüler scannen diesen Code und senden eine Beitrittsanfrage — kein Login nötig.</div>
+                </div>
+                <div className="p-5 flex flex-col items-center gap-3">
+                  <div className="bg-white p-3 rounded-xl">
+                    <QRCode value={joinUrl} size={160} />
+                  </div>
+                  <div className="text-[10px] text-gray-500 text-center font-mono break-all">{joinUrl}</div>
+                  <div className="text-xs text-gray-400 text-center">Anfragen erscheinen unter <span className="text-white font-semibold">Anfragen → Beitrittsanfragen</span></div>
+                </div>
+              </div>
+
               {/* Rechte-Matrix */}
               <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-700/50">

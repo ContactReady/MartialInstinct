@@ -33,6 +33,8 @@ import {
   DEFAULT_PERMISSIONS,
   PlatformTabConfig,
   DEFAULT_TAB_CONFIG,
+  JoinRequest,
+  CreateMemberData,
 } from '../types';
 import { MODULE_QUIZ_DATA } from '../data/memberQuizData';
 import { supabase } from '../lib/supabase';
@@ -173,6 +175,13 @@ interface AppContextType {
   acknowledgeWish: (wishId: string) => void;
   getPendingTechniqueWishes: () => TechniqueWish[];
 
+  // Join Requests (QR-Code Onboarding)
+  joinRequests: JoinRequest[];
+  submitJoinRequest: (name: string, email: string) => void;
+  createMemberFromRequest: (data: CreateMemberData) => void;
+  rejectJoinRequest: (id: string) => void;
+  updateStopTheBleed: (memberId: string, certified: boolean) => void;
+
   getMemberById: (id: string) => Member | undefined;
   getCheckedInMembers: () => Member[];
   getOnlineMembers: () => Member[];
@@ -221,6 +230,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const saved = localStorage.getItem('mi-tab-config');
       return saved ? JSON.parse(saved) : DEFAULT_TAB_CONFIG;
     } catch { return DEFAULT_TAB_CONFIG; }
+  });
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>(() => {
+    try {
+      const saved = localStorage.getItem('mi-join-requests');
+      if (!saved) return [];
+      return JSON.parse(saved).map((r: JoinRequest) => ({ ...r, submittedAt: new Date(r.submittedAt), processedAt: r.processedAt ? new Date(r.processedAt) : undefined }));
+    } catch { return []; }
   });
 
   // Beim Start: Modulreihenfolge aus Supabase laden
@@ -1625,6 +1641,91 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setNotifications(prev => [...prev, notif]);
   }, [currentUser]);
 
+  // ============================================
+  // JOIN REQUESTS & MEMBER CREATION
+  // ============================================
+
+  const submitJoinRequest = useCallback((name: string, email: string) => {
+    const req: JoinRequest = {
+      id: `join-${Date.now()}`,
+      name: name.trim(),
+      email: email.trim(),
+      status: 'pending',
+      submittedAt: new Date(),
+    };
+    setJoinRequests(prev => {
+      const updated = [...prev, req];
+      localStorage.setItem('mi-join-requests', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const createMemberFromRequest = useCallback((data: CreateMemberData) => {
+    // Erstelle techniqueProgress aus moduleProgress
+    const techniqueProgress: Member['techniqueProgress'] = {};
+    const allTechs = getAllTechniques();
+    // Finde die ersten 10 Module in Reihenfolge
+    const curriculum = MODULES.slice(0, 10);
+    Object.entries(data.moduleProgress).forEach(([moduleNumStr, progress]) => {
+      const moduleNum = parseInt(moduleNumStr) - 1; // 0-indexed
+      const mod = curriculum[moduleNum];
+      if (!mod) return;
+      const techs = allTechs.filter(t => t.moduleId === mod.id && t.isRequired);
+      techs.forEach(t => {
+        if (progress.combat) {
+          techniqueProgress[t.id] = { techniqueId: t.id, status: 'tac_passed', lastPracticedAt: new Date(), tacPassedAt: new Date(), techPassedAt: new Date() };
+        } else if (progress.tactics) {
+          techniqueProgress[t.id] = { techniqueId: t.id, status: 'tech_passed', lastPracticedAt: new Date(), techPassedAt: new Date() };
+        }
+      });
+    });
+
+    const newMember: Member = {
+      id: data.memberId,
+      name: data.name,
+      email: data.email,
+      password: data.password,
+      avatar: '🥋',
+      role: 'member',
+      locationId: 'loc-1',
+      joinedAt: new Date(),
+      lastSeenAt: new Date(),
+      currentLevel: 'conflict',
+      techniqueProgress,
+      examRequests: [],
+      streak: { currentStreak: 0, longestStreak: 0, lastTrainingDate: null, weekStartDate: new Date(), bandaids: 0, maxBandaids: 2, streakHistory: [], bandaidHistory: [] },
+      isCheckedIn: false,
+      certificates: [],
+      stopTheBleedCertified: data.stopTheBleedCertified,
+    };
+
+    setMembers(prev => [...prev, newMember]);
+
+    // Join Request als approved markieren
+    if (data.joinRequestId) {
+      setJoinRequests(prev => {
+        const updated = prev.map(r => r.id === data.joinRequestId ? { ...r, status: 'approved' as const, processedAt: new Date() } : r);
+        localStorage.setItem('mi-join-requests', JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, []);
+
+  const rejectJoinRequest = useCallback((id: string) => {
+    setJoinRequests(prev => {
+      const updated = prev.map(r => r.id === id ? { ...r, status: 'rejected' as const, processedAt: new Date() } : r);
+      localStorage.setItem('mi-join-requests', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const updateStopTheBleed = useCallback((memberId: string, certified: boolean) => {
+    setMembers(prev => prev.map(m => m.id === memberId ? { ...m, stopTheBleedCertified: certified } : m));
+    if (memberId === currentUser?.id) {
+      setCurrentUser(prev => prev ? { ...prev, stopTheBleedCertified: certified } : null);
+    }
+  }, [currentUser]);
+
   const updateAdminAccess = useCallback((memberId: string, hasAccess: boolean) => {
     setMembers(prev => prev.map(m =>
       m.id === memberId ? { ...m, adminAccess: hasAccess } : m
@@ -1696,6 +1797,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     submitTechniqueWish,
     acknowledgeWish,
     getPendingTechniqueWishes,
+    joinRequests,
+    submitJoinRequest,
+    createMemberFromRequest,
+    rejectJoinRequest,
+    updateStopTheBleed,
     getMemberById,
     getCheckedInMembers,
     getOnlineMembers,

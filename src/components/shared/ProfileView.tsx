@@ -128,6 +128,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
               <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${levelInfo.bgColor} ${levelInfo.color}`}>
                 {levelInfo.icon} {levelInfo.name}
               </span>
+              {member.stopTheBleedCertified && (
+                <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-red-900/40 text-red-400 border border-red-800/40">
+                  🩸 Stop The Bleed®
+                </span>
+              )}
             </div>
             <p className="text-gray-500 text-xs mt-2">Dabei seit {joinedFormatted}</p>
           </div>

@@ -8,6 +8,73 @@ import { MemberView } from './components/member/MemberView';
 import { InstructorView } from './components/instructor/InstructorView';
 import { ROLE_DISPLAY, LEVEL_DISPLAY, hasAdminAccess } from './types';
 
+// ── Join Request Form (öffentlich, kein Login nötig) ───────────────────────────
+const JoinRequestForm: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { submitJoinRequest } = useApp();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) { setError('Bitte gib deinen Namen ein.'); return; }
+    if (!email.trim() || !email.includes('@')) { setError('Bitte gib eine gültige E-Mail ein.'); return; }
+    submitJoinRequest(name, email);
+    setSubmitted(true);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+      <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md border border-gray-800">
+        <div className="text-center mb-8">
+          <img src="/logos/mi-logo-landscape-dark.svg" alt="Martial Instinct" className="h-14 mx-auto mb-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          <h1 className="text-white font-black text-xl tracking-wide">Mitglied werden</h1>
+          <p className="text-gray-500 text-sm mt-1">Deine Anfrage geht direkt an uns</p>
+        </div>
+
+        {submitted ? (
+          <div className="text-center space-y-4">
+            <div className="text-5xl">✅</div>
+            <div className="text-white font-bold text-lg">Anfrage gesendet!</div>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Wir haben deine Anfrage erhalten und melden uns bei dir.<br />
+              Du bekommst deine Zugangsdaten per E-Mail.
+            </p>
+            <button onClick={onBack} className="mt-4 text-gray-500 hover:text-white text-sm transition-colors underline">
+              Zur Anmeldung
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Vor- und Nachname"
+              className="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-700 focus:border-red-500 focus:outline-none"
+            />
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="E-Mail-Adresse"
+              className="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-700 focus:border-red-500 focus:outline-none"
+            />
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+            <button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold transition-colors">
+              Anfrage senden
+            </button>
+            <button type="button" onClick={onBack} className="w-full text-gray-500 hover:text-gray-300 text-sm transition-colors">
+              Ich habe bereits einen Account → Anmelden
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ── Login ─────────────────────────────────────────────────────────────────────
 const Login: React.FC<{ onLogin: (email: string, password: string) => boolean; darkMode: boolean }> = ({ onLogin, darkMode }) => {
   const [email, setEmail] = useState('');
@@ -437,6 +504,9 @@ const AppContent: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showJoinForm, setShowJoinForm] = useState(() =>
+    new URLSearchParams(window.location.search).get('join') === 'true'
+  );
   const prevUnreadRef = useRef(0);
 
   const isInstructor = currentUser?.role !== 'member';
@@ -458,7 +528,8 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white" data-theme={darkMode ? 'dark' : 'light'}>
-      {!currentUser && <Login onLogin={login} darkMode={darkMode} />}
+      {!currentUser && showJoinForm && <JoinRequestForm onBack={() => setShowJoinForm(false)} />}
+      {!currentUser && !showJoinForm && <Login onLogin={login} darkMode={darkMode} />}
       {currentUser && (<>
 
       {/* ── Fixed Top Bar ── */}
