@@ -28,7 +28,9 @@ const JoinRequestForm: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
       <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md border border-gray-800">
         <div className="text-center mb-8">
-          <img src="/logos/mi-logo-landscape-dark.svg" alt="Martial Instinct" className="h-14 mx-auto mb-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          <div className="bg-white rounded-xl px-5 py-2.5 inline-block mb-4">
+            <img src="/logos/mi-logo-landscape-light.svg" alt="Martial Instinct" className="h-10 object-contain" onError={e => { (e.target as HTMLImageElement).src = '/logos/mi-logo-light.jpg'; }} />
+          </div>
           <h1 className="text-white font-black text-xl tracking-wide">Mitglied werden</h1>
           <p className="text-gray-500 text-sm mt-1">Deine Anfrage geht direkt an uns</p>
         </div>
@@ -76,7 +78,7 @@ const JoinRequestForm: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 };
 
 // ── Login ─────────────────────────────────────────────────────────────────────
-const Login: React.FC<{ onLogin: (email: string, password: string) => boolean; darkMode: boolean }> = ({ onLogin, darkMode }) => {
+const Login: React.FC<{ onLogin: (email: string, password: string) => boolean; darkMode: boolean; onShowJoinForm: () => void }> = ({ onLogin, darkMode, onShowJoinForm }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -136,9 +138,16 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => boolean; d
           >
             Anmelden
           </button>
+          <button
+            type="button"
+            onClick={onShowJoinForm}
+            className="w-full text-gray-500 hover:text-gray-300 text-sm transition-colors py-1"
+          >
+            Noch kein Account? Zugang anfragen →
+          </button>
         </form>
 
-        <div className="mt-8">
+        <div className="mt-6">
           <p className="text-gray-500 text-sm text-center mb-4">Demo-Accounts:</p>
           <div className="space-y-2">
             {demoAccounts.map((account) => (
@@ -529,7 +538,7 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-950 text-white" data-theme={darkMode ? 'dark' : 'light'}>
       {!currentUser && showJoinForm && <JoinRequestForm onBack={() => setShowJoinForm(false)} />}
-      {!currentUser && !showJoinForm && <Login onLogin={login} darkMode={darkMode} />}
+      {!currentUser && !showJoinForm && <Login onLogin={login} darkMode={darkMode} onShowJoinForm={() => setShowJoinForm(true)} />}
       {currentUser && (<>
 
       {/* ── Fixed Top Bar ── */}
