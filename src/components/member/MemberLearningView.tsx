@@ -424,12 +424,12 @@ export const MemberLearningView: React.FC = () => {
               {/* Tactics */}
               <div className="px-4 py-3">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
-                  <span className="text-xs text-blue-400 font-semibold">TACTICS</span>
+                  <span className="w-2 h-2 rounded-full bg-gray-300 flex-shrink-0" />
+                  <span className="text-xs text-gray-300 font-semibold">TACTICS</span>
                   <span className="text-gray-500 text-xs ml-auto">{modulesTacticsDone}/{modulesTotal}</span>
                 </div>
                 <div className="bg-gray-900/70 rounded-full h-1.5">
-                  <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: modulesTotal > 0 ? `${Math.round((modulesTacticsDone / modulesTotal) * 100)}%` : '0%' }} />
+                  <div className="bg-gray-400 h-1.5 rounded-full transition-all" style={{ width: modulesTotal > 0 ? `${Math.round((modulesTacticsDone / modulesTotal) * 100)}%` : '0%' }} />
                 </div>
                 <p className="text-gray-600 text-xs mt-1">Technisch bestätigt</p>
               </div>
@@ -437,12 +437,12 @@ export const MemberLearningView: React.FC = () => {
               {/* Combat */}
               <div className="px-4 py-3">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />
-                  <span className="text-xs text-orange-400 font-semibold">COMBAT</span>
+                  <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
+                  <span className="text-xs text-red-400 font-semibold">COMBAT</span>
                   <span className="text-gray-500 text-xs ml-auto">{modulesCombatDone}/{modulesTotal}</span>
                 </div>
                 <div className="bg-gray-900/70 rounded-full h-1.5">
-                  <div className="bg-orange-500 h-1.5 rounded-full transition-all" style={{ width: modulesTotal > 0 ? `${Math.round((modulesCombatDone / modulesTotal) * 100)}%` : '0%' }} />
+                  <div className="bg-red-500 h-1.5 rounded-full transition-all" style={{ width: modulesTotal > 0 ? `${Math.round((modulesCombatDone / modulesTotal) * 100)}%` : '0%' }} />
                 </div>
                 <p className="text-gray-600 text-xs mt-1">Anwendungsorientiert</p>
               </div>
@@ -478,13 +478,13 @@ export const MemberLearningView: React.FC = () => {
                     {/* Tactics Badge */}
                     <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border transition-all ${
                       tacticsDone
-                        ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
+                        ? 'bg-gray-600/40 border-gray-400 text-white'
                         : 'bg-gray-800 border-gray-700 text-gray-600'
                     }`}>T</span>
                     {/* Combat Badge */}
                     <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border transition-all ${
                       combatDone
-                        ? 'bg-orange-500/20 border-orange-500/50 text-orange-400'
+                        ? 'bg-red-500/20 border-red-500/50 text-red-400'
                         : 'bg-gray-800 border-gray-700 text-gray-600'
                     }`}>C</span>
                     <span className="text-gray-500 text-xs ml-1">{done}/{total}</span>
@@ -513,10 +513,10 @@ export const MemberLearningView: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0">
                             <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${
-                              tDone ? 'bg-blue-500/20 border-blue-500/40 text-blue-400' : 'bg-gray-800 border-gray-700 text-gray-600'
+                              tDone ? 'bg-gray-600/40 border-gray-400 text-white' : 'bg-gray-800 border-gray-700 text-gray-600'
                             }`}>T</span>
                             <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${
-                              cDone ? 'bg-orange-500/20 border-orange-500/40 text-orange-400' : 'bg-gray-800 border-gray-700 text-gray-600'
+                              cDone ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-gray-800 border-gray-700 text-gray-600'
                             }`}>C</span>
                             <span className={`text-xs px-2 py-1 rounded-lg border font-medium ${color} ${bg}`}>
                               {label}
