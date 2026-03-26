@@ -24,8 +24,7 @@ export type InstructorRole =
   | 'instructor'          // Leitet Trainings, keine Prüfungsfreigabe Combat+
   | 'full_instructor'     // Alle Level unterrichten, keine Tactical-Prüfung
   | 'head_instructor'     // Darf Conflict, Combat, Tactical prüfen
-  | 'owner'               // Darf Contact Ready freigeben, Systemautorität
-  | 'admin';              // Administrator mit allen Rechten (Jay I)
+  | 'admin';              // Administrator mit allen Rechten — volle Systemautorität
 
 // Prüfungsberechtigungen pro Rolle
 export const EXAM_PERMISSIONS: Record<InstructorRole, ModuleLevel[]> = {
@@ -34,7 +33,6 @@ export const EXAM_PERMISSIONS: Record<InstructorRole, ModuleLevel[]> = {
   instructor: [],
   full_instructor: ['conflict'],
   head_instructor: ['conflict', 'combat', 'tactical'],
-  owner: ['conflict', 'combat', 'tactical', 'contact', 'assistant_instructor', 'instructor_level'],
   admin: ['conflict', 'combat', 'tactical', 'contact', 'assistant_instructor', 'instructor_level']
 };
 
@@ -45,13 +43,12 @@ export const TEACHING_PERMISSIONS: Record<InstructorRole, ModuleLevel[]> = {
   instructor: ['conflict', 'combat'],
   full_instructor: ['conflict', 'combat', 'tactical', 'contact'],
   head_instructor: ['conflict', 'combat', 'tactical', 'contact'],
-  owner: ['conflict', 'combat', 'tactical', 'contact', 'assistant_instructor', 'instructor_level'],
   admin: ['conflict', 'combat', 'tactical', 'contact', 'assistant_instructor', 'instructor_level']
 };
 
-// Admin-Zugang: Owner & Admin immer, Head Instructor individuell entziehbar
+// Admin-Zugang: Admin immer, Head Instructor individuell entziehbar
 export const hasAdminAccess = (member: { role: InstructorRole; adminAccess?: boolean }): boolean => {
-  if (member.role === 'admin' || member.role === 'owner') return true;
+  if (member.role === 'admin') return true;
   if (member.role === 'head_instructor') return member.adminAccess !== false; // default true
   return false;
 };
@@ -603,6 +600,5 @@ export const ROLE_DISPLAY: Record<InstructorRole, { label: string; color: string
   instructor: { label: 'Instructor', color: 'text-blue-400', bgColor: 'bg-blue-900/30' },
   full_instructor: { label: 'Full Instructor', color: 'text-orange-400', bgColor: 'bg-orange-900/30' },
   head_instructor: { label: 'Head Instructor', color: 'text-purple-400', bgColor: 'bg-purple-900/30' },
-  owner: { label: 'Owner', color: 'text-red-400', bgColor: 'bg-red-900/30' },
   admin: { label: 'Admin', color: 'text-red-400', bgColor: 'bg-red-900/30' }
 };

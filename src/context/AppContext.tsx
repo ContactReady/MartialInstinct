@@ -971,7 +971,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Benachrichtigungen für Zielgruppe erstellen
     if (targetType !== 'none') {
-      const instructorRoles: InstructorRole[] = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'owner', 'admin'];
+      const instructorRoles: InstructorRole[] = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'admin'];
       const allInstructors = members.filter(m => instructorRoles.includes(m.role) && m.id !== currentUser.id);
       let recipients: typeof allInstructors = [];
       if (targetType === 'roles' && targetRoles && targetRoles.length > 0) {
@@ -1321,7 +1321,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Instructor level requires being assistant instructor first
     if (blockLevel === 'instructor_level') {
       return member.role === 'instructor' || member.role === 'full_instructor' ||
-             member.role === 'head_instructor' || member.role === 'owner';
+             member.role === 'head_instructor' || member.role === 'admin';
     }
     
     // Other blocks require 80% of previous block

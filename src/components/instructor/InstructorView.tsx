@@ -39,7 +39,7 @@ function detectCurrentCourse(locationId: string): string | null {
 // ── Berechtigungsprüfung: darf dieser Instructor diese Anfrage bestätigen? ───
 function canApproveCheckIn(role: InstructorRole, instructorId: string, checkIn: CheckIn): boolean {
   // full_instructor und höher: alles erlaubt
-  if (['full_instructor', 'head_instructor', 'owner', 'admin'].includes(role)) return true;
+  if (['full_instructor', 'head_instructor', 'admin'].includes(role)) return true;
   // assistant_instructor / instructor: nur eigene Kursteilnehmer
   const ownCourse = COURSES.find(
     c => c.instructorId === instructorId && c.participantIds.includes(checkIn.memberId)
@@ -222,7 +222,7 @@ export const InstructorView: React.FC = () => {
 
     const onlineMembers = getOnlineMembers().filter(m => isOnline(m) || isInactive(m));
 
-    const instructorRoles = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'owner', 'admin'];
+    const instructorRoles = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'admin'];
     const onlineInstructors = onlineMembers.filter(m => instructorRoles.includes(m.role));
     const onlineRegularMembers = onlineMembers.filter(m => m.role === 'member');
 
@@ -1216,7 +1216,7 @@ export const InstructorView: React.FC = () => {
 
   // Render Board Tab
   const renderBoardTab = () => {
-    const instructorRoles: InstructorRole[] = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'owner', 'admin'];
+    const instructorRoles: InstructorRole[] = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'admin'];
     const allInstructors = members.filter(m => instructorRoles.includes(m.role) && m.id !== currentUser!.id);
     const filteredInstructors = allInstructors.filter(m =>
       m.name.toLowerCase().includes(boardMemberSearch.toLowerCase())
@@ -1227,7 +1227,6 @@ export const InstructorView: React.FC = () => {
       { id: 'instructor', label: 'Instructor' },
       { id: 'full_instructor', label: 'Full Instructor' },
       { id: 'head_instructor', label: 'Head Instructor' },
-      { id: 'owner', label: 'Owner' },
       { id: 'admin', label: 'Admin' },
     ];
 
@@ -1553,9 +1552,9 @@ export const InstructorView: React.FC = () => {
       { value: 'instructor', label: 'Instructor' },
       { value: 'full_instructor', label: 'Full Instructor' },
       { value: 'head_instructor', label: 'Head Instructor' },
-      { value: 'owner', label: 'Owner' },
+      { value: 'admin', label: 'Admin' },
     ];
-    const isOwnerOrAdmin = currentUser.role === 'owner' || currentUser.role === 'admin';
+    const isOwnerOrAdmin = currentUser.role === 'admin';
 
     return (
       <div className="space-y-4">
@@ -1594,7 +1593,7 @@ export const InstructorView: React.FC = () => {
               const roleInfo = ROLE_DISPLAY[m.role];
               const memberHasAdmin = hasAdminAccess(m);
               const canToggleAdmin = isOwnerOrAdmin && m.role === 'head_instructor' && m.id !== currentUser.id;
-              const adminFixed = m.role === 'owner' || m.role === 'admin';
+              const adminFixed = m.role === 'admin';
               const isStreakOpen = streakRestoreOpen === m.id;
 
               return (
