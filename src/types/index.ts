@@ -274,6 +274,9 @@ export interface Member {
   // Stop The Bleed Zertifizierung
   stopTheBleedCertified?: boolean;
 
+  // Persönliches Badge (vom Mitglied selbst einstellbar)
+  customBadge?: string; // z.B. "🏆 Kämpfer des Monats"
+
   // Vorfortschritt beim Anlegen (gesetzt vom Admin)
   initialModuleProgress?: Record<number, { tactics: boolean; combat: boolean }>; // Modul 1-10
 }
@@ -291,6 +294,8 @@ export interface JoinRequest {
   id: string;
   name: string;
   email: string;
+  memberIdHint?: string;  // Vom Schüler angegebene Mitglieds-ID / Spitzname zur Verifikation
+  course?: string;         // Angegebener Kurs zur Verifikation
   status: 'pending' | 'approved' | 'rejected';
   submittedAt: Date;
   processedAt?: Date;

@@ -8,9 +8,9 @@ import { Loader2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { MemberTabId } from '../../types';
 import { BLOCKS } from '../../data/modules';
-import { LEVEL_DISPLAY } from '../../types';
 import { MemberLearningView } from './MemberLearningView';
 import { ProfileView } from '../shared/ProfileView';
+import { RankingList } from '../shared/RankingList';
 
 type Tab = 'dashboard' | 'lernen' | 'progress' | 'requests' | 'profil';
 type ApplicationType = 'contact' | 'assistant_instructor' | null;
@@ -32,8 +32,6 @@ export const MemberView: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [showApplicationModal, setShowApplicationModal] = useState<ApplicationType>(null);
-  const [rankSort, setRankSort] = useState<'streak' | 'techniques' | 'xp'>('streak');
-  const [rankFilter, setRankFilter] = useState<'alle' | 'diese_woche' | 'mein_level'>('alle');
   const [memberRequestSubTab, setMemberRequestSubTab] = useState<'exams' | 'checkins'>('exams');
   
   // Contact Application Answers
@@ -68,15 +66,6 @@ export const MemberView: React.FC = () => {
 
   if (!currentUser) return null;
 
-  // ── Aktivitätsstatus ──────────────────────────────────────────────────────
-  const getWeekStart = (d: Date): Date => {
-    const s = new Date(d);
-    const day = s.getDay();
-    const diff = (day === 0 ? -6 : 1) - day; // Montag als Wochenstart
-    s.setDate(s.getDate() + diff);
-    s.setHours(0, 0, 0, 0);
-    return s;
-  };
 
 
 
@@ -363,190 +352,15 @@ export const MemberView: React.FC = () => {
 
   // ── Rangliste ─────────────────────────────────────────────────────────────
   const renderRanking = () => {
-    // Alle Members (inkl. Instructors, damit Rangliste vollständig ist)
     const rankMembers = members.filter(m => m.role === 'member');
-
-    const countPassed = (m: typeof members[0]) =>
-      Object.values(m.techniqueProgress).filter(
-        p => p.status === 'tech_passed' || p.status === 'tac_passed'
-      ).length;
-
-    // Filter anwenden
-    const weekStart = getWeekStart(new Date());
-    const filteredMembers = rankMembers.filter(m => {
-      if (rankFilter === 'mein_level') return m.currentLevel === currentUser.currentLevel;
-      if (rankFilter === 'diese_woche') {
-        return checkIns.some(c =>
-          c.memberId === m.id && c.status === 'approved' && c.approvedAt != null &&
-          new Date(c.approvedAt).getTime() >= weekStart.getTime()
-        );
-      }
-      return true;
-    });
-
-    // Sortierung — bei "Diese Woche": nach XP dieser Woche (approximiert durch Gesamt-XP, da keine wöchentliche XP-Trennung)
-    const sorted = [...filteredMembers].sort((a, b) => {
-      if (rankSort === 'streak') {
-        const diff = b.streak.currentStreak - a.streak.currentStreak;
-        if (diff !== 0) return diff;
-        return countPassed(b) - countPassed(a);
-      }
-      if (rankSort === 'techniques') return countPassed(b) - countPassed(a);
-      return (b.xp ?? 0) - (a.xp ?? 0);
-    });
-
-    const myRank = sorted.findIndex(m => m.id === currentUser.id) + 1;
-
-    const medal = (rank: number) => {
-      if (rank === 1) return '🥇';
-      if (rank === 2) return '🥈';
-      if (rank === 3) return '🥉';
-      return `#${rank}`;
-    };
-
-    const statusDot = (m: typeof members[0]) => {
-      if (m.isCheckedIn) return <span className="w-2.5 h-2.5 rounded-full bg-orange-400 flex-shrink-0" />;
-      if (m.onlineSince)  return <span className="w-2.5 h-2.5 rounded-full bg-green-400 flex-shrink-0 animate-pulse" />;
-      return <span className="w-2.5 h-2.5 rounded-full bg-gray-600 flex-shrink-0" />;
-    };
-
-    // Spaltenbreite für Buttons UND Stats-Werte — exakt gleich
-    const COL = 'w-16 text-center flex-shrink-0';
-
-    const SortBtn = ({ k, label }: { k: typeof rankSort; label: string }) => (
-      <button
-        onClick={() => setRankSort(k)}
-        className={`${COL} py-1.5 rounded-lg text-xs font-medium transition-all ${
-          rankSort === k ? 'bg-red-600 text-white' : 'bg-gray-700/60 text-gray-400 hover:text-white'
-        }`}
-      >
-        {label}
-      </button>
-    );
-
-    const formatDateTime = (date: Date | null | undefined): string => {
-      if (!date) return '–';
-      const d = new Date(date);
-      const today = new Date();
-      const isToday = d.toDateString() === today.toDateString();
-      const time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-      if (isToday) return `Heute ${time}`;
-      return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + ` ${time}`;
-    };
-
     return (
-      <div className="space-y-4">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-bold text-white">🏆 Rangliste</h2>
-            {myRank > 0 && (
-              <p className="text-sm text-gray-400 mt-0.5">Du bist auf Platz {myRank}</p>
-            )}
-          </div>
-          {/* Sortier-Buttons */}
-          <div className="flex gap-1.5 flex-shrink-0">
-            <SortBtn k="streak" label="🔥 Streak" />
-            <SortBtn k="techniques" label="✅ Tech." />
-            <SortBtn k="xp" label="⭐ XP" />
-          </div>
-        </div>
-
-        {/* Filter-Tabs */}
-        <div className="flex bg-gray-800/50 rounded-xl p-1 gap-1">
-          {([['alle', 'Alle'], ['diese_woche', 'Diese Woche'], ['mein_level', 'Mein Level']] as const).map(([k, label]) => (
-            <button
-              key={k}
-              onClick={() => setRankFilter(k)}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                rankFilter === k ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Liste */}
-        <div className="space-y-2">
-          {sorted.map((m, idx) => {
-            const rank = idx + 1;
-            const isMe = m.id === currentUser.id;
-            const passed = countPassed(m);
-
-            return (
-              <div
-                key={m.id}
-                className={`rounded-xl border overflow-hidden transition-all ${
-                  isMe ? 'bg-yellow-900/20 border-yellow-500/40' : 'bg-gray-800/50 border-gray-700'
-                }`}
-              >
-                {/* Hauptzeile */}
-                <div className="px-4 py-3 flex items-center gap-3">
-                  {/* Rang */}
-                  <div className="w-8 text-center flex-shrink-0">
-                    <span className={`font-bold ${rank <= 3 ? 'text-lg' : 'text-gray-500 text-sm'}`}>
-                      {medal(rank)}
-                    </span>
-                  </div>
-
-                  {/* Status-Dot + Avatar */}
-                  {statusDot(m)}
-                  <span className="text-2xl flex-shrink-0">{m.avatar}</span>
-
-                  {/* Name + Level */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`font-semibold text-sm ${isMe ? 'text-yellow-300' : 'text-white'}`}>
-                        {m.name}
-                      </span>
-                      {isMe && <span className="text-yellow-500/70 text-xs">(Du)</span>}
-                    </div>
-                    <span className={`text-xs ${LEVEL_DISPLAY[m.currentLevel].color}`}>
-                      {LEVEL_DISPLAY[m.currentLevel].icon} {LEVEL_DISPLAY[m.currentLevel].subtitle}
-                    </span>
-                  </div>
-
-                  {/* Stats — gleiche Breite wie Buttons */}
-                  <div className="flex gap-1.5 flex-shrink-0">
-                    <div className={COL}>
-                      <div className="text-white font-bold text-sm">{m.streak.currentStreak}</div>
-                      <div className="text-gray-500 text-xs">Wo.</div>
-                    </div>
-                    <div className={COL}>
-                      <div className="text-white font-bold text-sm">{passed}</div>
-                      <div className="text-gray-500 text-xs">Tech.</div>
-                    </div>
-                    <div className={COL}>
-                      <div className="text-white font-bold text-sm">{m.xp ?? 0}</div>
-                      <div className="text-gray-500 text-xs">XP</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Detail-Zeile: Zuletzt online + Letztes Training */}
-                <div className="px-4 pb-2.5 flex flex-wrap gap-x-5 gap-y-0.5 text-xs border-t border-gray-700/30 pt-2">
-                  <span>
-                    <span className="text-gray-600">Zuletzt online:</span>{' '}
-                    <span className="text-gray-400">{formatDateTime(m.lastSeenAt)}</span>
-                  </span>
-                  <span>
-                    <span className="text-gray-600">Letztes Training:</span>{' '}
-                    <span className="text-gray-400">{formatDateTime(m.streak.lastTrainingDate)}</span>
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Legende */}
-        <div className="flex items-center gap-4 text-xs text-gray-600 pt-1">
-          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> Beim Training</span>
-          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> Online</span>
-          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-gray-600 inline-block" /> Offline</span>
-        </div>
-      </div>
+      <RankingList
+        members={rankMembers}
+        currentUserId={currentUser.id}
+        currentUserLevel={currentUser.currentLevel}
+        checkIns={checkIns}
+        showLevelFilter={true}
+      />
     );
   };
 

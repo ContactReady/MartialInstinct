@@ -13,6 +13,8 @@ const JoinRequestForm: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { submitJoinRequest, darkMode } = useApp();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [memberIdHint, setMemberIdHint] = useState('');
+  const [course, setCourse] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
 
@@ -20,7 +22,7 @@ const JoinRequestForm: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     e.preventDefault();
     if (!name.trim()) { setError('Bitte gib deinen Namen ein.'); return; }
     if (!email.trim() || !email.includes('@')) { setError('Bitte gib eine gültige E-Mail ein.'); return; }
-    submitJoinRequest(name, email);
+    submitJoinRequest(name, email, memberIdHint, course);
     setSubmitted(true);
   };
 
@@ -28,7 +30,9 @@ const JoinRequestForm: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
       <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md border border-gray-800">
         <div className="text-center mb-8">
-          <img src={darkMode ? '/logos/mi-logo-landscape-dark.svg' : '/logos/mi-logo-landscape-light.svg'} alt="Martial Instinct" className="h-16 w-auto object-contain" />
+          <div className="flex justify-center mb-4">
+            <img src={darkMode ? '/logos/mi-logo-landscape-dark.svg' : '/logos/mi-logo-landscape-light.svg'} alt="Martial Instinct" className="h-16 w-auto object-contain" />
+          </div>
           <h1 className="text-white font-black text-xl tracking-wide">Mitglied werden</h1>
           <p className="text-gray-500 text-sm mt-1">Deine Anfrage geht direkt an uns</p>
         </div>
@@ -46,21 +50,38 @@ const JoinRequestForm: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <input
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="Vor- und Nachname"
+              placeholder="Vor- und Nachname *"
               className="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-700 focus:border-red-500 focus:outline-none"
             />
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="E-Mail-Adresse"
+              placeholder="E-Mail-Adresse *"
               className="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-700 focus:border-red-500 focus:outline-none"
             />
+            <div className="border-t border-gray-700/50 pt-3">
+              <p className="text-gray-500 text-xs mb-2">Zur Verifikation (optional, aber hilfreich):</p>
+              <input
+                type="text"
+                value={memberIdHint}
+                onChange={e => setMemberIdHint(e.target.value)}
+                placeholder="Deine Mitglieds-ID / Spitzname"
+                className="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-700 focus:border-red-500 focus:outline-none mb-3"
+              />
+              <input
+                type="text"
+                value={course}
+                onChange={e => setCourse(e.target.value)}
+                placeholder="Dein Kurs (z.B. Conflict Ready Basics)"
+                className="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-700 focus:border-red-500 focus:outline-none"
+              />
+            </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold transition-colors">
               Anfrage senden
@@ -166,7 +187,7 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => boolean; d
 
 // ── Settings Modal ─────────────────────────────────────────────────────────────
 const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { currentUser, updateProfile, toggleDarkMode, darkMode, updateNotificationPrefs } = useApp();
+  const { currentUser, updateProfile, toggleDarkMode, darkMode, updateNotificationPrefs, updateCustomBadge } = useApp();
   const [email, setEmail] = useState(currentUser?.email ?? '');
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
@@ -174,6 +195,8 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [showPw, setShowPw] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [badgeInput, setBadgeInput] = useState(currentUser?.customBadge ?? '');
+  const [badgeSaved, setBadgeSaved] = useState(false);
 
   const handleSave = () => {
     setError('');
@@ -268,6 +291,29 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           >
             {saved ? '✅ Gespeichert!' : 'Speichern'}
           </button>
+        </div>
+
+        {/* Persönliches Badge */}
+        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 space-y-3">
+          <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Persönliches Badge</div>
+          <p className="text-xs text-gray-500">Wird in der Rangliste neben deinem Namen angezeigt. Emoji + kurzer Text (max. 20 Zeichen).</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={badgeInput}
+              onChange={e => { if (e.target.value.length <= 20) setBadgeInput(e.target.value); }}
+              placeholder="z.B. 🏆 MVP oder 🥋 Veteran"
+              className={inputCls + ' flex-1'}
+              maxLength={20}
+            />
+            <button
+              onClick={() => { updateCustomBadge(badgeInput); setBadgeSaved(true); setTimeout(() => setBadgeSaved(false), 2000); }}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all flex-shrink-0 ${badgeSaved ? 'bg-green-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
+            >
+              {badgeSaved ? '✓' : 'Speichern'}
+            </button>
+          </div>
+          {badgeInput && <div className="text-xs text-gray-400">Vorschau: <span className="bg-gray-700 border border-gray-600 rounded px-1.5 py-0.5 text-white text-[10px]">{badgeInput}</span></div>}
         </div>
 
         {/* Benachrichtigungen */}

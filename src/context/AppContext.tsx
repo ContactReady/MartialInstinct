@@ -177,10 +177,11 @@ interface AppContextType {
 
   // Join Requests (QR-Code Onboarding)
   joinRequests: JoinRequest[];
-  submitJoinRequest: (name: string, email: string) => void;
+  submitJoinRequest: (name: string, email: string, memberIdHint?: string, course?: string) => void;
   createMemberFromRequest: (data: CreateMemberData) => void;
   rejectJoinRequest: (id: string) => void;
   updateStopTheBleed: (memberId: string, certified: boolean) => void;
+  updateCustomBadge: (badge: string) => void;
 
   getMemberById: (id: string) => Member | undefined;
   getCheckedInMembers: () => Member[];
@@ -1645,11 +1646,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // JOIN REQUESTS & MEMBER CREATION
   // ============================================
 
-  const submitJoinRequest = useCallback((name: string, email: string) => {
+  const submitJoinRequest = useCallback((name: string, email: string, memberIdHint?: string, course?: string) => {
     const req: JoinRequest = {
       id: `join-${Date.now()}`,
       name: name.trim(),
       email: email.trim(),
+      memberIdHint: memberIdHint?.trim(),
+      course: course?.trim(),
       status: 'pending',
       submittedAt: new Date(),
     };
@@ -1724,6 +1727,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (memberId === currentUser?.id) {
       setCurrentUser(prev => prev ? { ...prev, stopTheBleedCertified: certified } : null);
     }
+  }, [currentUser]);
+
+  const updateCustomBadge = useCallback((badge: string) => {
+    if (!currentUser) return;
+    setMembers(prev => prev.map(m => m.id === currentUser.id ? { ...m, customBadge: badge } : m));
+    setCurrentUser(prev => prev ? { ...prev, customBadge: badge } : null);
   }, [currentUser]);
 
   const updateAdminAccess = useCallback((memberId: string, hasAccess: boolean) => {
@@ -1802,6 +1811,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     createMemberFromRequest,
     rejectJoinRequest,
     updateStopTheBleed,
+    updateCustomBadge,
     getMemberById,
     getCheckedInMembers,
     getOnlineMembers,

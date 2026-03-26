@@ -20,6 +20,7 @@ import {
 import { TechniqueCard } from '../shared/TechniqueCard';
 import { InstructorLearningView } from './InstructorLearningView';
 import { ProfileView } from '../shared/ProfileView';
+import { RankingList } from '../shared/RankingList';
 
 // ── Kurs-Erkennung anhand aktueller Uhrzeit ──────────────────────────────────
 function detectCurrentCourse(locationId: string): string | null {
@@ -161,9 +162,6 @@ export const InstructorView: React.FC = () => {
   // Sub-Tab States (an Top-Level wegen Rules of Hooks)
   const [communitySubTab, setCommunitySubTab] = useState<CommunitySubTab>('training');
   const [requestSubTab, setRequestSubTab] = useState<'exams' | 'wishes' | 'checkins' | 'beitritt'>('exams');
-
-  // Rangliste Expand State
-  const [ranklistExpandedId, setRanklistExpandedId] = useState<string | null>(null);
 
   // Beitrittsanfragen Modal State
   const [createMemberRequest, setCreateMemberRequest] = useState<JoinRequest | null>(null);
@@ -819,178 +817,15 @@ export const InstructorView: React.FC = () => {
         })()}
 
         {/* ── Rangliste ───────────────────────────────────────────────────── */}
-        {communitySubTab === 'rangliste' && (() => {
-          const allMembers = members.filter(m => m.role === 'member');
-          const ranked = [...allMembers].sort((a, b) => (b.xp ?? 0) - (a.xp ?? 0));
-          const topStreak = [...allMembers].sort((a, b) => b.streak.currentStreak - a.streak.currentStreak).slice(0, 5);
-
-          // Curriculum-Blöcke (ohne Instructor-Block)
-          const curriculumBlocks = BLOCKS.filter(b => b.id !== 'assistant_instructor');
-
-          // Modul-Fortschritt berechnen für ein Mitglied
-          const getModProgress = (member: Member, moduleId: string): { tactics: boolean; combat: boolean } => {
-            const mod = MODULES.find(mm => mm.id === moduleId);
-            if (!mod) return { tactics: false, combat: false };
-            const required = mod.techniques.filter(t => t.isRequired);
-            if (required.length === 0) return { tactics: false, combat: false };
-            const tactics = required.every(t => {
-              const s = member.techniqueProgress[t.id]?.status;
-              return s === 'tech_passed' || s === 'tac_passed';
-            });
-            const combat = required.every(t => member.techniqueProgress[t.id]?.status === 'tac_passed');
-            return { tactics, combat };
-          };
-
-          // Gesamt-Counts für auf-einen-Blick Anzeige
-          const getMemberCounts = (member: Member) => {
-            let tacticsDone = 0, combatDone = 0, total = 0;
-            curriculumBlocks.forEach(block => {
-              block.moduleIds.forEach(modId => {
-                total++;
-                const p = getModProgress(member, modId);
-                if (p.tactics) tacticsDone++;
-                if (p.combat) combatDone++;
-              });
-            });
-            return { tacticsDone, combatDone, total };
-          };
-
-          return (
-            <div className="space-y-4">
-              {/* XP Rangliste */}
-              <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-700/60">
-                  <h3 className="font-bold text-white flex items-center gap-2">⚡ XP Rangliste</h3>
-                </div>
-                {ranked.length === 0 ? (
-                  <div className="px-4 py-6 text-center text-gray-500 text-sm">Keine Daten</div>
-                ) : (
-                  <div className="divide-y divide-gray-700/40">
-                    {ranked.map((m, i) => {
-                      const { tacticsDone, combatDone, total } = getMemberCounts(m);
-                      const isExpanded = ranklistExpandedId === m.id;
-                      const levelInfo = LEVEL_DISPLAY[m.currentLevel];
-                      return (
-                        <div key={m.id}>
-                          {/* ── Kompakte Zeile ── */}
-                          <button
-                            onClick={() => setRanklistExpandedId(isExpanded ? null : m.id)}
-                            className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700/30 transition-colors text-left"
-                          >
-                            <span className={`w-6 text-center font-black text-sm flex-shrink-0 ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-orange-400' : 'text-gray-600'}`}>
-                              {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`}
-                            </span>
-                            <span className="text-xl flex-shrink-0">{m.avatar}</span>
-                            <div className="flex-1 min-w-0">
-                              {/* Name + Badges */}
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-white font-semibold text-sm">{m.name}</span>
-                                <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${levelInfo.bgColor} ${levelInfo.color}`}>
-                                  {levelInfo.icon} {levelInfo.name}
-                                </span>
-                                {m.stopTheBleedCertified && (
-                                  <span className="text-[9px] bg-red-900/40 text-red-400 border border-red-800/40 px-1.5 py-0.5 rounded font-semibold">STB</span>
-                                )}
-                              </div>
-                              {/* Modul-Zähler */}
-                              <div className="flex items-center gap-3 mt-0.5">
-                                <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                                  <span className="w-3 h-3 rounded-full bg-gray-700 border border-gray-500 inline-flex items-center justify-center text-[7px] font-bold text-white">T</span>
-                                  {tacticsDone}/{total}
-                                </span>
-                                <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                                  <span className="w-3 h-3 rounded-full bg-red-700 border border-red-500 inline-flex items-center justify-center text-[7px] font-bold text-white">C</span>
-                                  {combatDone}/{total}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <div className="text-yellow-400 font-bold text-sm">{m.xp ?? 0} XP</div>
-                              <span className={`text-gray-500 text-xs transition-transform ${isExpanded ? 'rotate-180' : ''}`}>▾</span>
-                            </div>
-                          </button>
-
-                          {/* ── Aufgeklapptes Detail ── */}
-                          {isExpanded && (
-                            <div className="border-t border-gray-700/40 bg-gray-900/60 px-4 py-3 space-y-3">
-                              {curriculumBlocks.map(block => {
-                                const blockModules = block.moduleIds.map(id => MODULES.find(mm => mm.id === id)).filter(Boolean) as typeof MODULES;
-                                const blockTactics = blockModules.filter(mod => getModProgress(m, mod.id).tactics).length;
-                                const blockCombat = blockModules.filter(mod => getModProgress(m, mod.id).combat).length;
-                                return (
-                                  <div key={block.id}>
-                                    {/* Block-Header */}
-                                    <div className="flex items-center justify-between mb-1.5">
-                                      <div className="flex items-center gap-1.5">
-                                        <span className="text-xs">{block.icon}</span>
-                                        <span className={`text-[10px] font-black tracking-wider uppercase ${block.color}`}>{block.name}</span>
-                                      </div>
-                                      <div className="flex items-center gap-2 text-[9px] text-gray-500">
-                                        <span className="text-gray-400">T: {blockTactics}/{blockModules.length}</span>
-                                        <span className="text-gray-400">C: {blockCombat}/{blockModules.length}</span>
-                                      </div>
-                                    </div>
-                                    {/* Module-Grid */}
-                                    <div className="space-y-1">
-                                      {blockModules.map(mod => {
-                                        const prog = getModProgress(m, mod.id);
-                                        return (
-                                          <div key={mod.id} className="flex items-center gap-2 py-0.5">
-                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${
-                                              prog.tactics ? 'bg-gray-700 border-gray-500' : 'border-gray-700'
-                                            }`}>
-                                              {prog.tactics && <span className="text-white font-bold" style={{ fontSize: '7px' }}>T</span>}
-                                            </div>
-                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${
-                                              prog.combat ? 'bg-red-700 border-red-500' : 'border-gray-700'
-                                            }`}>
-                                              {prog.combat && <span className="text-white font-bold" style={{ fontSize: '7px' }}>C</span>}
-                                            </div>
-                                            <span className={`text-xs ${prog.combat ? 'text-white' : prog.tactics ? 'text-gray-300' : 'text-gray-600'}`}>
-                                              {mod.name}
-                                            </span>
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Streak Rangliste */}
-              <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-700/60">
-                  <h3 className="font-bold text-white flex items-center gap-2">🔥 Streak Top 5</h3>
-                </div>
-                <div className="divide-y divide-gray-700/40">
-                  {topStreak.map((m, i) => (
-                    <div key={m.id} className="px-4 py-3 flex items-center gap-3">
-                      <span className={`w-7 text-center font-black text-sm flex-shrink-0 ${i === 0 ? 'text-yellow-400' : 'text-gray-600'}`}>
-                        {i === 0 ? '🥇' : `${i + 1}.`}
-                      </span>
-                      <span className="text-xl flex-shrink-0">{m.avatar}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-white font-medium text-sm">{m.name}</div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="text-white font-bold text-sm">🔥 {m.streak.currentStreak} Wochen</div>
-                        <div className="text-gray-500 text-xs">Longest: {m.streak.longestStreak}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
+        {communitySubTab === 'rangliste' && (
+          <RankingList
+            members={members.filter(m => m.role === 'member')}
+            currentUserId={currentUser!.id}
+            currentUserLevel={currentUser!.currentLevel}
+            checkIns={checkIns}
+            showLevelFilter={false}
+          />
+        )}
 
       </div>
     );
@@ -1413,6 +1248,12 @@ export const InstructorView: React.FC = () => {
                           </span>
                         </div>
                         <div className="text-xs text-gray-400">{req.email}</div>
+                        {(req.memberIdHint || req.course) && (
+                          <div className="text-[10px] text-gray-500 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                            {req.memberIdHint && <span>ID: <span className="text-gray-300">{req.memberIdHint}</span></span>}
+                            {req.course && <span>Kurs: <span className="text-gray-300">{req.course}</span></span>}
+                          </div>
+                        )}
                         <div className="text-[10px] text-gray-600 mt-1">
                           {new Date(req.submittedAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </div>
