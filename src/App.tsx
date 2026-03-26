@@ -92,7 +92,7 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => boolean; d
 
 // ── Settings Modal ─────────────────────────────────────────────────────────────
 const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { currentUser, updateProfile, toggleDarkMode, darkMode } = useApp();
+  const { currentUser, updateProfile, toggleDarkMode, darkMode, updateNotificationPrefs } = useApp();
   const [email, setEmail] = useState(currentUser?.email ?? '');
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
@@ -194,6 +194,36 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           >
             {saved ? '✅ Gespeichert!' : 'Speichern'}
           </button>
+        </div>
+
+        {/* Benachrichtigungen */}
+        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 space-y-3">
+          <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Benachrichtigungen</div>
+
+          {([
+            { key: 'sound', label: '🔔 Sound', desc: 'Ton bei neuer Benachrichtigung' },
+            { key: 'email', label: '📧 E-Mail', desc: 'Kommt bald — benötigt Backend' },
+          ] as { key: 'sound' | 'email'; label: string; desc: string }[]).map(({ key, label, desc }) => {
+            const enabled = currentUser?.notificationPrefs?.[key] ?? (key === 'sound' ? true : false);
+            return (
+              <div key={key} className="flex items-center justify-between">
+                <div>
+                  <div className="text-white text-sm">{label}</div>
+                  <div className="text-gray-500 text-xs">{desc}</div>
+                </div>
+                <button
+                  onClick={() => updateNotificationPrefs({
+                    sound: key === 'sound' ? !enabled : (currentUser?.notificationPrefs?.sound ?? true),
+                    email: key === 'email' ? !enabled : (currentUser?.notificationPrefs?.email ?? false),
+                  })}
+                  disabled={key === 'email'}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${enabled ? 'bg-red-600' : 'bg-gray-600'} ${key === 'email' ? 'opacity-40 cursor-not-allowed' : ''}`}
+                >
+                  <span className={`absolute left-1 top-1 w-4 h-4 rounded-full shadow transition-transform bg-white ${enabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -384,12 +414,30 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onSe
 };
 
 // ── Main App Content ───────────────────────────────────────────────────────────
+// Kurzes Notification-Ding via Web Audio API
+function playNotificationSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.25);
+  } catch { /* ignore if browser blocks audio */ }
+}
+
 const AppContent: React.FC = () => {
   const { currentUser, login, darkMode, notifications } = useApp();
   const [viewMode, setViewMode] = useState<'member' | 'instructor'>('member');
   const [showSettings, setShowSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const prevUnreadRef = useRef(0);
 
   const isInstructor = currentUser?.role !== 'member';
   const actualViewMode = isInstructor ? viewMode : 'member';
@@ -397,6 +445,16 @@ const AppContent: React.FC = () => {
   const unreadCount = currentUser
     ? notifications.filter(n => n.oduserId === currentUser.id && !n.read).length
     : 0;
+
+  // Sound bei neuer Benachrichtigung (wenn aktiviert)
+  useEffect(() => {
+    if (!currentUser) return;
+    const soundEnabled = currentUser.notificationPrefs?.sound ?? true;
+    if (soundEnabled && unreadCount > prevUnreadRef.current) {
+      playNotificationSound();
+    }
+    prevUnreadRef.current = unreadCount;
+  }, [unreadCount, currentUser]);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white" data-theme={darkMode ? 'dark' : 'light'}>

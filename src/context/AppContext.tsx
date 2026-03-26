@@ -86,7 +86,14 @@ interface AppContextType {
   awardBandaid: (memberId: string, reason: string) => void;
   
   // Board Messages
-  sendBoardMessage: (content: string) => void;
+  sendBoardMessage: (
+    content: string,
+    visibility: 'public' | 'restricted',
+    targetType: 'none' | 'roles' | 'members',
+    targetRoles?: InstructorRole[],
+    targetMemberIds?: string[]
+  ) => void;
+  updateNotificationPrefs: (prefs: { sound: boolean; email: boolean }) => void;
   
   // Notifications
   markNotificationRead: (notificationId: string) => void;
@@ -937,9 +944,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // BOARD MESSAGES
   // ============================================
 
-  const sendBoardMessage = useCallback((content: string) => {
+  const sendBoardMessage = useCallback((
+    content: string,
+    visibility: 'public' | 'restricted',
+    targetType: 'none' | 'roles' | 'members',
+    targetRoles?: InstructorRole[],
+    targetMemberIds?: string[]
+  ) => {
     if (!currentUser) return;
-    
+
     const newMessage: BoardMessage = {
       id: `msg-${Date.now()}`,
       authorId: currentUser.id,
@@ -947,10 +960,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       authorRole: currentUser.role,
       content,
       createdAt: new Date(),
-      locationId: currentUser.locationId
+      locationId: currentUser.locationId,
+      visibility,
+      targetType,
+      ...(targetRoles && targetRoles.length > 0 ? { targetRoles } : {}),
+      ...(targetMemberIds && targetMemberIds.length > 0 ? { targetMemberIds } : {}),
     };
-    
+
     setBoardMessages(prev => [...prev, newMessage]);
+
+    // Benachrichtigungen für Zielgruppe erstellen
+    if (targetType !== 'none') {
+      const instructorRoles: InstructorRole[] = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'owner', 'admin'];
+      const allInstructors = members.filter(m => instructorRoles.includes(m.role) && m.id !== currentUser.id);
+      let recipients: typeof allInstructors = [];
+      if (targetType === 'roles' && targetRoles && targetRoles.length > 0) {
+        recipients = allInstructors.filter(m => targetRoles.includes(m.role));
+      } else if (targetType === 'members' && targetMemberIds && targetMemberIds.length > 0) {
+        recipients = allInstructors.filter(m => targetMemberIds.includes(m.id));
+      }
+      const newNotifs = recipients.map(m => ({
+        id: `notif-board-${Date.now()}-${m.id}`,
+        oduserId: m.id,
+        type: 'board' as const,
+        title: `📌 Board: ${currentUser.name}`,
+        message: content.length > 60 ? content.slice(0, 60) + '…' : content,
+        read: false,
+        createdAt: new Date(),
+        data: { boardMessageId: newMessage.id }
+      }));
+      if (newNotifs.length > 0) {
+        setNotifications(prev => [...prev, ...newNotifs]);
+      }
+    }
+  }, [currentUser, members]);
+
+  const updateNotificationPrefs = useCallback((prefs: { sound: boolean; email: boolean }) => {
+    if (!currentUser) return;
+    setMembers(prev => prev.map(m =>
+      m.id === currentUser.id ? { ...m, notificationPrefs: prefs } : m
+    ));
   }, [currentUser]);
 
   // ============================================
@@ -1517,6 +1566,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     useBandaid,
     awardBandaid,
     sendBoardMessage,
+    updateNotificationPrefs,
     markNotificationRead,
     clearNotifications,
     addInstructorNote,

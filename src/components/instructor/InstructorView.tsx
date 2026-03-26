@@ -47,7 +47,8 @@ function canApproveCheckIn(role: InstructorRole, instructorId: string, checkIn: 
   return !!ownCourse;
 }
 
-type Tab = 'lernen' | 'live' | 'evaluate' | 'members' | 'requests' | 'board' | 'admin';
+type Tab = 'lernen' | 'community' | 'evaluate' | 'requests' | 'board' | 'admin';
+type CommunitySubTab = 'online' | 'mitglieder' | 'training' | 'rangliste';
 type AdminSubTab = 'members' | 'bewerbungen' | 'lernbereich';
 
 export const InstructorView: React.FC = () => {
@@ -56,6 +57,7 @@ export const InstructorView: React.FC = () => {
     members,
     checkIns,
     boardMessages,
+    notifications,
     approveCheckIn,
     rejectCheckIn,
     checkOut,
@@ -97,6 +99,11 @@ export const InstructorView: React.FC = () => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
   const [boardMessageText, setBoardMessageText] = useState('');
+  const [boardVisibility, setBoardVisibility] = useState<'public' | 'restricted'>('public');
+  const [boardTargetType, setBoardTargetType] = useState<'none' | 'roles' | 'members'>('none');
+  const [boardTargetRoles, setBoardTargetRoles] = useState<InstructorRole[]>([]);
+  const [boardTargetMemberIds, setBoardTargetMemberIds] = useState<string[]>([]);
+  const [boardMemberSearch, setBoardMemberSearch] = useState('');
   const [rejectionFeedback, setRejectionFeedback] = useState<Record<string, string>>({});
   const [liveTick, setLiveTick] = useState(0);
   const [memberSearch, setMemberSearch] = useState('');
@@ -124,6 +131,9 @@ export const InstructorView: React.FC = () => {
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [bulkImportText, setBulkImportText] = useState('');
+  const [showQuizBulkImport, setShowQuizBulkImport] = useState(false);
+  const [quizBulkImportText, setQuizBulkImportText] = useState('');
+  const [quizBulkPreview, setQuizBulkPreview] = useState<{ question: string; options: string[]; correctIndex: number; explanation: string }[]>([]);
   const [techEditName, setTechEditName] = useState('');
   const [techEditDesc, setTechEditDesc] = useState('');
   const [qEditQuestion, setQEditQuestion] = useState('');
@@ -133,7 +143,7 @@ export const InstructorView: React.FC = () => {
   const [contentQuizCount, setContentQuizCount] = useState(10);
 
   // Sub-Tab States (an Top-Level wegen Rules of Hooks)
-  const [liveSubTab, setLiveSubTab] = useState<'online' | 'training'>('training');
+  const [communitySubTab, setCommunitySubTab] = useState<CommunitySubTab>('training');
   const [requestSubTab, setRequestSubTab] = useState<'exams' | 'wishes' | 'checkins'>('exams');
 
   // Session-Builder State (alle an Top-Level wegen Rules of Hooks)
@@ -169,12 +179,10 @@ export const InstructorView: React.FC = () => {
     switch (tab) {
       case 'lernen':
         return true;
-      case 'live':
+      case 'community':
         return true;
       case 'evaluate':
         return EXAM_PERMISSIONS[currentUser.role].length > 0;
-      case 'members':
-        return hasAdminAccess(currentUser) || ['head_instructor'].includes(currentUser.role);
       case 'requests':
         return EXAM_PERMISSIONS[currentUser.role].length > 0;
       case 'board':
@@ -200,8 +208,8 @@ export const InstructorView: React.FC = () => {
     return `vor ${days} Tagen`;
   };
 
-  // Render Live Tab
-  const renderLiveTab = () => {
+  // Render Community Tab (Online + Training + Mitglieder + Rangliste)
+  const renderCommunityTab = () => {
     const now = new Date();
     const todayStr = now.toDateString();
 
@@ -251,33 +259,30 @@ export const InstructorView: React.FC = () => {
 
         {/* Sub-Tab Switcher */}
         <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
-          <button
-            onClick={() => setLiveSubTab('online')}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-              liveSubTab === 'online' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
-            Online
-            {onlineMembers.length > 0 && (
-              <span className="bg-gray-600 text-gray-300 text-xs px-1.5 py-0.5 rounded-full">{onlineMembers.length}</span>
-            )}
-          </button>
-          <button
-            onClick={() => setLiveSubTab('training')}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-              liveSubTab === 'training' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            📍 Beim Training
-            {todayCheckIns.length > 0 && (
-              <span className="bg-gray-600 text-gray-300 text-xs px-1.5 py-0.5 rounded-full">{todayCheckIns.length}</span>
-            )}
-          </button>
+          {([
+            { id: 'online' as CommunitySubTab, label: 'Online', badge: onlineMembers.length, dot: true },
+            { id: 'training' as CommunitySubTab, label: 'Training', badge: todayCheckIns.length, dot: false },
+            { id: 'mitglieder' as CommunitySubTab, label: 'Mitglieder', badge: 0, dot: false },
+            { id: 'rangliste' as CommunitySubTab, label: 'Rangliste', badge: 0, dot: false },
+          ] as { id: CommunitySubTab; label: string; badge: number; dot: boolean }[]).map(item => (
+            <button
+              key={item.id}
+              onClick={() => setCommunitySubTab(item.id)}
+              className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
+                communitySubTab === item.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              {item.dot && <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />}
+              {item.label}
+              {item.badge > 0 && (
+                <span className="bg-gray-600 text-gray-300 text-[10px] px-1.5 py-0.5 rounded-full">{item.badge}</span>
+              )}
+            </button>
+          ))}
         </div>
 
         {/* ── Tab: Online ─────────────────────────────────────────────────── */}
-        {liveSubTab === 'online' && (
+        {communitySubTab === 'online' && (
           <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-700/60 flex items-center justify-between">
               <h3 className="font-bold text-white flex items-center gap-2">
@@ -348,7 +353,7 @@ export const InstructorView: React.FC = () => {
         )}
 
         {/* ── Tab: Beim Training ───────────────────────────────────────────── */}
-        {liveSubTab === 'training' && (
+        {communitySubTab === 'training' && (
           <div className="space-y-4">
             <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-700/60">
@@ -668,6 +673,189 @@ export const InstructorView: React.FC = () => {
         </div>
           </div>
         )}
+
+        {/* ── Mitglieder ─────────────────────────────────────────────────── */}
+        {communitySubTab === 'mitglieder' && (() => {
+          const allMembers = members.filter(m => m.role === 'member');
+          const getMemberStatus = (m: Member): 'training' | 'online' | 'offline' => {
+            if (m.isCheckedIn) return 'training';
+            if (m.onlineSince !== undefined) return 'online';
+            return 'offline';
+          };
+          const formatDateTime = (date: Date | null | undefined): string => {
+            if (!date) return '–';
+            const d = new Date(date);
+            const today2 = new Date();
+            const isToday = d.toDateString() === today2.toDateString();
+            const yesterday = new Date(today2);
+            yesterday.setDate(today2.getDate() - 1);
+            const isYesterday = d.toDateString() === yesterday.toDateString();
+            const time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            if (isToday) return `Heute, ${time}`;
+            if (isYesterday) return `Gestern, ${time}`;
+            return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) + `, ${time}`;
+          };
+          const filtered = allMembers.filter(m =>
+            m.name.toLowerCase().includes(memberSearch.toLowerCase())
+          );
+          const sorted = [...filtered].sort((a, b) => {
+            if (memberSort === 'name') return a.name.localeCompare(b.name, 'de');
+            if (memberSort === 'lastSeen') return new Date(b.lastSeenAt).getTime() - new Date(a.lastSeenAt).getTime();
+            const aT = a.streak.lastTrainingDate ? new Date(a.streak.lastTrainingDate).getTime() : 0;
+            const bT = b.streak.lastTrainingDate ? new Date(b.streak.lastTrainingDate).getTime() : 0;
+            return bT - aT;
+          });
+          const countTraining = allMembers.filter(m => m.isCheckedIn).length;
+          const countOnline = allMembers.filter(m => !m.isCheckedIn && m.onlineSince !== undefined).length;
+          const countOffline = allMembers.length - countTraining - countOnline;
+          const StatusDot = ({ status }: { status: 'training' | 'online' | 'offline' }) => {
+            if (status === 'training') return <span className="w-3 h-3 rounded-full bg-orange-400 flex-shrink-0 inline-block" />;
+            if (status === 'online') return <span className="w-3 h-3 rounded-full bg-green-400 flex-shrink-0 inline-block animate-pulse" />;
+            return <span className="w-3 h-3 rounded-full bg-gray-600 flex-shrink-0 inline-block" />;
+          };
+          const statusLabel = (status: 'training' | 'online' | 'offline') => {
+            if (status === 'training') return <span className="text-orange-400 text-xs font-medium">Beim Training</span>;
+            if (status === 'online') return <span className="text-green-400 text-xs font-medium">Online</span>;
+            return <span className="text-gray-500 text-xs">Offline</span>;
+          };
+          const SortBtn = ({ k, label }: { k: typeof memberSort; label: string }) => (
+            <button
+              onClick={() => setMemberSort(k)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                memberSort === k ? 'bg-red-600 text-white' : 'bg-gray-700/60 text-gray-400 hover:text-white'
+              }`}
+            >{label}</button>
+          );
+          return (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <h3 className="text-lg font-bold text-white">
+                  Mitglieder
+                  <span className="text-gray-500 font-normal text-sm ml-2">({allMembers.length})</span>
+                </h3>
+                <div className="flex items-center gap-3 text-xs text-gray-400">
+                  {countTraining > 0 && <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" />{countTraining} beim Training</span>}
+                  {countOnline > 0 && <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" />{countOnline} online</span>}
+                  <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-gray-600 inline-block" />{countOffline} offline</span>
+                </div>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <input
+                  type="text"
+                  placeholder="Mitglied suchen…"
+                  value={memberSearch}
+                  onChange={e => setMemberSearch(e.target.value)}
+                  className="flex-1 min-w-40 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
+                />
+                <div className="flex gap-1.5">
+                  <SortBtn k="name" label="Name" />
+                  <SortBtn k="lastSeen" label="Login" />
+                  <SortBtn k="lastTraining" label="Training" />
+                </div>
+              </div>
+              {sorted.length === 0 ? (
+                <div className="bg-gray-800/30 rounded-xl p-6 text-center text-gray-500 text-sm">Kein Mitglied gefunden</div>
+              ) : (
+                <div className="space-y-2">
+                  {sorted.map(member => {
+                    const status = getMemberStatus(member);
+                    const progress = getBlockProgress(member.id, member.currentLevel);
+                    return (
+                      <div key={member.id} className={`bg-gray-800/50 rounded-xl border transition-all ${status === 'training' ? 'border-orange-500/30' : status === 'online' ? 'border-green-500/20' : 'border-gray-700'}`}>
+                        <div className="px-4 py-3 flex items-center gap-3">
+                          <StatusDot status={status} />
+                          <span className="text-2xl flex-shrink-0">{member.avatar}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-white font-semibold text-sm">{member.name}</span>
+                              <span className={`text-xs ${LEVEL_DISPLAY[member.currentLevel].color}`}>{LEVEL_DISPLAY[member.currentLevel].icon} {LEVEL_DISPLAY[member.currentLevel].subtitle}</span>
+                              <span className="text-gray-600 text-xs">{progress.completed} Techniken</span>
+                            </div>
+                            <div className="mt-0.5">{statusLabel(status)}</div>
+                          </div>
+                          <div className="flex gap-1.5 flex-shrink-0">
+                            <button onClick={() => awardBandaid(member.id, 'Instructor Bonus')} className="bg-gray-700/60 hover:bg-gray-700 text-gray-300 px-2.5 py-1.5 rounded-lg text-xs transition-all" title="Pflaster vergeben">🩹+</button>
+                            <button onClick={() => setProfileMember(member)} className="bg-gray-700/60 hover:bg-gray-700 text-gray-300 px-2.5 py-1.5 rounded-lg text-xs transition-all" title="Profil anzeigen">👤</button>
+                            <button onClick={() => { setSelectedMember(member); setActiveTab('evaluate'); }} className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all">Bewerten</button>
+                          </div>
+                        </div>
+                        <div className="px-4 pb-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500 border-t border-gray-700/40 pt-2">
+                          <span><span className="text-gray-600">Zuletzt online:</span> <span className="text-gray-400">{formatDateTime(member.lastSeenAt)}</span></span>
+                          <span><span className="text-gray-600">Letztes Training:</span> <span className="text-gray-400">{formatDateTime(member.streak.lastTrainingDate)}</span></span>
+                          <span className="flex items-center gap-1">🔥 <span className="text-gray-400">{member.streak.currentStreak} Wochen</span></span>
+                          <span className="flex items-center gap-1">🩹 <span className="text-gray-400">{member.streak.bandaids}/{member.streak.maxBandaids}</span></span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── Rangliste ───────────────────────────────────────────────────── */}
+        {communitySubTab === 'rangliste' && (() => {
+          const allMembers = members.filter(m => m.role === 'member');
+          const ranked = [...allMembers].sort((a, b) => (b.xp ?? 0) - (a.xp ?? 0));
+          const topStreak = [...allMembers].sort((a, b) => b.streak.currentStreak - a.streak.currentStreak).slice(0, 5);
+          return (
+            <div className="space-y-4">
+              {/* XP Rangliste */}
+              <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-700/60">
+                  <h3 className="font-bold text-white flex items-center gap-2">⚡ XP Rangliste</h3>
+                </div>
+                {ranked.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-gray-500 text-sm">Keine Daten</div>
+                ) : (
+                  <div className="divide-y divide-gray-700/40">
+                    {ranked.map((m, i) => (
+                      <div key={m.id} className="px-4 py-3 flex items-center gap-3">
+                        <span className={`w-7 text-center font-black text-sm flex-shrink-0 ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-orange-400' : 'text-gray-600'}`}>
+                          {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`}
+                        </span>
+                        <span className="text-xl flex-shrink-0">{m.avatar}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-white font-medium text-sm">{m.name}</div>
+                          <div className={`text-xs ${LEVEL_DISPLAY[m.currentLevel].color}`}>{LEVEL_DISPLAY[m.currentLevel].subtitle}</div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-yellow-400 font-bold text-sm">{m.xp ?? 0} XP</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Streak Rangliste */}
+              <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-700/60">
+                  <h3 className="font-bold text-white flex items-center gap-2">🔥 Streak Top 5</h3>
+                </div>
+                <div className="divide-y divide-gray-700/40">
+                  {topStreak.map((m, i) => (
+                    <div key={m.id} className="px-4 py-3 flex items-center gap-3">
+                      <span className={`w-7 text-center font-black text-sm flex-shrink-0 ${i === 0 ? 'text-yellow-400' : 'text-gray-600'}`}>
+                        {i === 0 ? '🥇' : `${i + 1}.`}
+                      </span>
+                      <span className="text-xl flex-shrink-0">{m.avatar}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-medium text-sm">{m.name}</div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-white font-bold text-sm">🔥 {m.streak.currentStreak} Wochen</div>
+                        <div className="text-gray-500 text-xs">Longest: {m.streak.longestStreak}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
       </div>
     );
   };
@@ -795,215 +983,6 @@ export const InstructorView: React.FC = () => {
     );
   };
 
-  // Render Members Tab
-  const renderMembersTab = () => {
-    const search = memberSearch;
-    const setSearch = setMemberSearch;
-    const sortKey = memberSort;
-    const setSortKey = setMemberSort;
-
-    const allMembers = members.filter(m => m.role === 'member');
-
-    // Status-Helfer
-    const getMemberStatus = (m: Member): 'training' | 'online' | 'offline' => {
-      if (m.isCheckedIn) return 'training';
-      if (m.onlineSince !== undefined) return 'online';
-      return 'offline';
-    };
-
-    // Formatierung: Datum + Uhrzeit
-    const formatDateTime = (date: Date | null | undefined): string => {
-      if (!date) return '–';
-      const d = new Date(date);
-      const today = new Date();
-      const isToday = d.toDateString() === today.toDateString();
-      const yesterday = new Date(today);
-      yesterday.setDate(today.getDate() - 1);
-      const isYesterday = d.toDateString() === yesterday.toDateString();
-      const time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-      if (isToday) return `Heute, ${time}`;
-      if (isYesterday) return `Gestern, ${time}`;
-      return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) + `, ${time}`;
-    };
-
-    // Filtern
-    const filtered = allMembers.filter(m =>
-      m.name.toLowerCase().includes(search.toLowerCase())
-    );
-
-    // Sortieren
-    const sorted = [...filtered].sort((a, b) => {
-      if (sortKey === 'name') return a.name.localeCompare(b.name, 'de');
-      if (sortKey === 'lastSeen') {
-        return new Date(b.lastSeenAt).getTime() - new Date(a.lastSeenAt).getTime();
-      }
-      // lastTraining
-      const aT = a.streak.lastTrainingDate ? new Date(a.streak.lastTrainingDate).getTime() : 0;
-      const bT = b.streak.lastTrainingDate ? new Date(b.streak.lastTrainingDate).getTime() : 0;
-      return bT - aT;
-    });
-
-    // Status-Zusammenfassung
-    const countTraining = allMembers.filter(m => m.isCheckedIn).length;
-    const countOnline   = allMembers.filter(m => !m.isCheckedIn && m.onlineSince !== undefined).length;
-    const countOffline  = allMembers.length - countTraining - countOnline;
-
-    const StatusDot = ({ status }: { status: 'training' | 'online' | 'offline' }) => {
-      if (status === 'training') return <span className="w-3 h-3 rounded-full bg-orange-400 flex-shrink-0 inline-block" />;
-      if (status === 'online')   return <span className="w-3 h-3 rounded-full bg-green-400 flex-shrink-0 inline-block animate-pulse" />;
-      return <span className="w-3 h-3 rounded-full bg-gray-600 flex-shrink-0 inline-block" />;
-    };
-
-    const statusLabel = (status: 'training' | 'online' | 'offline') => {
-      if (status === 'training') return <span className="text-orange-400 text-xs font-medium">Beim Training</span>;
-      if (status === 'online')   return <span className="text-green-400 text-xs font-medium">Online</span>;
-      return <span className="text-gray-500 text-xs">Offline</span>;
-    };
-
-    const SortBtn = ({ k, label }: { k: typeof sortKey; label: string }) => (
-      <button
-        onClick={() => setSortKey(k)}
-        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-          sortKey === k
-            ? 'bg-red-600 text-white'
-            : 'bg-gray-700/60 text-gray-400 hover:text-white'
-        }`}
-      >
-        {label}
-      </button>
-    );
-
-    return (
-      <div className="space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h3 className="text-lg font-bold text-white">
-            Mitglieder
-            <span className="text-gray-500 font-normal text-sm ml-2">({allMembers.length})</span>
-          </h3>
-          {/* Status-Zusammenfassung */}
-          <div className="flex items-center gap-3 text-xs text-gray-400">
-            {countTraining > 0 && (
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-orange-400 inline-block" />
-                {countTraining} beim Training
-              </span>
-            )}
-            {countOnline > 0 && (
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
-                {countOnline} online
-              </span>
-            )}
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-gray-600 inline-block" />
-              {countOffline} offline
-            </span>
-          </div>
-        </div>
-
-        {/* Suche + Sortierung */}
-        <div className="flex gap-2 flex-wrap">
-          <input
-            type="text"
-            placeholder="Mitglied suchen…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="flex-1 min-w-40 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
-          />
-          <div className="flex gap-1.5">
-            <SortBtn k="name" label="Name" />
-            <SortBtn k="lastSeen" label="Letzter Login" />
-            <SortBtn k="lastTraining" label="Letztes Training" />
-          </div>
-        </div>
-
-        {/* Karten-Liste */}
-        {sorted.length === 0 ? (
-          <div className="bg-gray-800/30 rounded-xl p-6 text-center text-gray-500 text-sm">
-            Kein Mitglied gefunden
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {sorted.map(member => {
-              const status   = getMemberStatus(member);
-              const progress = getBlockProgress(member.id, member.currentLevel);
-
-              return (
-                <div
-                  key={member.id}
-                  className={`bg-gray-800/50 rounded-xl border transition-all ${
-                    status === 'training'
-                      ? 'border-orange-500/30'
-                      : status === 'online'
-                      ? 'border-green-500/20'
-                      : 'border-gray-700'
-                  }`}
-                >
-                  {/* Hauptzeile */}
-                  <div className="px-4 py-3 flex items-center gap-3">
-                    <StatusDot status={status} />
-                    <span className="text-2xl flex-shrink-0">{member.avatar}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-white font-semibold text-sm">{member.name}</span>
-                        <span className={`text-xs ${LEVEL_DISPLAY[member.currentLevel].color}`}>
-                          {LEVEL_DISPLAY[member.currentLevel].icon} {LEVEL_DISPLAY[member.currentLevel].subtitle}
-                        </span>
-                        <span className="text-gray-600 text-xs">{progress.completed} Techniken</span>
-                      </div>
-                      <div className="mt-0.5">{statusLabel(status)}</div>
-                    </div>
-                    {/* Aktionen */}
-                    <div className="flex gap-1.5 flex-shrink-0">
-                      <button
-                        onClick={() => awardBandaid(member.id, 'Instructor Bonus')}
-                        className="bg-gray-700/60 hover:bg-gray-700 text-gray-300 px-2.5 py-1.5 rounded-lg text-xs transition-all"
-                        title="Pflaster vergeben"
-                      >
-                        🩹+
-                      </button>
-                      <button
-                        onClick={() => setProfileMember(member)}
-                        className="bg-gray-700/60 hover:bg-gray-700 text-gray-300 px-2.5 py-1.5 rounded-lg text-xs transition-all"
-                        title="Profil anzeigen"
-                      >
-                        👤
-                      </button>
-                      <button
-                        onClick={() => { setSelectedMember(member); setActiveTab('evaluate'); }}
-                        className="bg-blue-600/80 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                      >
-                        Bewerten
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Detail-Zeile */}
-                  <div className="px-4 pb-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500 border-t border-gray-700/40 pt-2">
-                    <span>
-                      <span className="text-gray-600">Zuletzt online:</span>{' '}
-                      <span className="text-gray-400">{formatDateTime(member.lastSeenAt)}</span>
-                    </span>
-                    <span>
-                      <span className="text-gray-600">Letztes Training:</span>{' '}
-                      <span className="text-gray-400">{formatDateTime(member.streak.lastTrainingDate)}</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      🔥 <span className="text-gray-400">{member.streak.currentStreak} Wochen</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      🩹 <span className="text-gray-400">{member.streak.bandaids}/{member.streak.maxBandaids}</span>
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   // Render Requests Tab
   const renderRequestsTab = () => {
@@ -1236,49 +1215,242 @@ export const InstructorView: React.FC = () => {
   };
 
   // Render Board Tab
-  const renderBoardTab = () => (
-    <div className="space-y-6">
-      {/* New Message */}
-      <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-        <textarea
-          value={boardMessageText}
-          onChange={(e) => setBoardMessageText(e.target.value)}
-          placeholder="Nachricht an alle Instructors..."
-          className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600 resize-none"
-          rows={3}
-        />
-        <button
-          onClick={() => {
-            if (boardMessageText.trim()) {
-              sendBoardMessage(boardMessageText);
-              setBoardMessageText('');
-            }
-          }}
-          className="mt-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium"
-        >
-          Senden
-        </button>
-      </div>
+  const renderBoardTab = () => {
+    const instructorRoles: InstructorRole[] = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'owner', 'admin'];
+    const allInstructors = members.filter(m => instructorRoles.includes(m.role) && m.id !== currentUser!.id);
+    const filteredInstructors = allInstructors.filter(m =>
+      m.name.toLowerCase().includes(boardMemberSearch.toLowerCase())
+    );
 
-      {/* Messages */}
+    const ROLE_GROUPS: { id: InstructorRole; label: string }[] = [
+      { id: 'assistant_instructor', label: 'Assistent' },
+      { id: 'instructor', label: 'Instructor' },
+      { id: 'full_instructor', label: 'Full Instructor' },
+      { id: 'head_instructor', label: 'Head Instructor' },
+      { id: 'owner', label: 'Owner' },
+      { id: 'admin', label: 'Admin' },
+    ];
+
+    const toggleRole = (role: InstructorRole) =>
+      setBoardTargetRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
+
+    const toggleMember = (id: string) =>
+      setBoardTargetMemberIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+    const hasTargets = boardTargetType === 'roles'
+      ? boardTargetRoles.length > 0
+      : boardTargetType === 'members'
+      ? boardTargetMemberIds.length > 0
+      : false;
+
+    const targetSummary = (): string => {
+      if (boardTargetType === 'none') return 'Alle Instructors';
+      if (boardTargetType === 'roles') {
+        if (boardTargetRoles.length === 0) return 'Keine Rollen gewählt';
+        return boardTargetRoles.map(r => ROLE_GROUPS.find(g => g.id === r)?.label ?? r).join(', ');
+      }
+      if (boardTargetMemberIds.length === 0) return 'Keine Personen gewählt';
+      return boardTargetMemberIds.map(id => members.find(m => m.id === id)?.name ?? id).join(', ');
+    };
+
+    const notifCount = boardTargetType === 'roles'
+      ? allInstructors.filter(m => boardTargetRoles.includes(m.role)).length
+      : boardTargetType === 'members'
+      ? boardTargetMemberIds.length
+      : 0;
+
+    // Sichtbarkeit: restricted = nur Targets sehen die Nachricht
+    const canSeeMessage = (msg: typeof boardMessages[0]): boolean => {
+      if (msg.visibility === 'restricted') {
+        if (msg.authorId === currentUser!.id) return true;
+        if (msg.targetType === 'roles' && msg.targetRoles) return msg.targetRoles.includes(currentUser!.role);
+        if (msg.targetType === 'members' && msg.targetMemberIds) return msg.targetMemberIds.includes(currentUser!.id);
+        return false;
+      }
+      return true;
+    };
+
+    const visibleMessages = boardMessages.filter(canSeeMessage).slice().reverse();
+
+    const handleSend = () => {
+      if (!boardMessageText.trim()) return;
+      sendBoardMessage(
+        boardMessageText,
+        boardVisibility,
+        boardTargetType,
+        boardTargetType === 'roles' ? boardTargetRoles : undefined,
+        boardTargetType === 'members' ? boardTargetMemberIds : undefined,
+      );
+      setBoardMessageText('');
+      setBoardVisibility('public');
+      setBoardTargetType('none');
+      setBoardTargetRoles([]);
+      setBoardTargetMemberIds([]);
+      setBoardMemberSearch('');
+    };
+
+    return (
       <div className="space-y-4">
-        {boardMessages.slice().reverse().map(msg => (
-          <div key={msg.id} className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className={`text-sm px-2 py-1 rounded ${ROLE_DISPLAY[msg.authorRole].bgColor} ${ROLE_DISPLAY[msg.authorRole].color}`}>
-                  {ROLE_DISPLAY[msg.authorRole].label}
-                </span>
-                <span className="text-white font-medium">{msg.authorName}</span>
+        {/* ── Verfassen ──────────────────────────────────────────────────── */}
+        <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+          <div className="p-4 space-y-3">
+            <textarea
+              value={boardMessageText}
+              onChange={e => setBoardMessageText(e.target.value)}
+              placeholder="Nachricht verfassen…"
+              rows={3}
+              className="w-full bg-gray-700/60 text-white rounded-lg p-3 border border-gray-600 resize-none focus:outline-none focus:border-gray-500 text-sm"
+            />
+
+            {/* Sichtbarkeit */}
+            <div>
+              <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-1.5">Sichtbarkeit</div>
+              <div className="flex gap-2">
+                {(['public', 'restricted'] as const).map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setBoardVisibility(v)}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                      boardVisibility === v ? 'bg-gray-700 border-gray-500 text-white' : 'bg-gray-800/50 border-gray-700 text-gray-500 hover:text-gray-300'
+                    }`}
+                  >
+                    {v === 'public' ? '🌐 Alle können lesen' : '🔒 Nur Ausgewählte'}
+                  </button>
+                ))}
               </div>
-              <span className="text-gray-500 text-sm">{formatTimeAgo(msg.createdAt)}</span>
             </div>
-            <p className="text-gray-300">{msg.content}</p>
+
+            {/* Benachrichtigung */}
+            <div>
+              <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-1.5">Benachrichtigung</div>
+              <div className="flex gap-2 mb-2">
+                {([
+                  { id: 'none', label: 'Keine' },
+                  { id: 'roles', label: 'Nach Rang' },
+                  { id: 'members', label: 'Nach Name' },
+                ] as { id: typeof boardTargetType; label: string }[]).map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => { setBoardTargetType(t.id); setBoardTargetRoles([]); setBoardTargetMemberIds([]); }}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                      boardTargetType === t.id ? 'bg-gray-700 border-gray-500 text-white' : 'bg-gray-800/50 border-gray-700 text-gray-500 hover:text-gray-300'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Nach Rang */}
+              {boardTargetType === 'roles' && (
+                <div className="flex flex-wrap gap-1.5">
+                  {ROLE_GROUPS.map(g => (
+                    <button
+                      key={g.id}
+                      onClick={() => toggleRole(g.id)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
+                        boardTargetRoles.includes(g.id)
+                          ? 'bg-red-600 border-red-500 text-white'
+                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      {g.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Nach Name */}
+              {boardTargetType === 'members' && (
+                <div className="space-y-1.5">
+                  <input
+                    type="text"
+                    value={boardMemberSearch}
+                    onChange={e => setBoardMemberSearch(e.target.value)}
+                    placeholder="Person suchen…"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
+                  />
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {filteredInstructors.map(m => (
+                      <button
+                        key={m.id}
+                        onClick={() => toggleMember(m.id)}
+                        className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-all border ${
+                          boardTargetMemberIds.includes(m.id)
+                            ? 'bg-red-600/20 border-red-500/40 text-white'
+                            : 'bg-gray-800/50 border-gray-700/50 text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 ${boardTargetMemberIds.includes(m.id) ? 'bg-red-600 border-red-500' : 'border-gray-500'}`}>
+                          {boardTargetMemberIds.includes(m.id) && <span className="text-white text-[8px] font-bold">✓</span>}
+                        </span>
+                        <span>{m.avatar} {m.name}</span>
+                        <span className={`ml-auto text-[10px] ${ROLE_DISPLAY[m.role].color}`}>{ROLE_DISPLAY[m.role].label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Zusammenfassung + Senden */}
+            <div className="flex items-center justify-between pt-1 border-t border-gray-700/50">
+              <div className="text-xs text-gray-600 leading-tight">
+                <div>{boardVisibility === 'public' ? '🌐 Alle sehen' : '🔒 Nur Ausgewählte'}</div>
+                {boardTargetType !== 'none' && hasTargets && (
+                  <div className="text-gray-500">🔔 {notifCount} Benachrichtigung{notifCount !== 1 ? 'en' : ''} → {targetSummary()}</div>
+                )}
+                {boardTargetType !== 'none' && !hasTargets && (
+                  <div className="text-gray-600">🔔 Niemand ausgewählt</div>
+                )}
+              </div>
+              <button
+                onClick={handleSend}
+                disabled={!boardMessageText.trim()}
+                className="bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white px-5 py-2 rounded-lg font-semibold text-sm transition-all"
+              >
+                Senden
+              </button>
+            </div>
           </div>
-        ))}
+        </div>
+
+        {/* ── Nachrichten ────────────────────────────────────────────────── */}
+        <div className="space-y-3">
+          {visibleMessages.length === 0 ? (
+            <div className="bg-gray-800/30 rounded-xl p-6 text-center text-gray-500 text-sm border border-gray-700/30">
+              Keine sichtbaren Nachrichten
+            </div>
+          ) : visibleMessages.map(msg => {
+            const isRestricted = msg.visibility === 'restricted';
+            const targetInfo = msg.targetType === 'roles' && msg.targetRoles?.length
+              ? msg.targetRoles.map(r => ROLE_GROUPS.find(g => g.id === r)?.label ?? r).join(', ')
+              : msg.targetType === 'members' && msg.targetMemberIds?.length
+              ? msg.targetMemberIds.map(id => members.find(m => m.id === id)?.name ?? id).join(', ')
+              : null;
+            return (
+              <div key={msg.id} className={`bg-gray-800/50 rounded-xl p-4 border ${isRestricted ? 'border-gray-600' : 'border-gray-700'}`}>
+                <div className="flex items-start justify-between mb-2 gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-xs px-2 py-0.5 rounded ${ROLE_DISPLAY[msg.authorRole].bgColor} ${ROLE_DISPLAY[msg.authorRole].color}`}>
+                      {ROLE_DISPLAY[msg.authorRole].label}
+                    </span>
+                    <span className="text-white font-medium text-sm">{msg.authorName}</span>
+                    {isRestricted && <span className="text-[10px] text-gray-500 bg-gray-700/50 px-1.5 py-0.5 rounded">🔒 Eingeschränkt</span>}
+                    {targetInfo && (
+                      <span className="text-[10px] text-gray-500 bg-gray-700/50 px-1.5 py-0.5 rounded">🔔 {targetInfo}</span>
+                    )}
+                  </div>
+                  <span className="text-gray-500 text-xs flex-shrink-0">{formatTimeAgo(msg.createdAt)}</span>
+                </div>
+                <p className="text-gray-300 text-sm leading-relaxed">{msg.content}</p>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Render Admin Tab
   const renderAdminTab = () => {
@@ -1694,6 +1866,47 @@ export const InstructorView: React.FC = () => {
             setShowBulkImport(false);
           };
 
+          // Quiz CSV-Import: Frage[sep]A[sep]B[sep]C[sep]D[sep]Richtige(0-3|A-D)[sep]Erklärung
+          const parseQuizBulk = (raw: string) => {
+            return raw
+              .split('\n')
+              .map(l => l.trim())
+              .filter(Boolean)
+              .map(line => {
+                // Tab (Excel) oder Semikolon als Trennzeichen
+                const sep = line.includes('\t') ? '\t' : ';';
+                const parts = line.split(sep).map(p => p.trim());
+                if (parts.length < 6) return null;
+                const [question, a, b, c, d, rawCorrect, ...explanationParts] = parts;
+                const options = [a, b, c, d];
+                if (!question || options.some(o => !o)) return null;
+                let correctIndex = parseInt(rawCorrect, 10);
+                if (isNaN(correctIndex)) {
+                  // A/B/C/D → 0/1/2/3
+                  correctIndex = 'ABCD'.indexOf(rawCorrect.toUpperCase());
+                }
+                if (correctIndex < 0 || correctIndex > 3) return null;
+                return { question, options, correctIndex, explanation: explanationParts.join(sep).trim() };
+              })
+              .filter((q): q is NonNullable<typeof q> => q !== null);
+          };
+
+          const handleQuizBulkPreview = () => {
+            setQuizBulkPreview(parseQuizBulk(quizBulkImportText));
+          };
+
+          const handleQuizBulkImport = async () => {
+            if (!contentModuleId) return;
+            const parsed = parseQuizBulk(quizBulkImportText);
+            const startPos = moduleQuestions.length;
+            for (let i = 0; i < parsed.length; i++) {
+              await saveQuizQuestion({ id: '', moduleId: contentModuleId, ...parsed[i], position: startPos + i });
+            }
+            setQuizBulkImportText('');
+            setQuizBulkPreview([]);
+            setShowQuizBulkImport(false);
+          };
+
           const handleQuizCountChange = async (val: number) => {
             if (!contentModuleId) return;
             setContentQuizCount(val);
@@ -1873,7 +2086,54 @@ export const InstructorView: React.FC = () => {
                         </div>
                       </div>
 
-                      <button onClick={() => openEditQuestion('new')} className="w-full text-xs bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg">+ Neue Frage</button>
+                      <div className="flex gap-2">
+                        <button onClick={() => openEditQuestion('new')} className="flex-1 text-xs bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg">+ Neue Frage</button>
+                        <button onClick={() => { setShowQuizBulkImport(v => !v); setQuizBulkPreview([]); setQuizBulkImportText(''); }} className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 py-2 px-3 rounded-lg">Bulk</button>
+                      </div>
+
+                      {showQuizBulkImport && (
+                        <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700 space-y-2">
+                          <p className="text-gray-500 text-xs leading-relaxed">
+                            Aus Excel einfügen oder manuell eingeben.<br />
+                            Format pro Zeile: <span className="text-gray-300 font-mono">Frage; A; B; C; D; Richtige(0-3); Erklärung</span><br />
+                            Tab-getrennt (direktes Excel-Kopieren) wird automatisch erkannt.
+                          </p>
+                          <textarea
+                            value={quizBulkImportText}
+                            onChange={e => { setQuizBulkImportText(e.target.value); setQuizBulkPreview([]); }}
+                            rows={6}
+                            placeholder={"Was ist die Centerline-Theorie?;Abstand halten;Die direkte Linie zum Gegner;Seitliche Bewegung;Atem-Kontrolle;1;Die Centerline verbindet...\nWelche Kampfstellung nutzt JKD?;Neutral;Fighting Stance;Boxer Guard;Sumo;1;"}
+                            className="w-full bg-gray-800 text-white text-xs rounded px-2 py-2 border border-gray-600 resize-none font-mono focus:outline-none focus:border-gray-500"
+                          />
+
+                          {/* Vorschau */}
+                          {quizBulkPreview.length > 0 && (
+                            <div className="space-y-1.5">
+                              <div className="text-gray-400 text-xs font-semibold">{quizBulkPreview.length} Fragen erkannt:</div>
+                              {quizBulkPreview.slice(0, 3).map((q, i) => (
+                                <div key={i} className="bg-gray-800 rounded px-2 py-1.5 border border-gray-700">
+                                  <div className="text-gray-200 text-xs truncate">{q.question}</div>
+                                  <div className="text-gray-500 text-xs">✓ {q.options[q.correctIndex]}</div>
+                                </div>
+                              ))}
+                              {quizBulkPreview.length > 3 && (
+                                <div className="text-gray-600 text-xs">… und {quizBulkPreview.length - 3} weitere</div>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="flex gap-2">
+                            {quizBulkPreview.length === 0 ? (
+                              <button onClick={handleQuizBulkPreview} disabled={!quizBulkImportText.trim()} className="flex-1 text-xs bg-gray-600 hover:bg-gray-500 disabled:bg-gray-800 disabled:text-gray-600 text-white py-1.5 rounded-lg">Vorschau</button>
+                            ) : (
+                              <button onClick={handleQuizBulkImport} className="flex-1 text-xs bg-green-700 hover:bg-green-600 text-white py-1.5 rounded-lg">
+                                {quizBulkPreview.length} Fragen importieren
+                              </button>
+                            )}
+                            <button onClick={() => { setShowQuizBulkImport(false); setQuizBulkImportText(''); setQuizBulkPreview([]); }} className="text-xs text-gray-400 py-1.5 px-3">Abbrechen</button>
+                          </div>
+                        </div>
+                      )}
 
                       {editingQuestionId === 'new' && (
                         <div className="bg-gray-700/50 rounded-lg p-3 border border-gray-600 space-y-2">
@@ -1943,13 +2203,16 @@ export const InstructorView: React.FC = () => {
   };
 
   // Tab configuration
+  const unreadBoardNotifs = currentUser
+    ? notifications.filter(n => n.type === 'board' && n.oduserId === currentUser.id && !n.read).length
+    : 0;
+
   const allTabs: { id: Tab; label: string; icon: string; badge?: number }[] = [
     { id: 'lernen' as Tab, label: 'Lernen', icon: '📚' },
-    { id: 'live' as Tab, label: 'Live', icon: '📍' },
+    { id: 'community' as Tab, label: 'Community', icon: '👥' },
     { id: 'evaluate' as Tab, label: 'Bewerten', icon: '✏️' },
-    { id: 'members' as Tab, label: 'Mitglieder', icon: '👥' },
     { id: 'requests' as Tab, label: 'Anfragen', icon: '🟡', badge: pendingCheckIns.length + pendingExamRequests.length + pendingWishes.length },
-    { id: 'board' as Tab, label: 'Board', icon: '💬' },
+    { id: 'board' as Tab, label: 'Board', icon: '💬', badge: unreadBoardNotifs },
     { id: 'admin' as Tab, label: 'Admin', icon: '🔐' },
   ];
   const tabs = allTabs.filter(tab => canAccessTab(tab.id));
@@ -1959,9 +2222,8 @@ export const InstructorView: React.FC = () => {
       {/* Content */}
       <main className="max-w-6xl mx-auto p-4 pb-24">
         {activeTab === 'lernen' && <InstructorLearningView />}
-        {activeTab === 'live' && renderLiveTab()}
+        {activeTab === 'community' && renderCommunityTab()}
         {activeTab === 'evaluate' && renderEvaluateTab()}
-        {activeTab === 'members' && renderMembersTab()}
         {activeTab === 'requests' && renderRequestsTab()}
         {activeTab === 'board' && renderBoardTab()}
         {activeTab === 'admin' && renderAdminTab()}

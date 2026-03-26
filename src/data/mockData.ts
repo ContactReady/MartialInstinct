@@ -173,7 +173,9 @@ export const BOARD_MESSAGES: BoardMessage[] = [
     authorName: 'Jay',
     authorRole: 'admin',
     content: 'Willkommen im neuen System! Bitte Zugangsdaten in den Einstellungen prüfen.',
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    visibility: 'public',
+    targetType: 'none'
   }
 ];
 

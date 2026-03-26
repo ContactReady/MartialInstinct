@@ -4,6 +4,7 @@
 // ============================================
 
 import React, { useState } from 'react';
+import { CertificateView } from './CertificateView';
 import { ChevronLeft, Star, Zap, BookOpen, Trophy, ChevronDown, ChevronRight } from 'lucide-react';
 import { useApp, BLOCKS } from '../../context/AppContext';
 import { QuizEngine } from '../shared/QuizEngine';
@@ -160,6 +161,7 @@ export const MemberLearningView: React.FC = () => {
   const [showQuiz, setShowQuiz] = useState(false);
   const [learningTab, setLearningTab] = useState<'theorie' | 'praxis'>('theorie');
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+  const [showCertificate, setShowCertificate] = useState(false);
 
   if (!currentUser) return null;
 
@@ -532,6 +534,19 @@ export const MemberLearningView: React.FC = () => {
           })}
         </div>
       )}
+
+      {/* ── Certificate Button (immer sichtbar unten) ────────────────────── */}
+      <div className="px-4 pb-24 pt-2">
+        <button
+          onClick={() => setShowCertificate(true)}
+          className="w-full py-3 bg-gray-800/60 hover:bg-gray-700/60 border border-gray-700 hover:border-gray-500 text-gray-300 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2"
+        >
+          🏅 Trainingsnachweis herunterladen
+        </button>
+      </div>
+
+      {/* Certificate Overlay */}
+      {showCertificate && <CertificateView onClose={() => setShowCertificate(false)} />}
     </div>
   );
 };

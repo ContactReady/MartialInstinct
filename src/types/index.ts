@@ -265,6 +265,12 @@ export interface Member {
   // XP (Erfahrungspunkte aus Quiz-Sessions)
   xp?: number;
 
+  // Benachrichtigungs-Einstellungen
+  notificationPrefs?: {
+    sound: boolean;
+    email: boolean; // Präferenz gespeichert — Versand benötigt Backend
+  };
+
   // Member-Quiz-Fortschritt (moduleId → letzte Session)
   quizProgress?: Record<string, MemberQuizProgress>;
 }
@@ -398,7 +404,7 @@ export interface CheckIn {
 export interface Notification {
   id: string;
   oduserId: string;
-  type: 'exam_result' | 'exam_request' | 'checkin' | 'certificate' | 'application' | 'system' | 'bandaid';
+  type: 'exam_result' | 'exam_request' | 'checkin' | 'certificate' | 'application' | 'system' | 'bandaid' | 'board';
   title: string;
   message: string;
   read: boolean;
@@ -431,6 +437,11 @@ export interface BoardMessage {
   content: string;
   createdAt: Date;
   locationId?: string;
+  // Sichtbarkeit & Targeting
+  visibility: 'public' | 'restricted'; // public = alle sehen, restricted = nur Ausgewählte
+  targetType: 'none' | 'roles' | 'members'; // Benachrichtigungs-Zielgruppe
+  targetRoles?: InstructorRole[];
+  targetMemberIds?: string[];
 }
 
 // Classroom Video
