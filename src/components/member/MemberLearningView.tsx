@@ -288,15 +288,40 @@ export const MemberLearningView: React.FC = () => {
   }
 
   // ── Praxis-Tab Hilfsfunktionen ───────────────────────────────────────────
+
+  // Tactics (technisch): Technik hat tech_passed ODER tac_passed
+  const isTacticsDone = (techniqueId: string): boolean => {
+    const s = currentUser.techniqueProgress[techniqueId]?.status;
+    return s === 'tech_passed' || s === 'tac_passed';
+  };
+
+  // Combat (anwendungsorientiert): Technik hat tac_passed
+  const isCombatDone = (techniqueId: string): boolean =>
+    currentUser.techniqueProgress[techniqueId]?.status === 'tac_passed';
+
+  // Techniken gesamt taktisch bestanden (für Header)
   const getTechniquesDone = (moduleId: string): number =>
-    getTechniquesForModule(moduleId).filter(t => {
-      const s = currentUser.techniqueProgress[t.id]?.status;
-      return s === 'tech_passed' || s === 'tac_passed';
-    }).length;
+    getTechniquesForModule(moduleId).filter(t => isTacticsDone(t.id)).length;
+
+  // Modul: alle required Techniken taktisch bestanden?
+  const isModuleTacticsDone = (moduleId: string): boolean => {
+    const techs = getTechniquesForModule(moduleId).filter(t => t.isRequired);
+    return techs.length > 0 && techs.every(t => isTacticsDone(t.id));
+  };
+
+  // Modul: alle required Techniken anwendungsorientiert bestanden?
+  const isModuleCombatDone = (moduleId: string): boolean => {
+    const techs = getTechniquesForModule(moduleId).filter(t => t.isRequired);
+    return techs.length > 0 && techs.every(t => isCombatDone(t.id));
+  };
 
   const totalTechniquesDone = orderedModules.reduce((sum, m) => sum + getTechniquesDone(m.id), 0);
   const totalTechniques = orderedModules.reduce((sum, m) => sum + getTechniquesForModule(m.id).length, 0);
   const totalPct = totalTechniques > 0 ? Math.round((totalTechniquesDone / totalTechniques) * 100) : 0;
+
+  const modulesTotal = orderedModules.length;
+  const modulesTacticsDone = orderedModules.filter(m => isModuleTacticsDone(m.id)).length;
+  const modulesCombatDone = orderedModules.filter(m => isModuleCombatDone(m.id)).length;
 
   // Main overview
   return (
@@ -376,45 +401,93 @@ export const MemberLearningView: React.FC = () => {
       {/* ── PRAXIS ──────────────────────────────────────────────────────── */}
       {learningTab === 'praxis' && (
         <div className="px-4 py-4 space-y-4">
-          {/* Gesamtfortschritt */}
-          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-bold text-white">Gesamtfortschritt</span>
-              <span className="text-sm font-bold text-white">{totalTechniquesDone}<span className="text-gray-500 font-normal">/{totalTechniques}</span></span>
+
+          {/* ── Fortschritts-Header ── */}
+          <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+            {/* Techniken-Zeile */}
+            <div className="px-4 pt-4 pb-3 border-b border-gray-700/50">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Techniken</span>
+                <span className="text-white font-black text-lg leading-none">
+                  {totalTechniquesDone}
+                  <span className="text-gray-500 font-normal text-sm">/{totalTechniques}</span>
+                </span>
+              </div>
+              <div className="bg-gray-900/70 rounded-full h-2">
+                <div className="bg-red-500 h-2 rounded-full transition-all" style={{ width: `${totalPct}%` }} />
+              </div>
+              <p className="text-gray-600 text-xs mt-1">{totalPct}% taktisch abgeschlossen</p>
             </div>
-            <div className="bg-gray-900/50 rounded-full h-2">
-              <div className="bg-red-500 h-2 rounded-full transition-all" style={{ width: `${totalPct}%` }} />
+
+            {/* Module Tactics / Combat */}
+            <div className="grid grid-cols-2 divide-x divide-gray-700/50">
+              {/* Tactics */}
+              <div className="px-4 py-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
+                  <span className="text-xs text-blue-400 font-semibold">TACTICS</span>
+                  <span className="text-gray-500 text-xs ml-auto">{modulesTacticsDone}/{modulesTotal}</span>
+                </div>
+                <div className="bg-gray-900/70 rounded-full h-1.5">
+                  <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: modulesTotal > 0 ? `${Math.round((modulesTacticsDone / modulesTotal) * 100)}%` : '0%' }} />
+                </div>
+                <p className="text-gray-600 text-xs mt-1">Technisch bestätigt</p>
+              </div>
+
+              {/* Combat */}
+              <div className="px-4 py-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />
+                  <span className="text-xs text-orange-400 font-semibold">COMBAT</span>
+                  <span className="text-gray-500 text-xs ml-auto">{modulesCombatDone}/{modulesTotal}</span>
+                </div>
+                <div className="bg-gray-900/70 rounded-full h-1.5">
+                  <div className="bg-orange-500 h-1.5 rounded-full transition-all" style={{ width: modulesTotal > 0 ? `${Math.round((modulesCombatDone / modulesTotal) * 100)}%` : '0%' }} />
+                </div>
+                <p className="text-gray-600 text-xs mt-1">Anwendungsorientiert</p>
+              </div>
             </div>
-            <p className="text-gray-500 text-xs mt-2">{totalPct}% der Techniken technisch bestanden</p>
           </div>
 
-          {/* Module als Akkordeon — geordnet nach Admin-Reihenfolge */}
+          {/* ── Module als Akkordeon ── */}
           {orderedModules.map(module => {
             const techniques = getTechniquesForModule(module.id);
             const done = getTechniquesDone(module.id);
             const total = techniques.length;
             const pct = total > 0 ? Math.round((done / total) * 100) : 0;
             const isOpen = expandedModules.has(module.id);
+            const tacticsDone = isModuleTacticsDone(module.id);
+            const combatDone = isModuleCombatDone(module.id);
 
             return (
               <div key={module.id} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
-                {/* Header */}
                 <button
                   onClick={() => toggleModule(module.id)}
-                  className="w-full flex items-center gap-3 p-4 hover:bg-gray-700/30 transition-colors"
+                  className="w-full flex items-center gap-3 p-3.5 hover:bg-gray-700/30 transition-colors"
                 >
                   <span className="text-xl flex-shrink-0">{module.icon}</span>
                   <div className="flex-1 min-w-0 text-left">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-white font-semibold text-sm">{module.name}</span>
-                      {done === total && <span className="text-green-400 text-xs">✓ Alle bestanden</span>}
                     </div>
-                    <div className="mt-1.5 bg-gray-900/50 rounded-full h-1.5 w-full">
+                    <div className="bg-gray-900/50 rounded-full h-1.5 w-full">
                       <div className="h-1.5 rounded-full transition-all bg-red-500" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-gray-400 text-xs">{done}/{total}</span>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {/* Tactics Badge */}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border transition-all ${
+                      tacticsDone
+                        ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
+                        : 'bg-gray-800 border-gray-700 text-gray-600'
+                    }`}>T</span>
+                    {/* Combat Badge */}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border transition-all ${
+                      combatDone
+                        ? 'bg-orange-500/20 border-orange-500/50 text-orange-400'
+                        : 'bg-gray-800 border-gray-700 text-gray-600'
+                    }`}>C</span>
+                    <span className="text-gray-500 text-xs ml-1">{done}/{total}</span>
                     {isOpen
                       ? <ChevronDown className="w-4 h-4 text-gray-400" />
                       : <ChevronRight className="w-4 h-4 text-gray-400" />
@@ -426,19 +499,29 @@ export const MemberLearningView: React.FC = () => {
                 {isOpen && (
                   <div className="border-t border-gray-700/50 divide-y divide-gray-700/30">
                     {techniques.map(technique => {
-                      const progress = currentUser.techniqueProgress[technique.id];
-                      const { label, color, bg } = getPraxisStatus(progress);
+                      const tp = currentUser.techniqueProgress[technique.id];
+                      const { label, color, bg } = getPraxisStatus(tp);
+                      const tDone = isTacticsDone(technique.id);
+                      const cDone = isCombatDone(technique.id);
                       return (
-                        <div key={technique.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                          <div className="min-w-0">
+                        <div key={technique.id} className="flex items-center gap-3 px-4 py-3">
+                          <div className="min-w-0 flex-1">
                             <div className="text-gray-200 text-sm">{technique.name}</div>
-                            {progress?.practiceCount ? (
-                              <div className="text-gray-600 text-xs">{progress.practiceCount}× trainiert</div>
+                            {tp?.practiceCount ? (
+                              <div className="text-gray-600 text-xs">{tp.practiceCount}× trainiert</div>
                             ) : null}
                           </div>
-                          <span className={`text-xs px-2 py-1 rounded-lg border flex-shrink-0 font-medium ${color} ${bg}`}>
-                            {label}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${
+                              tDone ? 'bg-blue-500/20 border-blue-500/40 text-blue-400' : 'bg-gray-800 border-gray-700 text-gray-600'
+                            }`}>T</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${
+                              cDone ? 'bg-orange-500/20 border-orange-500/40 text-orange-400' : 'bg-gray-800 border-gray-700 text-gray-600'
+                            }`}>C</span>
+                            <span className={`text-xs px-2 py-1 rounded-lg border font-medium ${color} ${bg}`}>
+                              {label}
+                            </span>
+                          </div>
                         </div>
                       );
                     })}
