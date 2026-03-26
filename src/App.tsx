@@ -28,9 +28,7 @@ const JoinRequestForm: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
       <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md border border-gray-800">
         <div className="text-center mb-8">
-          <div className="bg-white rounded-xl px-5 py-2.5 inline-block mb-4">
-            <img src="/logos/mi-logo-landscape-light.svg" alt="Martial Instinct" className="h-10 object-contain" onError={e => { (e.target as HTMLImageElement).src = '/logos/mi-logo-light.jpg'; }} />
-          </div>
+          <img src="/logos/mi-logo-landscape-dark.svg" alt="Martial Instinct" className="h-16 w-auto mx-auto mb-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           <h1 className="text-white font-black text-xl tracking-wide">Mitglied werden</h1>
           <p className="text-gray-500 text-sm mt-1">Deine Anfrage geht direkt an uns</p>
         </div>
