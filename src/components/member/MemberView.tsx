@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { MemberTabId } from '../../types';
 import { BLOCKS } from '../../data/modules';
 import { LEVEL_DISPLAY } from '../../types';
 import { MemberLearningView } from './MemberLearningView';
@@ -25,7 +26,8 @@ export const MemberView: React.FC = () => {
     isBlockUnlocked,
     submitContactApplication,
     submitInstructorApplication,
-    getSessionsForMember
+    getSessionsForMember,
+    tabConfig,
   } = useApp();
   
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -909,26 +911,28 @@ export const MemberView: React.FC = () => {
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800">
         <div className="max-w-4xl mx-auto flex">
-          {[
+          {([
             { id: 'dashboard' as Tab, icon: '🏠', label: 'Dashboard' },
             { id: 'lernen' as Tab, icon: '🎓', label: 'Lernen' },
             { id: 'progress' as Tab, icon: '🏆', label: 'Rang' },
             { id: 'requests' as Tab, icon: '📝', label: 'Anfragen' },
             { id: 'profil' as Tab, icon: '👤', label: 'Profil' },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-              }}
-              className={`flex-1 py-4 flex flex-col items-center gap-1 transition-colors ${
-                activeTab === tab.id ? 'text-red-500' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <span className="text-xl">{tab.icon}</span>
-              <span className="text-xs">{tab.label}</span>
-            </button>
-          ))}
+          ] as { id: Tab; icon: string; label: string }[]).map(tab => {
+            const tabEnabled = tabConfig.memberTabs[tab.id as MemberTabId] !== false;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => { if (tabEnabled) setActiveTab(tab.id); }}
+                className={`flex-1 py-4 flex flex-col items-center gap-1 transition-colors ${
+                  !tabEnabled ? 'opacity-30 cursor-not-allowed'
+                    : activeTab === tab.id ? 'text-red-500' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <span className="text-xl">{tab.icon}</span>
+                <span className="text-xs">{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
       </nav>
 

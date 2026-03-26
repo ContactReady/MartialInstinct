@@ -8,6 +8,7 @@ import {
   Badge,
   CheckIn,
   BoardMessage,
+  BoardReply,
   Notification,
   TechniqueStatus,
   TechniqueProgress,
@@ -26,7 +27,12 @@ import {
   ModuleOrder,
   ContentTechnique,
   ModuleSettings,
-  QuizQuestion
+  QuizQuestion,
+  RolePermissions,
+  PermissionsConfig,
+  DEFAULT_PERMISSIONS,
+  PlatformTabConfig,
+  DEFAULT_TAB_CONFIG,
 } from '../types';
 import { MODULE_QUIZ_DATA } from '../data/memberQuizData';
 import { supabase } from '../lib/supabase';
@@ -93,8 +99,20 @@ interface AppContextType {
     targetRoles?: InstructorRole[],
     targetMemberIds?: string[]
   ) => void;
+  addBoardReply: (messageId: string, content: string) => void;
+  markBoardMessageRead: (messageId: string) => void;
+  sendReadReminder: (messageId: string, memberId: string) => void;
   updateNotificationPrefs: (prefs: { sound: boolean; email: boolean }) => void;
-  
+
+  // Rechte-Matrix
+  permissionsConfig: PermissionsConfig;
+  updatePermissionsConfig: (config: PermissionsConfig) => void;
+  hasPermission: (permission: keyof RolePermissions) => boolean;
+
+  // Tab-Verwaltung
+  tabConfig: PlatformTabConfig;
+  updateTabConfig: (config: PlatformTabConfig) => void;
+
   // Notifications
   markNotificationRead: (notificationId: string) => void;
   clearNotifications: () => void;
@@ -192,6 +210,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [contentTechniques, setContentTechniques] = useState<ContentTechnique[]>([]);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [moduleSettings, setModuleSettings] = useState<Record<string, ModuleSettings>>({});
+  const [permissionsConfig, setPermissionsConfig] = useState<PermissionsConfig>(() => {
+    try {
+      const saved = localStorage.getItem('mi-permissions-config');
+      return saved ? JSON.parse(saved) : DEFAULT_PERMISSIONS;
+    } catch { return DEFAULT_PERMISSIONS; }
+  });
+  const [tabConfig, setTabConfig] = useState<PlatformTabConfig>(() => {
+    try {
+      const saved = localStorage.getItem('mi-tab-config');
+      return saved ? JSON.parse(saved) : DEFAULT_TAB_CONFIG;
+    } catch { return DEFAULT_TAB_CONFIG; }
+  });
 
   // Beim Start: Modulreihenfolge aus Supabase laden
   // SQL: CREATE TABLE module_order (module_id text PRIMARY KEY, block_level text NOT NULL, position integer NOT NULL);
@@ -965,20 +995,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       targetType,
       ...(targetRoles && targetRoles.length > 0 ? { targetRoles } : {}),
       ...(targetMemberIds && targetMemberIds.length > 0 ? { targetMemberIds } : {}),
+      readBy: [currentUser.id], // Autor hat es "gelesen"
+      replies: [],
     };
 
     setBoardMessages(prev => [...prev, newMessage]);
 
-    // Benachrichtigungen für Zielgruppe erstellen
-    if (targetType !== 'none') {
-      const instructorRoles: InstructorRole[] = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'admin'];
-      const allInstructors = members.filter(m => instructorRoles.includes(m.role) && m.id !== currentUser.id);
-      let recipients: typeof allInstructors = [];
-      if (targetType === 'roles' && targetRoles && targetRoles.length > 0) {
-        recipients = allInstructors.filter(m => targetRoles.includes(m.role));
-      } else if (targetType === 'members' && targetMemberIds && targetMemberIds.length > 0) {
-        recipients = allInstructors.filter(m => targetMemberIds.includes(m.id));
-      }
+    // Benachrichtigungen: Admins IMMER + explizite Targets
+    const instructorRoles: InstructorRole[] = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'admin'];
+    const allInstructors = members.filter(m => instructorRoles.includes(m.role) && m.id !== currentUser.id);
+
+    // Basis-Empfänger: alle Admins (immer)
+    const adminRecipients = allInstructors.filter(m => m.role === 'admin');
+    // Explizite Targets (wenn vorhanden)
+    let targetRecipients: typeof allInstructors = [];
+    if (targetType === 'roles' && targetRoles && targetRoles.length > 0) {
+      targetRecipients = allInstructors.filter(m => targetRoles.includes(m.role) && m.role !== 'admin');
+    } else if (targetType === 'members' && targetMemberIds && targetMemberIds.length > 0) {
+      targetRecipients = allInstructors.filter(m => targetMemberIds.includes(m.id) && m.role !== 'admin');
+    }
+    // Union (ohne Duplikate)
+    const recipientIds = new Set([...adminRecipients.map(m => m.id), ...targetRecipients.map(m => m.id)]);
+    const recipients = allInstructors.filter(m => recipientIds.has(m.id));
+
+    if (recipients.length > 0) {
       const newNotifs = recipients.map(m => ({
         id: `notif-board-${Date.now()}-${m.id}`,
         oduserId: m.id,
@@ -989,11 +1029,74 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         createdAt: new Date(),
         data: { boardMessageId: newMessage.id }
       }));
-      if (newNotifs.length > 0) {
-        setNotifications(prev => [...prev, ...newNotifs]);
-      }
+      setNotifications(prev => [...prev, ...newNotifs]);
     }
   }, [currentUser, members]);
+
+  const addBoardReply = useCallback((messageId: string, content: string) => {
+    if (!currentUser) return;
+    const reply: BoardReply = {
+      id: `reply-${Date.now()}`,
+      parentId: messageId,
+      authorId: currentUser.id,
+      authorName: currentUser.name,
+      authorRole: currentUser.role,
+      content,
+      createdAt: new Date(),
+    };
+    setBoardMessages(prev => prev.map(msg =>
+      msg.id === messageId
+        ? {
+            ...msg,
+            replies: [...(msg.replies ?? []), reply],
+            // Antworten = automatisch Lesebestätigung
+            readBy: Array.from(new Set([...(msg.readBy ?? []), currentUser.id])),
+          }
+        : msg
+    ));
+  }, [currentUser]);
+
+  const markBoardMessageRead = useCallback((messageId: string) => {
+    if (!currentUser) return;
+    setBoardMessages(prev => prev.map(msg =>
+      msg.id === messageId
+        ? { ...msg, readBy: Array.from(new Set([...(msg.readBy ?? []), currentUser.id])) }
+        : msg
+    ));
+  }, [currentUser]);
+
+  const sendReadReminder = useCallback((messageId: string, targetMemberId: string) => {
+    if (!currentUser) return;
+    const msg = boardMessages.find(m => m.id === messageId);
+    if (!msg) return;
+    const notif: Notification = {
+      id: `notif-reminder-${Date.now()}-${targetMemberId}`,
+      oduserId: targetMemberId,
+      type: 'board' as const,
+      title: '📌 Erinnerung: Board-Nachricht',
+      message: `${currentUser.name} bittet dich, eine Board-Nachricht zu lesen.`,
+      read: false,
+      createdAt: new Date(),
+      data: { boardMessageId: messageId }
+    };
+    setNotifications(prev => [...prev, notif]);
+  }, [currentUser, boardMessages]);
+
+  const hasPermission = useCallback((permission: keyof RolePermissions): boolean => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'admin') return true;
+    return permissionsConfig[currentUser.role]?.[permission] ?? false;
+  }, [currentUser, permissionsConfig]);
+
+  const updatePermissionsConfig = useCallback((config: PermissionsConfig) => {
+    setPermissionsConfig(config);
+    localStorage.setItem('mi-permissions-config', JSON.stringify(config));
+  }, []);
+
+  const updateTabConfig = useCallback((config: PlatformTabConfig) => {
+    setTabConfig(config);
+    localStorage.setItem('mi-tab-config', JSON.stringify(config));
+  }, []);
 
   const updateNotificationPrefs = useCallback((prefs: { sound: boolean; email: boolean }) => {
     if (!currentUser) return;
@@ -1566,7 +1669,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     useBandaid,
     awardBandaid,
     sendBoardMessage,
+    addBoardReply,
+    markBoardMessageRead,
+    sendReadReminder,
     updateNotificationPrefs,
+    permissionsConfig,
+    updatePermissionsConfig,
+    hasPermission,
+    tabConfig,
+    updateTabConfig,
     markNotificationRead,
     clearNotifications,
     addInstructorNote,

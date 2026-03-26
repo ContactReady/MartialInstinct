@@ -425,6 +425,17 @@ export interface Course {
   participantIds: string[];
 }
 
+// Board Reply (Thread innerhalb eines Posts)
+export interface BoardReply {
+  id: string;
+  parentId: string;       // BoardMessage.id
+  authorId: string;
+  authorName: string;
+  authorRole: InstructorRole;
+  content: string;
+  createdAt: Date;
+}
+
 // Instructor Board Nachricht
 export interface BoardMessage {
   id: string;
@@ -439,6 +450,10 @@ export interface BoardMessage {
   targetType: 'none' | 'roles' | 'members'; // Benachrichtigungs-Zielgruppe
   targetRoles?: InstructorRole[];
   targetMemberIds?: string[];
+  // Thread & Lesebestätigung
+  replies?: BoardReply[];
+  readBy?: string[];          // Member-IDs die gelesen haben (inkl. Autor + Antwortende)
+  requiredReaders?: string[]; // IDs die lesen müssen (bei restricted)
 }
 
 // Classroom Video
@@ -593,6 +608,43 @@ export interface ModuleOrder {
   blockLevel: string;
   position: number;
 }
+
+// ── Rechte-Matrix ────────────────────────────────────────────────────────────
+export interface RolePermissions {
+  canPostToBoard: boolean;
+  canRestrictBoardVisibility: boolean; // Nur Admin
+  canManageOwnStudents: boolean;       // Full Instructor+
+  canManageCenter: boolean;            // Head Instructor+
+  canGrantAdminAccess: boolean;        // Nur Admin
+  canViewAllMembers: boolean;
+  canApproveExams: boolean;
+  canTrainInstructors: boolean;        // Head Instructor+
+}
+
+export type PermissionsConfig = Record<InstructorRole, RolePermissions>;
+
+export const DEFAULT_PERMISSIONS: PermissionsConfig = {
+  member:               { canPostToBoard: false, canRestrictBoardVisibility: false, canManageOwnStudents: false, canManageCenter: false, canGrantAdminAccess: false, canViewAllMembers: false, canApproveExams: false, canTrainInstructors: false },
+  assistant_instructor: { canPostToBoard: true,  canRestrictBoardVisibility: false, canManageOwnStudents: false, canManageCenter: false, canGrantAdminAccess: false, canViewAllMembers: false, canApproveExams: false, canTrainInstructors: false },
+  instructor:           { canPostToBoard: true,  canRestrictBoardVisibility: false, canManageOwnStudents: true,  canManageCenter: false, canGrantAdminAccess: false, canViewAllMembers: false, canApproveExams: false, canTrainInstructors: false },
+  full_instructor:      { canPostToBoard: true,  canRestrictBoardVisibility: false, canManageOwnStudents: true,  canManageCenter: false, canGrantAdminAccess: false, canViewAllMembers: true,  canApproveExams: true,  canTrainInstructors: false },
+  head_instructor:      { canPostToBoard: true,  canRestrictBoardVisibility: false, canManageOwnStudents: true,  canManageCenter: true,  canGrantAdminAccess: false, canViewAllMembers: true,  canApproveExams: true,  canTrainInstructors: true  },
+  admin:                { canPostToBoard: true,  canRestrictBoardVisibility: true,  canManageOwnStudents: true,  canManageCenter: true,  canGrantAdminAccess: true,  canViewAllMembers: true,  canApproveExams: true,  canTrainInstructors: true  },
+};
+
+// ── Tab-Verwaltung ────────────────────────────────────────────────────────────
+export type MemberTabId = 'dashboard' | 'lernen' | 'progress' | 'requests' | 'profil';
+export type InstructorTabId = 'lernen' | 'community' | 'evaluate' | 'requests' | 'board' | 'admin';
+
+export interface PlatformTabConfig {
+  memberTabs:     Record<MemberTabId, boolean>;
+  instructorTabs: Record<InstructorTabId, boolean>;
+}
+
+export const DEFAULT_TAB_CONFIG: PlatformTabConfig = {
+  memberTabs:     { dashboard: true, lernen: true, progress: true, requests: true, profil: true },
+  instructorTabs: { lernen: true, community: true, evaluate: true, requests: true, board: true, admin: true },
+};
 
 export const ROLE_DISPLAY: Record<InstructorRole, { label: string; color: string; bgColor: string }> = {
   member: { label: 'Member', color: 'text-gray-400', bgColor: 'bg-gray-700' },

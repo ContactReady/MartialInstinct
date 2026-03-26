@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp, MODULES, BLOCKS, COURSES } from '../../context/AppContext';
-import { ModuleOrder } from '../../types';
+import { ModuleOrder, RolePermissions, InstructorTabId, MemberTabId } from '../../types';
 import {
   LEVEL_DISPLAY,
   ROLE_DISPLAY,
@@ -49,7 +49,7 @@ function canApproveCheckIn(role: InstructorRole, instructorId: string, checkIn: 
 
 type Tab = 'lernen' | 'community' | 'evaluate' | 'requests' | 'board' | 'admin';
 type CommunitySubTab = 'online' | 'mitglieder' | 'training' | 'rangliste';
-type AdminSubTab = 'members' | 'bewerbungen' | 'lernbereich';
+type AdminSubTab = 'members' | 'bewerbungen' | 'lernbereich' | 'plattform';
 
 export const InstructorView: React.FC = () => {
   const {
@@ -73,6 +73,14 @@ export const InstructorView: React.FC = () => {
     getPendingInstructorApplications,
     awardBandaid,
     sendBoardMessage,
+    addBoardReply,
+    markBoardMessageRead,
+    sendReadReminder,
+    hasPermission,
+    permissionsConfig,
+    updatePermissionsConfig,
+    tabConfig,
+    updateTabConfig,
     getPendingCheckIns,
     getPendingExamRequests,
     getBlockProgress,
@@ -104,6 +112,10 @@ export const InstructorView: React.FC = () => {
   const [boardTargetRoles, setBoardTargetRoles] = useState<InstructorRole[]>([]);
   const [boardTargetMemberIds, setBoardTargetMemberIds] = useState<string[]>([]);
   const [boardMemberSearch, setBoardMemberSearch] = useState('');
+  // Board Thread / Lesebestätigung State
+  const [boardReplyOpenId, setBoardReplyOpenId] = useState<string | null>(null);
+  const [boardReplyText, setBoardReplyText] = useState('');
+  const [boardReadersOpenId, setBoardReadersOpenId] = useState<string | null>(null);
   const [rejectionFeedback, setRejectionFeedback] = useState<Record<string, string>>({});
   const [liveTick, setLiveTick] = useState(0);
   const [memberSearch, setMemberSearch] = useState('');
@@ -174,24 +186,20 @@ export const InstructorView: React.FC = () => {
   const pendingInstructorApps = getPendingInstructorApplications();
   const totalPendingApps = pendingContactApps.length + pendingInstructorApps.length;
 
-  // Check if user can access tab
+  // Check if user can access tab (Rollen-Check + Tab-Config)
   const canAccessTab = (tab: Tab): boolean => {
-    switch (tab) {
-      case 'lernen':
-        return true;
-      case 'community':
-        return true;
-      case 'evaluate':
-        return EXAM_PERMISSIONS[currentUser.role].length > 0;
-      case 'requests':
-        return EXAM_PERMISSIONS[currentUser.role].length > 0;
-      case 'board':
-        return currentUser.role !== 'member';
-      case 'admin':
-        return hasAdminAccess(currentUser);
-      default:
-        return false;
-    }
+    const roleCheck = (() => {
+      switch (tab) {
+        case 'lernen':    return true;
+        case 'community': return true;
+        case 'evaluate':  return EXAM_PERMISSIONS[currentUser.role].length > 0;
+        case 'requests':  return EXAM_PERMISSIONS[currentUser.role].length > 0;
+        case 'board':     return currentUser.role !== 'member';
+        case 'admin':     return hasAdminAccess(currentUser);
+        default:          return false;
+      }
+    })();
+    return roleCheck; // tabConfig steuert nur Sichtbarkeit (grayed out), nicht Zugriff
   };
 
   // Format time ago
@@ -1232,15 +1240,11 @@ export const InstructorView: React.FC = () => {
 
     const toggleRole = (role: InstructorRole) =>
       setBoardTargetRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
-
     const toggleMember = (id: string) =>
       setBoardTargetMemberIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
-    const hasTargets = boardTargetType === 'roles'
-      ? boardTargetRoles.length > 0
-      : boardTargetType === 'members'
-      ? boardTargetMemberIds.length > 0
-      : false;
+    const hasTargets = boardTargetType === 'roles' ? boardTargetRoles.length > 0
+      : boardTargetType === 'members' ? boardTargetMemberIds.length > 0 : false;
 
     const targetSummary = (): string => {
       if (boardTargetType === 'none') return 'Alle Instructors';
@@ -1254,12 +1258,11 @@ export const InstructorView: React.FC = () => {
 
     const notifCount = boardTargetType === 'roles'
       ? allInstructors.filter(m => boardTargetRoles.includes(m.role)).length
-      : boardTargetType === 'members'
-      ? boardTargetMemberIds.length
-      : 0;
+      : boardTargetType === 'members' ? boardTargetMemberIds.length : 0;
 
-    // Sichtbarkeit: restricted = nur Targets sehen die Nachricht
+    // Admin sieht IMMER alles; restricted = nur Targets/Autor
     const canSeeMessage = (msg: typeof boardMessages[0]): boolean => {
+      if (currentUser!.role === 'admin') return true;
       if (msg.visibility === 'restricted') {
         if (msg.authorId === currentUser!.id) return true;
         if (msg.targetType === 'roles' && msg.targetRoles) return msg.targetRoles.includes(currentUser!.role);
@@ -1270,6 +1273,8 @@ export const InstructorView: React.FC = () => {
     };
 
     const visibleMessages = boardMessages.filter(canSeeMessage).slice().reverse();
+
+    const canRestrictVisibility = hasPermission('canRestrictBoardVisibility');
 
     const handleSend = () => {
       if (!boardMessageText.trim()) return;
@@ -1286,6 +1291,13 @@ export const InstructorView: React.FC = () => {
       setBoardTargetRoles([]);
       setBoardTargetMemberIds([]);
       setBoardMemberSearch('');
+    };
+
+    const handleSendReply = (msgId: string) => {
+      if (!boardReplyText.trim()) return;
+      addBoardReply(msgId, boardReplyText);
+      setBoardReplyText('');
+      setBoardReplyOpenId(null);
     };
 
     return (
@@ -1305,17 +1317,23 @@ export const InstructorView: React.FC = () => {
             <div>
               <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-1.5">Sichtbarkeit</div>
               <div className="flex gap-2">
-                {(['public', 'restricted'] as const).map(v => (
-                  <button
-                    key={v}
-                    onClick={() => setBoardVisibility(v)}
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                      boardVisibility === v ? 'bg-gray-700 border-gray-500 text-white' : 'bg-gray-800/50 border-gray-700 text-gray-500 hover:text-gray-300'
-                    }`}
-                  >
-                    {v === 'public' ? '🌐 Alle können lesen' : '🔒 Nur Ausgewählte'}
-                  </button>
-                ))}
+                {(['public', 'restricted'] as const).map(v => {
+                  const isDisabled = v === 'restricted' && !canRestrictVisibility;
+                  return (
+                    <button
+                      key={v}
+                      onClick={() => !isDisabled && setBoardVisibility(v)}
+                      disabled={isDisabled}
+                      title={isDisabled ? 'Nur Admins können die Sichtbarkeit einschränken' : undefined}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                        isDisabled ? 'opacity-40 cursor-not-allowed border-gray-700 text-gray-600'
+                          : boardVisibility === v ? 'bg-gray-700 border-gray-500 text-white' : 'bg-gray-800/50 border-gray-700 text-gray-500 hover:text-gray-300'
+                      }`}
+                    >
+                      {v === 'public' ? '🌐 Alle können lesen' : '🔒 Nur Ausgewählte'}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -1328,56 +1346,36 @@ export const InstructorView: React.FC = () => {
                   { id: 'roles', label: 'Nach Rang' },
                   { id: 'members', label: 'Nach Name' },
                 ] as { id: typeof boardTargetType; label: string }[]).map(t => (
-                  <button
-                    key={t.id}
+                  <button key={t.id}
                     onClick={() => { setBoardTargetType(t.id); setBoardTargetRoles([]); setBoardTargetMemberIds([]); }}
                     className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                       boardTargetType === t.id ? 'bg-gray-700 border-gray-500 text-white' : 'bg-gray-800/50 border-gray-700 text-gray-500 hover:text-gray-300'
                     }`}
-                  >
-                    {t.label}
-                  </button>
+                  >{t.label}</button>
                 ))}
               </div>
-
-              {/* Nach Rang */}
               {boardTargetType === 'roles' && (
                 <div className="flex flex-wrap gap-1.5">
                   {ROLE_GROUPS.map(g => (
-                    <button
-                      key={g.id}
-                      onClick={() => toggleRole(g.id)}
+                    <button key={g.id} onClick={() => toggleRole(g.id)}
                       className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
-                        boardTargetRoles.includes(g.id)
-                          ? 'bg-red-600 border-red-500 text-white'
-                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
+                        boardTargetRoles.includes(g.id) ? 'bg-red-600 border-red-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
                       }`}
-                    >
-                      {g.label}
-                    </button>
+                    >{g.label}</button>
                   ))}
                 </div>
               )}
-
-              {/* Nach Name */}
               {boardTargetType === 'members' && (
                 <div className="space-y-1.5">
-                  <input
-                    type="text"
-                    value={boardMemberSearch}
-                    onChange={e => setBoardMemberSearch(e.target.value)}
+                  <input type="text" value={boardMemberSearch} onChange={e => setBoardMemberSearch(e.target.value)}
                     placeholder="Person suchen…"
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
                   />
                   <div className="max-h-32 overflow-y-auto space-y-1">
                     {filteredInstructors.map(m => (
-                      <button
-                        key={m.id}
-                        onClick={() => toggleMember(m.id)}
+                      <button key={m.id} onClick={() => toggleMember(m.id)}
                         className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-all border ${
-                          boardTargetMemberIds.includes(m.id)
-                            ? 'bg-red-600/20 border-red-500/40 text-white'
-                            : 'bg-gray-800/50 border-gray-700/50 text-gray-400 hover:text-white'
+                          boardTargetMemberIds.includes(m.id) ? 'bg-red-600/20 border-red-500/40 text-white' : 'bg-gray-800/50 border-gray-700/50 text-gray-400 hover:text-white'
                         }`}
                       >
                         <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 ${boardTargetMemberIds.includes(m.id) ? 'bg-red-600 border-red-500' : 'border-gray-500'}`}>
@@ -1403,13 +1401,9 @@ export const InstructorView: React.FC = () => {
                   <div className="text-gray-600">🔔 Niemand ausgewählt</div>
                 )}
               </div>
-              <button
-                onClick={handleSend}
-                disabled={!boardMessageText.trim()}
+              <button onClick={handleSend} disabled={!boardMessageText.trim()}
                 className="bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white px-5 py-2 rounded-lg font-semibold text-sm transition-all"
-              >
-                Senden
-              </button>
+              >Senden</button>
             </div>
           </div>
         </div>
@@ -1427,22 +1421,140 @@ export const InstructorView: React.FC = () => {
               : msg.targetType === 'members' && msg.targetMemberIds?.length
               ? msg.targetMemberIds.map(id => members.find(m => m.id === id)?.name ?? id).join(', ')
               : null;
+
+            const readBy = msg.readBy ?? [];
+            const isAuthor = msg.authorId === currentUser!.id;
+            const isAdmin = currentUser!.role === 'admin';
+            const hasRead = readBy.includes(currentUser!.id) || isAdmin; // Admin zählt immer als gelesen
+            const showReadPanel = (isAuthor || isAdmin) && boardReadersOpenId === msg.id;
+
+            // Personen die lesen müssten: alle Instructors minus Autor
+            const expectedReaders = allInstructors;
+            const unreadMembers = expectedReaders.filter(m => !readBy.includes(m.id));
+
+            const replyOpen = boardReplyOpenId === msg.id;
+
             return (
-              <div key={msg.id} className={`bg-gray-800/50 rounded-xl p-4 border ${isRestricted ? 'border-gray-600' : 'border-gray-700'}`}>
-                <div className="flex items-start justify-between mb-2 gap-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-xs px-2 py-0.5 rounded ${ROLE_DISPLAY[msg.authorRole].bgColor} ${ROLE_DISPLAY[msg.authorRole].color}`}>
-                      {ROLE_DISPLAY[msg.authorRole].label}
-                    </span>
-                    <span className="text-white font-medium text-sm">{msg.authorName}</span>
-                    {isRestricted && <span className="text-[10px] text-gray-500 bg-gray-700/50 px-1.5 py-0.5 rounded">🔒 Eingeschränkt</span>}
-                    {targetInfo && (
-                      <span className="text-[10px] text-gray-500 bg-gray-700/50 px-1.5 py-0.5 rounded">🔔 {targetInfo}</span>
-                    )}
+              <div key={msg.id} className={`bg-gray-800/50 rounded-xl border ${isRestricted ? 'border-gray-600' : 'border-gray-700'}`}>
+                {/* ── Hauptnachricht ── */}
+                <div className="p-4">
+                  <div className="flex items-start justify-between mb-2 gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-xs px-2 py-0.5 rounded ${ROLE_DISPLAY[msg.authorRole].bgColor} ${ROLE_DISPLAY[msg.authorRole].color}`}>
+                        {ROLE_DISPLAY[msg.authorRole].label}
+                      </span>
+                      <span className="text-white font-medium text-sm">{msg.authorName}</span>
+                      {isRestricted && <span className="text-[10px] text-gray-500 bg-gray-700/50 px-1.5 py-0.5 rounded">🔒 Eingeschränkt</span>}
+                      {targetInfo && <span className="text-[10px] text-gray-500 bg-gray-700/50 px-1.5 py-0.5 rounded">🔔 {targetInfo}</span>}
+                    </div>
+                    <span className="text-gray-500 text-xs flex-shrink-0">{formatTimeAgo(msg.createdAt)}</span>
                   </div>
-                  <span className="text-gray-500 text-xs flex-shrink-0">{formatTimeAgo(msg.createdAt)}</span>
+                  <p className="text-gray-300 text-sm leading-relaxed">{msg.content}</p>
+
+                  {/* ── Aktionen ── */}
+                  <div className="flex items-center gap-3 mt-3 pt-2.5 border-t border-gray-700/40">
+                    {/* Gelesen-Button (für alle die noch nicht gelesen haben und nicht Autor/Admin sind) */}
+                    {!isAuthor && !isAdmin && (
+                      <button
+                        onClick={() => !hasRead && markBoardMessageRead(msg.id)}
+                        disabled={hasRead}
+                        className={`text-xs px-3 py-1 rounded-lg border transition-all ${
+                          hasRead
+                            ? 'text-gray-600 border-gray-700/50 cursor-default'
+                            : 'text-gray-300 border-gray-600 hover:border-gray-500 hover:text-white'
+                        }`}
+                      >
+                        {hasRead ? '✓ Gelesen' : 'Als gelesen markieren'}
+                      </button>
+                    )}
+
+                    {/* Leser-Panel Toggle (nur für Autor und Admin) */}
+                    {(isAuthor || isAdmin) && (
+                      <button
+                        onClick={() => setBoardReadersOpenId(boardReadersOpenId === msg.id ? null : msg.id)}
+                        className={`text-xs px-3 py-1 rounded-lg border transition-all ${
+                          showReadPanel ? 'bg-gray-700 border-gray-500 text-white' : 'text-gray-500 border-gray-700 hover:text-gray-300'
+                        }`}
+                      >
+                        👁 {readBy.length} gelesen {unreadMembers.length > 0 && `· ${unreadMembers.length} ausstehend`}
+                      </button>
+                    )}
+
+                    {/* Antworten-Button */}
+                    <button
+                      onClick={() => { setBoardReplyOpenId(replyOpen ? null : msg.id); setBoardReplyText(''); }}
+                      className={`text-xs px-3 py-1 rounded-lg border transition-all ml-auto ${
+                        replyOpen ? 'bg-gray-700 border-gray-500 text-white' : 'text-gray-500 border-gray-700 hover:text-gray-300'
+                      }`}
+                    >
+                      💬 {(msg.replies?.length ?? 0) > 0 ? `${msg.replies!.length} Antwort${msg.replies!.length !== 1 ? 'en' : ''}` : 'Antworten'}
+                    </button>
+                  </div>
                 </div>
-                <p className="text-gray-300 text-sm leading-relaxed">{msg.content}</p>
+
+                {/* ── Leser-Panel ── */}
+                {showReadPanel && (
+                  <div className="border-t border-gray-700/50 px-4 py-3 space-y-2">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest">Lesestatus</div>
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      {expectedReaders.map(m => {
+                        const hasReadMsg = readBy.includes(m.id);
+                        return (
+                          <div key={m.id} className="flex items-center gap-2 py-1">
+                            <span className={`text-xs w-4 text-center ${hasReadMsg ? 'text-green-500' : 'text-gray-600'}`}>
+                              {hasReadMsg ? '✓' : '○'}
+                            </span>
+                            <span className={`text-xs flex-1 ${hasReadMsg ? 'text-gray-300' : 'text-gray-500'}`}>{m.name}</span>
+                            <span className={`text-[10px] ${ROLE_DISPLAY[m.role].color}`}>{ROLE_DISPLAY[m.role].label}</span>
+                            {!hasReadMsg && isAdmin && (
+                              <button
+                                onClick={() => sendReadReminder(msg.id, m.id)}
+                                className="text-[10px] text-gray-500 hover:text-white border border-gray-700 hover:border-gray-500 px-2 py-0.5 rounded transition-all"
+                              >Erinnern</button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Replies ── */}
+                {(msg.replies?.length ?? 0) > 0 && (
+                  <div className="border-t border-gray-700/30 divide-y divide-gray-700/20">
+                    {msg.replies!.map(reply => (
+                      <div key={reply.id} className="flex gap-3 px-4 py-2.5">
+                        <div className="w-0.5 bg-gray-700/60 rounded-full flex-shrink-0 mt-0.5 self-stretch" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-[10px] ${ROLE_DISPLAY[reply.authorRole].color}`}>{reply.authorName}</span>
+                            <span className="text-gray-600 text-[10px]">{formatTimeAgo(reply.createdAt)}</span>
+                          </div>
+                          <p className="text-gray-400 text-xs leading-relaxed">{reply.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ── Reply-Eingabe ── */}
+                {replyOpen && (
+                  <div className="border-t border-gray-700/50 p-3 flex gap-2">
+                    <input
+                      value={boardReplyText}
+                      onChange={e => setBoardReplyText(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendReply(msg.id); }}}
+                      placeholder="Antwort schreiben…"
+                      className="flex-1 bg-gray-700/60 text-white rounded-lg px-3 py-2 border border-gray-600 text-sm focus:outline-none focus:border-gray-500"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => handleSendReply(msg.id)}
+                      disabled={!boardReplyText.trim()}
+                      className="bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                    >↩</button>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1565,16 +1677,17 @@ export const InstructorView: React.FC = () => {
         </div>
 
         {/* Sub-Tab Switcher */}
-        <div className="flex bg-gray-800/50 rounded-xl p-1 gap-1 border border-gray-700/50">
+        <div className="flex bg-gray-800/50 rounded-xl p-1 gap-1 border border-gray-700/50 overflow-x-auto">
           {([
             ['members', '👥 Mitglieder'],
             ['bewerbungen', `💼 Bewerbungen${totalPendingApps > 0 ? ` (${totalPendingApps})` : ''}`],
             ['lernbereich', '📚 Lernbereich'],
+            ['plattform', '⚙️ Plattform'],
           ] as [AdminSubTab, string][]).map(([id, label]) => (
             <button
               key={id}
               onClick={() => setAdminSubTab(id)}
-              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex-shrink-0 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
                 adminSubTab === id ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -2197,6 +2310,178 @@ export const InstructorView: React.FC = () => {
           </div>
           );
         })()}
+
+        {/* ── PLATTFORM ──────────────────────────────────────────────── */}
+        {adminSubTab === 'plattform' && (() => {
+          // Permissions-Matrix Konfiguration
+          const PERMISSION_LABELS: { key: keyof RolePermissions; label: string; description: string; adminOnly?: boolean }[] = [
+            { key: 'canPostToBoard',              label: 'Board: Posten',                description: 'Darf Nachrichten im Instructor-Board verfassen' },
+            { key: 'canRestrictBoardVisibility',  label: 'Board: Einschränken',          description: 'Darf Posts auf "Nur Ausgewählte" beschränken', adminOnly: true },
+            { key: 'canViewAllMembers',           label: 'Alle Mitglieder sehen',        description: 'Vollständige Mitgliederliste einsehen' },
+            { key: 'canApproveExams',             label: 'Prüfungen abnehmen',           description: 'Technische Prüfungen durchführen und bestätigen' },
+            { key: 'canManageOwnStudents',        label: 'Eigene Schüler verwalten',     description: 'Eigene Kursteilnehmer einsehen und verwalten' },
+            { key: 'canManageCenter',             label: 'Center verwalten',             description: 'Standort/Center-Verwaltung und -Einstellungen' },
+            { key: 'canTrainInstructors',         label: 'Instructoren ausbilden',       description: 'Instructor-Ausbildung leiten und dokumentieren' },
+            { key: 'canGrantAdminAccess',         label: 'Admin-Zugang vergeben',        description: 'Anderen Mitgliedern Admin-Rechte erteilen/entziehen', adminOnly: true },
+          ];
+
+          const ROLE_COLS: { role: InstructorRole; label: string }[] = [
+            { role: 'assistant_instructor', label: 'Asst.' },
+            { role: 'instructor',           label: 'Instr.' },
+            { role: 'full_instructor',      label: 'Full' },
+            { role: 'head_instructor',      label: 'Head' },
+            { role: 'admin',                label: 'Admin' },
+          ];
+
+          const localPerms = permissionsConfig;
+
+          const togglePerm = (role: InstructorRole, key: keyof RolePermissions) => {
+            if (role === 'admin') return; // Admin nicht änderbar
+            const perm = PERMISSION_LABELS.find(p => p.key === key);
+            if (perm?.adminOnly) return; // adminOnly nicht für andere
+            const updated: RolePermissions = { ...localPerms[role], [key]: !localPerms[role][key] };
+            updatePermissionsConfig({ ...localPerms, [role]: updated });
+          };
+
+          // Tab-Konfiguration
+          const MEMBER_TAB_LABELS: { id: MemberTabId; label: string; locked?: boolean }[] = [
+            { id: 'dashboard', label: 'Dashboard' },
+            { id: 'lernen',    label: 'Lernen' },
+            { id: 'progress',  label: 'Rang & Fortschritt' },
+            { id: 'requests',  label: 'Anfragen' },
+            { id: 'profil',    label: 'Profil', locked: true },
+          ];
+          const INSTRUCTOR_TAB_LABELS: { id: InstructorTabId; label: string; locked?: boolean }[] = [
+            { id: 'lernen',    label: 'Lernen' },
+            { id: 'community', label: 'Community' },
+            { id: 'evaluate',  label: 'Bewerten' },
+            { id: 'requests',  label: 'Anfragen' },
+            { id: 'board',     label: 'Board' },
+            { id: 'admin',     label: 'Admin', locked: true },
+          ];
+
+          const localTab = tabConfig;
+
+          return (
+            <div className="space-y-6">
+              {/* Rechte-Matrix */}
+              <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-700/50">
+                  <div className="text-sm font-semibold text-white">Rechte-Matrix</div>
+                  <div className="text-xs text-gray-500 mt-0.5">Legt fest, was jede Rolle tun darf. Admin hat immer alle Rechte.</div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-700/50">
+                        <th className="text-left px-4 py-2.5 text-gray-500 font-medium w-48">Berechtigung</th>
+                        {ROLE_COLS.map(c => (
+                          <th key={c.role} className={`px-3 py-2.5 font-medium text-center ${c.role === 'admin' ? 'text-red-400' : 'text-gray-400'}`}>{c.label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-700/30">
+                      {PERMISSION_LABELS.map(perm => (
+                        <tr key={perm.key} className="hover:bg-gray-700/20 transition-colors">
+                          <td className="px-4 py-2.5">
+                            <div className="text-gray-300 leading-tight">{perm.label}</div>
+                            <div className="text-gray-600 text-[10px] mt-0.5 leading-tight">{perm.description}</div>
+                          </td>
+                          {ROLE_COLS.map(c => {
+                            const isAdmin = c.role === 'admin';
+                            const isAdminOnly = perm.adminOnly;
+                            const checked = isAdmin ? true : (localPerms[c.role]?.[perm.key] ?? false);
+                            const isLocked = isAdmin || (isAdminOnly && !isAdmin);
+                            return (
+                              <td key={c.role} className="px-3 py-2.5 text-center">
+                                <button
+                                  onClick={() => togglePerm(c.role, perm.key)}
+                                  disabled={isLocked}
+                                  className={`w-5 h-5 rounded border-2 flex items-center justify-center mx-auto transition-all ${
+                                    isLocked
+                                      ? checked ? 'bg-gray-600 border-gray-600 cursor-not-allowed' : 'border-gray-700 cursor-not-allowed opacity-40'
+                                      : checked ? 'bg-red-600 border-red-500' : 'border-gray-600 hover:border-gray-400'
+                                  }`}
+                                >
+                                  {checked && <span className="text-white font-bold" style={{ fontSize: '10px' }}>✓</span>}
+                                </button>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="px-4 py-2.5 border-t border-gray-700/30 text-[10px] text-gray-600">
+                  Änderungen werden sofort gespeichert und sind nach Seitenneuladung aktiv.
+                </div>
+              </div>
+
+              {/* Tab-Verwaltung */}
+              <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-700/50">
+                  <div className="text-sm font-semibold text-white">Reiter-Verwaltung</div>
+                  <div className="text-xs text-gray-500 mt-0.5">Deaktivierte Reiter sind ausgegraut und nicht aufrufbar — ideal für schrittweises Rollout.</div>
+                </div>
+                <div className="divide-y divide-gray-700/30">
+                  {/* Member-Bereich */}
+                  <div className="px-4 py-3">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-2">Member-Bereich</div>
+                    <div className="space-y-1.5">
+                      {MEMBER_TAB_LABELS.map(t => {
+                        const enabled = localTab.memberTabs[t.id] !== false;
+                        return (
+                          <div key={t.id} className="flex items-center justify-between py-1">
+                            <div>
+                              <span className={`text-sm ${enabled ? 'text-gray-200' : 'text-gray-500'}`}>{t.label}</span>
+                              {t.locked && <span className="text-[10px] text-gray-600 ml-2">immer aktiv</span>}
+                            </div>
+                            <button
+                              disabled={!!t.locked}
+                              onClick={() => !t.locked && updateTabConfig({ ...localTab, memberTabs: { ...localTab.memberTabs, [t.id]: !enabled } })}
+                              className={`relative w-10 h-5 rounded-full transition-all flex-shrink-0 ${
+                                t.locked ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'
+                              } ${enabled ? 'bg-red-600' : 'bg-gray-700'}`}
+                            >
+                              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${enabled ? 'left-5' : 'left-0.5'}`} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {/* Instructor-Bereich */}
+                  <div className="px-4 py-3">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-2">Instructor-Bereich</div>
+                    <div className="space-y-1.5">
+                      {INSTRUCTOR_TAB_LABELS.map(t => {
+                        const enabled = localTab.instructorTabs[t.id] !== false;
+                        return (
+                          <div key={t.id} className="flex items-center justify-between py-1">
+                            <div>
+                              <span className={`text-sm ${enabled ? 'text-gray-200' : 'text-gray-500'}`}>{t.label}</span>
+                              {t.locked && <span className="text-[10px] text-gray-600 ml-2">immer aktiv</span>}
+                            </div>
+                            <button
+                              disabled={!!t.locked}
+                              onClick={() => !t.locked && updateTabConfig({ ...localTab, instructorTabs: { ...localTab.instructorTabs, [t.id]: !enabled } })}
+                              className={`relative w-10 h-5 rounded-full transition-all flex-shrink-0 ${
+                                t.locked ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'
+                              } ${enabled ? 'bg-red-600' : 'bg-gray-700'}`}
+                            >
+                              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${enabled ? 'left-5' : 'left-0.5'}`} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   };
@@ -2214,6 +2499,7 @@ export const InstructorView: React.FC = () => {
     { id: 'board' as Tab, label: 'Board', icon: '💬', badge: unreadBoardNotifs },
     { id: 'admin' as Tab, label: 'Admin', icon: '🔐' },
   ];
+  // Nur role-zugängliche Tabs zeigen; tabConfig steuert ob klickbar (grayed out wenn deaktiviert)
   const tabs = allTabs.filter(tab => canAccessTab(tab.id));
 
   return (
@@ -2236,29 +2522,34 @@ export const InstructorView: React.FC = () => {
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-40">
         <div className="max-w-6xl mx-auto flex overflow-x-auto">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                if (tab.id !== 'evaluate') {
-                  setSelectedMember(null);
-                  setSelectedModule(null);
-                }
-              }}
-              className={`flex-1 min-w-[60px] py-3 flex flex-col items-center gap-0.5 transition-colors relative ${
-                activeTab === tab.id ? 'text-red-500' : 'text-gray-400'
-              }`}
-            >
-              <span className="text-lg leading-tight">{tab.icon}</span>
-              <span className="text-[10px] leading-tight whitespace-nowrap">{tab.label}</span>
-              {tab.badge && tab.badge > 0 ? (
-                <span className="absolute top-1.5 right-1/2 translate-x-3 bg-red-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-bold">
-                  {tab.badge > 9 ? '9+' : tab.badge}
-                </span>
-              ) : null}
-            </button>
-          ))}
+          {tabs.map(tab => {
+            const tabEnabled = tabConfig.instructorTabs[tab.id as InstructorTabId] !== false;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (!tabEnabled) return; // deaktivierte Tabs nicht klickbar
+                  setActiveTab(tab.id);
+                  if (tab.id !== 'evaluate') {
+                    setSelectedMember(null);
+                    setSelectedModule(null);
+                  }
+                }}
+                className={`flex-1 min-w-[60px] py-3 flex flex-col items-center gap-0.5 transition-colors relative ${
+                  !tabEnabled ? 'opacity-30 cursor-not-allowed'
+                    : activeTab === tab.id ? 'text-red-500' : 'text-gray-400'
+                }`}
+              >
+                <span className="text-lg leading-tight">{tab.icon}</span>
+                <span className="text-[10px] leading-tight whitespace-nowrap">{tab.label}</span>
+                {tabEnabled && tab.badge && tab.badge > 0 ? (
+                  <span className="absolute top-1.5 right-1/2 translate-x-3 bg-red-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-bold">
+                    {tab.badge > 9 ? '9+' : tab.badge}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
       </nav>
     </div>
