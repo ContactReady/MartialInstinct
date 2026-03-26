@@ -10,7 +10,7 @@ import { ROLE_DISPLAY, LEVEL_DISPLAY, hasAdminAccess } from './types';
 
 // ── Join Request Form (öffentlich, kein Login nötig) ───────────────────────────
 const JoinRequestForm: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { submitJoinRequest } = useApp();
+  const { submitJoinRequest, darkMode } = useApp();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -28,7 +28,7 @@ const JoinRequestForm: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
       <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md border border-gray-800">
         <div className="text-center mb-8">
-          <img src="/logos/mi-logo-landscape-dark.svg" alt="Martial Instinct" className="h-16 w-auto mx-auto mb-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          <img src={darkMode ? '/logos/mi-logo-landscape-dark.svg' : '/logos/mi-logo-landscape-light.svg'} alt="Martial Instinct" className="h-16 w-auto object-contain" />
           <h1 className="text-white font-black text-xl tracking-wide">Mitglied werden</h1>
           <p className="text-gray-500 text-sm mt-1">Deine Anfrage geht direkt an uns</p>
         </div>
