@@ -22,6 +22,8 @@ const JoinRequestForm: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     e.preventDefault();
     if (!name.trim()) { setError('Bitte gib deinen Namen ein.'); return; }
     if (!email.trim() || !email.includes('@')) { setError('Bitte gib eine gültige E-Mail ein.'); return; }
+    if (!memberIdHint.trim()) { setError('Bitte gib deine Mitglieds-ID / Vertrags-ID ein.'); return; }
+    if (!course.trim()) { setError('Bitte gib deinen Kurs an.'); return; }
     submitJoinRequest(name, email, memberIdHint, course);
     setSubmitted(true);
   };
@@ -55,7 +57,7 @@ const JoinRequestForm: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="Vor- und Nachname *"
+              placeholder="Name *"
               className="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-700 focus:border-red-500 focus:outline-none"
             />
             <input
@@ -65,23 +67,20 @@ const JoinRequestForm: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               placeholder="E-Mail-Adresse *"
               className="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-700 focus:border-red-500 focus:outline-none"
             />
-            <div className="border-t border-gray-700/50 pt-3">
-              <p className="text-gray-500 text-xs mb-2">Zur Verifikation (optional, aber hilfreich):</p>
-              <input
-                type="text"
-                value={memberIdHint}
-                onChange={e => setMemberIdHint(e.target.value)}
-                placeholder="Deine Mitglieds-ID / Spitzname"
-                className="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-700 focus:border-red-500 focus:outline-none mb-3"
-              />
-              <input
-                type="text"
-                value={course}
-                onChange={e => setCourse(e.target.value)}
-                placeholder="Dein Kurs (z.B. Conflict Ready Basics)"
-                className="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-700 focus:border-red-500 focus:outline-none"
-              />
-            </div>
+            <input
+              type="text"
+              value={memberIdHint}
+              onChange={e => setMemberIdHint(e.target.value)}
+              placeholder="Mitglieds-ID / Vertrags-ID *"
+              className="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-700 focus:border-red-500 focus:outline-none"
+            />
+            <input
+              type="text"
+              value={course}
+              onChange={e => setCourse(e.target.value)}
+              placeholder="Kurs (z.B. JKD Streetdefence) *"
+              className="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-700 focus:border-red-500 focus:outline-none"
+            />
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold transition-colors">
               Anfrage senden

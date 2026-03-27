@@ -170,29 +170,27 @@ const CertificateCard: React.FC<CardProps> = ({
     }}
   >
     {/* ── Dekorativer Rahmen ── */}
-    <div className="relative m-3 border-2 border-gray-800 rounded-xl overflow-hidden" style={{ minHeight: isPrint ? 'calc(100vh - 24px)' : undefined }}>
+    <div className="relative m-3 border-2 border-gray-300 rounded-xl overflow-hidden bg-white" style={{ minHeight: isPrint ? 'calc(100vh - 24px)' : undefined }}>
 
       {/* Innerer dünner Rahmen */}
-      <div className="absolute inset-1 border border-red-700/30 rounded-lg pointer-events-none z-10" />
+      <div className="absolute inset-1 border border-gray-200 rounded-lg pointer-events-none z-10" />
 
-      {/* ── Header ── */}
-      <div className="bg-gray-950 text-white px-6 pt-5 pb-4 text-center">
+      {/* ── Header: Logo auf Weiß ── */}
+      <div className="bg-white px-6 pt-6 pb-2 text-center">
         <img
-          src="/logos/mi-logo-landscape-dark.svg"
+          src="/logos/mi-logo-landscape-light.svg"
           alt="Martial Instinct"
-          className="h-10 mx-auto mb-2 object-contain"
-          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          className="h-14 mx-auto object-contain"
+          onError={e => { (e.target as HTMLImageElement).src = '/logos/mi-logo-landscape-dark.svg'; }}
         />
       </div>
 
       {/* ── Titel ── */}
-      <div className="text-center py-3 px-6 border-b border-gray-200 bg-white">
-        <div className="text-[9px] tracking-[0.5em] uppercase text-gray-400 mb-1">Offizieller</div>
+      <div className="text-center py-2 px-6 border-b border-gray-200 bg-white">
         <div
-          className="font-black tracking-[0.4em] uppercase text-gray-900"
-          style={{ fontSize: '28px', letterSpacing: '0.45em' }}
+          className="font-black tracking-[0.45em] uppercase"
+          style={{ fontSize: '30px', color: '#c41230', fontFamily: 'Georgia, serif' }}
         >ZERTIFIKAT</div>
-        <div className="text-[9px] tracking-[0.4em] uppercase text-gray-400 mt-1">Certificate of Progress</div>
       </div>
 
       {/* ── Intro-Text ── */}
@@ -330,7 +328,7 @@ const CertificateCard: React.FC<CardProps> = ({
       </div>
 
       {/* ── Footer ── */}
-      <div className="bg-gray-950 text-gray-500 text-[8px] text-center py-2 tracking-widest uppercase">
+      <div className="bg-white text-gray-400 text-[8px] text-center py-3 tracking-widest uppercase border-t border-gray-100">
         Martial Instinct Köln · JKD · Eskrima · Selbstverteidigung
       </div>
     </div>
