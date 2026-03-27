@@ -182,6 +182,7 @@ interface AppContextType {
   rejectJoinRequest: (id: string) => void;
   updateStopTheBleed: (memberId: string, certified: boolean) => void;
   updateCustomBadge: (badge: string) => void;
+  connectWithCode: (code: string) => { success: boolean; memberName?: string };
 
   getMemberById: (id: string) => Member | undefined;
   getCheckedInMembers: () => Member[];
@@ -1735,6 +1736,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(prev => prev ? { ...prev, customBadge: badge } : null);
   }, [currentUser]);
 
+  const connectWithCode = (code: string): { success: boolean; memberName?: string } => {
+    if (!currentUser) return { success: false };
+    const normalizedCode = code.trim().toUpperCase();
+    // Finde Mitglied anhand der ersten 8 Zeichen seiner ID (uppercase)
+    const target = members.find(m =>
+      m.id !== currentUser.id &&
+      m.id.slice(0, 8).toUpperCase() === normalizedCode
+    );
+    if (!target) return { success: false };
+    // Bereits verbunden?
+    if ((currentUser.connections ?? []).includes(target.id)) {
+      return { success: false, memberName: target.name };
+    }
+    // Gegenseitig verbinden
+    setMembers(prev => prev.map(m => {
+      if (m.id === currentUser.id) {
+        return { ...m, connections: [...(m.connections ?? []), target.id] };
+      }
+      if (m.id === target.id) {
+        return { ...m, connections: [...(m.connections ?? []), currentUser.id] };
+      }
+      return m;
+    }));
+    return { success: true, memberName: target.name };
+  };
+
   const updateAdminAccess = useCallback((memberId: string, hasAccess: boolean) => {
     setMembers(prev => prev.map(m =>
       m.id === memberId ? { ...m, adminAccess: hasAccess } : m
@@ -1812,6 +1839,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     rejectJoinRequest,
     updateStopTheBleed,
     updateCustomBadge,
+    connectWithCode,
     getMemberById,
     getCheckedInMembers,
     getOnlineMembers,

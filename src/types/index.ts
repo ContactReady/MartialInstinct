@@ -277,6 +277,9 @@ export interface Member {
   // Persönliches Badge (vom Mitglied selbst einstellbar)
   customBadge?: string; // z.B. "🏆 Kämpfer des Monats"
 
+  // Verbundene Mitglieder (in-person Connect via Code)
+  connections?: string[];  // Array von Member-IDs
+
   // Vorfortschritt beim Anlegen (gesetzt vom Admin)
   initialModuleProgress?: Record<number, { tactics: boolean; combat: boolean }>; // Modul 1-10
 }
@@ -665,7 +668,7 @@ export const DEFAULT_PERMISSIONS: PermissionsConfig = {
 };
 
 // ── Tab-Verwaltung ────────────────────────────────────────────────────────────
-export type MemberTabId = 'dashboard' | 'training' | 'progress' | 'profil';
+export type MemberTabId = 'dashboard' | 'training' | 'community' | 'progress' | 'profil';
 export type InstructorTabId = 'dashboard' | 'training' | 'community' | 'admin';
 
 export interface PlatformTabConfig {
@@ -674,7 +677,7 @@ export interface PlatformTabConfig {
 }
 
 export const DEFAULT_TAB_CONFIG: PlatformTabConfig = {
-  memberTabs:     { dashboard: true, training: true, progress: true, profil: true },
+  memberTabs:     { dashboard: true, training: true, community: true, progress: true, profil: true },
   instructorTabs: { dashboard: true, training: true, community: true, admin: true },
 };
 

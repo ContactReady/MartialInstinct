@@ -683,16 +683,7 @@ export const InstructorView: React.FC = () => {
           );
         })()}
 
-        {/* QR Code */}
-        <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700 text-center">
-          <h3 className="text-lg font-bold text-white mb-4">📱 QR-Code für Check-in</h3>
-          <div className="bg-white p-8 rounded-xl inline-block">
-            <div className="w-48 h-48 bg-gray-200 flex items-center justify-center">
-              <span className="text-6xl">🥋</span>
-            </div>
-          </div>
-          <p className="text-gray-400 mt-4 text-sm">Mitglieder scannen diesen Code zum Einchecken</p>
-        </div>
+
           </div>
         )}
 

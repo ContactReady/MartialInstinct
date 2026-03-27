@@ -28,14 +28,6 @@ function getModProgress(member: Member, moduleId: string): { tactics: boolean; c
   return { tactics, combat };
 }
 
-function getWeekStart(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
 
 function formatDateTime(date: Date | null | undefined): string {
   if (!date) return '–';
@@ -48,7 +40,7 @@ function formatDateTime(date: Date | null | undefined): string {
 }
 
 type SortKey = 'xp' | 'streak' | 'techniques';
-type FilterKey = 'alle' | 'diese_woche' | 'mein_level';
+type FilterKey = 'alle' | 'dieses_jahr' | 'mein_level';
 
 interface RankingListProps {
   members: Member[];
@@ -75,13 +67,13 @@ export const RankingList: React.FC<RankingListProps> = ({
     ).length;
 
   // Filter
-  const weekStart = getWeekStart(new Date());
   const filtered = members.filter(m => {
     if (filterKey === 'mein_level') return m.currentLevel === currentUserLevel;
-    if (filterKey === 'diese_woche') {
+    if (filterKey === 'dieses_jahr') {
+      const yearStart = new Date(new Date().getFullYear(), 0, 1);
       return checkIns.some(c =>
         c.memberId === m.id && c.status === 'approved' && c.approvedAt != null &&
-        new Date(c.approvedAt).getTime() >= weekStart.getTime()
+        new Date(c.approvedAt).getTime() >= yearStart.getTime()
       );
     }
     return true;
@@ -140,8 +132,8 @@ export const RankingList: React.FC<RankingListProps> = ({
 
       {/* Filter */}
       <div className="flex bg-gray-800/50 rounded-xl p-1 gap-1">
-        {(['alle', 'diese_woche', ...(showLevelFilter ? ['mein_level'] : [])] as FilterKey[]).map(k => {
-          const labels: Record<FilterKey, string> = { alle: 'Alle', diese_woche: 'Diese Woche', mein_level: 'Mein Level' };
+        {(['alle', 'dieses_jahr', ...(showLevelFilter ? ['mein_level'] : [])] as FilterKey[]).map(k => {
+          const labels: Record<FilterKey, string> = { alle: 'Alle', dieses_jahr: 'Dieses Jahr', mein_level: 'Mein Level' };
           return (
             <button key={k} onClick={() => setFilterKey(k)}
               className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${

@@ -12,7 +12,7 @@ import { MemberLearningView } from './MemberLearningView';
 import { ProfileView } from '../shared/ProfileView';
 import { RankingList } from '../shared/RankingList';
 
-type Tab = 'dashboard' | 'training' | 'progress' | 'profil';
+type Tab = 'dashboard' | 'training' | 'community' | 'progress' | 'profil';
 type ApplicationType = 'contact' | 'assistant_instructor' | null;
 
 export const MemberView: React.FC = () => {
@@ -28,11 +28,15 @@ export const MemberView: React.FC = () => {
     submitInstructorApplication,
     getSessionsForMember,
     tabConfig,
+    connectWithCode,
   } = useApp();
   
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [showApplicationModal, setShowApplicationModal] = useState<ApplicationType>(null);
-  
+  const [communitySubTab, setCommunitySubTab] = useState<'online' | 'training' | 'mitglieder' | 'rangliste'>('online');
+  const [connectCode, setConnectCode] = useState('');
+  const [connectResult, setConnectResult] = useState<{ type: 'success' | 'error' | 'duplicate'; message: string } | null>(null);
+
   // Contact Application Answers
   const [contactAnswers, setContactAnswers] = useState({
     motivation: '',
@@ -349,6 +353,221 @@ export const MemberView: React.FC = () => {
     );
   };
 
+  // ── Community Tab ──────────────────────────────────────────────────────────
+  const renderCommunity = () => {
+    const myConnections = (currentUser.connections ?? []);
+    const connectedMembers = members.filter(m => myConnections.includes(m.id));
+    const onlineConnected = connectedMembers.filter(m => m.onlineSince);
+    const trainingConnected = connectedMembers.filter(m => m.isCheckedIn);
+    const myCode = currentUser.id.slice(0, 8).toUpperCase();
+
+    const handleConnect = () => {
+      if (!connectCode.trim()) return;
+      const result = connectWithCode(connectCode.trim());
+      if (result.success) {
+        setConnectResult({ type: 'success', message: `Verbunden mit ${result.memberName}!` });
+        setConnectCode('');
+      } else if (result.memberName) {
+        setConnectResult({ type: 'duplicate', message: `Bereits verbunden mit ${result.memberName}.` });
+      } else {
+        setConnectResult({ type: 'error', message: 'Code nicht gefunden. Lass dir den Code direkt zeigen.' });
+      }
+      setTimeout(() => setConnectResult(null), 4000);
+    };
+
+    const formatTimeAgo = (date: Date | undefined): string => {
+      if (!date) return '';
+      const diff = Date.now() - new Date(date).getTime();
+      const min = Math.floor(diff / 60000);
+      if (min < 1) return 'Gerade eben';
+      if (min < 60) return `vor ${min} Min`;
+      const h = Math.floor(diff / 3600000);
+      if (h < 24) return `vor ${h} Std`;
+      return `vor ${Math.floor(diff / 86400000)} Tagen`;
+    };
+
+    return (
+      <div className="space-y-4">
+        {/* Sub-Tab Switcher */}
+        <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
+          {([
+            { id: 'online' as const, label: '🟢 Online', badge: onlineConnected.length },
+            { id: 'training' as const, label: '🥋 Training', badge: trainingConnected.length },
+            { id: 'mitglieder' as const, label: '👥 Mitglieder' },
+            { id: 'rangliste' as const, label: '🏆 Rang' },
+          ]).map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setCommunitySubTab(tab.id)}
+              className={`flex-1 py-2 rounded-lg text-[10px] font-semibold transition-all relative flex items-center justify-center gap-1 ${
+                communitySubTab === tab.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              {tab.label}
+              {'badge' in tab && tab.badge !== undefined && tab.badge > 0 && (
+                <span className="text-[9px] bg-red-500 text-white px-1 rounded-full font-bold">{tab.badge}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* ── ONLINE ── */}
+        {communitySubTab === 'online' && (
+          <div className="space-y-3">
+            {myConnections.length === 0 ? (
+              <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
+                <div className="text-3xl mb-2">👥</div>
+                <p className="text-gray-400 text-sm font-medium">Noch keine Verbindungen</p>
+                <p className="text-gray-500 text-xs mt-1">Verbinde dich im Training unter "Mitglieder".</p>
+              </div>
+            ) : onlineConnected.length === 0 ? (
+              <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
+                <div className="text-3xl mb-2">😴</div>
+                <p className="text-gray-400 text-sm font-medium">Keine Verbindungen gerade online</p>
+                <p className="text-gray-500 text-xs mt-1">{connectedMembers.length} Verbindung{connectedMembers.length !== 1 ? 'en' : ''} insgesamt</p>
+              </div>
+            ) : (
+              onlineConnected.map(m => (
+                <div key={m.id} className="bg-gray-800/50 rounded-xl border border-gray-700 px-4 py-3 flex items-center gap-3">
+                  <div className="relative flex-shrink-0">
+                    <span className="text-2xl">{m.avatar}</span>
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border border-gray-900 animate-pulse" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-white font-semibold text-sm">{m.name}</div>
+                    <div className="text-gray-500 text-xs">{formatTimeAgo(m.onlineSince)}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* ── TRAINING ── */}
+        {communitySubTab === 'training' && (
+          <div className="space-y-3">
+            {myConnections.length === 0 ? (
+              <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
+                <div className="text-3xl mb-2">🥋</div>
+                <p className="text-gray-400 text-sm font-medium">Noch keine Verbindungen</p>
+                <p className="text-gray-500 text-xs mt-1">Verbinde dich im Training unter "Mitglieder".</p>
+              </div>
+            ) : trainingConnected.length === 0 ? (
+              <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
+                <div className="text-3xl mb-2">🥋</div>
+                <p className="text-gray-400 text-sm font-medium">Niemand aus deinen Verbindungen trainiert gerade</p>
+                <p className="text-gray-500 text-xs mt-1">{connectedMembers.length} Verbindung{connectedMembers.length !== 1 ? 'en' : ''} insgesamt</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-gray-500 text-xs px-1 mb-2">Gerade im Training ({trainingConnected.length})</p>
+                {trainingConnected.map(m => (
+                  <div key={m.id} className="bg-gray-800/50 rounded-xl border border-orange-800/30 px-4 py-3 flex items-center gap-3 mb-2">
+                    <div className="relative flex-shrink-0">
+                      <span className="text-2xl">{m.avatar}</span>
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-orange-400 rounded-full border border-gray-900" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-white font-semibold text-sm">{m.name}</div>
+                      <div className="text-orange-400/70 text-xs">🥋 Im Training</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── MITGLIEDER ── */}
+        {communitySubTab === 'mitglieder' && (
+          <div className="space-y-4">
+            {/* Mein Code */}
+            <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
+              <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">Dein Connect-Code</p>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 bg-gray-900 rounded-lg py-3 px-4 text-center">
+                  <span className="text-white font-black text-2xl tracking-[0.3em] font-mono">{myCode}</span>
+                </div>
+              </div>
+              <p className="text-gray-600 text-xs mt-2">Zeig diesen Code einem Trainingspartner — er gibt ihn ein um euch zu verbinden.</p>
+            </div>
+
+            {/* Code eingeben */}
+            <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
+              <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">Code eingeben</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={connectCode}
+                  onChange={e => setConnectCode(e.target.value.toUpperCase())}
+                  onKeyDown={e => e.key === 'Enter' && handleConnect()}
+                  placeholder="z.B. A3F7B2E9"
+                  maxLength={8}
+                  className="flex-1 bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:border-gray-400 focus:outline-none font-mono tracking-widest text-sm uppercase placeholder-gray-600"
+                />
+                <button
+                  onClick={handleConnect}
+                  disabled={connectCode.length < 6}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-semibold text-sm transition-all"
+                >
+                  Verbinden
+                </button>
+              </div>
+              {connectResult && (
+                <p className={`text-xs mt-2 ${
+                  connectResult.type === 'success' ? 'text-green-400' :
+                  connectResult.type === 'duplicate' ? 'text-yellow-400' : 'text-red-400'
+                }`}>
+                  {connectResult.type === 'success' ? '✅' : connectResult.type === 'duplicate' ? 'ℹ️' : '✗'} {connectResult.message}
+                </p>
+              )}
+            </div>
+
+            {/* Verbundene Mitglieder */}
+            <div>
+              <p className="text-gray-500 text-xs uppercase tracking-wider px-1 mb-2">
+                Verbindungen ({connectedMembers.length})
+              </p>
+              {connectedMembers.length === 0 ? (
+                <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-6 text-center">
+                  <p className="text-gray-500 text-sm">Noch keine Verbindungen</p>
+                  <p className="text-gray-600 text-xs mt-1">Tauscht im Training eure Codes aus.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {connectedMembers.map(m => {
+                    const status = m.isCheckedIn ? 'training' : m.onlineSince ? 'online' : 'offline';
+                    return (
+                      <div key={m.id} className="bg-gray-800/50 rounded-xl border border-gray-700 px-4 py-3 flex items-center gap-3">
+                        <div className="relative flex-shrink-0">
+                          <span className="text-2xl">{m.avatar}</span>
+                          <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900 ${
+                            status === 'training' ? 'bg-orange-400' :
+                            status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-gray-600'
+                          }`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-white font-semibold text-sm">{m.name}</div>
+                          <div className="text-gray-500 text-xs">
+                            {status === 'training' ? '🥋 Im Training' :
+                             status === 'online' ? '🟢 Online' : '⚫ Offline'}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── RANGLISTE ── */}
+        {communitySubTab === 'rangliste' && renderRanking()}
+      </div>
+    );
+  };
+
   // ── Rangliste ─────────────────────────────────────────────────────────────
   const renderRanking = () => {
     const rankMembers = members.filter(m => m.role === 'member');
@@ -552,6 +771,7 @@ export const MemberView: React.FC = () => {
       <main className={`max-w-4xl mx-auto ${activeTab === 'training' ? 'h-[calc(100vh-4rem)] flex flex-col' : activeTab === 'profil' ? '' : 'p-4 pb-24'}`}>
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'training' && <MemberLearningView />}
+        {activeTab === 'community' && <div className="p-4 pb-24">{renderCommunity()}</div>}
         {activeTab === 'progress' && renderRanking()}
         {activeTab === 'profil' && <ProfileView member={currentUser} />}
       </main>
@@ -562,6 +782,7 @@ export const MemberView: React.FC = () => {
           {([
             { id: 'dashboard' as Tab, icon: '🏠', label: 'Dashboard' },
             { id: 'training' as Tab, icon: '🥋', label: 'Training' },
+            { id: 'community' as Tab, icon: '👥', label: 'Community' },
             { id: 'progress' as Tab, icon: '🏆', label: 'Rang' },
             { id: 'profil' as Tab, icon: '👤', label: 'Profil' },
           ] as { id: Tab; icon: string; label: string }[]).map(tab => {
