@@ -10,7 +10,6 @@ import { ModuleOrder, RolePermissions, InstructorTabId, MemberTabId, JoinRequest
 import {
   LEVEL_DISPLAY,
   ROLE_DISPLAY,
-  EXAM_PERMISSIONS,
   hasAdminAccess,
   Member,
   CheckIn,
@@ -49,7 +48,8 @@ function canApproveCheckIn(role: InstructorRole, instructorId: string, checkIn: 
   return !!ownCourse;
 }
 
-type Tab = 'training' | 'community' | 'evaluate' | 'requests' | 'board' | 'admin';
+type Tab = 'dashboard' | 'training' | 'community' | 'admin';
+type DashboardSubTab = 'anfragen' | 'board' | 'bewerten';
 type CommunitySubTab = 'online' | 'mitglieder' | 'training' | 'rangliste';
 type AdminSubTab = 'analytics' | 'members' | 'bewerbungen' | 'lernbereich' | 'plattform';
 
@@ -108,7 +108,8 @@ export const InstructorView: React.FC = () => {
     rejectJoinRequest,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<Tab>('training');
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [dashboardSubTab, setDashboardSubTab] = useState<DashboardSubTab>('anfragen');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
   const [boardMessageText, setBoardMessageText] = useState('');
@@ -199,16 +200,15 @@ export const InstructorView: React.FC = () => {
   const pendingContactApps = getPendingContactApplications();
   const pendingInstructorApps = getPendingInstructorApplications();
   const totalPendingApps = pendingContactApps.length + pendingInstructorApps.length;
+  const unreadBoardNotifs = notifications.filter(n => n.type === 'board' && n.oduserId === currentUser.id && !n.read).length;
 
   // Check if user can access tab (Rollen-Check + Tab-Config)
   const canAccessTab = (tab: Tab): boolean => {
     const roleCheck = (() => {
       switch (tab) {
+        case 'dashboard': return true;
         case 'training':  return true;
         case 'community': return true;
-        case 'evaluate':  return EXAM_PERMISSIONS[currentUser.role].length > 0;
-        case 'requests':  return EXAM_PERMISSIONS[currentUser.role].length > 0;
-        case 'board':     return currentUser.role !== 'member';
         case 'admin':     return hasAdminAccess(currentUser);
         default:          return false;
       }
@@ -408,9 +408,9 @@ export const InstructorView: React.FC = () => {
                           <div className="text-green-400 text-sm font-medium">✅ {checkedInTime} Uhr</div>
                         </div>
                         <div className="flex gap-1 flex-shrink-0">
-                          {canAccessTab('evaluate') && (
+                          {canAccessTab('dashboard') && (
                             <button
-                              onClick={() => { setSelectedMember(member); setActiveTab('evaluate'); }}
+                              onClick={() => { setSelectedMember(member); setActiveTab('dashboard'); setDashboardSubTab('bewerten'); }}
                               className="bg-blue-600/80 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs"
                             >
                               Bewerten
@@ -798,7 +798,7 @@ export const InstructorView: React.FC = () => {
                           <div className="flex gap-1.5 flex-shrink-0">
                             <button onClick={() => awardBandaid(member.id, 'Instructor Bonus')} className="bg-gray-700/60 hover:bg-gray-700 text-gray-300 px-2.5 py-1.5 rounded-lg text-xs transition-all" title="Pflaster vergeben">🩹+</button>
                             <button onClick={() => setProfileMember(member)} className="bg-gray-700/60 hover:bg-gray-700 text-gray-300 px-2.5 py-1.5 rounded-lg text-xs transition-all" title="Profil anzeigen">👤</button>
-                            <button onClick={() => { setSelectedMember(member); setActiveTab('evaluate'); }} className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all">Bewerten</button>
+                            <button onClick={() => { setSelectedMember(member); setActiveTab('dashboard'); setDashboardSubTab('bewerten'); }} className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all">Bewerten</button>
                           </div>
                         </div>
                         <div className="px-4 pb-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500 border-t border-gray-700/40 pt-2">
@@ -954,6 +954,48 @@ export const InstructorView: React.FC = () => {
     );
   };
 
+
+  // ── DASHBOARD TAB ─────────────────────────────────────────────────────────
+  const renderDashboardTab = () => {
+    const anfragenBadge = pendingCheckIns.length + pendingExamRequests.length + pendingWishes.length + totalPendingApps + joinRequests.filter(r => r.status === 'pending').length;
+    const boardBadge = unreadBoardNotifs;
+
+    const subTabs: { id: DashboardSubTab; label: string; badge?: number }[] = [
+      { id: 'anfragen', label: '📋 Anfragen', badge: anfragenBadge > 0 ? anfragenBadge : undefined },
+      { id: 'board',    label: '💬 Board',    badge: boardBadge > 0 ? boardBadge : undefined },
+      { id: 'bewerten', label: '✏️ Bewerten' },
+    ];
+
+    return (
+      <div className="space-y-4">
+        {/* Sub-Tab Switcher */}
+        <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
+          {subTabs.map(st => (
+            <button
+              key={st.id}
+              onClick={() => setDashboardSubTab(st.id)}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all relative flex items-center justify-center gap-1.5 ${
+                dashboardSubTab === st.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              {st.label}
+              {st.badge !== undefined && st.badge > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold min-w-[18px] text-center ${
+                  dashboardSubTab === st.id ? 'bg-red-500 text-white' : 'bg-gray-600 text-gray-300'
+                }`}>
+                  {st.badge > 9 ? '9+' : st.badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {dashboardSubTab === 'anfragen' && renderRequestsTab()}
+        {dashboardSubTab === 'board' && renderBoardTab()}
+        {dashboardSubTab === 'bewerten' && renderEvaluateTab()}
+      </div>
+    );
+  };
 
   // Render Requests Tab
   const renderRequestsTab = () => {
@@ -2783,11 +2825,9 @@ export const InstructorView: React.FC = () => {
             { id: 'profil',    label: 'Profil', locked: true },
           ];
           const INSTRUCTOR_TAB_LABELS: { id: InstructorTabId; label: string; locked?: boolean }[] = [
+            { id: 'dashboard', label: 'Dashboard' },
             { id: 'training',  label: 'Training' },
             { id: 'community', label: 'Community' },
-            { id: 'evaluate',  label: 'Bewerten' },
-            { id: 'requests',  label: 'Anfragen' },
-            { id: 'board',     label: 'Board' },
             { id: 'admin',     label: 'Admin', locked: true },
           ];
 
@@ -2935,16 +2975,12 @@ export const InstructorView: React.FC = () => {
   };
 
   // Tab configuration
-  const unreadBoardNotifs = currentUser
-    ? notifications.filter(n => n.type === 'board' && n.oduserId === currentUser.id && !n.read).length
-    : 0;
+  const dashboardBadge = pendingCheckIns.length + pendingExamRequests.length + pendingWishes.length + totalPendingApps + joinRequests.filter(r => r.status === 'pending').length + unreadBoardNotifs;
 
   const allTabs: { id: Tab; label: string; icon: string; badge?: number }[] = [
+    { id: 'dashboard' as Tab, label: 'Dashboard', icon: '⚡', badge: dashboardBadge > 0 ? dashboardBadge : undefined },
     { id: 'training' as Tab, label: 'Training', icon: '🥋' },
     { id: 'community' as Tab, label: 'Community', icon: '👥' },
-    { id: 'evaluate' as Tab, label: 'Bewerten', icon: '✏️' },
-    { id: 'requests' as Tab, label: 'Anfragen', icon: '🟡', badge: pendingCheckIns.length + pendingExamRequests.length + pendingWishes.length },
-    { id: 'board' as Tab, label: 'Board', icon: '💬', badge: unreadBoardNotifs },
     { id: 'admin' as Tab, label: 'Admin', icon: '🔐' },
   ];
   // Nur role-zugängliche Tabs zeigen; tabConfig steuert ob klickbar (grayed out wenn deaktiviert)
@@ -2954,11 +2990,9 @@ export const InstructorView: React.FC = () => {
     <div className="min-h-screen bg-gray-950 text-white">
       {/* Content */}
       <main className="max-w-6xl mx-auto p-4 pb-24">
+        {activeTab === 'dashboard' && renderDashboardTab()}
         {activeTab === 'training' && <InstructorLearningView />}
         {activeTab === 'community' && renderCommunityTab()}
-        {activeTab === 'evaluate' && renderEvaluateTab()}
-        {activeTab === 'requests' && renderRequestsTab()}
-        {activeTab === 'board' && renderBoardTab()}
         {activeTab === 'admin' && renderAdminTab()}
       </main>
 
@@ -2978,7 +3012,7 @@ export const InstructorView: React.FC = () => {
                 onClick={() => {
                   if (!tabEnabled) return; // deaktivierte Tabs nicht klickbar
                   setActiveTab(tab.id);
-                  if (tab.id !== 'evaluate') {
+                  if (tab.id !== 'dashboard') {
                     setSelectedMember(null);
                     setSelectedModule(null);
                   }
