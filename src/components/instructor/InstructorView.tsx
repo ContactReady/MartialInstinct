@@ -2984,13 +2984,16 @@ export const InstructorView: React.FC = () => {
                     setSelectedModule(null);
                   }
                 }}
-                className={`flex-1 min-w-[60px] py-3 flex flex-col items-center gap-0.5 transition-colors relative ${
+                className={`flex-1 min-w-[60px] py-3 flex flex-col items-center gap-0.5 transition-all relative ${
                   !tabEnabled ? 'opacity-30 cursor-not-allowed'
-                    : activeTab === tab.id ? 'text-red-500' : 'text-gray-400'
+                    : activeTab === tab.id ? 'text-white' : 'text-gray-500'
                 }`}
               >
-                <span className="text-lg leading-tight">{tab.icon}</span>
-                <span className="text-[10px] leading-tight whitespace-nowrap">{tab.label}</span>
+                {tabEnabled && activeTab === tab.id && (
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-7 h-0.5 bg-red-500 rounded-full" />
+                )}
+                <span className={`text-lg leading-tight transition-transform ${activeTab === tab.id ? 'scale-110' : ''}`}>{tab.icon}</span>
+                <span className={`text-[10px] leading-tight whitespace-nowrap ${activeTab === tab.id ? 'font-semibold' : ''}`}>{tab.label}</span>
                 {tabEnabled && tab.badge && tab.badge > 0 ? (
                   <span className="absolute top-1.5 right-1/2 translate-x-3 bg-red-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-bold">
                     {tab.badge > 9 ? '9+' : tab.badge}

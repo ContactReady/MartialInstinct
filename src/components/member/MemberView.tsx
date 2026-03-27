@@ -737,13 +737,16 @@ export const MemberView: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => { if (tabEnabled) setActiveTab(tab.id); }}
-                className={`flex-1 py-4 flex flex-col items-center gap-1 transition-colors ${
+                className={`flex-1 py-3 flex flex-col items-center gap-1 transition-all relative ${
                   !tabEnabled ? 'opacity-30 cursor-not-allowed'
-                    : activeTab === tab.id ? 'text-red-500' : 'text-gray-400 hover:text-white'
+                    : activeTab === tab.id ? 'text-white' : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
-                <span className="text-xl">{tab.icon}</span>
-                <span className="text-xs">{tab.label}</span>
+                {tabEnabled && activeTab === tab.id && (
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-red-500 rounded-full" />
+                )}
+                <span className={`text-xl transition-transform ${activeTab === tab.id ? 'scale-110' : ''}`}>{tab.icon}</span>
+                <span className={`text-xs ${activeTab === tab.id ? 'font-semibold' : ''}`}>{tab.label}</span>
               </button>
             );
           })}
