@@ -12,7 +12,7 @@ import { MemberLearningView } from './MemberLearningView';
 import { ProfileView } from '../shared/ProfileView';
 import { RankingList } from '../shared/RankingList';
 
-type Tab = 'dashboard' | 'training' | 'community' | 'progress' | 'profil';
+type Tab = 'dashboard' | 'training' | 'community' | 'profil';
 type ApplicationType = 'contact' | 'assistant_instructor' | null;
 
 export const MemberView: React.FC = () => {
@@ -772,7 +772,6 @@ export const MemberView: React.FC = () => {
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'training' && <MemberLearningView />}
         {activeTab === 'community' && <div className="p-4 pb-24">{renderCommunity()}</div>}
-        {activeTab === 'progress' && renderRanking()}
         {activeTab === 'profil' && <ProfileView member={currentUser} />}
       </main>
 
@@ -783,7 +782,6 @@ export const MemberView: React.FC = () => {
             { id: 'dashboard' as Tab, icon: '🏠', label: 'Dashboard' },
             { id: 'training' as Tab, icon: '🥋', label: 'Training' },
             { id: 'community' as Tab, icon: '👥', label: 'Community' },
-            { id: 'progress' as Tab, icon: '🏆', label: 'Rang' },
             { id: 'profil' as Tab, icon: '👤', label: 'Profil' },
           ] as { id: Tab; icon: string; label: string }[]).map(tab => {
             const tabEnabled = tabConfig.memberTabs[tab.id as MemberTabId] !== false;

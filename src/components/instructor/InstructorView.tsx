@@ -2810,10 +2810,10 @@ export const InstructorView: React.FC = () => {
 
           // Tab-Konfiguration
           const MEMBER_TAB_LABELS: { id: MemberTabId; label: string; locked?: boolean }[] = [
-            { id: 'dashboard', label: 'Dashboard' },
-            { id: 'training',  label: 'Training' },
-            { id: 'progress',  label: 'Rang & Fortschritt' },
-            { id: 'profil',    label: 'Profil', locked: true },
+            { id: 'dashboard',  label: 'Dashboard' },
+            { id: 'training',   label: 'Training' },
+            { id: 'community',  label: 'Community' },
+            { id: 'profil',     label: 'Profil', locked: true },
           ];
           const INSTRUCTOR_TAB_LABELS: { id: InstructorTabId; label: string; locked?: boolean }[] = [
             { id: 'dashboard', label: 'Dashboard' },
