@@ -51,7 +51,7 @@ function canApproveCheckIn(role: InstructorRole, instructorId: string, checkIn: 
 
 type Tab = 'lernen' | 'community' | 'evaluate' | 'requests' | 'board' | 'admin';
 type CommunitySubTab = 'online' | 'mitglieder' | 'training' | 'rangliste';
-type AdminSubTab = 'members' | 'bewerbungen' | 'lernbereich' | 'plattform';
+type AdminSubTab = 'analytics' | 'members' | 'bewerbungen' | 'lernbereich' | 'plattform';
 
 export const InstructorView: React.FC = () => {
   const {
@@ -128,7 +128,7 @@ export const InstructorView: React.FC = () => {
   const [profileMember, setProfileMember] = useState<Member | null>(null);
 
   // Admin Sub-Tab State
-  const [adminSubTab, setAdminSubTab] = useState<AdminSubTab>('members');
+  const [adminSubTab, setAdminSubTab] = useState<AdminSubTab>('analytics');
 
   // Streak Restore State
   const [streakRestoreOpen, setStreakRestoreOpen] = useState<string | null>(null);
@@ -1870,6 +1870,7 @@ export const InstructorView: React.FC = () => {
         {/* Sub-Tab Switcher */}
         <div className="flex bg-gray-800/50 rounded-xl p-1 gap-1 border border-gray-700/50 overflow-x-auto">
           {([
+            ['analytics', '📊 Analytics'],
             ['members', '👥 Mitglieder'],
             ['bewerbungen', `💼 Bewerbungen${totalPendingApps > 0 ? ` (${totalPendingApps})` : ''}`],
             ['lernbereich', '📚 Lernbereich'],
@@ -1886,6 +1887,246 @@ export const InstructorView: React.FC = () => {
             </button>
           ))}
         </div>
+
+        {/* ── ANALYTICS ──────────────────────────────────────────────── */}
+        {adminSubTab === 'analytics' && (() => {
+          const allM = members.filter(m => m.role === 'member');
+          const now = new Date();
+
+          // Wochenstart-Helfer
+          const wStart = (d: Date) => {
+            const s = new Date(d); const day = s.getDay();
+            s.setDate(s.getDate() - (day === 0 ? 6 : day - 1)); s.setHours(0,0,0,0); return s;
+          };
+          const thisWeekStart = wStart(now);
+
+          // KPIs
+          const activeThisWeek = new Set(
+            checkIns.filter(c => c.status === 'approved' && c.approvedAt && new Date(c.approvedAt) >= thisWeekStart).map(c => c.memberId)
+          ).size;
+          const avgStreak = allM.length ? Math.round(allM.reduce((s, m) => s + m.streak.currentStreak, 0) / allM.length) : 0;
+          const stbCount = allM.filter(m => m.stopTheBleedCertified).length;
+          const pendingJoin = joinRequests.filter(r => r.status === 'pending').length;
+          const totalXP = allM.reduce((s, m) => s + (m.xp ?? 0), 0);
+
+          // Check-in Trend: letzte 8 Wochen
+          const weekTrend: { label: string; count: number }[] = [];
+          for (let i = 7; i >= 0; i--) {
+            const wS = new Date(thisWeekStart); wS.setDate(wS.getDate() - i * 7);
+            const wE = new Date(wS); wE.setDate(wE.getDate() + 7);
+            const label = i === 0 ? 'Jetzt'
+              : `${wS.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}`;
+            const count = checkIns.filter(c =>
+              c.status === 'approved' && c.approvedAt &&
+              new Date(c.approvedAt) >= wS && new Date(c.approvedAt) < wE
+            ).length;
+            weekTrend.push({ label, count });
+          }
+          const maxCheckIns = Math.max(...weekTrend.map(w => w.count), 1);
+
+          // Kapitel-Verteilung
+          const levelCounts: Record<string, number> = {};
+          allM.forEach(m => { levelCounts[m.currentLevel] = (levelCounts[m.currentLevel] ?? 0) + 1; });
+
+          // Modul-Abschluss (erste 10 Curriculum-Module)
+          const currMods = BLOCKS.filter(b => b.id !== 'assistant_instructor')
+            .flatMap(b => b.moduleIds.map(id => MODULES.find(m => m.id === id)!))
+            .filter(Boolean).slice(0, 10);
+
+          const getModDone = (member: Member, modId: string) => {
+            const mod = MODULES.find(m => m.id === modId);
+            if (!mod) return { t: false, c: false };
+            const req = mod.techniques.filter(t => t.isRequired);
+            if (!req.length) return { t: false, c: false };
+            const t = req.every(t => { const s = member.techniqueProgress[t.id]?.status; return s === 'tech_passed' || s === 'tac_passed'; });
+            const c = req.every(t => member.techniqueProgress[t.id]?.status === 'tac_passed');
+            return { t, c };
+          };
+
+          // Inaktive Mitglieder (>14 Tage kein Training)
+          const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 14);
+          const inactive = allM.filter(m => {
+            const last = m.streak.lastTrainingDate ? new Date(m.streak.lastTrainingDate) : null;
+            return !last || last < cutoff;
+          }).sort((a, b) => {
+            const la = a.streak.lastTrainingDate ? new Date(a.streak.lastTrainingDate).getTime() : 0;
+            const lb = b.streak.lastTrainingDate ? new Date(b.streak.lastTrainingDate).getTime() : 0;
+            return la - lb;
+          });
+
+          const LEVEL_LABELS: Record<string, { label: string; color: string; icon: string }> = {
+            conflict:   { label: 'Conflict Ready',  color: 'bg-gray-500',  icon: '⚪' },
+            combat:     { label: 'Combat Ready',    color: 'bg-gray-300',  icon: '⚫' },
+            tactical:   { label: 'Tactical Ready',  color: 'bg-red-600',   icon: '🔴' },
+            contact:    { label: 'Contact Ready',   color: 'bg-red-400',   icon: '☠️' },
+            assistant_instructor: { label: 'Asst. Instructor', color: 'bg-yellow-500', icon: '🎓' },
+          };
+
+          return (
+            <div className="space-y-5">
+
+              {/* ── KPI Karten ── */}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'Mitglieder', value: allM.length, icon: '👥', sub: `${activeThisWeek} aktiv diese Woche` },
+                  { label: 'Ø Streak', value: `${avgStreak}W`, icon: '🔥', sub: 'Durchschnitt aller Member' },
+                  { label: 'Stop The Bleed', value: stbCount, icon: '🩸', sub: `${allM.length ? Math.round(stbCount / allM.length * 100) : 0}% zertifiziert` },
+                  { label: 'Gesamt XP', value: totalXP.toLocaleString('de-DE'), icon: '⭐', sub: `Ø ${allM.length ? Math.round(totalXP / allM.length) : 0} XP/Mitglied` },
+                ].map(k => (
+                  <div key={k.label} className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="text-2xl font-black text-white">{k.value}</div>
+                        <div className="text-xs font-semibold text-gray-400 mt-0.5">{k.label}</div>
+                        <div className="text-[10px] text-gray-600 mt-1">{k.sub}</div>
+                      </div>
+                      <span className="text-2xl opacity-60">{k.icon}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Offene Beitrittsanfragen Banner */}
+              {pendingJoin > 0 && (
+                <button
+                  onClick={() => setAdminSubTab('bewerbungen')}
+                  className="w-full bg-yellow-900/30 border border-yellow-700/50 rounded-xl px-4 py-3 flex items-center justify-between hover:bg-yellow-900/40 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-yellow-400 font-bold text-sm">🔔 {pendingJoin} offene Beitrittsanfrage{pendingJoin > 1 ? 'n' : ''}</span>
+                  </div>
+                  <span className="text-yellow-600 text-xs">Anfragen öffnen →</span>
+                </button>
+              )}
+
+              {/* ── Check-in Trend ── */}
+              <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-700/30">
+                  <div className="text-sm font-semibold text-white">Check-in Trend</div>
+                  <div className="text-[10px] text-gray-500 mt-0.5">Bestätigte Trainings — letzte 8 Wochen</div>
+                </div>
+                <div className="px-4 py-4">
+                  <div className="flex items-end gap-1.5 h-24">
+                    {weekTrend.map((w, i) => (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                        <span className="text-[9px] text-gray-500 font-mono">{w.count || ''}</span>
+                        <div
+                          className={`w-full rounded-t transition-all ${i === weekTrend.length - 1 ? 'bg-red-600' : 'bg-gray-600'}`}
+                          style={{ height: `${Math.max((w.count / maxCheckIns) * 72, w.count > 0 ? 4 : 0)}px` }}
+                        />
+                        <span className="text-[8px] text-gray-600 text-center leading-tight">{w.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── 2-Spalten ── */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                {/* Kapitel-Verteilung */}
+                <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-700/30">
+                    <div className="text-sm font-semibold text-white">Kapitel-Verteilung</div>
+                  </div>
+                  <div className="px-4 py-3 space-y-2.5">
+                    {Object.entries(LEVEL_LABELS).map(([level, meta]) => {
+                      const count = levelCounts[level] ?? 0;
+                      const pct = allM.length ? (count / allM.length) * 100 : 0;
+                      return (
+                        <div key={level}>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs text-gray-300">{meta.icon} {meta.label}</span>
+                            <span className="text-xs font-bold text-white">{count}</span>
+                          </div>
+                          <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${meta.color} transition-all`} style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Inaktive Mitglieder */}
+                <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-700/30">
+                    <div className="text-sm font-semibold text-white">Inaktiv &gt;14 Tage</div>
+                    <div className="text-[10px] text-gray-500 mt-0.5">{inactive.length} Mitglieder</div>
+                  </div>
+                  <div className="divide-y divide-gray-700/30 max-h-52 overflow-y-auto">
+                    {inactive.length === 0 ? (
+                      <div className="px-4 py-4 text-center text-gray-600 text-xs">Alle aktiv 💪</div>
+                    ) : inactive.map(m => {
+                      const last = m.streak.lastTrainingDate ? new Date(m.streak.lastTrainingDate) : null;
+                      const daysAgo = last ? Math.floor((now.getTime() - last.getTime()) / 86400000) : null;
+                      return (
+                        <div key={m.id} className="px-4 py-2.5 flex items-center gap-2">
+                          <span className="text-base flex-shrink-0">{m.avatar}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs text-gray-300 truncate">{m.name}</div>
+                            <div className="text-[10px] text-gray-600">
+                              {daysAgo === null ? 'Noch nie' : `vor ${daysAgo} Tagen`}
+                            </div>
+                          </div>
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                            daysAgo === null || daysAgo > 30 ? 'bg-red-900/40 text-red-400' : 'bg-yellow-900/40 text-yellow-400'
+                          }`}>
+                            {daysAgo === null ? '–' : `${daysAgo}d`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Modul-Abschlussrate ── */}
+              <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-700/30">
+                  <div className="text-sm font-semibold text-white">Modul-Abschlussrate</div>
+                  <div className="text-[10px] text-gray-500 mt-0.5">Anteil der Mitglieder die Tactics / Combat je Modul bestanden haben</div>
+                </div>
+                <div className="px-4 py-3 space-y-3">
+                  {currMods.map((mod, idx) => {
+                    const tDone = allM.filter(m => getModDone(m, mod.id).t).length;
+                    const cDone = allM.filter(m => getModDone(m, mod.id).c).length;
+                    const tPct = allM.length ? (tDone / allM.length) * 100 : 0;
+                    const cPct = allM.length ? (cDone / allM.length) * 100 : 0;
+                    const romanNums = ['I','II','III','IV','V','VI','VII','VIII','IX','X'];
+                    return (
+                      <div key={mod.id}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-gray-400">
+                            <span className="text-gray-600 font-mono mr-1.5">{romanNums[idx]}</span>
+                            {mod.name}
+                          </span>
+                          <div className="flex gap-3 text-[10px] text-gray-500">
+                            <span>T: <span className="text-gray-300 font-semibold">{tDone}/{allM.length}</span></span>
+                            <span>C: <span className="text-gray-300 font-semibold">{cDone}/{allM.length}</span></span>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 h-2">
+                          <div className="flex-1 bg-gray-700/60 rounded-full overflow-hidden">
+                            <div className="h-full bg-gray-400 rounded-full transition-all" style={{ width: `${tPct}%` }} />
+                          </div>
+                          <div className="flex-1 bg-gray-700/60 rounded-full overflow-hidden">
+                            <div className="h-full bg-red-600 rounded-full transition-all" style={{ width: `${cPct}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="flex gap-4 text-[9px] text-gray-600 pt-1">
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-gray-400 inline-block" /> Tactics</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-600 inline-block" /> Combat</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          );
+        })()}
 
         {/* ── MITGLIEDER ──────────────────────────────────────────────── */}
         {adminSubTab === 'members' && (
