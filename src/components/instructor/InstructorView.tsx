@@ -49,7 +49,7 @@ function canApproveCheckIn(role: InstructorRole, instructorId: string, checkIn: 
   return !!ownCourse;
 }
 
-type Tab = 'lernen' | 'community' | 'evaluate' | 'requests' | 'board' | 'admin';
+type Tab = 'training' | 'community' | 'evaluate' | 'requests' | 'board' | 'admin';
 type CommunitySubTab = 'online' | 'mitglieder' | 'training' | 'rangliste';
 type AdminSubTab = 'analytics' | 'members' | 'bewerbungen' | 'lernbereich' | 'plattform';
 
@@ -108,7 +108,7 @@ export const InstructorView: React.FC = () => {
     rejectJoinRequest,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<Tab>('lernen');
+  const [activeTab, setActiveTab] = useState<Tab>('training');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
   const [boardMessageText, setBoardMessageText] = useState('');
@@ -204,7 +204,7 @@ export const InstructorView: React.FC = () => {
   const canAccessTab = (tab: Tab): boolean => {
     const roleCheck = (() => {
       switch (tab) {
-        case 'lernen':    return true;
+        case 'training':  return true;
         case 'community': return true;
         case 'evaluate':  return EXAM_PERMISSIONS[currentUser.role].length > 0;
         case 'requests':  return EXAM_PERMISSIONS[currentUser.role].length > 0;
@@ -2778,13 +2778,12 @@ export const InstructorView: React.FC = () => {
           // Tab-Konfiguration
           const MEMBER_TAB_LABELS: { id: MemberTabId; label: string; locked?: boolean }[] = [
             { id: 'dashboard', label: 'Dashboard' },
-            { id: 'lernen',    label: 'Lernen' },
+            { id: 'training',  label: 'Training' },
             { id: 'progress',  label: 'Rang & Fortschritt' },
-            { id: 'requests',  label: 'Anfragen' },
             { id: 'profil',    label: 'Profil', locked: true },
           ];
           const INSTRUCTOR_TAB_LABELS: { id: InstructorTabId; label: string; locked?: boolean }[] = [
-            { id: 'lernen',    label: 'Lernen' },
+            { id: 'training',  label: 'Training' },
             { id: 'community', label: 'Community' },
             { id: 'evaluate',  label: 'Bewerten' },
             { id: 'requests',  label: 'Anfragen' },
@@ -2941,7 +2940,7 @@ export const InstructorView: React.FC = () => {
     : 0;
 
   const allTabs: { id: Tab; label: string; icon: string; badge?: number }[] = [
-    { id: 'lernen' as Tab, label: 'Lernen', icon: '📚' },
+    { id: 'training' as Tab, label: 'Training', icon: '🥋' },
     { id: 'community' as Tab, label: 'Community', icon: '👥' },
     { id: 'evaluate' as Tab, label: 'Bewerten', icon: '✏️' },
     { id: 'requests' as Tab, label: 'Anfragen', icon: '🟡', badge: pendingCheckIns.length + pendingExamRequests.length + pendingWishes.length },
@@ -2955,7 +2954,7 @@ export const InstructorView: React.FC = () => {
     <div className="min-h-screen bg-gray-950 text-white">
       {/* Content */}
       <main className="max-w-6xl mx-auto p-4 pb-24">
-        {activeTab === 'lernen' && <InstructorLearningView />}
+        {activeTab === 'training' && <InstructorLearningView />}
         {activeTab === 'community' && renderCommunityTab()}
         {activeTab === 'evaluate' && renderEvaluateTab()}
         {activeTab === 'requests' && renderRequestsTab()}

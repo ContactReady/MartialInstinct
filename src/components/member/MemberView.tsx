@@ -12,7 +12,7 @@ import { MemberLearningView } from './MemberLearningView';
 import { ProfileView } from '../shared/ProfileView';
 import { RankingList } from '../shared/RankingList';
 
-type Tab = 'dashboard' | 'lernen' | 'progress' | 'requests' | 'profil';
+type Tab = 'dashboard' | 'training' | 'progress' | 'profil';
 type ApplicationType = 'contact' | 'assistant_instructor' | null;
 
 export const MemberView: React.FC = () => {
@@ -32,7 +32,6 @@ export const MemberView: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [showApplicationModal, setShowApplicationModal] = useState<ApplicationType>(null);
-  const [memberRequestSubTab, setMemberRequestSubTab] = useState<'exams' | 'checkins'>('exams');
   
   // Contact Application Answers
   const [contactAnswers, setContactAnswers] = useState({
@@ -364,170 +363,6 @@ export const MemberView: React.FC = () => {
     );
   };
 
-  // Render Requests Tab
-  const renderRequests = () => {
-    const pendingRequests = currentUser.examRequests.filter(r => r.status === 'pending');
-    const processedRequests = currentUser.examRequests.filter(r => r.status !== 'pending');
-
-    // Check-in Verlauf des Members (alle, sortiert nach Datum)
-    const myCheckIns = checkIns
-      .filter(c => c.memberId === currentUser.id)
-      .slice()
-      .sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
-
-    const myPendingCheckIns = myCheckIns.filter(c => c.status === 'pending');
-
-    const levelBadge = (level: 'technical' | 'tactical') =>
-      level === 'technical'
-        ? <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20">🔷 Technisch</span>
-        : <span className="text-xs bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded border border-orange-500/20">🔶 Taktisch</span>;
-
-    const formatDate = (d: Date) => new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
-    const formatTime = (d: Date) => new Date(d).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-
-    return (
-      <div className="space-y-4">
-        {/* Sub-Tab Switcher */}
-        <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
-          <button
-            onClick={() => setMemberRequestSubTab('exams')}
-            className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
-              memberRequestSubTab === 'exams' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            🔷 Prüfungsanfragen
-            {pendingRequests.length > 0 && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                memberRequestSubTab === 'exams' ? 'bg-red-500 text-white' : 'bg-gray-600 text-gray-300'
-              }`}>
-                {pendingRequests.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setMemberRequestSubTab('checkins')}
-            className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
-              memberRequestSubTab === 'checkins' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            📍 Check-in Anfragen
-            {myPendingCheckIns.length > 0 && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                memberRequestSubTab === 'checkins' ? 'bg-red-500 text-white' : 'bg-gray-600 text-gray-300'
-              }`}>
-                {myPendingCheckIns.length}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* ── Meine Prüfungsanfragen ───────────────────────────────────── */}
-        {memberRequestSubTab === 'exams' && (
-          <div className="space-y-4">
-            {/* Offene */}
-            <div className="bg-gray-800/50 rounded-xl p-5 border border-gray-700">
-              <h3 className="text-base font-bold text-white mb-4">⏳ Offen</h3>
-              {pendingRequests.length === 0 ? (
-                <p className="text-gray-500 text-sm">Keine offenen Prüfungsanfragen</p>
-              ) : (
-                <div className="space-y-3">
-                  {pendingRequests.map(req => (
-                    <div key={req.id} className="bg-gray-700/50 rounded-xl p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="font-semibold text-white">{req.techniqueName}</div>
-                          <div className="text-gray-400 text-xs mt-0.5">{req.moduleName}</div>
-                        </div>
-                        {levelBadge(req.examLevel)}
-                      </div>
-                      <div className="text-yellow-500/80 text-xs mt-2 flex items-center gap-1">
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        Gesendet am {new Date(req.requestedAt).toLocaleDateString('de-DE')}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Abgeschlossene */}
-            {processedRequests.length > 0 && (
-              <div className="bg-gray-800/50 rounded-xl p-5 border border-gray-700">
-                <h3 className="text-base font-bold text-white mb-4">📋 Abgeschlossen</h3>
-                <div className="space-y-3">
-                  {processedRequests.slice(-10).reverse().map(req => (
-                    <div key={req.id} className="bg-gray-700/50 rounded-xl p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="font-semibold text-white">{req.techniqueName}</div>
-                          <div className="text-gray-400 text-xs mt-0.5">{req.moduleName}</div>
-                        </div>
-                        <div className="flex-shrink-0 flex flex-col items-end gap-1">
-                          {levelBadge(req.examLevel)}
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            req.status === 'passed'
-                              ? 'bg-green-500/20 text-green-400'
-                              : 'bg-orange-500/20 text-orange-400'
-                          }`}>
-                            {req.status === 'passed' ? '✅ Bestanden' : '↩ Nachtrainieren'}
-                          </span>
-                        </div>
-                      </div>
-                      {req.feedback && (
-                        <div className="mt-2 p-2 bg-gray-800/80 rounded-lg text-xs text-gray-300 border-l-2 border-gray-600">
-                          <span className="text-gray-500">{req.examinerName}: </span>
-                          {req.feedback}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Meine Check-in Anfragen ──────────────────────────────────── */}
-        {memberRequestSubTab === 'checkins' && (
-          <div className="space-y-3">
-            {myCheckIns.length === 0 ? (
-              <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/30 text-center">
-                <p className="text-gray-500 text-sm">Noch keine Check-ins angefragt</p>
-              </div>
-            ) : (
-              myCheckIns.slice(0, 20).map(ci => (
-                <div key={ci.id} className="bg-gray-800/50 rounded-xl border border-gray-700 px-4 py-3 flex items-center gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-white text-sm font-medium">
-                      {formatDate(ci.requestedAt)}
-                    </div>
-                    <div className="text-gray-500 text-xs">{formatTime(ci.requestedAt)} Uhr</div>
-                  </div>
-                  <div className="flex-shrink-0">
-                    {ci.status === 'pending' && (
-                      <span className="text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-500/20 px-2.5 py-1 rounded-full flex items-center gap-1">
-                        <Loader2 className="w-3 h-3 animate-spin" /> Ausstehend
-                      </span>
-                    )}
-                    {ci.status === 'approved' && (
-                      <span className="text-xs bg-green-500/20 text-green-400 border border-green-500/20 px-2.5 py-1 rounded-full">
-                        ✅ Bestätigt
-                      </span>
-                    )}
-                    {ci.status === 'rejected' && (
-                      <span className="text-xs bg-red-500/20 text-red-400 border border-red-500/20 px-2.5 py-1 rounded-full">
-                        ✕ Abgelehnt
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   // Contact Application Modal
   const renderContactApplicationModal = () => (
@@ -714,11 +549,10 @@ export const MemberView: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       {/* Content */}
-      <main className={`max-w-4xl mx-auto ${activeTab === 'lernen' ? 'h-[calc(100vh-4rem)] flex flex-col' : activeTab === 'profil' ? '' : 'p-4 pb-24'}`}>
+      <main className={`max-w-4xl mx-auto ${activeTab === 'training' ? 'h-[calc(100vh-4rem)] flex flex-col' : activeTab === 'profil' ? '' : 'p-4 pb-24'}`}>
         {activeTab === 'dashboard' && renderDashboard()}
-        {activeTab === 'lernen' && <MemberLearningView />}
+        {activeTab === 'training' && <MemberLearningView />}
         {activeTab === 'progress' && renderRanking()}
-        {activeTab === 'requests' && renderRequests()}
         {activeTab === 'profil' && <ProfileView member={currentUser} />}
       </main>
 
@@ -727,9 +561,8 @@ export const MemberView: React.FC = () => {
         <div className="max-w-4xl mx-auto flex">
           {([
             { id: 'dashboard' as Tab, icon: '🏠', label: 'Dashboard' },
-            { id: 'lernen' as Tab, icon: '🎓', label: 'Lernen' },
+            { id: 'training' as Tab, icon: '🥋', label: 'Training' },
             { id: 'progress' as Tab, icon: '🏆', label: 'Rang' },
-            { id: 'requests' as Tab, icon: '📝', label: 'Anfragen' },
             { id: 'profil' as Tab, icon: '👤', label: 'Profil' },
           ] as { id: Tab; icon: string; label: string }[]).map(tab => {
             const tabEnabled = tabConfig.memberTabs[tab.id as MemberTabId] !== false;

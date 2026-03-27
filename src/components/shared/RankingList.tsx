@@ -156,7 +156,11 @@ export const RankingList: React.FC<RankingListProps> = ({
 
       {/* Liste */}
       {sorted.length === 0 ? (
-        <div className="text-center text-gray-500 text-sm py-8">Keine Einträge</div>
+        <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 py-12 text-center">
+          <div className="text-4xl mb-3">🏆</div>
+          <p className="text-gray-400 text-sm font-medium">Noch keine Mitglieder in der Rangliste</p>
+          <p className="text-gray-600 text-xs mt-1">Sobald Mitglieder aktiv sind, erscheinen sie hier.</p>
+        </div>
       ) : (
         <div className="space-y-2">
           {sorted.map((m, idx) => {
