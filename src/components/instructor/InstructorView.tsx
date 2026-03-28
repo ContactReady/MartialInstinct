@@ -1904,8 +1904,8 @@ export const InstructorView: React.FC = () => {
         <div className="flex bg-gray-800/50 rounded-xl p-1 gap-1 border border-gray-700/50 overflow-x-auto">
           {([
             ['analytics', '📊 Analytics'],
-            ['members', '👥 Mitglieder'],
             ['training', '🥋 Training'],
+            ['members', '👥 Mitglieder'],
             ['bewerbungen', `💼 Bewerbungen${totalPendingApps > 0 ? ` (${totalPendingApps})` : ''}`],
             ['verwaltung', '⚙️ Verwaltung'],
           ] as [AdminSubTab, string][]).map(([id, label]) => (
