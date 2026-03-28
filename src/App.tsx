@@ -551,7 +551,7 @@ function playNotificationSound() {
 }
 
 const AppContent: React.FC = () => {
-  const { currentUser, login, darkMode, notifications, requestCheckIn, checkIns } = useApp();
+  const { currentUser, login, darkMode, notifications } = useApp();
   const [viewMode, setViewMode] = useState<'member' | 'instructor'>('member');
   const [showSettings, setShowSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -683,39 +683,8 @@ const AppContent: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Check-In Leiste (nur Member-View) ── */}
-      {actualViewMode === 'member' && (() => {
-        const now = new Date();
-        const todayStr = now.toDateString();
-        const todayCheckIn = checkIns.find(
-          c => c.memberId === currentUser!.id && new Date(c.requestedAt).toDateString() === todayStr
-        );
-        const status = todayCheckIn?.status ?? 'none';
-        const approvedAt = todayCheckIn?.approvedAt ? new Date(todayCheckIn.approvedAt) : null;
-        return (
-          <div className={`fixed top-10 left-0 right-0 z-40 flex items-center justify-between px-4 border-b ${
-            status === 'approved' ? 'bg-green-950/90 border-green-800/50' : 'bg-gray-900 border-gray-800'
-          }`} style={{ height: '40px' }}>
-            <div>
-              <span className="text-[11px] font-bold text-white">Trainings Check-In</span>
-              <span className={`text-[10px] ml-2 ${status === 'approved' ? 'text-green-400' : 'text-gray-500'}`}>
-                {status === 'approved'
-                  ? `✓ Eingecheckt${approvedAt ? ` · ${approvedAt.getHours().toString().padStart(2,'0')}:${approvedAt.getMinutes().toString().padStart(2,'0')} Uhr` : ''}`
-                  : status === 'pending' ? 'Warte auf Bestätigung…'
-                  : 'Sei heute dabei!'}
-              </span>
-            </div>
-            {status === 'none' && (
-              <button onClick={requestCheckIn} className="bg-red-600 hover:bg-red-500 active:scale-95 text-white text-[11px] font-bold px-3 py-1 rounded-lg transition-all">
-                Einchecken
-              </button>
-            )}
-          </div>
-        );
-      })()}
-
       {/* Main Content */}
-      <div className={actualViewMode === 'member' ? 'pt-20' : 'pt-10'}>
+      <div className="pt-10">
         {actualViewMode === 'member' ? <MemberView /> : <InstructorView />}
       </div>
 

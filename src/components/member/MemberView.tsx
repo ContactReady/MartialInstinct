@@ -4,7 +4,7 @@
 // ============================================
 
 import React, { useState, useEffect } from 'react';
-import {} from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { MemberTabId } from '../../types';
 import { BLOCKS } from '../../data/modules';
@@ -19,6 +19,7 @@ export const MemberView: React.FC = () => {
   const {
     currentUser,
     members,
+    requestCheckIn,
     checkIns,
     getBlockProgress,
     isBlockUnlocked,
@@ -71,6 +72,15 @@ export const MemberView: React.FC = () => {
 
 
 
+  // Check-in Status aus dem geteilten checkIns-Array ableiten (aktualisiert sich sofort wenn Trainer bestätigt)
+  const todayStr = now.toDateString();
+  const todayCheckIn = checkIns.find(
+    c => c.memberId === currentUser.id &&
+         new Date(c.requestedAt).toDateString() === todayStr
+  );
+  const checkInStatus = todayCheckIn?.status ?? 'none'; // 'none' | 'pending' | 'approved' | 'rejected'
+  const checkInApprovedAt = todayCheckIn?.approvedAt ? new Date(todayCheckIn.approvedAt) : null;
+
   // Submit contact application
   const handleSubmitContactApplication = () => {
     submitContactApplication(contactAnswers);
@@ -107,8 +117,7 @@ export const MemberView: React.FC = () => {
       .slice(0, 3);
 
     return (
-      <div className="space-y-3 p-4 pb-24">
-
+      <div className="space-y-4 p-4 pb-24">
         {/* Stats */}
         <div className="grid grid-cols-4 gap-2">
           <div className="bg-gradient-to-b from-orange-900/40 to-orange-900/20 rounded-xl p-3 border border-orange-800/40 text-center">
@@ -222,8 +231,7 @@ export const MemberView: React.FC = () => {
 
     return (
       <div className="space-y-4">
-        {/* Sub-Tab Switcher — sticky */}
-        <div className="sticky top-0 z-30 bg-gray-950 -mx-4 px-4 pt-4 pb-2">
+        {/* Sub-Tab Switcher */}
         <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
           {([
             { id: 'online' as const, label: '🟢 Online', badge: onlineConnected.length },
@@ -244,7 +252,6 @@ export const MemberView: React.FC = () => {
               )}
             </button>
           ))}
-        </div>
         </div>
 
         {/* ── ONLINE ── */}
@@ -604,8 +611,39 @@ export const MemberView: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
 
+      {/* ── Fixed Check-In Bar ─────────────────────────────── */}
+      <div className={`fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 border-b ${
+        checkInStatus === 'approved'
+          ? 'bg-green-950/80 border-green-800/50'
+          : 'bg-gray-900 border-gray-800'
+      }`} style={{ height: '44px' }}>
+        <div className="flex flex-col justify-center">
+          <span className="text-[11px] font-bold text-white leading-tight">Trainings Check-In</span>
+          <span className={`text-[10px] leading-tight ${checkInStatus === 'approved' ? 'text-green-400' : checkInStatus === 'pending' ? 'text-gray-400' : 'text-gray-500'}`}>
+            {checkInStatus === 'approved'
+              ? `✓ Eingecheckt${checkInApprovedAt ? ` · ${checkInApprovedAt.getHours().toString().padStart(2,'0')}:${checkInApprovedAt.getMinutes().toString().padStart(2,'0')} Uhr` : ''}`
+              : checkInStatus === 'pending'
+              ? 'Warte auf Trainer-Bestätigung…'
+              : 'Sei heute dabei!'}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {checkInStatus === 'none' && (
+            <button
+              onClick={requestCheckIn}
+              className="bg-red-600 hover:bg-red-500 active:scale-95 text-white text-[11px] font-bold px-3 py-1 rounded-lg transition-all"
+            >
+              Einchecken
+            </button>
+          )}
+          {checkInStatus === 'pending' && (
+            <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+          )}
+        </div>
+      </div>
+
       {/* Content */}
-      <main className={`max-w-4xl mx-auto ${activeTab === 'training' ? 'h-[calc(100vh-5rem)] flex flex-col' : 'pb-24'}`}>
+      <main className={`max-w-4xl mx-auto ${activeTab === 'training' ? 'pt-11 h-[calc(100vh-2.75rem)] flex flex-col' : 'pt-11'}`}>
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'training' && <MemberLearningView />}
         {activeTab === 'community' && <div className="p-4 pb-24">{renderCommunity()}</div>}

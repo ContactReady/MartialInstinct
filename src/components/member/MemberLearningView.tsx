@@ -350,7 +350,7 @@ export const MemberLearningView: React.FC = () => {
         const myPendingCheckIns = checkIns.filter(c => c.memberId === currentUser.id && c.status === 'pending').length;
         const totalPending = pendingExams + myPendingCheckIns;
         return (
-          <div className="sticky top-0 z-30 bg-gray-950 px-4 pt-4 pb-3 border-b border-gray-700/50">
+          <div className="px-4 pt-4 pb-3 border-b border-gray-700/50">
             <div className="flex bg-gray-800/60 rounded-xl p-1 gap-1">
               <button
                 onClick={() => setLearningTab('theorie')}
