@@ -669,7 +669,7 @@ export const DEFAULT_PERMISSIONS: PermissionsConfig = {
 
 // ── Tab-Verwaltung ────────────────────────────────────────────────────────────
 export type MemberTabId = 'dashboard' | 'training' | 'community' | 'profil';
-export type InstructorTabId = 'dashboard' | 'training' | 'community' | 'admin';
+export type InstructorTabId = 'dashboard' | 'training' | 'community' | 'profil' | 'admin';
 
 export interface PlatformTabConfig {
   memberTabs:     Record<MemberTabId, boolean>;
@@ -678,7 +678,7 @@ export interface PlatformTabConfig {
 
 export const DEFAULT_TAB_CONFIG: PlatformTabConfig = {
   memberTabs:     { dashboard: true, training: true, community: true, profil: true },
-  instructorTabs: { dashboard: true, training: true, community: true, admin: true },
+  instructorTabs: { dashboard: true, training: true, community: true, profil: true, admin: true },
 };
 
 export const ROLE_DISPLAY: Record<InstructorRole, { label: string; color: string; bgColor: string }> = {

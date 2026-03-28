@@ -48,7 +48,7 @@ function canApproveCheckIn(role: InstructorRole, instructorId: string, checkIn: 
   return !!ownCourse;
 }
 
-type Tab = 'dashboard' | 'training' | 'community' | 'admin';
+type Tab = 'dashboard' | 'training' | 'community' | 'admin' | 'profil';
 type DashboardSubTab = 'anfragen' | 'board' | 'bewerten';
 type CommunitySubTab = 'online' | 'mitglieder' | 'training' | 'rangliste';
 type AdminSubTab = 'analytics' | 'members' | 'bewerbungen' | 'lernbereich' | 'plattform';
@@ -209,6 +209,7 @@ export const InstructorView: React.FC = () => {
         case 'dashboard': return true;
         case 'training':  return true;
         case 'community': return true;
+        case 'profil':    return true;
         case 'admin':     return hasAdminAccess(currentUser);
         default:          return false;
       }
@@ -2819,6 +2820,7 @@ export const InstructorView: React.FC = () => {
             { id: 'dashboard', label: 'Dashboard' },
             { id: 'training',  label: 'Training' },
             { id: 'community', label: 'Community' },
+            { id: 'profil',    label: 'Profil' },
             { id: 'admin',     label: 'Admin', locked: true },
           ];
 
@@ -2972,6 +2974,7 @@ export const InstructorView: React.FC = () => {
     { id: 'dashboard' as Tab, label: 'Dashboard', icon: '⚡', badge: dashboardBadge > 0 ? dashboardBadge : undefined },
     { id: 'training' as Tab, label: 'Training', icon: '🥋' },
     { id: 'community' as Tab, label: 'Community', icon: '👥' },
+    { id: 'profil' as Tab, label: 'Profil', icon: '👤' },
     { id: 'admin' as Tab, label: 'Admin', icon: '🔐' },
   ];
   // Nur role-zugängliche Tabs zeigen; tabConfig steuert ob klickbar (grayed out wenn deaktiviert)
@@ -2984,6 +2987,7 @@ export const InstructorView: React.FC = () => {
         {activeTab === 'dashboard' && renderDashboardTab()}
         {activeTab === 'training' && <InstructorLearningView />}
         {activeTab === 'community' && renderCommunityTab()}
+        {activeTab === 'profil' && <ProfileView member={currentUser} />}
         {activeTab === 'admin' && renderAdminTab()}
       </main>
 
