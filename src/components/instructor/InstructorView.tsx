@@ -51,7 +51,7 @@ function canApproveCheckIn(role: InstructorRole, instructorId: string, checkIn: 
 type Tab = 'dashboard' | 'training' | 'community' | 'admin' | 'profil';
 type DashboardSubTab = 'anfragen' | 'board' | 'bewerten';
 type CommunitySubTab = 'online' | 'mitglieder' | 'training' | 'rangliste';
-type AdminSubTab = 'analytics' | 'members' | 'bewerbungen' | 'lernbereich' | 'plattform';
+type AdminSubTab = 'analytics' | 'members' | 'training' | 'bewerbungen' | 'verwaltung';
 
 export const InstructorView: React.FC = () => {
   const {
@@ -1905,9 +1905,9 @@ export const InstructorView: React.FC = () => {
           {([
             ['analytics', '📊 Analytics'],
             ['members', '👥 Mitglieder'],
+            ['training', '🥋 Training'],
             ['bewerbungen', `💼 Bewerbungen${totalPendingApps > 0 ? ` (${totalPendingApps})` : ''}`],
-            ['lernbereich', '📚 Lernbereich'],
-            ['plattform', '⚙️ Plattform'],
+            ['verwaltung', '⚙️ Verwaltung'],
           ] as [AdminSubTab, string][]).map(([id, label]) => (
             <button
               key={id}
@@ -2379,7 +2379,7 @@ export const InstructorView: React.FC = () => {
         )}
 
         {/* ── LERNBEREICH ─────────────────────────────────────────────── */}
-        {adminSubTab === 'lernbereich' && (() => {
+        {adminSubTab === 'training' && (() => {
           // ── Content editor helpers ──
           const selectedModule = contentModuleId ? MODULES.find(m => m.id === contentModuleId) : null;
           const moduleTechniques = contentModuleId ? getTechniquesForModule(contentModuleId) : [];
@@ -2778,7 +2778,7 @@ export const InstructorView: React.FC = () => {
         })()}
 
         {/* ── PLATTFORM ──────────────────────────────────────────────── */}
-        {adminSubTab === 'plattform' && (() => {
+        {adminSubTab === 'verwaltung' && (() => {
           // Permissions-Matrix Konfiguration
           const PERMISSION_LABELS: { key: keyof RolePermissions; label: string; description: string; adminOnly?: boolean }[] = [
             { key: 'canPostToBoard',              label: 'Board: Posten',                description: 'Darf Nachrichten im Instructor-Board verfassen' },
