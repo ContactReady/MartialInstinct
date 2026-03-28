@@ -1897,13 +1897,8 @@ export const InstructorView: React.FC = () => {
 
     return (
       <div className="space-y-4">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🔐</span>
-          <h2 className="text-white font-bold text-lg">Admin-Bereich</h2>
-        </div>
-
-        {/* Sub-Tab Switcher */}
+        {/* Sub-Tab Switcher — sticky */}
+        <div className="sticky top-[49px] z-30 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
         <div className="flex bg-gray-800/50 rounded-xl p-1 gap-1 border border-gray-700/50 overflow-x-auto">
           {([
             ['analytics', '📊 Analytics'],
@@ -1915,13 +1910,14 @@ export const InstructorView: React.FC = () => {
             <button
               key={id}
               onClick={() => setAdminSubTab(id)}
-              className={`flex-shrink-0 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
-                adminSubTab === id ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
+              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                adminSubTab === id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
               }`}
             >
               {label}
             </button>
           ))}
+        </div>
         </div>
 
         {/* ── ANALYTICS ──────────────────────────────────────────────── */}
