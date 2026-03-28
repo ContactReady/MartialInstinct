@@ -4,7 +4,7 @@
 // ============================================
 
 import React, { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import {} from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { MemberTabId } from '../../types';
 import { BLOCKS } from '../../data/modules';
@@ -19,7 +19,6 @@ export const MemberView: React.FC = () => {
   const {
     currentUser,
     members,
-    requestCheckIn,
     checkIns,
     getBlockProgress,
     isBlockUnlocked,
@@ -72,15 +71,6 @@ export const MemberView: React.FC = () => {
 
 
 
-  // Check-in Status aus dem geteilten checkIns-Array ableiten (aktualisiert sich sofort wenn Trainer bestätigt)
-  const todayStr = now.toDateString();
-  const todayCheckIn = checkIns.find(
-    c => c.memberId === currentUser.id &&
-         new Date(c.requestedAt).toDateString() === todayStr
-  );
-  const checkInStatus = todayCheckIn?.status ?? 'none'; // 'none' | 'pending' | 'approved' | 'rejected'
-  const checkInApprovedAt = todayCheckIn?.approvedAt ? new Date(todayCheckIn.approvedAt) : null;
-
   // Submit contact application
   const handleSubmitContactApplication = () => {
     submitContactApplication(contactAnswers);
@@ -118,33 +108,6 @@ export const MemberView: React.FC = () => {
 
     return (
       <div className="space-y-3 p-4 pb-24">
-
-        {/* ── Check-In — sticky unter der Statusleiste ── */}
-        <div className="sticky top-0 z-30 -mx-4 px-4 py-2 bg-gray-950">
-        <div className={`rounded-xl px-4 py-3 border flex items-center justify-between gap-3 transition-all ${
-          checkInStatus === 'approved' ? 'bg-green-900/20 border-green-600/40'
-          : 'bg-gray-800/50 border-gray-700'
-        }`}>
-          <div className="min-w-0">
-            <div className="text-sm font-bold text-white">Trainings Check-In</div>
-            <div className={`text-xs mt-0.5 ${checkInStatus === 'approved' ? 'text-green-400' : 'text-gray-400'}`}>
-              {checkInStatus === 'approved'
-                ? `✅ Eingecheckt${checkInApprovedAt ? ` · ${checkInApprovedAt.getHours().toString().padStart(2,'0')}:${checkInApprovedAt.getMinutes().toString().padStart(2,'0')} Uhr` : ''}`
-                : checkInStatus === 'pending' ? 'Warte auf Trainer-Bestätigung…'
-                : 'Sei heute dabei!'}
-            </div>
-          </div>
-          {checkInStatus === 'approved' ? (
-            <span className="text-green-400 text-xs font-bold flex-shrink-0">✓ Dabei</span>
-          ) : checkInStatus === 'pending' ? (
-            <Loader2 className="w-4 h-4 animate-spin text-gray-400 flex-shrink-0" />
-          ) : (
-            <button onClick={requestCheckIn} className="flex-shrink-0 bg-red-600 hover:bg-red-500 active:scale-95 text-white px-4 py-1.5 rounded-lg font-bold text-sm transition-all">
-              Einchecken
-            </button>
-          )}
-        </div>
-        </div>
 
         {/* Stats */}
         <div className="grid grid-cols-4 gap-2">
@@ -642,12 +605,8 @@ export const MemberView: React.FC = () => {
     <div className="min-h-screen bg-gray-950 text-white">
 
       {/* Content */}
-      <main className={`max-w-4xl mx-auto ${activeTab === 'training' ? 'h-[calc(100vh-4rem)] flex flex-col' : 'pb-24'}`}>
-        {activeTab === 'dashboard' && (
-          <div className="flex flex-col h-[calc(100vh-4rem)] overflow-y-auto">
-            {renderDashboard()}
-          </div>
-        )}
+      <main className={`max-w-4xl mx-auto ${activeTab === 'training' ? 'h-[calc(100vh-5rem)] flex flex-col' : 'pb-24'}`}>
+        {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'training' && <MemberLearningView />}
         {activeTab === 'community' && <div className="p-4 pb-24">{renderCommunity()}</div>}
         {activeTab === 'profil' && <ProfileView member={currentUser} />}
