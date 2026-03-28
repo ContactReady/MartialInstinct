@@ -639,8 +639,34 @@ export const MemberView: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
 
-      {/* Content */}
-      <main className={`max-w-4xl mx-auto ${activeTab === 'training' ? 'h-[calc(100vh-4rem)] flex flex-col' : 'pb-24'}`}>
+      {/* ── Fixierter Check-In Balken ── */}
+      <div className={`fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 border-b ${
+        checkInStatus === 'approved' ? 'bg-green-950/90 border-green-800/50'
+        : 'bg-gray-900 border-gray-800'
+      }`} style={{ height: '44px' }}>
+        <div>
+          <div className="text-[11px] font-bold text-white leading-tight">Trainings Check-In</div>
+          <div className={`text-[10px] leading-tight ${
+            checkInStatus === 'approved' ? 'text-green-400'
+            : checkInStatus === 'pending' ? 'text-gray-400'
+            : 'text-gray-500'
+          }`}>
+            {checkInStatus === 'approved'
+              ? `✓ Eingecheckt${checkInApprovedAt ? ` · ${checkInApprovedAt.getHours().toString().padStart(2,'0')}:${checkInApprovedAt.getMinutes().toString().padStart(2,'0')} Uhr` : ''}`
+              : checkInStatus === 'pending' ? 'Warte auf Trainer-Bestätigung…'
+              : 'Sei heute dabei!'}
+          </div>
+        </div>
+        {checkInStatus === 'none' && (
+          <button onClick={requestCheckIn} className="bg-red-600 hover:bg-red-500 active:scale-95 text-white text-[11px] font-bold px-3 py-1 rounded-lg transition-all">
+            Einchecken
+          </button>
+        )}
+        {checkInStatus === 'pending' && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+      </div>
+
+      {/* Content — pt-11 wegen fixiertem Balken oben */}
+      <main className={`max-w-4xl mx-auto pt-11 ${activeTab === 'training' ? 'h-[calc(100vh-2.75rem)] flex flex-col' : 'pb-24'}`}>
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'training' && <MemberLearningView />}
         {activeTab === 'community' && <div className="p-4 pb-24">{renderCommunity()}</div>}
