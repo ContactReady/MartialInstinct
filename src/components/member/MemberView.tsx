@@ -258,7 +258,7 @@ export const MemberView: React.FC = () => {
     return (
       <div className="space-y-4">
         {/* Sub-Tab Switcher — sticky */}
-        <div className="sticky top-0 z-30 bg-gray-950 -mx-4 px-4 pt-4 pb-2">
+        <div className="sticky top-10 z-30 bg-gray-950 -mx-4 px-4 pt-4 pb-2">
         <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
           {([
             { id: 'online' as const, label: '🟢 Online', badge: onlineConnected.length },
