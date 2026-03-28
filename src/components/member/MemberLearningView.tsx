@@ -612,7 +612,7 @@ export const MemberLearningView: React.FC = () => {
                   requestSubTab === 'checkins' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
                 }`}
               >
-                Check-ins
+                Check-Ins
                 {myPendingCheckIns.length > 0 && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-red-500 text-white">
                     {myPendingCheckIns.length}

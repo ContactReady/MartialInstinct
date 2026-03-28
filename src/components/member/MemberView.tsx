@@ -164,7 +164,7 @@ export const MemberView: React.FC = () => {
             <Loader2 className="w-4 h-4 animate-spin text-gray-400 flex-shrink-0" />
           ) : (
             <button onClick={requestCheckIn} className="flex-shrink-0 bg-red-600 hover:bg-red-500 active:scale-95 text-white px-4 py-1.5 rounded-lg font-bold text-sm transition-all">
-              Einchecken
+              Check-In
             </button>
           )}
         </div>
