@@ -1131,6 +1131,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setMembers(prev => prev.map(m =>
       m.id === currentUser.id ? { ...m, notificationPrefs: prefs } : m
     ));
+    setCurrentUser(prev => prev ? { ...prev, notificationPrefs: prefs } : null);
   }, [currentUser]);
 
   // ============================================

@@ -305,14 +305,17 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </div>
           </div>
 
-          {/* ── Konto (einklappbar) ── */}
-          <div>
+          {/* ── Zugangsdaten (einklappbar) ── */}
+          <div className="border-t border-gray-800 pt-4">
             <button
               onClick={() => setKontoOpen(v => !v)}
-              className="w-full flex items-center justify-between py-2"
+              className="w-full flex items-center justify-between py-2 px-3 bg-gray-800/60 rounded-xl border border-gray-700 hover:border-gray-600 transition-all"
             >
-              <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest">Konto</div>
-              <span className="text-gray-600 text-xs">{kontoOpen ? '▲' : '▼'}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-base">🔐</span>
+                <span className="text-sm font-semibold text-white">Zugangsdaten</span>
+              </div>
+              <span className="text-gray-500 text-xs">{kontoOpen ? '▲' : '▼'}</span>
             </button>
 
             {kontoOpen && (
