@@ -1264,13 +1264,13 @@ export const InstructorView: React.FC = () => {
         {/* ── Beitrittsanfragen ─────────────────────────────────────────────── */}
         {requestSubTab === 'beitritt' && (
           <div className="space-y-3">
-            {joinRequests.length === 0 ? (
+            {pendingJoinRequests.length === 0 ? (
               <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/30 text-center">
-                <p className="text-gray-500 text-sm">Keine Beitrittsanfragen vorhanden</p>
+                <p className="text-gray-500 text-sm">Keine offenen Beitrittsanfragen</p>
                 <p className="text-gray-600 text-xs mt-1">Teile den QR-Code im Admin → Plattform-Bereich</p>
               </div>
             ) : (
-              joinRequests.map(req => (
+              pendingJoinRequests.map(req => (
                 <div key={req.id} className={`bg-gray-800/50 rounded-xl border overflow-hidden ${
                   req.status === 'pending' ? 'border-gray-700' : req.status === 'approved' ? 'border-green-800/40' : 'border-gray-700/30 opacity-60'
                 }`}>
