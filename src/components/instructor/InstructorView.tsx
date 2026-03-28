@@ -280,7 +280,8 @@ export const InstructorView: React.FC = () => {
           </div>
         )}
 
-        {/* Sub-Tab Switcher */}
+        {/* Sub-Tab Switcher — sticky */}
+        <div className="sticky top-[49px] z-30 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
         <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
           {([
             { id: 'online' as CommunitySubTab, label: 'Online', badge: onlineMembers.length, dot: true },
@@ -291,7 +292,7 @@ export const InstructorView: React.FC = () => {
             <button
               key={item.id}
               onClick={() => setCommunitySubTab(item.id)}
-              className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
                 communitySubTab === item.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -302,6 +303,7 @@ export const InstructorView: React.FC = () => {
               )}
             </button>
           ))}
+        </div>
         </div>
 
         {/* ── Tab: Online ─────────────────────────────────────────────────── */}
