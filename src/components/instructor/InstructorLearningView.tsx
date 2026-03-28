@@ -161,134 +161,63 @@ const LessonView: React.FC<LessonViewProps> = ({
   );
 };
 
+
 // ============================================
-// TRACK CARD
+// LESSON CARD (2-Spalten-Grid)
 // ============================================
 
-interface TrackCardProps {
-  track: InstructorTrack;
-  completedCount: number;
+interface LessonCardProps {
+  lesson: InstructorLesson;
+  index: number;
+  done: boolean;
+  locked: boolean;
   onSelect: () => void;
 }
 
-const TrackCard: React.FC<TrackCardProps> = ({ track, completedCount, onSelect }) => {
-  const total = track.lessons.length;
-  const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
-
+const LessonCard: React.FC<LessonCardProps> = ({ lesson, index, done, locked, onSelect }) => {
   return (
     <button
       onClick={onSelect}
-      className="w-full text-left bg-gray-800/50 rounded-xl border border-gray-700 p-4 hover:border-gray-500 transition-all"
+      disabled={locked}
+      className={`w-full text-left rounded-xl border p-3 transition-all flex flex-col gap-2 ${
+        locked
+          ? 'bg-gray-800/20 border-gray-700/30 opacity-40 cursor-not-allowed'
+          : done
+          ? 'bg-green-500/10 border-green-500/30 hover:border-green-500/50 active:scale-95'
+          : 'bg-gray-800/50 border-gray-700 hover:border-gray-500 active:scale-95'
+      }`}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">{track.icon}</span>
-          <div>
-            <div className="text-white font-semibold">{track.title}</div>
-            <div className="text-gray-400 text-xs mt-0.5">{track.description}</div>
-          </div>
+      <div className="flex items-center justify-between">
+        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+          locked ? 'bg-gray-700 text-gray-500' :
+          done ? 'bg-green-500/20 text-green-400' :
+          'bg-blue-500/20 text-blue-400'
+        }`}>
+          {locked ? <Lock className="w-3 h-3" /> : done ? <CheckCircle2 className="w-3 h-3" /> : index + 1}
         </div>
-        <div className="text-right flex-shrink-0 ml-2">
-          <div className="text-sm font-bold text-gray-300">{completedCount}/{total}</div>
-          <div className="text-xs text-gray-500">Lektionen</div>
-        </div>
+        {!locked && (
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+            done ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'
+          }`}>
+            {done ? 'Fertig' : 'Offen'}
+          </span>
+        )}
       </div>
-
-      <ProgressBar progress={pct} color="bg-blue-500" height="h-1.5" />
-
-      <div className="mt-2 flex gap-1 flex-wrap">
-        {track.lessons.map((_, i) => (
-          <div
-            key={i}
-            className={`w-2 h-2 rounded-full ${i < completedCount ? 'bg-blue-500' : 'bg-gray-700'}`}
-          />
-        ))}
+      <div>
+        <div className={`font-medium text-xs leading-tight ${
+          locked ? 'text-gray-500' : done ? 'text-green-300' : 'text-white'
+        }`}>
+          {lesson.title}
+        </div>
+        <div className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1">
+          <Clock className="w-2.5 h-2.5" /> {lesson.estimatedMinutes} Min.
+          {lesson.quiz && <span>• Quiz</span>}
+        </div>
       </div>
     </button>
   );
 };
 
-// ============================================
-// TRACK DETAIL VIEW
-// ============================================
-
-interface TrackDetailProps {
-  track: InstructorTrack;
-  progress: Record<string, { completed: boolean }>;
-  onSelectLesson: (lesson: InstructorLesson) => void;
-  onBack: () => void;
-}
-
-const TrackDetailView: React.FC<TrackDetailProps> = ({ track, progress, onSelectLesson, onBack }) => {
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-700/50 bg-gray-900/80 flex-shrink-0">
-        <button onClick={onBack} className="text-gray-400 hover:text-white">
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <span className="text-lg">{track.icon}</span>
-        <span className="text-white font-semibold">{track.title}</span>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        <p className="text-gray-400 text-sm">{track.description}</p>
-
-        {track.lessons.map((lesson, i) => {
-          const done = !!progress[lesson.id]?.completed;
-          const prevDone = i === 0 || !!progress[track.lessons[i - 1].id]?.completed;
-          const locked = !prevDone;
-
-          return (
-            <button
-              key={lesson.id}
-              onClick={() => !locked && onSelectLesson(lesson)}
-              disabled={locked}
-              className={`w-full text-left rounded-xl border p-4 transition-all ${
-                locked
-                  ? 'bg-gray-800/20 border-gray-700/30 opacity-40 cursor-not-allowed'
-                  : done
-                  ? 'bg-green-500/10 border-green-500/30 hover:border-green-500/50'
-                  : 'bg-gray-800/50 border-gray-700 hover:border-gray-500'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold ${
-                  locked ? 'bg-gray-700 text-gray-500' :
-                  done ? 'bg-green-500/20 text-green-400' :
-                  'bg-blue-500/20 text-blue-400'
-                }`}>
-                  {locked ? <Lock className="w-4 h-4" /> : done ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className={`font-medium text-sm ${locked ? 'text-gray-500' : done ? 'text-green-300' : 'text-white'}`}>
-                    {lesson.title}
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-gray-500 flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {lesson.estimatedMinutes} Min.
-                    </span>
-                    {lesson.quiz && (
-                      <span className="text-xs text-gray-500">• 10 Fragen</span>
-                    )}
-                  </div>
-                </div>
-                {!locked && (
-                  <span className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${
-                    done
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'bg-blue-500/20 text-blue-400'
-                  }`}>
-                    {done ? 'Fertig' : 'Offen'}
-                  </span>
-                )}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
 
 // ============================================
 // MAIN: INSTRUCTOR LEARNING VIEW
@@ -296,33 +225,26 @@ const TrackDetailView: React.FC<TrackDetailProps> = ({ track, progress, onSelect
 
 export const InstructorLearningView: React.FC = () => {
   const { currentUser, completeInstructorLesson, getInstructorProgress } = useApp();
-  const [selectedTrack, setSelectedTrack] = useState<InstructorTrack | null>(null);
+  const [activeTrackId, setActiveTrackId] = useState<string>(INSTRUCTOR_TRACKS[0]?.id ?? '');
   const [selectedLesson, setSelectedLesson] = useState<InstructorLesson | null>(null);
 
   if (!currentUser) return null;
 
   const progress = getInstructorProgress(currentUser.id);
-
-  const totalLessons = INSTRUCTOR_TRACKS.reduce((sum, t) => sum + t.lessons.length, 0);
-  const completedLessons = INSTRUCTOR_TRACKS.reduce(
-    (sum, t) => sum + t.lessons.filter(l => progress[l.id]?.completed).length,
-    0
-  );
-  const overallPct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+  const activeTrack = INSTRUCTOR_TRACKS.find(t => t.id === activeTrackId) ?? INSTRUCTOR_TRACKS[0];
 
   const handleCompleteLesson = (lessonId: string, quizScore?: number) => {
     completeInstructorLesson(lessonId, quizScore);
-    // Auto-advance to track view after completing
     setSelectedLesson(null);
   };
 
-  // Lesson view
-  if (selectedLesson && selectedTrack) {
-    const lessonIndex = selectedTrack.lessons.findIndex(l => l.id === selectedLesson.id);
+  // Lesson view (full screen)
+  if (selectedLesson && activeTrack) {
+    const lessonIndex = activeTrack.lessons.findIndex(l => l.id === selectedLesson.id);
     return (
       <LessonView
         lesson={selectedLesson}
-        track={selectedTrack}
+        track={activeTrack}
         lessonIndex={lessonIndex}
         isCompleted={!!progress[selectedLesson.id]?.completed}
         onComplete={(score) => handleCompleteLesson(selectedLesson.id, score)}
@@ -331,50 +253,76 @@ export const InstructorLearningView: React.FC = () => {
     );
   }
 
-  // Track detail view
-  if (selectedTrack) {
-    return (
-      <TrackDetailView
-        track={selectedTrack}
-        progress={progress}
-        onSelectLesson={(lesson) => setSelectedLesson(lesson)}
-        onBack={() => setSelectedTrack(null)}
-      />
-    );
-  }
+  const trackDone = (track: InstructorTrack) =>
+    track.lessons.filter(l => progress[l.id]?.completed).length;
+
+  const activeDone = trackDone(activeTrack);
+  const activeTotal = activeTrack.lessons.length;
+  const activePct = activeTotal > 0 ? Math.round((activeDone / activeTotal) * 100) : 0;
 
   // Main overview
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      {/* Header */}
-      <div className="px-4 pt-4 pb-3 border-b border-gray-700/50">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <h2 className="text-white font-bold text-lg">Mein Lernen</h2>
-            <p className="text-gray-400 text-sm">Trainer-Leitfaden v2.3 — {completedLessons}/{totalLessons} Lektionen</p>
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-blue-400">{overallPct}%</div>
-            <div className="text-xs text-gray-500">Gesamt</div>
-          </div>
+
+      {/* Sticky Sub-Tab-Leiste */}
+      <div className="sticky top-[9px] z-30 bg-gray-950 px-4 pt-2 pb-3 border-b border-gray-700/50">
+        <div className="flex bg-gray-800/60 rounded-xl p-1 gap-1">
+          {INSTRUCTOR_TRACKS.map(track => {
+            const done = trackDone(track);
+            const total = track.lessons.length;
+            const isActive = track.id === activeTrackId;
+            return (
+              <button
+                key={track.id}
+                onClick={() => setActiveTrackId(track.id)}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all flex flex-col items-center gap-0.5 ${
+                  isActive ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <span className="text-base leading-none">{track.icon}</span>
+                <span className="text-[9px] text-gray-500 leading-none">{done}/{total}</span>
+              </button>
+            );
+          })}
         </div>
-        <ProgressBar progress={overallPct} color="bg-blue-500" height="h-2" animated />
       </div>
 
-      {/* Tracks */}
-      <div className="px-4 py-4 space-y-3">
-        {INSTRUCTOR_TRACKS.map(track => {
-          const done = track.lessons.filter(l => progress[l.id]?.completed).length;
-          return (
-            <TrackCard
-              key={track.id}
-              track={track}
-              completedCount={done}
-              onSelect={() => setSelectedTrack(track)}
-            />
-          );
-        })}
+      {/* Track-Header */}
+      <div className="px-4 pt-4 pb-3 border-b border-gray-700/30">
+        <div className="flex items-start justify-between mb-2">
+          <div>
+            <h3 className="text-white font-bold text-sm">{activeTrack.icon} {activeTrack.title}</h3>
+            <p className="text-gray-400 text-xs mt-0.5">{activeTrack.description}</p>
+          </div>
+          <div className="text-right flex-shrink-0 ml-3">
+            <div className="text-lg font-bold text-blue-400">{activePct}%</div>
+            <div className="text-[10px] text-gray-500">{activeDone}/{activeTotal}</div>
+          </div>
+        </div>
+        <ProgressBar progress={activePct} color="bg-blue-500" height="h-1.5" />
       </div>
+
+      {/* Lektionen-Grid */}
+      <div className="px-4 py-4">
+        <div className="grid grid-cols-2 gap-2">
+          {activeTrack.lessons.map((lesson, i) => {
+            const done = !!progress[lesson.id]?.completed;
+            const prevDone = i === 0 || !!progress[activeTrack.lessons[i - 1].id]?.completed;
+            const locked = !prevDone;
+            return (
+              <LessonCard
+                key={lesson.id}
+                lesson={lesson}
+                index={i}
+                done={done}
+                locked={locked}
+                onSelect={() => !locked && setSelectedLesson(lesson)}
+              />
+            );
+          })}
+        </div>
+      </div>
+
     </div>
   );
 };
