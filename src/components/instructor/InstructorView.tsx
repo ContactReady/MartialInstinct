@@ -2971,8 +2971,10 @@ export const InstructorView: React.FC = () => {
   const dashboardBadge = pendingCheckIns.length + pendingExamRequests.length + pendingWishes.length + totalPendingApps + joinRequests.filter(r => r.status === 'pending').length + unreadBoardNotifs;
 
   const allTabs: { id: Tab; label: string; icon: string; badge?: number }[] = [
-    { id: 'dashboard' as Tab, label: 'Dashboard', icon: '⚡', badge: dashboardBadge > 0 ? dashboardBadge : undefined },
+    { id: 'dashboard' as Tab, label: 'Dashboard', icon: '📊', badge: dashboardBadge > 0 ? dashboardBadge : undefined },
+    { id: 'training' as Tab, label: 'Training', icon: '🥋' },
     { id: 'community' as Tab, label: 'Community', icon: '👥' },
+    { id: 'profil' as Tab, label: 'Profil', icon: '👤' },
     { id: 'admin' as Tab, label: 'Admin', icon: '🔐' },
   ];
   // Nur role-zugängliche Tabs zeigen; tabConfig steuert ob klickbar (grayed out wenn deaktiviert)

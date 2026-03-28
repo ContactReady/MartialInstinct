@@ -7,11 +7,12 @@ import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { MemberTabId } from '../../types';
+import { BLOCKS } from '../../data/modules';
 import { MemberLearningView } from './MemberLearningView';
 import { ProfileView } from '../shared/ProfileView';
 import { RankingList } from '../shared/RankingList';
 
-type Tab = 'training' | 'community' | 'profil';
+type Tab = 'dashboard' | 'training' | 'community' | 'profil';
 type ApplicationType = 'contact' | 'assistant_instructor' | null;
 
 export const MemberView: React.FC = () => {
@@ -20,13 +21,16 @@ export const MemberView: React.FC = () => {
     members,
     requestCheckIn,
     checkIns,
+    getBlockProgress,
+    isBlockUnlocked,
     submitContactApplication,
     submitInstructorApplication,
+    getSessionsForMember,
     tabConfig,
     connectWithCode,
   } = useApp();
-  
-  const [activeTab, setActiveTab] = useState<Tab>('training');
+
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [showApplicationModal, setShowApplicationModal] = useState<ApplicationType>(null);
   const [communitySubTab, setCommunitySubTab] = useState<'online' | 'training' | 'mitglieder' | 'rangliste'>('online');
   const [connectCode, setConnectCode] = useState('');
@@ -103,6 +107,93 @@ export const MemberView: React.FC = () => {
       goals: '',
       roleModel: ''
     });
+  };
+
+  // ── Dashboard Tab ──────────────────────────────────────────────────────────
+  const renderDashboard = () => {
+    const mySessions = getSessionsForMember(currentUser.id)
+      .filter(s => s.status === 'completed')
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 3);
+
+    return (
+      <div className="space-y-4 p-4 pb-24">
+        {/* Stats */}
+        <div className="grid grid-cols-4 gap-2">
+          <div className="bg-gradient-to-b from-orange-900/40 to-orange-900/20 rounded-xl p-3 border border-orange-800/40 text-center">
+            <div className="text-2xl font-black text-orange-400 leading-none">{currentUser.streak.currentStreak}</div>
+            <div className="text-[10px] text-orange-300/60 mt-1 leading-tight">🔥 Streak</div>
+          </div>
+          <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 text-center">
+            <div className="text-2xl font-black text-gray-300 leading-none">{currentUser.streak.longestStreak}</div>
+            <div className="text-[10px] text-gray-500 mt-1 leading-tight">🏅 Rekord</div>
+          </div>
+          <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 text-center">
+            <div className="text-2xl font-black text-white leading-none">
+              {Object.values(currentUser.techniqueProgress).filter(p => p.status === 'tech_passed' || p.status === 'tac_passed').length}
+            </div>
+            <div className="text-[10px] text-gray-500 mt-1 leading-tight">✅ Techniken</div>
+          </div>
+          <div className={`rounded-xl p-3 border text-center ${currentUser.streak.bandaids > 0 ? 'bg-green-900/20 border-green-800/40' : 'bg-gray-800/50 border-gray-700/80'}`}>
+            <div className={`font-black leading-none flex items-baseline justify-center gap-0.5 ${currentUser.streak.bandaids > 0 ? 'text-green-400' : 'text-gray-500'}`}>
+              <span className="text-2xl">{currentUser.streak.bandaids}</span>
+              <span className="text-sm font-medium opacity-50">/{currentUser.streak.maxBandaids}</span>
+            </div>
+            <div className={`text-[10px] mt-1 leading-tight ${currentUser.streak.bandaids > 0 ? 'text-green-500/70' : 'text-gray-600'}`}>🩹 Pflaster</div>
+          </div>
+        </div>
+
+        {/* Block-Fortschritt */}
+        <div>
+          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Dein Fortschritt</h3>
+          <div className="grid grid-cols-1 gap-2">
+            {BLOCKS.map(block => {
+              const progress = getBlockProgress(currentUser.id, block.level);
+              const unlocked = isBlockUnlocked(currentUser.id, block.level);
+              return (
+                <div key={block.id} className={`${block.bgColor} rounded-xl px-4 py-3 border ${block.borderColor} flex items-center gap-3 ${!unlocked ? 'opacity-40' : ''}`}>
+                  <span className="text-lg flex-shrink-0">{block.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-sm font-bold ${block.color}`}>{block.name}</span>
+                      <span className="text-xs text-gray-400">{unlocked ? `${progress.completed}/${progress.total}` : '🔒'}</span>
+                    </div>
+                    {unlocked && (
+                      <div className="bg-gray-900/50 rounded-full h-1">
+                        <div className="bg-red-500 h-1 rounded-full transition-all" style={{ width: `${progress.percentage}%` }} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Letzte Trainings */}
+        {mySessions.length > 0 && (
+          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">🥋 Letzte Trainings</h3>
+            <div className="space-y-2.5">
+              {mySessions.map(session => {
+                const myGroup = session.groups.find((g: { memberIds: string[] }) => g.memberIds.includes(currentUser.id));
+                const techCount = myGroup?.techniqueIds.length ?? 0;
+                const dateStr = new Date(session.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                return (
+                  <div key={session.id} className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-gray-200 text-sm font-medium truncate">{dateStr} — {session.courseName ?? 'Training'}</div>
+                      <div className="text-gray-500 text-xs">{techCount} Technik{techCount !== 1 ? 'en' : ''}{session.instructorName ? ` · ${session.instructorName}` : ''}</div>
+                    </div>
+                    <span className="text-yellow-500 text-xs font-bold flex-shrink-0">+{techCount * 10} XP</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   // ── Community Tab ──────────────────────────────────────────────────────────
@@ -548,24 +639,14 @@ export const MemberView: React.FC = () => {
           {checkInStatus === 'pending' && (
             <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
           )}
-          {/* Profil-Avatar */}
-          <button
-            onClick={() => setActiveTab(activeTab === 'profil' ? 'training' : 'profil')}
-            className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden border-2 transition-all ${
-              activeTab === 'profil' ? 'border-red-500 text-red-400' : 'border-gray-700 bg-gray-800 text-gray-300'
-            }`}
-          >
-            {currentUser.profileImageUrl
-              ? <img src={currentUser.profileImageUrl} className="w-full h-full object-cover" alt="" />
-              : currentUser.name[0].toUpperCase()}
-          </button>
         </div>
       </div>
 
       {/* Content */}
-      <main className={`max-w-4xl mx-auto ${activeTab === 'training' ? 'pt-11 h-[calc(100vh-2.75rem)] flex flex-col' : 'pt-11 pb-20'}`}>
+      <main className={`max-w-4xl mx-auto ${activeTab === 'training' ? 'pt-11 h-[calc(100vh-2.75rem)] flex flex-col' : 'pt-11'}`}>
+        {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'training' && <MemberLearningView />}
-        {activeTab === 'community' && <div className="p-4">{renderCommunity()}</div>}
+        {activeTab === 'community' && <div className="p-4 pb-24">{renderCommunity()}</div>}
         {activeTab === 'profil' && <ProfileView member={currentUser} />}
       </main>
 
@@ -573,8 +654,10 @@ export const MemberView: React.FC = () => {
       <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-40">
         <div className="max-w-4xl mx-auto flex">
           {([
+            { id: 'dashboard' as Tab, icon: '📊', label: 'Dashboard' },
             { id: 'training' as Tab, icon: '🥋', label: 'Training' },
             { id: 'community' as Tab, icon: '👥', label: 'Community' },
+            { id: 'profil' as Tab, icon: '👤', label: 'Profil' },
           ] as { id: Tab; icon: string; label: string }[]).map(tab => {
             const tabEnabled = tabConfig.memberTabs[tab.id as MemberTabId] !== false;
             return (
