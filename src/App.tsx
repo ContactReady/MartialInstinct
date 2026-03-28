@@ -595,39 +595,22 @@ const AppContent: React.FC = () => {
             className="h-8 w-auto object-contain flex-shrink-0"
           />
 
-          {/* Center: Streak + XP-Balken — nur Member-View */}
-          {actualViewMode === 'member' && (() => {
-            const xp = currentUser.xp ?? 0;
-            const milestones = [0, 100, 300, 600, 1000, 1500, 2500, 4000];
-            const nextMilestone = milestones.find(m => m > xp) ?? milestones[milestones.length - 1];
-            const prevMilestone = [...milestones].reverse().find(m => m <= xp) ?? 0;
-            const xpPct = nextMilestone > prevMilestone
-              ? Math.round(((xp - prevMilestone) / (nextMilestone - prevMilestone)) * 100)
-              : 100;
-            return (
-              <div className="flex items-center gap-3 flex-1 justify-center">
-                <span className="flex items-center gap-1 text-orange-400 font-bold text-xs sm:text-sm">
-                  🔥 <span>{currentUser.streak.currentStreak}W</span>
-                </span>
-                <span className="w-px h-3 bg-gray-700 flex-shrink-0" />
-                {/* XP als Fortschrittsbalken */}
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <span className="text-yellow-400 text-xs">⚡</span>
-                  <div className="w-20 sm:w-28 h-2 bg-gray-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-yellow-400 rounded-full transition-all"
-                      style={{ width: `${xpPct}%` }}
-                    />
-                  </div>
-                  <span className="text-gray-400 text-xs hidden sm:inline">{xp}</span>
-                </div>
-                <span className="w-px h-3 bg-gray-700 flex-shrink-0 hidden sm:block" />
-                <span className={`text-xs font-semibold hidden sm:block ${LEVEL_DISPLAY[currentUser.currentLevel].color}`}>
-                  {LEVEL_DISPLAY[currentUser.currentLevel].icon} {LEVEL_DISPLAY[currentUser.currentLevel].name}
-                </span>
-              </div>
-            );
-          })()}
+          {/* Center: Streak + Gesamt-XP — nur Member-View */}
+          {actualViewMode === 'member' && (
+            <div className="flex items-center gap-3 flex-1 justify-center">
+              <span className="flex items-center gap-1 text-orange-400 font-bold text-xs sm:text-sm">
+                🔥 <span>{currentUser.streak.currentStreak}W</span>
+              </span>
+              <span className="w-px h-3 bg-gray-700 flex-shrink-0" />
+              <span className="flex items-center gap-1 text-yellow-400 font-bold text-xs sm:text-sm">
+                ⚡ <span>{currentUser.xp ?? 0} XP</span>
+              </span>
+              <span className="w-px h-3 bg-gray-700 flex-shrink-0 hidden sm:block" />
+              <span className={`text-xs font-semibold hidden sm:block ${LEVEL_DISPLAY[currentUser.currentLevel].color}`}>
+                {LEVEL_DISPLAY[currentUser.currentLevel].icon} {LEVEL_DISPLAY[currentUser.currentLevel].name}
+              </span>
+            </div>
+          )}
 
           {/* Instructor-View: kein Center-Content, flex-1 als Spacer */}
           {actualViewMode === 'instructor' && <div className="flex-1" />}
