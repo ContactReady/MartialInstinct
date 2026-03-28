@@ -144,6 +144,7 @@ export const MemberView: React.FC = () => {
       <div className="space-y-3 p-4 pb-24">
 
         {/* ── Check-In ── */}
+        <div className="sticky top-[49px] z-20 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
         <div className={`rounded-xl px-4 py-3 border flex items-center justify-between gap-3 transition-all ${
           checkInStatus === 'approved' ? 'bg-green-900/20 border-green-600/40'
           : 'bg-gray-800/50 border-gray-700'
@@ -166,6 +167,7 @@ export const MemberView: React.FC = () => {
               Einchecken
             </button>
           )}
+        </div>
         </div>
 
         {/* Stats */}
