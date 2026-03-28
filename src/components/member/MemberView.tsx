@@ -642,11 +642,15 @@ export const MemberView: React.FC = () => {
     <div className="min-h-screen bg-gray-950 text-white">
 
       {/* Content */}
-      <main className={`max-w-4xl mx-auto ${activeTab === 'training' ? 'h-[calc(100vh-4rem)] flex flex-col' : 'pb-24'}`}>
-        {activeTab === 'dashboard' && renderDashboard()}
+      <main className={`max-w-4xl mx-auto h-[calc(100vh-4rem)] flex flex-col`}>
+        {activeTab === 'dashboard' && (
+          <div className="flex flex-col h-full overflow-y-auto">
+            {renderDashboard()}
+          </div>
+        )}
         {activeTab === 'training' && <MemberLearningView />}
-        {activeTab === 'community' && <div className="p-4 pb-24">{renderCommunity()}</div>}
-        {activeTab === 'profil' && <ProfileView member={currentUser} />}
+        {activeTab === 'community' && <div className="p-4 pb-24 overflow-y-auto flex-1">{renderCommunity()}</div>}
+        {activeTab === 'profil' && <div className="overflow-y-auto flex-1"><ProfileView member={currentUser} /></div>}
       </main>
 
       {/* ── Fixed Bottom Navigation ────────────────────────── */}
