@@ -1037,7 +1037,7 @@ export const InstructorView: React.FC = () => {
     const subTabItems: { id: typeof requestSubTab; label: string; badge: number }[] = [
       { id: 'exams', label: 'Prüfungen', badge: pendingExamRequests.length },
       { id: 'wishes', label: 'Wunschtechniken', badge: pendingWishes.length },
-      { id: 'checkins', label: 'Check-ins', badge: pendingCheckIns.length },
+      { id: 'checkins', label: 'Check-Ins', badge: pendingCheckIns.length },
       ...(isAdmin ? [{ id: 'beitritt' as const, label: 'Beitrittsanfragen', badge: pendingJoinRequests.length }] : []),
     ];
 
