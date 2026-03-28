@@ -462,12 +462,56 @@ const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) =
 interface UserDropdownProps {
   viewMode: 'member' | 'instructor';
   setViewMode: (v: 'member' | 'instructor') => void;
-  onSettings: () => void;
   onClose: () => void;
 }
 
-const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onSettings, onClose }) => {
-  const { currentUser, members, switchUser, logout } = useApp();
+const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onClose }) => {
+  const { currentUser, members, switchUser, logout, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference, updateProfile } = useApp();
+  const [sichtbarkeitOpen, setSichtbarkeitOpen] = useState(false);
+  const [darstellungOpen, setDarstellungOpen] = useState(false);
+  const [badgesOpen, setBadgesOpen] = useState(false);
+  const [kontoOpen, setKontoOpen] = useState(false);
+  const [email, setEmail] = useState(currentUser?.email ?? '');
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [pwError, setPwError] = useState('');
+
+  const visibility = currentUser?.visibilityPreference ?? 'all';
+
+  const handleSave = () => {
+    setPwError('');
+    if (!email.trim()) { setPwError('E-Mail darf nicht leer sein.'); return; }
+    const changingPassword = newPw.length > 0;
+    if (changingPassword) {
+      if (currentPw !== (currentUser?.password ?? '')) { setPwError('Aktuelles Passwort ist falsch.'); return; }
+      if (newPw.length < 8) { setPwError('Neues Passwort muss mindestens 8 Zeichen haben.'); return; }
+      if (!/\d/.test(newPw)) { setPwError('Neues Passwort muss mindestens eine Zahl enthalten.'); return; }
+      if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(newPw)) { setPwError('Neues Passwort muss mindestens ein Sonderzeichen enthalten.'); return; }
+      if (newPw !== confirmPw) { setPwError('Neue Passwörter stimmen nicht überein.'); return; }
+    }
+    updateProfile(email.trim(), changingPassword ? newPw : (currentUser?.password ?? ''));
+    setSaved(true);
+    setCurrentPw(''); setNewPw(''); setConfirmPw('');
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const inputCls = 'w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400 placeholder-gray-500';
+  const rowCls = 'flex items-center justify-between py-2.5 border-b border-gray-800 last:border-0';
+  const accordionBtn = (open: boolean, icon: string, label: string, toggle: () => void) => (
+    <button
+      onClick={toggle}
+      className="w-full flex items-center justify-between py-2 px-3 bg-gray-800/60 rounded-xl border border-gray-700 hover:border-gray-600 transition-all"
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-base">{icon}</span>
+        <span className="text-sm font-semibold text-white">{label}</span>
+      </div>
+      <span className="text-gray-500 text-xs">{open ? '▲' : '▼'}</span>
+    </button>
+  );
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -550,15 +594,83 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onSe
         </div>
       )}
 
-      {/* Actions */}
-      <div className="px-2 py-2 space-y-0.5">
-        <button
-          onClick={() => { onSettings(); onClose(); }}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors text-left"
-        >
-          <span>⚙️</span>
-          <span>Einstellungen</span>
-        </button>
+      {/* Einstellungen */}
+      <div className="px-3 py-3 border-t border-gray-800 space-y-2">
+        <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest px-1 mb-1">Einstellungen</div>
+
+        {accordionBtn(sichtbarkeitOpen, '👁️', 'Sichtbarkeit', () => setSichtbarkeitOpen(v => !v))}
+        {sichtbarkeitOpen && (
+          <div className="px-1 space-y-1 pb-1">
+            <div className="text-xs text-gray-500 mb-2">Wer sieht deinen Online- und Trainingsstatus?</div>
+            <div className="flex gap-2">
+              <button onClick={() => updateVisibilityPreference('all')} className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border ${visibility === 'all' ? 'bg-gray-700 text-white border-gray-600' : 'bg-transparent text-gray-500 border-gray-700 hover:text-gray-300'}`}>Alle Mitglieder</button>
+              <button onClick={() => updateVisibilityPreference('buddies')} className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border ${visibility === 'buddies' ? 'bg-gray-700 text-white border-gray-600' : 'bg-transparent text-gray-500 border-gray-700 hover:text-gray-300'}`}>Trainingspartner</button>
+            </div>
+          </div>
+        )}
+
+        {accordionBtn(darstellungOpen, '🔔', 'Darstellung & Benachrichtigungen', () => setDarstellungOpen(v => !v))}
+        {darstellungOpen && (
+          <div className="px-1 divide-y divide-gray-800">
+            <div className={rowCls}>
+              <span className="text-sm text-white">{darkMode ? '🌙 Dunkel' : '☀️ Hell'}</span>
+              <button onClick={toggleDarkMode} className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${darkMode ? 'bg-red-600' : 'bg-gray-600'}`}>
+                <span className={`absolute left-1 top-1 w-4 h-4 rounded-full shadow bg-white transition-transform ${darkMode ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
+            {([
+              { key: 'sound', label: '🔔 Sound', desc: 'Ton bei Benachrichtigungen' },
+              { key: 'email', label: '📧 E-Mail', desc: 'Kommt bald' },
+            ] as { key: 'sound' | 'email'; label: string; desc: string }[]).map(({ key, label, desc }) => {
+              const enabled = currentUser?.notificationPrefs?.[key] ?? (key === 'sound');
+              return (
+                <div key={key} className={rowCls}>
+                  <div><div className="text-sm text-white">{label}</div><div className="text-xs text-gray-500">{desc}</div></div>
+                  <button onClick={() => updateNotificationPrefs({ sound: key === 'sound' ? !enabled : (currentUser?.notificationPrefs?.sound ?? true), email: key === 'email' ? !enabled : (currentUser?.notificationPrefs?.email ?? false) })} disabled={key === 'email'} className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${enabled ? 'bg-red-600' : 'bg-gray-600'} ${key === 'email' ? 'opacity-40 cursor-not-allowed' : ''}`}>
+                    <span className={`absolute left-1 top-1 w-4 h-4 rounded-full shadow bg-white transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {accordionBtn(badgesOpen, '🏅', 'Anzeige-Badge', () => setBadgesOpen(v => !v))}
+        {badgesOpen && (
+          <div className="px-1 py-2">
+            <p className="text-sm text-gray-500">Noch keine Abzeichen verdient. Absolviere Prüfungen um Badges freizuschalten.</p>
+          </div>
+        )}
+
+        {accordionBtn(kontoOpen, '🔐', 'Zugangsdaten', () => setKontoOpen(v => !v))}
+        {kontoOpen && (
+          <div className="px-1 space-y-3 pb-1">
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">E-Mail</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-gray-400">Passwort ändern</span>
+                <button type="button" onClick={() => setShowPw(v => !v)} className="text-gray-500 hover:text-gray-300 text-xs">{showPw ? '🙈 verbergen' : '👁️ anzeigen'}</button>
+              </div>
+              <div className="space-y-2">
+                <input type={showPw ? 'text' : 'password'} value={currentPw} onChange={e => setCurrentPw(e.target.value)} placeholder="Aktuelles Passwort…" className={inputCls} />
+                <input type={showPw ? 'text' : 'password'} value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Neues Passwort (min. 8 Zeichen)…" className={inputCls} />
+                <input type={showPw ? 'text' : 'password'} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Neues Passwort wiederholen…" className={inputCls} />
+              </div>
+              <p className="text-gray-600 text-xs mt-1">Passwortfelder leer lassen = unverändert</p>
+            </div>
+            {pwError && <p className="text-red-400 text-xs">{pwError}</p>}
+            <button onClick={handleSave} className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all ${saved ? 'bg-green-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'}`}>
+              {saved ? '✅ Gespeichert!' : 'Speichern'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Logout */}
+      <div className="px-2 py-2 border-t border-gray-800">
         <button
           onClick={() => { logout(); onClose(); }}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-900/20 transition-colors text-left"
@@ -592,7 +704,7 @@ function playNotificationSound() {
 const AppContent: React.FC = () => {
   const { currentUser, login, darkMode, notifications } = useApp();
   const [viewMode, setViewMode] = useState<'member' | 'instructor'>('member');
-  const [showSettings, setShowSettings] = useState(false);
+
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showJoinForm, setShowJoinForm] = useState(() =>
@@ -696,7 +808,6 @@ const AppContent: React.FC = () => {
                 <UserDropdown
                   viewMode={viewMode}
                   setViewMode={setViewMode}
-                  onSettings={() => setShowSettings(true)}
                   onClose={() => setShowUserDropdown(false)}
                 />
               )}
@@ -710,8 +821,6 @@ const AppContent: React.FC = () => {
         {actualViewMode === 'member' ? <MemberView /> : <InstructorView />}
       </div>
 
-      {/* Settings Modal */}
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       </>)}
     </div>
   );
