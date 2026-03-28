@@ -103,10 +103,10 @@ export const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => 
       `}</style>
 
       {/* ── Screen Overlay ── */}
-      <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-start overflow-y-auto py-4 px-4 cert-no-print"
+      <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-start overflow-y-auto overflow-x-auto py-4 px-4 cert-no-print"
         style={{ fontFamily: 'Georgia, serif' }}
       >
-        <div className="flex gap-3 mb-4 w-full max-w-2xl">
+        <div className="flex gap-3 mb-4 w-full max-w-[794px]">
           <button onClick={onClose}
             className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-all"
           >← Zurück</button>
@@ -163,14 +163,19 @@ const CertificateCard: React.FC<CardProps> = ({
   name, today, modules, isTacticsDone, isCombatDone, stopTheBleedCertified, isPrint
 }) => (
   <div
-    className={`bg-white text-black ${isPrint ? 'w-full h-full' : 'w-full max-w-2xl rounded-2xl shadow-2xl'} overflow-hidden`}
+    className={`bg-white text-black overflow-hidden ${isPrint ? '' : 'rounded-2xl shadow-2xl'}`}
     style={{
       fontFamily: 'Georgia, serif',
+      width: isPrint ? '210mm' : '794px',
+      minHeight: isPrint ? '297mm' : '1123px',
       ...(isPrint ? { position: 'fixed', inset: 0 } : {})
     }}
   >
     {/* ── Dekorativer Rahmen ── */}
-    <div className="relative m-3 border-2 border-gray-300 rounded-xl overflow-hidden bg-white" style={{ minHeight: isPrint ? 'calc(100vh - 24px)' : undefined }}>
+    <div
+      className="relative m-3 border-2 border-gray-300 rounded-xl overflow-hidden bg-white flex flex-col"
+      style={{ minHeight: isPrint ? 'calc(297mm - 24px)' : 'calc(1123px - 24px)' }}
+    >
 
       {/* Innerer dünner Rahmen */}
       <div className="absolute inset-1 border border-gray-200 rounded-lg pointer-events-none z-10" />
@@ -304,6 +309,9 @@ const CertificateCard: React.FC<CardProps> = ({
           </span>
         </div>
       </div>
+
+      {/* Spacer — schiebt Unterschriften ans Ende */}
+      <div className="flex-1" />
 
       {/* ── Unterschriften ── */}
       <div className="px-6 pb-4 pt-3 border-t border-gray-200 bg-white">
