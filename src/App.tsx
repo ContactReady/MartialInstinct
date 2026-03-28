@@ -186,36 +186,29 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => boolean; d
 
 // ── Settings Modal ─────────────────────────────────────────────────────────────
 const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { currentUser, updateProfile, toggleDarkMode, darkMode, updateNotificationPrefs, updateCustomBadge } = useApp();
+  const { currentUser, updateProfile, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference } = useApp();
   const [email, setEmail] = useState(currentUser?.email ?? '');
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const [kontoOpen, setKontoOpen] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
-  const [badgeInput, setBadgeInput] = useState(currentUser?.customBadge ?? '');
-  const [badgeSaved, setBadgeSaved] = useState(false);
+
+  const visibility = currentUser?.visibilityPreference ?? 'all';
 
   const handleSave = () => {
     setError('');
     if (!email.trim()) { setError('E-Mail darf nicht leer sein.'); return; }
-
     const changingPassword = newPw.length > 0;
     if (changingPassword) {
-      if (currentPw !== (currentUser?.password ?? '')) {
-        setError('Aktuelles Passwort ist falsch.');
-        return;
-      }
+      if (currentPw !== (currentUser?.password ?? '')) { setError('Aktuelles Passwort ist falsch.'); return; }
       if (newPw.length < 8) { setError('Neues Passwort muss mindestens 8 Zeichen haben.'); return; }
       if (!/\d/.test(newPw)) { setError('Neues Passwort muss mindestens eine Zahl enthalten.'); return; }
-      if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(newPw)) {
-        setError('Neues Passwort muss mindestens ein Sonderzeichen enthalten.');
-        return;
-      }
+      if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(newPw)) { setError('Neues Passwort muss mindestens ein Sonderzeichen enthalten.'); return; }
       if (newPw !== confirmPw) { setError('Neue Passwörter stimmen nicht überein.'); return; }
     }
-
     updateProfile(email.trim(), changingPassword ? newPw : (currentUser?.password ?? ''));
     setSaved(true);
     setCurrentPw(''); setNewPw(''); setConfirmPw('');
@@ -223,126 +216,136 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   };
 
   const inputCls = 'w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400 placeholder-gray-500';
+  const rowCls = 'flex items-center justify-between py-3 border-b border-gray-800 last:border-0';
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-sm p-6 space-y-5 max-h-[90vh] overflow-y-auto"
+        className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-sm max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between">
-          <h2 className="text-white font-bold text-lg">⚙️ Einstellungen</h2>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-800">
+          <h2 className="text-white font-bold text-base">Einstellungen</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">✕</button>
         </div>
 
-        {/* Theme Toggle */}
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-          <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Darstellung</div>
-          <div className="flex items-center justify-between">
-            <span className="text-white text-sm">{darkMode ? '🌙 Dunkel' : '☀️ Hell'}</span>
-            <button
-              onClick={toggleDarkMode}
-              className={`relative w-12 h-6 rounded-full transition-colors ${darkMode ? 'bg-red-600' : 'bg-gray-400'}`}
-            >
-              <span className={`absolute left-1 top-1 w-4 h-4 rounded-full shadow transition-transform ${darkMode ? 'bg-white translate-x-6' : 'bg-gray-900 translate-x-0'}`} />
-            </button>
-          </div>
-        </div>
+        <div className="px-5 py-4 space-y-5">
 
-        {/* Zugangsdaten */}
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 space-y-3">
-          <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Zugangsdaten</div>
-
+          {/* ── Sichtbarkeit ── */}
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">E-Mail</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
-          </div>
-
-          <div className="border-t border-gray-700/60 pt-3">
-            <div className="text-xs text-gray-500 mb-3 flex items-center justify-between">
-              <span>Passwort ändern</span>
-              <button type="button" onClick={() => setShowPw(v => !v)} className="text-gray-500 hover:text-gray-300 text-xs">
-                {showPw ? '🙈 verbergen' : '👁️ anzeigen'}
-              </button>
-            </div>
-            <div className="space-y-2">
+            <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-2">Sichtbarkeit</div>
+            <div className={rowCls} style={{ borderBottom: 'none' }}>
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Aktuelles Passwort</label>
-                <input type={showPw ? 'text' : 'password'} value={currentPw} onChange={e => setCurrentPw(e.target.value)} placeholder="Aktuelles Passwort eingeben…" className={inputCls} />
+                <div className="text-sm text-white">Wer sieht meinen Status?</div>
+                <div className="text-xs text-gray-500 mt-0.5">Online- und Trainingsstatus</div>
               </div>
-              <div>
-                <label className="text-xs text-gray-400 mb-1 block">Neues Passwort</label>
-                <input type={showPw ? 'text' : 'password'} value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Min. 8 Zeichen, Zahl, Sonderzeichen…" className={inputCls} />
-              </div>
-              <div>
-                <label className="text-xs text-gray-400 mb-1 block">Neues Passwort bestätigen</label>
-                <input type={showPw ? 'text' : 'password'} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Wiederholen…" className={inputCls} />
-              </div>
-            </div>
-            <p className="text-gray-600 text-xs mt-2">Leer lassen = Passwort bleibt unverändert</p>
-          </div>
-
-          {error && <p className="text-red-400 text-xs">{error}</p>}
-
-          <button
-            onClick={handleSave}
-            className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all ${saved ? 'bg-green-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'}`}
-          >
-            {saved ? '✅ Gespeichert!' : 'Speichern'}
-          </button>
-        </div>
-
-        {/* Persönliches Badge */}
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 space-y-3">
-          <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Persönliches Badge</div>
-          <p className="text-xs text-gray-500">Wird in der Rangliste neben deinem Namen angezeigt. Emoji + kurzer Text (max. 20 Zeichen).</p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={badgeInput}
-              onChange={e => { if (e.target.value.length <= 20) setBadgeInput(e.target.value); }}
-              placeholder="z.B. 🏆 MVP oder 🥋 Veteran"
-              className={inputCls + ' flex-1'}
-              maxLength={20}
-            />
-            <button
-              onClick={() => { updateCustomBadge(badgeInput); setBadgeSaved(true); setTimeout(() => setBadgeSaved(false), 2000); }}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all flex-shrink-0 ${badgeSaved ? 'bg-green-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
-            >
-              {badgeSaved ? '✓' : 'Speichern'}
-            </button>
-          </div>
-          {badgeInput && <div className="text-xs text-gray-400">Vorschau: <span className="bg-gray-700 border border-gray-600 rounded px-1.5 py-0.5 text-white text-[10px]">{badgeInput}</span></div>}
-        </div>
-
-        {/* Benachrichtigungen */}
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 space-y-3">
-          <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Benachrichtigungen</div>
-
-          {([
-            { key: 'sound', label: '🔔 Sound', desc: 'Ton bei neuer Benachrichtigung' },
-            { key: 'email', label: '📧 E-Mail', desc: 'Kommt bald — benötigt Backend' },
-          ] as { key: 'sound' | 'email'; label: string; desc: string }[]).map(({ key, label, desc }) => {
-            const enabled = currentUser?.notificationPrefs?.[key] ?? (key === 'sound' ? true : false);
-            return (
-              <div key={key} className="flex items-center justify-between">
-                <div>
-                  <div className="text-white text-sm">{label}</div>
-                  <div className="text-gray-500 text-xs">{desc}</div>
-                </div>
+              <div className="flex gap-1 flex-shrink-0 ml-3">
                 <button
-                  onClick={() => updateNotificationPrefs({
-                    sound: key === 'sound' ? !enabled : (currentUser?.notificationPrefs?.sound ?? true),
-                    email: key === 'email' ? !enabled : (currentUser?.notificationPrefs?.email ?? false),
-                  })}
-                  disabled={key === 'email'}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${enabled ? 'bg-red-600' : 'bg-gray-600'} ${key === 'email' ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  onClick={() => updateVisibilityPreference('all')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${visibility === 'all' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
                 >
-                  <span className={`absolute left-1 top-1 w-4 h-4 rounded-full shadow transition-transform bg-white ${enabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                  Alle
+                </button>
+                <button
+                  onClick={() => updateVisibilityPreference('buddies')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${visibility === 'buddies' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                >
+                  Trainingspartner
                 </button>
               </div>
-            );
-          })}
+            </div>
+          </div>
+
+          {/* ── Darstellung & Benachrichtigungen ── */}
+          <div>
+            <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-2">Darstellung & Benachrichtigungen</div>
+            <div className="divide-y divide-gray-800">
+              <div className={rowCls}>
+                <span className="text-sm text-white">{darkMode ? '🌙 Dunkel' : '☀️ Hell'}</span>
+                <button
+                  onClick={toggleDarkMode}
+                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${darkMode ? 'bg-red-600' : 'bg-gray-600'}`}
+                >
+                  <span className={`absolute left-1 top-1 w-4 h-4 rounded-full shadow bg-white transition-transform ${darkMode ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
+              </div>
+              {([
+                { key: 'sound', label: '🔔 Sound', desc: 'Ton bei Benachrichtigungen' },
+                { key: 'email', label: '📧 E-Mail', desc: 'Kommt bald' },
+              ] as { key: 'sound' | 'email'; label: string; desc: string }[]).map(({ key, label, desc }) => {
+                const enabled = currentUser?.notificationPrefs?.[key] ?? (key === 'sound');
+                return (
+                  <div key={key} className={rowCls}>
+                    <div>
+                      <div className="text-sm text-white">{label}</div>
+                      <div className="text-xs text-gray-500">{desc}</div>
+                    </div>
+                    <button
+                      onClick={() => updateNotificationPrefs({
+                        sound: key === 'sound' ? !enabled : (currentUser?.notificationPrefs?.sound ?? true),
+                        email: key === 'email' ? !enabled : (currentUser?.notificationPrefs?.email ?? false),
+                      })}
+                      disabled={key === 'email'}
+                      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${enabled ? 'bg-red-600' : 'bg-gray-600'} ${key === 'email' ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    >
+                      <span className={`absolute left-1 top-1 w-4 h-4 rounded-full shadow bg-white transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Badges ── */}
+          <div>
+            <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-2">Anzeige-Badge</div>
+            <div className="py-3 text-sm text-gray-500">
+              Noch keine Abzeichen verdient. Absolviere Prüfungen um Badges freizuschalten.
+            </div>
+          </div>
+
+          {/* ── Konto (einklappbar) ── */}
+          <div>
+            <button
+              onClick={() => setKontoOpen(v => !v)}
+              className="w-full flex items-center justify-between py-2"
+            >
+              <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest">Konto</div>
+              <span className="text-gray-600 text-xs">{kontoOpen ? '▲' : '▼'}</span>
+            </button>
+
+            {kontoOpen && (
+              <div className="space-y-3 pt-2">
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">E-Mail</label>
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-gray-400">Passwort ändern</span>
+                    <button type="button" onClick={() => setShowPw(v => !v)} className="text-gray-500 hover:text-gray-300 text-xs">
+                      {showPw ? '🙈 verbergen' : '👁️ anzeigen'}
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    <input type={showPw ? 'text' : 'password'} value={currentPw} onChange={e => setCurrentPw(e.target.value)} placeholder="Aktuelles Passwort…" className={inputCls} />
+                    <input type={showPw ? 'text' : 'password'} value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Neues Passwort (min. 8 Zeichen)…" className={inputCls} />
+                    <input type={showPw ? 'text' : 'password'} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Neues Passwort wiederholen…" className={inputCls} />
+                  </div>
+                  <p className="text-gray-600 text-xs mt-1">Passwortfelder leer lassen = unverändert</p>
+                </div>
+                {error && <p className="text-red-400 text-xs">{error}</p>}
+                <button
+                  onClick={handleSave}
+                  className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all ${saved ? 'bg-green-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'}`}
+                >
+                  {saved ? '✅ Gespeichert!' : 'Speichern'}
+                </button>
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
     </div>

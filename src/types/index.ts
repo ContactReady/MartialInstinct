@@ -274,8 +274,11 @@ export interface Member {
   // Stop The Bleed Zertifizierung
   stopTheBleedCertified?: boolean;
 
-  // Persönliches Badge (vom Mitglied selbst einstellbar)
-  customBadge?: string; // z.B. "🏆 Kämpfer des Monats"
+  // Anzeige-Badge (offiziell verdient — Auswahl folgt)
+  customBadge?: string;
+
+  // Sichtbarkeit: wer sieht Online- und Trainingsstatus
+  visibilityPreference?: 'all' | 'buddies'; // default: 'all'
 
   // Verbundene Mitglieder (in-person Connect via Code)
   connections?: string[];  // Array von Member-IDs

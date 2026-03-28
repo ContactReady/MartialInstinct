@@ -184,6 +184,7 @@ interface AppContextType {
   rejectJoinRequest: (id: string) => void;
   updateStopTheBleed: (memberId: string, certified: boolean) => void;
   updateCustomBadge: (badge: string) => void;
+  updateVisibilityPreference: (pref: 'all' | 'buddies') => void;
   connectWithCode: (code: string) => { success: boolean; memberName?: string };
 
   // Buddy System
@@ -1745,6 +1746,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(prev => prev ? { ...prev, customBadge: badge } : null);
   }, [currentUser]);
 
+  const updateVisibilityPreference = useCallback((pref: 'all' | 'buddies') => {
+    if (!currentUser) return;
+    setMembers(prev => prev.map(m => m.id === currentUser.id ? { ...m, visibilityPreference: pref } : m));
+    setCurrentUser(prev => prev ? { ...prev, visibilityPreference: pref } : null);
+  }, [currentUser]);
+
   const connectWithCode = (code: string): { success: boolean; memberName?: string } => {
     if (!currentUser) return { success: false };
     const normalizedCode = code.trim().toUpperCase();
@@ -1939,6 +1946,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     rejectJoinRequest,
     updateStopTheBleed,
     updateCustomBadge,
+    updateVisibilityPreference,
     connectWithCode,
     generateBuddyCode,
     sendBuddyRequest,
