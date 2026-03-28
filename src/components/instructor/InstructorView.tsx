@@ -51,7 +51,8 @@ function canApproveCheckIn(role: InstructorRole, instructorId: string, checkIn: 
 type Tab = 'dashboard' | 'training' | 'community' | 'admin' | 'profil';
 type DashboardSubTab = 'anfragen' | 'board' | 'bewerten';
 type CommunitySubTab = 'online' | 'mitglieder' | 'training' | 'rangliste';
-type AdminSubTab = 'analytics' | 'members' | 'training' | 'bewerbungen' | 'verwaltung';
+type AdminSubTab = 'analytics' | 'verwaltung' | 'bewerbungen';
+type VerwaltungSubTab = 'plattform' | 'training' | 'mitglieder';
 
 export const InstructorView: React.FC = () => {
   const {
@@ -130,6 +131,7 @@ export const InstructorView: React.FC = () => {
 
   // Admin Sub-Tab State
   const [adminSubTab, setAdminSubTab] = useState<AdminSubTab>('analytics');
+  const [verwaltungSubTab, setVerwaltungSubTab] = useState<VerwaltungSubTab>('plattform');
 
   // Streak Restore State
   const [streakRestoreOpen, setStreakRestoreOpen] = useState<string | null>(null);
@@ -1904,10 +1906,8 @@ export const InstructorView: React.FC = () => {
         <div className="flex bg-gray-800/50 rounded-xl p-1 gap-1 border border-gray-700/50 overflow-x-auto">
           {([
             ['analytics', '📊 Analytics'],
-            ['training', '🥋 Training'],
-            ['members', '👥 Mitglieder'],
-            ['bewerbungen', `💼 Bewerbungen${totalPendingApps > 0 ? ` (${totalPendingApps})` : ''}`],
             ['verwaltung', '⚙️ Verwaltung'],
+            ['bewerbungen', `💼 Bewerbungen${totalPendingApps > 0 ? ` (${totalPendingApps})` : ''}`],
           ] as [AdminSubTab, string][]).map(([id, label]) => (
             <button
               key={id}
@@ -1921,6 +1921,27 @@ export const InstructorView: React.FC = () => {
           ))}
         </div>
         </div>
+
+        {/* Sub-Sub-Tab-Leiste Verwaltung */}
+        {adminSubTab === 'verwaltung' && (
+          <div className="flex bg-gray-800/40 rounded-xl p-1 gap-1 border border-gray-700/40">
+            {([
+              ['plattform', '🔧 Plattform'],
+              ['training', '🥋 Training'],
+              ['mitglieder', '👥 Mitglieder'],
+            ] as [VerwaltungSubTab, string][]).map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => setVerwaltungSubTab(id)}
+                className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  verwaltungSubTab === id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* ── ANALYTICS ──────────────────────────────────────────────── */}
         {adminSubTab === 'analytics' && (() => {
@@ -2163,7 +2184,7 @@ export const InstructorView: React.FC = () => {
         })()}
 
         {/* ── MITGLIEDER ──────────────────────────────────────────────── */}
-        {adminSubTab === 'members' && (
+        {adminSubTab === 'verwaltung' && verwaltungSubTab === 'mitglieder' && (
           <div className="space-y-3">
             <div className="bg-gray-800/30 rounded-xl p-3 border border-gray-700/50 text-xs text-gray-500">
               Owner & Admin: immer Admin-Zugang. Head Instructor: standardmäßig, individuell entziehbar.
@@ -2378,8 +2399,8 @@ export const InstructorView: React.FC = () => {
           </div>
         )}
 
-        {/* ── LERNBEREICH ─────────────────────────────────────────────── */}
-        {adminSubTab === 'training' && (() => {
+        {/* ── TRAINING ────────────────────────────────────────────────── */}
+        {adminSubTab === 'verwaltung' && verwaltungSubTab === 'training' && (() => {
           // ── Content editor helpers ──
           const selectedModule = contentModuleId ? MODULES.find(m => m.id === contentModuleId) : null;
           const moduleTechniques = contentModuleId ? getTechniquesForModule(contentModuleId) : [];
@@ -2778,7 +2799,7 @@ export const InstructorView: React.FC = () => {
         })()}
 
         {/* ── PLATTFORM ──────────────────────────────────────────────── */}
-        {adminSubTab === 'verwaltung' && (() => {
+        {adminSubTab === 'verwaltung' && verwaltungSubTab === 'plattform' && (() => {
           // Permissions-Matrix Konfiguration
           const PERMISSION_LABELS: { key: keyof RolePermissions; label: string; description: string; adminOnly?: boolean }[] = [
             { key: 'canPostToBoard',              label: 'Board: Posten',                description: 'Darf Nachrichten im Instructor-Board verfassen' },
