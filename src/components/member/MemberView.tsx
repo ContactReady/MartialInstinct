@@ -38,6 +38,8 @@ export const MemberView: React.FC = () => {
   const [communitySubTab, setCommunitySubTab] = useState<'online' | 'training' | 'mitglieder' | 'rangliste'>('online');
   const [connectCode, setConnectCode] = useState('');
   const [generatedBuddyCode, setGeneratedBuddyCode] = useState<string | null>(null);
+  const [buddyCodeExpiresAt, setBuddyCodeExpiresAt] = useState<number | null>(null);
+  const [buddyCodeSecondsLeft, setBuddyCodeSecondsLeft] = useState<number>(0);
   const [isConnectInputFocused, setIsConnectInputFocused] = useState(false);
   const [buddyRequestResult, setBuddyRequestResult] = useState<{ ok: boolean; error?: string } | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
@@ -71,6 +73,22 @@ export const MemberView: React.FC = () => {
     const timer = setTimeout(() => setNow(new Date()), msUntilMidnight);
     return () => clearTimeout(timer);
   }, [now]); // nach jedem Reset neu planen
+
+  // Buddy-Code Countdown
+  useEffect(() => {
+    if (!buddyCodeExpiresAt) return;
+    const tick = () => {
+      const left = Math.max(0, Math.round((buddyCodeExpiresAt - Date.now()) / 1000));
+      setBuddyCodeSecondsLeft(left);
+      if (left === 0) {
+        setGeneratedBuddyCode(null);
+        setBuddyCodeExpiresAt(null);
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [buddyCodeExpiresAt]);
 
   if (!currentUser) return null;
 
@@ -367,8 +385,10 @@ export const MemberView: React.FC = () => {
               {/* Code generieren Button */}
               <button
                 onClick={() => {
+                  const expiresAt = Date.now() + 15 * 60 * 1000;
                   const code = generateBuddyCode();
                   setGeneratedBuddyCode(code);
+                  setBuddyCodeExpiresAt(expiresAt);
                   setIsConnectInputFocused(false);
                   setBuddyRequestResult(null);
                 }}
@@ -379,18 +399,31 @@ export const MemberView: React.FC = () => {
 
               {/* Generierter Code — nur sichtbar wenn vorhanden und Input nicht fokussiert */}
               {generatedBuddyCode && !isConnectInputFocused && (
-                <div className="bg-gray-900 rounded-lg px-4 py-3 flex items-center justify-between gap-3">
-                  <span className="text-white font-black text-2xl tracking-[0.3em] font-mono">{generatedBuddyCode}</span>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(generatedBuddyCode);
-                      setCodeCopied(true);
-                      setTimeout(() => setCodeCopied(false), 2000);
-                    }}
-                    className="text-gray-400 hover:text-white transition-colors text-sm px-2 py-1"
-                  >
-                    {codeCopied ? '✓' : '⎘'}
-                  </button>
+                <div className="bg-gray-900 rounded-lg px-4 py-3 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-white font-black text-2xl tracking-[0.3em] font-mono">{generatedBuddyCode}</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedBuddyCode);
+                        setCodeCopied(true);
+                        setTimeout(() => setCodeCopied(false), 2000);
+                      }}
+                      className="text-gray-400 hover:text-white transition-colors text-sm px-2 py-1"
+                    >
+                      {codeCopied ? '✓' : '⎘'}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-1 flex-1 bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-red-600 rounded-full transition-all duration-1000"
+                        style={{ width: `${(buddyCodeSecondsLeft / 900) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-gray-500 text-[10px] font-mono tabular-nums w-8 text-right">
+                      {String(Math.floor(buddyCodeSecondsLeft / 60)).padStart(2, '0')}:{String(buddyCodeSecondsLeft % 60).padStart(2, '0')}
+                    </span>
+                  </div>
                 </div>
               )}
 
