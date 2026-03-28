@@ -962,13 +962,14 @@ export const InstructorView: React.FC = () => {
 
     return (
       <div className="space-y-4">
-        {/* Sub-Tab Switcher */}
+        {/* Sub-Tab Switcher — sticky */}
+        <div className="sticky top-[49px] z-30 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
         <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
           {subTabs.map(st => (
             <button
               key={st.id}
               onClick={() => setDashboardSubTab(st.id)}
-              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all relative flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all relative flex items-center justify-center gap-1.5 ${
                 dashboardSubTab === st.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -982,6 +983,7 @@ export const InstructorView: React.FC = () => {
               )}
             </button>
           ))}
+        </div>
         </div>
 
         {dashboardSubTab === 'anfragen' && renderRequestsTab()}
