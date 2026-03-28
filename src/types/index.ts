@@ -436,12 +436,30 @@ export interface CheckIn {
 export interface Notification {
   id: string;
   oduserId: string;
-  type: 'exam_result' | 'exam_request' | 'checkin' | 'certificate' | 'application' | 'system' | 'bandaid' | 'board';
+  type: 'exam_result' | 'exam_request' | 'checkin' | 'certificate' | 'application' | 'system' | 'bandaid' | 'board' | 'buddy_request';
   title: string;
   message: string;
   read: boolean;
   createdAt: Date;
   data?: Record<string, unknown>;
+}
+
+// Temporärer Buddy-Code (15 Minuten gültig)
+export interface BuddyCode {
+  code: string;
+  generatedBy: string;   // memberId
+  expiresAt: number;     // Date.now() + 15 * 60 * 1000
+}
+
+// Buddy-Anfrage (Zwei-Schritt-Bestätigung)
+export interface BuddyRequest {
+  id: string;
+  fromMemberId: string;
+  fromMemberName: string;
+  toMemberId: string;
+  code: string;
+  createdAt: number;
+  status: 'pending' | 'accepted';
 }
 
 // Kurs/Training

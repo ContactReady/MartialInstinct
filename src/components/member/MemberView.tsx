@@ -27,14 +27,20 @@ export const MemberView: React.FC = () => {
     submitInstructorApplication,
     getSessionsForMember,
     tabConfig,
-    connectWithCode,
+    generateBuddyCode,
+    sendBuddyRequest,
+    acceptBuddyRequest,
+    getPendingBuddyRequests,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [showApplicationModal, setShowApplicationModal] = useState<ApplicationType>(null);
   const [communitySubTab, setCommunitySubTab] = useState<'online' | 'training' | 'mitglieder' | 'rangliste'>('online');
   const [connectCode, setConnectCode] = useState('');
-  const [connectResult, setConnectResult] = useState<{ type: 'success' | 'error' | 'duplicate'; message: string } | null>(null);
+  const [generatedBuddyCode, setGeneratedBuddyCode] = useState<string | null>(null);
+  const [isConnectInputFocused, setIsConnectInputFocused] = useState(false);
+  const [buddyRequestResult, setBuddyRequestResult] = useState<{ ok: boolean; error?: string } | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   // Contact Application Answers
   const [contactAnswers, setContactAnswers] = useState({
@@ -228,21 +234,7 @@ export const MemberView: React.FC = () => {
     const connectedMembers = members.filter(m => myConnections.includes(m.id));
     const onlineConnected = connectedMembers.filter(m => m.onlineSince);
     const trainingConnected = connectedMembers.filter(m => m.isCheckedIn);
-    const myCode = currentUser.id.slice(0, 8).toUpperCase();
 
-    const handleConnect = () => {
-      if (!connectCode.trim()) return;
-      const result = connectWithCode(connectCode.trim());
-      if (result.success) {
-        setConnectResult({ type: 'success', message: `Verbunden mit ${result.memberName}!` });
-        setConnectCode('');
-      } else if (result.memberName) {
-        setConnectResult({ type: 'duplicate', message: `Bereits verbunden mit ${result.memberName}.` });
-      } else {
-        setConnectResult({ type: 'error', message: 'Code nicht gefunden. Lass dir den Code direkt zeigen.' });
-      }
-      setTimeout(() => setConnectResult(null), 4000);
-    };
 
     const formatTimeAgo = (date: Date | undefined): string => {
       if (!date) return '';
@@ -352,44 +344,99 @@ export const MemberView: React.FC = () => {
         {/* ── MITGLIEDER ── */}
         {communitySubTab === 'mitglieder' && (
           <div className="space-y-4">
-            {/* Mein Code */}
-            <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
-              <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">Dein Connect-Code</p>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 bg-gray-900 rounded-lg py-3 px-4 text-center">
-                  <span className="text-white font-black text-2xl tracking-[0.3em] font-mono">{myCode}</span>
+            {/* Eingehende Buddy-Anfragen */}
+            {getPendingBuddyRequests().map(req => (
+              <div key={req.id} className="bg-gray-800/50 rounded-xl border border-red-800/40 p-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-white text-sm font-semibold">{req.fromMemberName}</p>
+                  <p className="text-gray-400 text-xs mt-0.5">möchte sich als Trainingspartner verbinden</p>
                 </div>
-              </div>
-              <p className="text-gray-600 text-xs mt-2">Zeig diesen Code einem Trainingspartner — er gibt ihn ein um euch zu verbinden.</p>
-            </div>
-
-            {/* Code eingeben */}
-            <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
-              <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">Code eingeben</p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={connectCode}
-                  onChange={e => setConnectCode(e.target.value.toUpperCase())}
-                  onKeyDown={e => e.key === 'Enter' && handleConnect()}
-                  placeholder="z.B. A3F7B2E9"
-                  maxLength={8}
-                  className="flex-1 bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:border-gray-400 focus:outline-none font-mono tracking-widest text-sm uppercase placeholder-gray-600"
-                />
                 <button
-                  onClick={handleConnect}
-                  disabled={connectCode.length < 6}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg font-semibold text-sm transition-all"
+                  onClick={() => acceptBuddyRequest(req.id)}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm transition-all flex-shrink-0"
                 >
-                  Verbinden
+                  Annehmen
                 </button>
               </div>
-              {connectResult && (
-                <p className={`text-xs mt-2 ${
-                  connectResult.type === 'success' ? 'text-green-400' :
-                  connectResult.type === 'duplicate' ? 'text-yellow-400' : 'text-red-400'
-                }`}>
-                  {connectResult.type === 'success' ? '✅' : connectResult.type === 'duplicate' ? 'ℹ️' : '✗'} {connectResult.message}
+            ))}
+
+            {/* Trainingspartner-Kachel */}
+            <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4 space-y-3">
+              <p className="text-gray-500 text-xs uppercase tracking-wider">Trainingspartner</p>
+
+              {/* Code generieren Button */}
+              <button
+                onClick={() => {
+                  const code = generateBuddyCode();
+                  setGeneratedBuddyCode(code);
+                  setIsConnectInputFocused(false);
+                  setBuddyRequestResult(null);
+                }}
+                className="w-full py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm transition-all"
+              >
+                Code generieren
+              </button>
+
+              {/* Generierter Code — nur sichtbar wenn vorhanden und Input nicht fokussiert */}
+              {generatedBuddyCode && !isConnectInputFocused && (
+                <div className="bg-gray-900 rounded-lg px-4 py-3 flex items-center justify-between gap-3">
+                  <span className="text-white font-black text-2xl tracking-[0.3em] font-mono">{generatedBuddyCode}</span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedBuddyCode);
+                      setCodeCopied(true);
+                      setTimeout(() => setCodeCopied(false), 2000);
+                    }}
+                    className="text-gray-400 hover:text-white transition-colors text-sm px-2 py-1"
+                  >
+                    {codeCopied ? '✓' : '⎘'}
+                  </button>
+                </div>
+              )}
+
+              {/* Trennlinie */}
+              <div className="border-t border-gray-700" />
+
+              {/* Code eingeben */}
+              <input
+                type="text"
+                value={connectCode}
+                onChange={e => {
+                  setConnectCode(e.target.value.toUpperCase());
+                  setBuddyRequestResult(null);
+                }}
+                onFocus={() => setIsConnectInputFocused(true)}
+                onBlur={() => setIsConnectInputFocused(false)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && /^[A-Z0-9-]{6,}$/.test(connectCode)) {
+                    const result = sendBuddyRequest(connectCode);
+                    setBuddyRequestResult(result);
+                    if (result.ok) setConnectCode('');
+                  }
+                }}
+                placeholder="Z.B. A3F7B2E9"
+                className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:border-gray-500 focus:outline-none font-mono tracking-widest text-sm uppercase placeholder-gray-600"
+              />
+
+              {/* Verbinden Button */}
+              <button
+                onClick={() => {
+                  const result = sendBuddyRequest(connectCode);
+                  setBuddyRequestResult(result);
+                  if (result.ok) setConnectCode('');
+                }}
+                disabled={!/^[A-Z0-9-]{6,}$/.test(connectCode)}
+                className="w-full py-2.5 rounded-lg font-semibold text-sm transition-all disabled:bg-gray-700 disabled:text-gray-500 bg-red-600 hover:bg-red-500 text-white"
+              >
+                Verbinden
+              </button>
+
+              {/* Feedback */}
+              {buddyRequestResult && (
+                <p className={`text-xs ${buddyRequestResult.ok ? 'text-gray-400' : 'text-red-400'}`}>
+                  {buddyRequestResult.ok
+                    ? '⏳ Warte auf Bestätigung...'
+                    : `✗ ${buddyRequestResult.error}`}
                 </p>
               )}
             </div>

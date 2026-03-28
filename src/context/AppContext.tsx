@@ -35,6 +35,8 @@ import {
   DEFAULT_TAB_CONFIG,
   JoinRequest,
   CreateMemberData,
+  BuddyCode,
+  BuddyRequest,
 } from '../types';
 import { MODULE_QUIZ_DATA } from '../data/memberQuizData';
 import { supabase } from '../lib/supabase';
@@ -183,6 +185,13 @@ interface AppContextType {
   updateStopTheBleed: (memberId: string, certified: boolean) => void;
   updateCustomBadge: (badge: string) => void;
   connectWithCode: (code: string) => { success: boolean; memberName?: string };
+
+  // Buddy System
+  generateBuddyCode: () => string;
+  sendBuddyRequest: (code: string) => { ok: boolean; error?: string };
+  acceptBuddyRequest: (requestId: string) => void;
+  getPendingBuddyRequests: () => BuddyRequest[];
+  getBuddies: () => Member[];
 
   getMemberById: (id: string) => Member | undefined;
   getCheckedInMembers: () => Member[];
@@ -1762,6 +1771,97 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return { success: true, memberName: target.name };
   };
 
+  // ── Buddy System ────────────────────────────────────────────────────────────
+  const BUDDY_CODES_KEY = 'mi_buddy_codes';
+  const BUDDY_REQUESTS_KEY = 'mi_buddy_requests';
+
+  const generateBuddyCode = (): string => {
+    if (!currentUser) return '';
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const rand = (n: number) =>
+      Array.from({ length: n }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    const code = `${rand(3)}-${rand(3)}`;
+    const now = Date.now();
+    const existing: BuddyCode[] = JSON.parse(localStorage.getItem(BUDDY_CODES_KEY) || '[]');
+    const cleaned = existing.filter(c => c.expiresAt > now && c.generatedBy !== currentUser.id);
+    const entry: BuddyCode = { code, generatedBy: currentUser.id, expiresAt: now + 15 * 60 * 1000 };
+    localStorage.setItem(BUDDY_CODES_KEY, JSON.stringify([...cleaned, entry]));
+    return code;
+  };
+
+  const sendBuddyRequest = (code: string): { ok: boolean; error?: string } => {
+    if (!currentUser) return { ok: false, error: 'Nicht eingeloggt.' };
+    const normalizedCode = code.trim().toUpperCase();
+    const now = Date.now();
+    const buddyCodes: BuddyCode[] = JSON.parse(localStorage.getItem(BUDDY_CODES_KEY) || '[]');
+    const codeEntry = buddyCodes.find(c => c.code === normalizedCode && c.expiresAt > now);
+    if (!codeEntry) return { ok: false, error: 'Code ungültig oder abgelaufen.' };
+    if (codeEntry.generatedBy === currentUser.id) return { ok: false, error: 'Du kannst nicht deinen eigenen Code eingeben.' };
+    if ((currentUser.connections ?? []).includes(codeEntry.generatedBy)) {
+      return { ok: false, error: 'Ihr seid bereits verbunden.' };
+    }
+    const requests: BuddyRequest[] = JSON.parse(localStorage.getItem(BUDDY_REQUESTS_KEY) || '[]');
+    const existing = requests.find(
+      r => r.fromMemberId === currentUser.id && r.toMemberId === codeEntry.generatedBy && r.status === 'pending'
+    );
+    if (existing) return { ok: true };
+    const newRequest: BuddyRequest = {
+      id: `br_${now}_${Math.random().toString(36).slice(2)}`,
+      fromMemberId: currentUser.id,
+      fromMemberName: currentUser.name,
+      toMemberId: codeEntry.generatedBy,
+      code: normalizedCode,
+      createdAt: now,
+      status: 'pending',
+    };
+    localStorage.setItem(BUDDY_REQUESTS_KEY, JSON.stringify([...requests, newRequest]));
+    // Benachrichtigung für den Empfänger
+    setNotifications(prev => [...prev, {
+      id: `notif-buddy-${now}`,
+      oduserId: codeEntry.generatedBy,
+      type: 'buddy_request' as const,
+      title: 'Trainingspartner-Anfrage',
+      message: `${currentUser.name} möchte sich mit dir verbinden.`,
+      read: false,
+      createdAt: new Date(),
+      data: { requestId: newRequest.id },
+    }]);
+    return { ok: true };
+  };
+
+  const acceptBuddyRequest = (requestId: string): void => {
+    if (!currentUser) return;
+    const requests: BuddyRequest[] = JSON.parse(localStorage.getItem(BUDDY_REQUESTS_KEY) || '[]');
+    const request = requests.find(r => r.id === requestId && r.status === 'pending');
+    if (!request) return;
+    const updated = requests.map(r => r.id === requestId ? { ...r, status: 'accepted' as const } : r);
+    localStorage.setItem(BUDDY_REQUESTS_KEY, JSON.stringify(updated));
+    const myId = currentUser.id;
+    const theirId = request.fromMemberId;
+    setMembers(prev => prev.map(m => {
+      if (m.id === myId) return { ...m, connections: [...new Set([...(m.connections ?? []), theirId])] };
+      if (m.id === theirId) return { ...m, connections: [...new Set([...(m.connections ?? []), myId])] };
+      return m;
+    }));
+    setCurrentUser(prev => prev ? { ...prev, connections: [...new Set([...(prev.connections ?? []), theirId])] } : null);
+  };
+
+  const getPendingBuddyRequests = (): BuddyRequest[] => {
+    if (!currentUser) return [];
+    const requests: BuddyRequest[] = JSON.parse(localStorage.getItem(BUDDY_REQUESTS_KEY) || '[]');
+    const cutoff = Date.now() - 15 * 60 * 1000;
+    return requests.filter(r =>
+      r.toMemberId === currentUser.id &&
+      r.status === 'pending' &&
+      r.createdAt > cutoff
+    );
+  };
+
+  const getBuddies = (): Member[] => {
+    if (!currentUser) return [];
+    return members.filter(m => (currentUser.connections ?? []).includes(m.id));
+  };
+
   const updateAdminAccess = useCallback((memberId: string, hasAccess: boolean) => {
     setMembers(prev => prev.map(m =>
       m.id === memberId ? { ...m, adminAccess: hasAccess } : m
@@ -1840,6 +1940,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     updateStopTheBleed,
     updateCustomBadge,
     connectWithCode,
+    generateBuddyCode,
+    sendBuddyRequest,
+    acceptBuddyRequest,
+    getPendingBuddyRequests,
+    getBuddies,
     getMemberById,
     getCheckedInMembers,
     getOnlineMembers,
