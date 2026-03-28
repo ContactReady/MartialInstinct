@@ -350,12 +350,12 @@ export const MemberLearningView: React.FC = () => {
         const myPendingCheckIns = checkIns.filter(c => c.memberId === currentUser.id && c.status === 'pending').length;
         const totalPending = pendingExams + myPendingCheckIns;
         return (
-          <div className="sticky top-10 z-30 bg-gray-950 px-4 pt-4 pb-3 border-b border-gray-700/50">
+          <div className="sticky top-0 z-30 bg-gray-950 px-4 pt-2 pb-3 border-b border-gray-700/50">
             <div className="flex bg-gray-800/60 rounded-xl p-1 gap-1">
               <button
                 onClick={() => setLearningTab('theorie')}
                 className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
-                  learningTab === 'theorie' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
+                  learningTab === 'theorie' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
                 }`}
               >
                 📖 Theorie
@@ -363,7 +363,7 @@ export const MemberLearningView: React.FC = () => {
               <button
                 onClick={() => setLearningTab('praxis')}
                 className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
-                  learningTab === 'praxis' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
+                  learningTab === 'praxis' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
                 }`}
               >
                 🥋 Praxis
@@ -371,7 +371,7 @@ export const MemberLearningView: React.FC = () => {
               <button
                 onClick={() => setLearningTab('anfragen')}
                 className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all relative ${
-                  learningTab === 'anfragen' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
+                  learningTab === 'anfragen' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
                 }`}
               >
                 📋 Anfragen
