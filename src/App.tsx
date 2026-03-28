@@ -193,6 +193,9 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [confirmPw, setConfirmPw] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [kontoOpen, setKontoOpen] = useState(false);
+  const [sichtbarkeitOpen, setSichtbarkeitOpen] = useState(false);
+  const [darstellungOpen, setDarstellungOpen] = useState(false);
+  const [badgesOpen, setBadgesOpen] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
@@ -230,83 +233,113 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">✕</button>
         </div>
 
-        <div className="px-5 py-4 space-y-5">
+        <div className="px-5 py-4 space-y-3">
 
           {/* ── Sichtbarkeit ── */}
           <div>
-            <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-2">Sichtbarkeit</div>
-            <div className={rowCls} style={{ borderBottom: 'none' }}>
-              <div>
-                <div className="text-sm text-white">Wer sieht meinen Status?</div>
-                <div className="text-xs text-gray-500 mt-0.5">Online- und Trainingsstatus</div>
+            <button
+              onClick={() => setSichtbarkeitOpen(v => !v)}
+              className="w-full flex items-center justify-between py-2 px-3 bg-gray-800/60 rounded-xl border border-gray-700 hover:border-gray-600 transition-all"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">👁️</span>
+                <span className="text-sm font-semibold text-white">Sichtbarkeit</span>
               </div>
-              <div className="flex gap-1 flex-shrink-0 ml-3">
-                <button
-                  onClick={() => updateVisibilityPreference('all')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${visibility === 'all' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                >
-                  Alle
-                </button>
-                <button
-                  onClick={() => updateVisibilityPreference('buddies')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${visibility === 'buddies' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                >
-                  Trainingspartner
-                </button>
+              <span className="text-gray-500 text-xs">{sichtbarkeitOpen ? '▲' : '▼'}</span>
+            </button>
+            {sichtbarkeitOpen && (
+              <div className="pt-3 px-1 space-y-2">
+                <div className="text-xs text-gray-500 mb-2">Wer sieht deinen Online- und Trainingsstatus?</div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => updateVisibilityPreference('all')}
+                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all border ${visibility === 'all' ? 'bg-gray-700 text-white border-gray-600' : 'bg-transparent text-gray-500 border-gray-700 hover:text-gray-300'}`}
+                  >
+                    Alle Mitglieder
+                  </button>
+                  <button
+                    onClick={() => updateVisibilityPreference('buddies')}
+                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all border ${visibility === 'buddies' ? 'bg-gray-700 text-white border-gray-600' : 'bg-transparent text-gray-500 border-gray-700 hover:text-gray-300'}`}
+                  >
+                    Trainingspartner
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* ── Darstellung & Benachrichtigungen ── */}
           <div>
-            <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-2">Darstellung & Benachrichtigungen</div>
-            <div className="divide-y divide-gray-800">
-              <div className={rowCls}>
-                <span className="text-sm text-white">{darkMode ? '🌙 Dunkel' : '☀️ Hell'}</span>
-                <button
-                  onClick={toggleDarkMode}
-                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${darkMode ? 'bg-red-600' : 'bg-gray-600'}`}
-                >
-                  <span className={`absolute left-1 top-1 w-4 h-4 rounded-full shadow bg-white transition-transform ${darkMode ? 'translate-x-5' : 'translate-x-0'}`} />
-                </button>
+            <button
+              onClick={() => setDarstellungOpen(v => !v)}
+              className="w-full flex items-center justify-between py-2 px-3 bg-gray-800/60 rounded-xl border border-gray-700 hover:border-gray-600 transition-all"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">🔔</span>
+                <span className="text-sm font-semibold text-white">Darstellung & Benachrichtigungen</span>
               </div>
-              {([
-                { key: 'sound', label: '🔔 Sound', desc: 'Ton bei Benachrichtigungen' },
-                { key: 'email', label: '📧 E-Mail', desc: 'Kommt bald' },
-              ] as { key: 'sound' | 'email'; label: string; desc: string }[]).map(({ key, label, desc }) => {
-                const enabled = currentUser?.notificationPrefs?.[key] ?? (key === 'sound');
-                return (
-                  <div key={key} className={rowCls}>
-                    <div>
-                      <div className="text-sm text-white">{label}</div>
-                      <div className="text-xs text-gray-500">{desc}</div>
+              <span className="text-gray-500 text-xs">{darstellungOpen ? '▲' : '▼'}</span>
+            </button>
+            {darstellungOpen && (
+              <div className="pt-2 divide-y divide-gray-800">
+                <div className={rowCls}>
+                  <span className="text-sm text-white">{darkMode ? '🌙 Dunkel' : '☀️ Hell'}</span>
+                  <button
+                    onClick={toggleDarkMode}
+                    className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${darkMode ? 'bg-red-600' : 'bg-gray-600'}`}
+                  >
+                    <span className={`absolute left-1 top-1 w-4 h-4 rounded-full shadow bg-white transition-transform ${darkMode ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+                {([
+                  { key: 'sound', label: '🔔 Sound', desc: 'Ton bei Benachrichtigungen' },
+                  { key: 'email', label: '📧 E-Mail', desc: 'Kommt bald' },
+                ] as { key: 'sound' | 'email'; label: string; desc: string }[]).map(({ key, label, desc }) => {
+                  const enabled = currentUser?.notificationPrefs?.[key] ?? (key === 'sound');
+                  return (
+                    <div key={key} className={rowCls}>
+                      <div>
+                        <div className="text-sm text-white">{label}</div>
+                        <div className="text-xs text-gray-500">{desc}</div>
+                      </div>
+                      <button
+                        onClick={() => updateNotificationPrefs({
+                          sound: key === 'sound' ? !enabled : (currentUser?.notificationPrefs?.sound ?? true),
+                          email: key === 'email' ? !enabled : (currentUser?.notificationPrefs?.email ?? false),
+                        })}
+                        disabled={key === 'email'}
+                        className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${enabled ? 'bg-red-600' : 'bg-gray-600'} ${key === 'email' ? 'opacity-40 cursor-not-allowed' : ''}`}
+                      >
+                        <span className={`absolute left-1 top-1 w-4 h-4 rounded-full shadow bg-white transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => updateNotificationPrefs({
-                        sound: key === 'sound' ? !enabled : (currentUser?.notificationPrefs?.sound ?? true),
-                        email: key === 'email' ? !enabled : (currentUser?.notificationPrefs?.email ?? false),
-                      })}
-                      disabled={key === 'email'}
-                      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${enabled ? 'bg-red-600' : 'bg-gray-600'} ${key === 'email' ? 'opacity-40 cursor-not-allowed' : ''}`}
-                    >
-                      <span className={`absolute left-1 top-1 w-4 h-4 rounded-full shadow bg-white transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* ── Badges ── */}
           <div>
-            <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-2">Anzeige-Badge</div>
-            <div className="py-3 text-sm text-gray-500">
-              Noch keine Abzeichen verdient. Absolviere Prüfungen um Badges freizuschalten.
-            </div>
+            <button
+              onClick={() => setBadgesOpen(v => !v)}
+              className="w-full flex items-center justify-between py-2 px-3 bg-gray-800/60 rounded-xl border border-gray-700 hover:border-gray-600 transition-all"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">🏅</span>
+                <span className="text-sm font-semibold text-white">Anzeige-Badge</span>
+              </div>
+              <span className="text-gray-500 text-xs">{badgesOpen ? '▲' : '▼'}</span>
+            </button>
+            {badgesOpen && (
+              <div className="pt-3 px-1">
+                <p className="text-sm text-gray-500">Noch keine Abzeichen verdient. Absolviere Prüfungen um Badges freizuschalten.</p>
+              </div>
+            )}
           </div>
 
-          {/* ── Zugangsdaten (einklappbar) ── */}
-          <div className="border-t border-gray-800 pt-4">
+          {/* ── Zugangsdaten ── */}
+          <div>
             <button
               onClick={() => setKontoOpen(v => !v)}
               className="w-full flex items-center justify-between py-2 px-3 bg-gray-800/60 rounded-xl border border-gray-700 hover:border-gray-600 transition-all"
@@ -319,7 +352,7 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </button>
 
             {kontoOpen && (
-              <div className="space-y-3 pt-2">
+              <div className="space-y-3 pt-3 px-1">
                 <div>
                   <label className="text-xs text-gray-400 mb-1 block">E-Mail</label>
                   <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
