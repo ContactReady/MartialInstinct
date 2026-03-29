@@ -761,9 +761,6 @@ const AppContent: React.FC = () => {
             </div>
           )}
 
-          {/* Instructor-View: kein Center-Content, flex-1 als Spacer */}
-          {actualViewMode === 'instructor' && <div className="flex-1" />}
-
           {/* Right: Bell + Avatar */}
           <div className="flex items-center gap-2 flex-shrink-0">
 
