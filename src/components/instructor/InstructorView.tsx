@@ -111,7 +111,7 @@ export const InstructorView: React.FC = () => {
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
-  const [dashboardSubTab, setDashboardSubTab] = useState<DashboardSubTab>('anfragen');
+  const [dashboardSubTab, setDashboardSubTab] = useState<DashboardSubTab>('fortschritt');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
   const [boardMessageText, setBoardMessageText] = useState('');
@@ -958,10 +958,10 @@ export const InstructorView: React.FC = () => {
     const boardBadge = unreadBoardNotifs;
 
     const subTabs: { id: DashboardSubTab; label: string; badge?: number }[] = [
+      { id: 'fortschritt', label: '📊 Fortschritt' },
       { id: 'anfragen',   label: '📋 Anfragen',  badge: anfragenBadge > 0 ? anfragenBadge : undefined },
       { id: 'board',      label: '💬 Board',     badge: boardBadge > 0 ? boardBadge : undefined },
       { id: 'bewerten',   label: '✏️ Bewerten' },
-      { id: 'fortschritt', label: '📊 Fortschritt' },
     ];
 
     return (
