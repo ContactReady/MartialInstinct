@@ -954,7 +954,7 @@ export const InstructorView: React.FC = () => {
 
   // ── DASHBOARD TAB ─────────────────────────────────────────────────────────
   const renderDashboardTab = () => {
-    const anfragenBadge = pendingCheckIns.length + pendingExamRequests.length + pendingWishes.length + totalPendingApps + joinRequests.filter(r => r.status === 'pending').length;
+    const anfragenBadge = pendingCheckIns.length + pendingExamRequests.length + totalPendingApps + joinRequests.filter(r => r.status === 'pending').length;
     const boardBadge = unreadBoardNotifs;
 
     const subTabs: { id: DashboardSubTab; label: string; badge?: number }[] = [
@@ -963,15 +963,6 @@ export const InstructorView: React.FC = () => {
       { id: 'board',       label: '💬 Board',    badge: boardBadge > 0 ? boardBadge : undefined },
       { id: 'anfragen',    label: '📋 Anfragen', badge: anfragenBadge > 0 ? anfragenBadge : undefined },
     ];
-
-    // Wunschtechniken — gruppiert nach Technik, absteigend nach Anzahl
-    const wishesGrouped = Object.entries(
-      pendingWishes.reduce<Record<string, typeof pendingWishes>>((acc, w) => {
-        if (!acc[w.techniqueId]) acc[w.techniqueId] = [];
-        acc[w.techniqueId].push(w);
-        return acc;
-      }, {})
-    ).sort(([, a], [, b]) => b.length - a.length);
 
     return (
       <div className="space-y-4">
@@ -997,46 +988,6 @@ export const InstructorView: React.FC = () => {
               </button>
             ))}
           </div>
-
-          {/* Wunschtechniken — sticky unter der Sub-Tab-Leiste, nur im Anfragen-Tab */}
-          {dashboardSubTab === 'anfragen' && (
-            <div className="mt-2 bg-gray-900 rounded-xl border border-gray-700/60 px-3 py-2">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] font-bold tracking-widest uppercase text-gray-500">🎯 Wunschtechniken</span>
-                {wishesGrouped.length > 0 && (
-                  <button
-                    onClick={() => pendingWishes.forEach(w => acknowledgeWish(w.id))}
-                    className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
-                  >
-                    Alle gesehen ✓
-                  </button>
-                )}
-              </div>
-              {wishesGrouped.length === 0 ? (
-                <p className="text-gray-600 text-xs">Keine Wunschtechniken</p>
-              ) : (
-                <div className="flex flex-wrap gap-1.5">
-                  {wishesGrouped.map(([techniqueId, wishes]) => (
-                    <div key={techniqueId} className="flex items-center gap-1.5 bg-gray-800 rounded-lg px-2.5 py-1.5">
-                      <div className="min-w-0">
-                        <span className="text-white text-xs font-medium">{wishes[0].techniqueName}</span>
-                        <span className="text-gray-500 text-[10px] ml-1">· {wishes[0].moduleName}</span>
-                      </div>
-                      <span className="bg-purple-500/20 text-purple-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0">
-                        {wishes.length}×
-                      </span>
-                      <button
-                        onClick={() => wishes.forEach(w => acknowledgeWish(w.id))}
-                        className="text-gray-500 hover:text-gray-300 text-[10px] transition-colors flex-shrink-0"
-                      >
-                        ✓
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {dashboardSubTab === 'anfragen' && renderRequestsTab()}
@@ -1199,7 +1150,8 @@ export const InstructorView: React.FC = () => {
     return (
       <>
       <div className="space-y-4">
-        {/* Sub-Tab Switcher */}
+        {/* Sub-Sub-Tab Switcher — sticky unter der Dashboard-Leiste */}
+        <div className="sticky top-[97px] z-20 bg-gray-950 -mx-4 px-4 pb-2">
         <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
           {subTabItems.map(item => (
             <button
@@ -1219,6 +1171,7 @@ export const InstructorView: React.FC = () => {
               )}
             </button>
           ))}
+        </div>
         </div>
 
         {/* ── Prüfungsanfragen ──────────────────────────────────────────────── */}
