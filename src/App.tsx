@@ -534,7 +534,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
   const roleInfo = ROLE_DISPLAY[currentUser.role];
 
   return (
-    <div ref={ref} className="absolute top-full right-0 mt-2 w-72 max-w-[calc(100vw-1rem)] bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden">
+    <div ref={ref} className="absolute top-full right-0 mt-2 w-72 max-w-[calc(100vw-1rem)] bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-50 overflow-y-auto max-h-[85vh]">
 
       {/* User Info */}
       <div className="px-4 py-3 border-b border-gray-800 flex items-center gap-3">

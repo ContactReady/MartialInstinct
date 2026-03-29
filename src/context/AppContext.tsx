@@ -187,7 +187,7 @@ interface AppContextType {
   updateVisibilityPreference: (pref: 'all' | 'buddies') => void;
   updateAnzeigename: (name: string) => { ok: boolean; error?: string };
   updateDataVisibility: (prefs: NonNullable<Member['dataVisibility']>) => void;
-  updateMemberCoreData: (memberId: string, data: { firstName?: string; lastName?: string; birthDate?: string; memberId?: string }) => void;
+  updateMemberCoreData: (memberId: string, data: { name?: string; firstName?: string; lastName?: string; birthDate?: string; memberId?: string }) => void;
   connectWithCode: (code: string) => { success: boolean; memberName?: string };
 
   // Buddy System
@@ -1773,21 +1773,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(prev => prev ? { ...prev, dataVisibility: prefs } : null);
   }, [currentUser]);
 
-  const updateMemberCoreData = useCallback((memberId: string, data: { firstName?: string; lastName?: string; birthDate?: string; memberId?: string }) => {
+  const updateMemberCoreData = useCallback((memberId: string, data: { name?: string; firstName?: string; lastName?: string; birthDate?: string; memberId?: string }) => {
     setMembers(prev => prev.map(m => {
       if (m.id !== memberId) return m;
       const updated = { ...m };
+      if (data.name !== undefined) updated.name = data.name;
       if (data.firstName !== undefined) updated.firstName = data.firstName;
       if (data.lastName !== undefined) updated.lastName = data.lastName;
       if (data.birthDate !== undefined) updated.birthDate = data.birthDate;
+      if (data.memberId !== undefined) updated.memberId = data.memberId;
       return updated;
     }));
     setCurrentUser(prev => {
       if (!prev || prev.id !== memberId) return prev;
       const updated = { ...prev };
+      if (data.name !== undefined) updated.name = data.name;
       if (data.firstName !== undefined) updated.firstName = data.firstName;
       if (data.lastName !== undefined) updated.lastName = data.lastName;
       if (data.birthDate !== undefined) updated.birthDate = data.birthDate;
+      if (data.memberId !== undefined) updated.memberId = data.memberId;
       return updated;
     });
   }, []);
