@@ -69,6 +69,27 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
     day: '2-digit', month: 'long', year: 'numeric'
   });
 
+  const dv = member.dataVisibility;
+
+  // Geburtsdatum-Anzeige je nach Sichtbarkeits-Einstellung
+  const formatBirthDate = () => {
+    if (!member.birthDate) return null;
+    const visibility = dv?.birthDateVisibility ?? 'hidden';
+    if (visibility === 'hidden') return null;
+    const d = new Date(member.birthDate);
+    if (visibility === 'dayMonth') return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+    return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+  const birthDateDisplay = formatBirthDate();
+
+  // Welche Felder auf dem Profil sichtbar sind
+  const profileFields: { label: string; value: string }[] = [
+    { label: 'Vorname', value: member.firstName ?? '' },
+    ...(dv?.showLastName && member.lastName ? [{ label: 'Nachname', value: member.lastName }] : []),
+    ...(dv?.showMemberId && member.memberId ? [{ label: 'Member ID', value: member.memberId }] : []),
+    ...(birthDateDisplay ? [{ label: 'Geburtstag', value: birthDateDisplay }] : []),
+  ].filter(f => f.value);
+
   return (
     <div className={`${isModal ? 'fixed inset-0 bg-black/80 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4' : ''}`}
       onClick={isModal ? onClose : undefined}
@@ -139,6 +160,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
         </div>
 
         <div className="px-5 pb-28 space-y-5 mt-1">
+
+          {/* Persönliche Daten — nur wenn mindestens ein Feld sichtbar */}
+          {profileFields.length > 0 && (
+            <div className="bg-gray-800/40 rounded-xl border border-gray-700/50 divide-y divide-gray-700/40">
+              {profileFields.map(f => (
+                <div key={f.label} className="flex items-center justify-between px-4 py-2.5">
+                  <span className="text-xs text-gray-500">{f.label}</span>
+                  <span className="text-xs text-gray-200 font-medium">{f.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Stats — kompakt */}
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">

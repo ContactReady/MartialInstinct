@@ -466,12 +466,16 @@ interface UserDropdownProps {
 }
 
 const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onClose }) => {
-  const { currentUser, members, switchUser, logout, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference, updateProfile } = useApp();
+  const { currentUser, members, switchUser, logout, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference, updateProfile, updateAnzeigename, updateDataVisibility } = useApp();
   const [badgesOpen, setBadgesOpen] = useState(false);
   const [designOpen, setDesignOpen] = useState(false);
+  const [persoenlichOpen, setPersoenlichOpen] = useState(false);
   const [profilesOpen, setProfilesOpen] = useState(false);
   const [sichtbarkeitOpen, setSichtbarkeitOpen] = useState(false);
   const [kontoOpen, setKontoOpen] = useState(false);
+  const [anzeigenameDraft, setAnzeigenameDraft] = useState('');
+  const [anzeigenameError, setAnzeigenamError] = useState('');
+  const [anzeigenameSaved, setAnzeigenameSaved] = useState(false);
   const [email, setEmail] = useState(currentUser?.email ?? '');
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
@@ -604,6 +608,109 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Persönliche Daten */}
+        {accordionBtn(persoenlichOpen, '🪪', 'Persönliche Daten', () => {
+          setPersoenlichOpen(v => !v);
+          setAnzeigenameDraft(currentUser?.name ?? '');
+          setAnzeigenamError('');
+          setAnzeigenameSaved(false);
+        })}
+        {persoenlichOpen && (
+          <div className="px-1 space-y-3 pb-1">
+            {/* Anzeigename */}
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">Anzeigename</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={anzeigenameDraft}
+                  onChange={e => { setAnzeigenameDraft(e.target.value); setAnzeigenamError(''); setAnzeigenameSaved(false); }}
+                  className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400 placeholder-gray-500"
+                  placeholder="Dein Anzeigename…"
+                />
+                <button
+                  onClick={() => {
+                    const result = updateAnzeigename(anzeigenameDraft);
+                    if (result.ok) { setAnzeigenameSaved(true); setTimeout(() => setAnzeigenameSaved(false), 2000); }
+                    else setAnzeigenamError(result.error ?? '');
+                  }}
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all flex-shrink-0 ${anzeigenameSaved ? 'bg-green-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'}`}
+                >
+                  {anzeigenameSaved ? '✓' : 'Speichern'}
+                </button>
+              </div>
+              {anzeigenameError && <p className="text-red-400 text-xs mt-1">{anzeigenameError}</p>}
+              <p className="text-gray-600 text-xs mt-1">Wird überall auf der Plattform angezeigt. Muss einzigartig sein.</p>
+            </div>
+
+            {/* Kerndaten — read-only für Member */}
+            <div className="divide-y divide-gray-800">
+              {[
+                { label: 'Vorname', value: currentUser?.firstName },
+                { label: 'Nachname', value: currentUser?.lastName },
+                { label: 'Geburtsdatum', value: currentUser?.birthDate ? new Date(currentUser.birthDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : undefined },
+                { label: 'Member ID', value: currentUser?.memberId },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex items-center justify-between py-2">
+                  <span className="text-xs text-gray-500">{label}</span>
+                  <span className="text-xs text-gray-300">{value ?? <span className="text-gray-600 italic">–</span>}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Sichtbarkeit auf Profil */}
+            <div>
+              <div className="text-xs text-gray-500 font-semibold uppercase tracking-widest mb-2">Auf deinem Profil sichtbar</div>
+              <div className="space-y-2">
+                {/* Vorname — immer sichtbar, kein Toggle */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white">Vorname</span>
+                  <span className="text-xs text-gray-500 italic">Immer sichtbar</span>
+                </div>
+                {/* Nachname */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white">Nachname</span>
+                  <button
+                    onClick={() => updateDataVisibility({ ...currentUser?.dataVisibility, showLastName: !(currentUser?.dataVisibility?.showLastName ?? false) })}
+                    className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${(currentUser?.dataVisibility?.showLastName ?? false) ? 'bg-red-600' : 'bg-gray-600'}`}
+                  >
+                    <span className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${(currentUser?.dataVisibility?.showLastName ?? false) ? 'translate-x-4' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+                {/* Member ID */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white">Member ID</span>
+                  <button
+                    onClick={() => updateDataVisibility({ ...currentUser?.dataVisibility, showMemberId: !(currentUser?.dataVisibility?.showMemberId ?? false) })}
+                    className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${(currentUser?.dataVisibility?.showMemberId ?? false) ? 'bg-red-600' : 'bg-gray-600'}`}
+                  >
+                    <span className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${(currentUser?.dataVisibility?.showMemberId ?? false) ? 'translate-x-4' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+                {/* Geburtsdatum */}
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs text-white flex-shrink-0">Geburtsdatum</span>
+                  <div className="flex gap-1">
+                    {(['hidden', 'dayMonth', 'full'] as const).map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => updateDataVisibility({ ...currentUser?.dataVisibility, birthDateVisibility: opt })}
+                        className={`px-2 py-1 rounded text-[10px] font-semibold transition-all border ${
+                          (currentUser?.dataVisibility?.birthDateVisibility ?? 'hidden') === opt
+                            ? 'bg-gray-700 text-white border-gray-500'
+                            : 'text-gray-500 border-gray-700 hover:text-gray-300'
+                        }`}
+                      >
+                        {opt === 'hidden' ? 'Aus' : opt === 'dayMonth' ? 'TT.MM.' : 'TT.MM.YYYY'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

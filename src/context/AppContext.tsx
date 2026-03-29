@@ -185,6 +185,9 @@ interface AppContextType {
   updateStopTheBleed: (memberId: string, certified: boolean) => void;
   updateCustomBadge: (badge: string) => void;
   updateVisibilityPreference: (pref: 'all' | 'buddies') => void;
+  updateAnzeigename: (name: string) => { ok: boolean; error?: string };
+  updateDataVisibility: (prefs: NonNullable<Member['dataVisibility']>) => void;
+  updateMemberCoreData: (memberId: string, data: { firstName?: string; lastName?: string; birthDate?: string; memberId?: string }) => void;
   connectWithCode: (code: string) => { success: boolean; memberName?: string };
 
   // Buddy System
@@ -1753,6 +1756,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(prev => prev ? { ...prev, visibilityPreference: pref } : null);
   }, [currentUser]);
 
+  const updateAnzeigename = useCallback((name: string): { ok: boolean; error?: string } => {
+    if (!currentUser) return { ok: false, error: 'Nicht eingeloggt' };
+    const trimmed = name.trim();
+    if (!trimmed) return { ok: false, error: 'Anzeigename darf nicht leer sein' };
+    const taken = members.some(m => m.id !== currentUser.id && m.name.toLowerCase() === trimmed.toLowerCase());
+    if (taken) return { ok: false, error: 'Dieser Anzeigename ist bereits vergeben' };
+    setMembers(prev => prev.map(m => m.id === currentUser.id ? { ...m, name: trimmed } : m));
+    setCurrentUser(prev => prev ? { ...prev, name: trimmed } : null);
+    return { ok: true };
+  }, [currentUser, members]);
+
+  const updateDataVisibility = useCallback((prefs: NonNullable<Member['dataVisibility']>) => {
+    if (!currentUser) return;
+    setMembers(prev => prev.map(m => m.id === currentUser.id ? { ...m, dataVisibility: prefs } : m));
+    setCurrentUser(prev => prev ? { ...prev, dataVisibility: prefs } : null);
+  }, [currentUser]);
+
+  const updateMemberCoreData = useCallback((memberId: string, data: { firstName?: string; lastName?: string; birthDate?: string; memberId?: string }) => {
+    setMembers(prev => prev.map(m => {
+      if (m.id !== memberId) return m;
+      const updated = { ...m };
+      if (data.firstName !== undefined) updated.firstName = data.firstName;
+      if (data.lastName !== undefined) updated.lastName = data.lastName;
+      if (data.birthDate !== undefined) updated.birthDate = data.birthDate;
+      return updated;
+    }));
+    setCurrentUser(prev => {
+      if (!prev || prev.id !== memberId) return prev;
+      const updated = { ...prev };
+      if (data.firstName !== undefined) updated.firstName = data.firstName;
+      if (data.lastName !== undefined) updated.lastName = data.lastName;
+      if (data.birthDate !== undefined) updated.birthDate = data.birthDate;
+      return updated;
+    });
+  }, []);
+
   const connectWithCode = (code: string): { success: boolean; memberName?: string } => {
     if (!currentUser) return { success: false };
     const normalizedCode = code.trim().toUpperCase();
@@ -1948,6 +1987,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     updateStopTheBleed,
     updateCustomBadge,
     updateVisibilityPreference,
+    updateAnzeigename,
+    updateDataVisibility,
+    updateMemberCoreData,
     connectWithCode,
     generateBuddyCode,
     sendBuddyRequest,

@@ -108,6 +108,7 @@ export const InstructorView: React.FC = () => {
     joinRequests,
     createMemberFromRequest,
     rejectJoinRequest,
+    updateMemberCoreData,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -138,6 +139,12 @@ export const InstructorView: React.FC = () => {
   const [streakRestoreOpen, setStreakRestoreOpen] = useState<string | null>(null);
   const [streakRestoreValue, setStreakRestoreValue] = useState(1);
   const [streakRestoreReason, setStreakRestoreReason] = useState('');
+
+  // Kerndaten-Editing State (Admin)
+  const [coreDataOpen, setCoreDataOpen] = useState<string | null>(null);
+  const [coreFirstName, setCoreFirstName] = useState('');
+  const [coreLastName, setCoreLastName] = useState('');
+  const [coreBirthDate, setCoreBirthDate] = useState('');
 
   // Modul-Verwaltung DnD State
   const [localModuleOrder, setLocalModuleOrder] = useState<ModuleOrder[]>([]);
@@ -1731,10 +1738,10 @@ export const InstructorView: React.FC = () => {
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-2 gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-xs px-2 py-0.5 rounded ${ROLE_DISPLAY[msg.authorRole].bgColor} ${ROLE_DISPLAY[msg.authorRole].color}`}>
-                        {ROLE_DISPLAY[msg.authorRole].label}
+                      <span className="text-white font-medium text-sm">
+                        {msg.authorName}
+                        <span className={`ml-1.5 text-xs font-normal ${ROLE_DISPLAY[msg.authorRole].color}`}>· {ROLE_DISPLAY[msg.authorRole].label}</span>
                       </span>
-                      <span className="text-white font-medium text-sm">{msg.authorName}</span>
                       {isRestricted && <span className="text-[10px] text-gray-500 bg-gray-700/50 px-1.5 py-0.5 rounded">🔒 Eingeschränkt</span>}
                       {targetInfo && <span className="text-[10px] text-gray-500 bg-gray-700/50 px-1.5 py-0.5 rounded">🔔 {targetInfo}</span>}
                     </div>
@@ -1818,7 +1825,7 @@ export const InstructorView: React.FC = () => {
                         <div className="w-0.5 bg-gray-700/60 rounded-full flex-shrink-0 mt-0.5 self-stretch" />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-[10px] ${ROLE_DISPLAY[reply.authorRole].color}`}>{reply.authorName}</span>
+                            <span className="text-[10px] text-gray-300">{reply.authorName}<span className={`ml-1 ${ROLE_DISPLAY[reply.authorRole].color}`}>· {ROLE_DISPLAY[reply.authorRole].label}</span></span>
                             <span className="text-gray-600 text-[10px]">{formatTimeAgo(reply.createdAt)}</span>
                           </div>
                           <p className="text-gray-400 text-xs leading-relaxed">{reply.content}</p>
@@ -2255,6 +2262,7 @@ export const InstructorView: React.FC = () => {
               const canToggleAdmin = isOwnerOrAdmin && m.role === 'head_instructor' && m.id !== currentUser.id;
               const adminFixed = m.role === 'admin';
               const isStreakOpen = streakRestoreOpen === m.id;
+              const isCoreDataOpen = coreDataOpen === m.id;
 
               return (
                 <div key={m.id} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
@@ -2305,7 +2313,7 @@ export const InstructorView: React.FC = () => {
                         <button
                           onClick={() => {
                             if (isStreakOpen) { setStreakRestoreOpen(null); }
-                            else { setStreakRestoreOpen(m.id); setStreakRestoreValue(m.streak.currentStreak); setStreakRestoreReason(''); }
+                            else { setStreakRestoreOpen(m.id); setStreakRestoreValue(m.streak.currentStreak); setStreakRestoreReason(''); setCoreDataOpen(null); }
                           }}
                           className="text-xs px-2 py-1.5 rounded-lg bg-orange-900/30 text-orange-400 hover:bg-orange-900/50 transition-all"
                           title="Streak wiederherstellen"
@@ -2313,8 +2321,49 @@ export const InstructorView: React.FC = () => {
                           🔥
                         </button>
                       )}
+                      {isOwnerOrAdmin && (
+                        <button
+                          onClick={() => {
+                            if (isCoreDataOpen) { setCoreDataOpen(null); }
+                            else { setCoreDataOpen(m.id); setCoreFirstName(m.firstName ?? ''); setCoreLastName(m.lastName ?? ''); setCoreBirthDate(m.birthDate ?? ''); setStreakRestoreOpen(null); }
+                          }}
+                          className="text-xs px-2 py-1.5 rounded-lg bg-blue-900/30 text-blue-400 hover:bg-blue-900/50 transition-all"
+                          title="Persönliche Daten bearbeiten"
+                        >
+                          🪪
+                        </button>
+                      )}
                     </div>
                   </div>
+                  {/* Kerndaten-Edit Form */}
+                  {isCoreDataOpen && (
+                    <div className="border-t border-gray-700/50 px-4 py-3 bg-gray-800/30 space-y-3">
+                      <p className="text-xs text-gray-400 font-medium">Persönliche Daten · {m.name}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs text-gray-500 block mb-1">Vorname</label>
+                          <input type="text" value={coreFirstName} onChange={e => setCoreFirstName(e.target.value)} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500 block mb-1">Nachname</label>
+                          <input type="text" value={coreLastName} onChange={e => setCoreLastName(e.target.value)} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-xs text-gray-500 block mb-1">Geburtsdatum (YYYY-MM-DD)</label>
+                          <input type="date" value={coreBirthDate} onChange={e => setCoreBirthDate(e.target.value)} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { updateMemberCoreData(m.id, { firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined }); setCoreDataOpen(null); }}
+                          className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-sm font-medium transition-all"
+                        >
+                          Speichern
+                        </button>
+                        <button onClick={() => setCoreDataOpen(null)} className="px-4 bg-gray-700 text-gray-300 py-2 rounded-lg text-sm">Abbrechen</button>
+                      </div>
+                    </div>
+                  )}
                   {/* Streak Restore Form */}
                   {isStreakOpen && (
                     <div className="border-t border-gray-700/50 px-4 py-3 bg-gray-800/30 space-y-3">

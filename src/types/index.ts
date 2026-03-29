@@ -285,6 +285,19 @@ export interface Member {
 
   // Vorfortschritt beim Anlegen (gesetzt vom Admin)
   initialModuleProgress?: Record<number, { tactics: boolean; combat: boolean }>; // Modul 1-10
+
+  // Persönliche Daten (Kerndaten — nur Admin editierbar außer Anzeigename)
+  firstName?: string;
+  lastName?: string;
+  birthDate?: string; // ISO "YYYY-MM-DD", Anzeige: TT.MM.YYYY
+  // name = Anzeigename (bereits vorhanden, bleibt)
+
+  // Sichtbarkeit auf dem Profil (Member stellt selbst ein)
+  dataVisibility?: {
+    showLastName?: boolean;           // default: false
+    showMemberId?: boolean;           // default: false
+    birthDateVisibility?: 'hidden' | 'dayMonth' | 'full'; // default: 'hidden'
+  };
 }
 
 export interface MemberQuizProgress {
