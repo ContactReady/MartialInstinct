@@ -69,7 +69,8 @@ export const MEMBERS: Member[] = [
     isCheckedIn: false,
     certificates: [],
     instructorNotes: [],
-    deficitHints: []
+    deficitHints: [],
+    stopTheBleedCertified: true,
   },
 
   // ── INSTRUCTOR: Holger ────────────────────

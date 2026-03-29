@@ -109,6 +109,7 @@ export const InstructorView: React.FC = () => {
     createMemberFromRequest,
     rejectJoinRequest,
     updateMemberCoreData,
+    updateStopTheBleed,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -2364,6 +2365,16 @@ export const InstructorView: React.FC = () => {
                           <label className="text-xs text-gray-500 block mb-1">Geburtsdatum</label>
                           <input type="date" value={coreBirthDate} onChange={e => setCoreBirthDate(e.target.value)} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => updateStopTheBleed(m.id, !m.stopTheBleedCertified)}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-all ${m.stopTheBleedCertified ? 'bg-red-900/30 border-red-700/60 text-red-400' : 'bg-gray-700 border-gray-600 text-gray-400'}`}
+                        >
+                          <span>🩸 Stop The Bleed® zertifiziert</span>
+                          <span className={`w-8 h-4 rounded-full relative transition-colors ${m.stopTheBleedCertified ? 'bg-red-600' : 'bg-gray-600'}`}>
+                            <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-all ${m.stopTheBleedCertified ? 'left-4' : 'left-0.5'}`} />
+                          </span>
+                        </button>
                       </div>
                       <div className="flex gap-2">
                         <button
