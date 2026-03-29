@@ -165,7 +165,7 @@ export const InstructorView: React.FC = () => {
 
   // Sub-Tab States (an Top-Level wegen Rules of Hooks)
   const [communitySubTab, setCommunitySubTab] = useState<CommunitySubTab>('training');
-  const [requestSubTab, setRequestSubTab] = useState<'exams' | 'wishes' | 'checkins' | 'beitritt'>('exams');
+  const [requestSubTab, setRequestSubTab] = useState<'exams' | 'checkins' | 'beitritt'>('exams');
 
   // Beitrittsanfragen Modal State
   const [createMemberRequest, setCreateMemberRequest] = useState<JoinRequest | null>(null);
@@ -959,35 +959,84 @@ export const InstructorView: React.FC = () => {
 
     const subTabs: { id: DashboardSubTab; label: string; badge?: number }[] = [
       { id: 'fortschritt', label: '📊 Fortschritt' },
-      { id: 'anfragen',   label: '📋 Anfragen',  badge: anfragenBadge > 0 ? anfragenBadge : undefined },
-      { id: 'board',      label: '💬 Board',     badge: boardBadge > 0 ? boardBadge : undefined },
-      { id: 'bewerten',   label: '✏️ Bewerten' },
+      { id: 'bewerten',    label: '✏️ Bewerten' },
+      { id: 'board',       label: '💬 Board',    badge: boardBadge > 0 ? boardBadge : undefined },
+      { id: 'anfragen',    label: '📋 Anfragen', badge: anfragenBadge > 0 ? anfragenBadge : undefined },
     ];
+
+    // Wunschtechniken — gruppiert nach Technik, absteigend nach Anzahl
+    const wishesGrouped = Object.entries(
+      pendingWishes.reduce<Record<string, typeof pendingWishes>>((acc, w) => {
+        if (!acc[w.techniqueId]) acc[w.techniqueId] = [];
+        acc[w.techniqueId].push(w);
+        return acc;
+      }, {})
+    ).sort(([, a], [, b]) => b.length - a.length);
 
     return (
       <div className="space-y-4">
         {/* Sub-Tab Switcher — sticky */}
         <div className="sticky top-[49px] z-30 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
-        <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
-          {subTabs.map(st => (
-            <button
-              key={st.id}
-              onClick={() => setDashboardSubTab(st.id)}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all relative flex items-center justify-center gap-1.5 ${
-                dashboardSubTab === st.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {st.label}
-              {st.badge !== undefined && st.badge > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold min-w-[18px] text-center ${
-                  dashboardSubTab === st.id ? 'bg-red-500 text-white' : 'bg-gray-600 text-gray-300'
-                }`}>
-                  {st.badge > 9 ? '9+' : st.badge}
-                </span>
+          <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
+            {subTabs.map(st => (
+              <button
+                key={st.id}
+                onClick={() => setDashboardSubTab(st.id)}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all relative flex items-center justify-center gap-1.5 ${
+                  dashboardSubTab === st.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {st.label}
+                {st.badge !== undefined && st.badge > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold min-w-[18px] text-center ${
+                    dashboardSubTab === st.id ? 'bg-red-500 text-white' : 'bg-gray-600 text-gray-300'
+                  }`}>
+                    {st.badge > 9 ? '9+' : st.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Wunschtechniken — sticky unter der Sub-Tab-Leiste, nur im Anfragen-Tab */}
+          {dashboardSubTab === 'anfragen' && (
+            <div className="mt-2 bg-gray-900 rounded-xl border border-gray-700/60 px-3 py-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-bold tracking-widest uppercase text-gray-500">🎯 Wunschtechniken</span>
+                {wishesGrouped.length > 0 && (
+                  <button
+                    onClick={() => pendingWishes.forEach(w => acknowledgeWish(w.id))}
+                    className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
+                  >
+                    Alle gesehen ✓
+                  </button>
+                )}
+              </div>
+              {wishesGrouped.length === 0 ? (
+                <p className="text-gray-600 text-xs">Keine Wunschtechniken</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {wishesGrouped.map(([techniqueId, wishes]) => (
+                    <div key={techniqueId} className="flex items-center gap-1.5 bg-gray-800 rounded-lg px-2.5 py-1.5">
+                      <div className="min-w-0">
+                        <span className="text-white text-xs font-medium">{wishes[0].techniqueName}</span>
+                        <span className="text-gray-500 text-[10px] ml-1">· {wishes[0].moduleName}</span>
+                      </div>
+                      <span className="bg-purple-500/20 text-purple-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0">
+                        {wishes.length}×
+                      </span>
+                      <button
+                        onClick={() => wishes.forEach(w => acknowledgeWish(w.id))}
+                        className="text-gray-500 hover:text-gray-300 text-[10px] transition-colors flex-shrink-0"
+                      >
+                        ✓
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
-            </button>
-          ))}
-        </div>
+            </div>
+          )}
         </div>
 
         {dashboardSubTab === 'anfragen' && renderRequestsTab()}
@@ -1142,9 +1191,8 @@ export const InstructorView: React.FC = () => {
     };
 
     const subTabItems: { id: typeof requestSubTab; label: string; badge: number }[] = [
-      { id: 'exams', label: 'Prüfungen', badge: pendingExamRequests.length },
-      { id: 'wishes', label: 'Wunschtechniken', badge: pendingWishes.length },
-      { id: 'checkins', label: 'Check-Ins', badge: pendingCheckIns.length },
+      { id: 'exams',    label: 'Prüfungen',        badge: pendingExamRequests.length },
+      { id: 'checkins', label: 'Check-Ins',         badge: pendingCheckIns.length },
       ...(isAdmin ? [{ id: 'beitritt' as const, label: 'Beitrittsanfragen', badge: pendingJoinRequests.length }] : []),
     ];
 
@@ -1263,54 +1311,6 @@ export const InstructorView: React.FC = () => {
           </div>
         )}
 
-        {/* ── Wunschtechniken ───────────────────────────────────────────────── */}
-        {requestSubTab === 'wishes' && (
-          <div className="space-y-3">
-            {pendingWishes.length === 0 ? (
-              <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/30 text-center">
-                <p className="text-gray-500 text-sm">Keine Wunschtechniken gemeldet</p>
-              </div>
-            ) : (
-              Object.entries(
-                pendingWishes.reduce<Record<string, typeof pendingWishes>>((acc, w) => {
-                  if (!acc[w.techniqueId]) acc[w.techniqueId] = [];
-                  acc[w.techniqueId].push(w);
-                  return acc;
-                }, {})
-              )
-                .sort(([, a], [, b]) => b.length - a.length)
-                .map(([techniqueId, wishes]) => (
-                  <div key={techniqueId} className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="font-medium text-white text-sm">{wishes[0].techniqueName}</div>
-                        <div className="text-gray-500 text-xs">{wishes[0].moduleName}</div>
-                      </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        <span className="bg-purple-500/20 text-purple-300 border border-purple-500/20 rounded-full px-3 py-1 text-sm font-bold">
-                          {wishes.length}×
-                        </span>
-                        <button
-                          onClick={() => wishes.forEach(w => acknowledgeWish(w.id))}
-                          className="bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs px-3 py-2 rounded-lg transition-all"
-                        >
-                          ✓ Gesehen
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-gray-700/50">
-                      {wishes.map(w => (
-                        <span key={w.id} title={w.memberName} className="text-lg">{w.memberAvatar}</span>
-                      ))}
-                      <span className="text-gray-500 text-xs ml-1">
-                        {wishes.map(w => w.memberName).join(', ')}
-                      </span>
-                    </div>
-                  </div>
-                ))
-            )}
-          </div>
-        )}
 
         {/* ── Check-in Anfragen ─────────────────────────────────────────────── */}
         {requestSubTab === 'checkins' && (
