@@ -745,21 +745,19 @@ const AppContent: React.FC = () => {
           />
 
           {/* Center: Streak + Gesamt-XP */}
-          {(
-            <div className="flex items-center gap-3 flex-1 justify-center">
-              <span className="flex items-center gap-1 text-orange-400 font-bold text-xs sm:text-sm">
-                🔥 <span>{currentUser.streak.currentStreak}W</span>
-              </span>
-              <span className="w-px h-3 bg-gray-700 flex-shrink-0" />
-              <span className="flex items-center gap-1 text-yellow-400 font-bold text-xs sm:text-sm">
-                ⚡ <span>{currentUser.xp ?? 0} XP</span>
-              </span>
-              <span className="w-px h-3 bg-gray-700 flex-shrink-0 hidden sm:block" />
-              <span className={`text-xs font-semibold hidden sm:block ${LEVEL_DISPLAY[currentUser.currentLevel].color}`}>
-                {LEVEL_DISPLAY[currentUser.currentLevel].icon} {LEVEL_DISPLAY[currentUser.currentLevel].name}
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-3 flex-1 justify-center">
+            <span className="flex items-center gap-1 text-orange-400 font-bold text-xs sm:text-sm">
+              🔥 <span>{currentUser.streak.currentStreak}W</span>
+            </span>
+            <span className="w-px h-3 bg-gray-700 flex-shrink-0" />
+            <span className="flex items-center gap-1 text-yellow-400 font-bold text-xs sm:text-sm">
+              ⚡ <span>{currentUser.xp ?? 0} XP</span>
+            </span>
+            <span className="w-px h-3 bg-gray-700 flex-shrink-0 hidden sm:block" />
+            <span className={`text-xs font-semibold hidden sm:block ${LEVEL_DISPLAY[currentUser.currentLevel].color}`}>
+              {LEVEL_DISPLAY[currentUser.currentLevel].icon} {LEVEL_DISPLAY[currentUser.currentLevel].name}
+            </span>
+          </div>
 
           {/* Right: Bell + Avatar */}
           <div className="flex items-center gap-2 flex-shrink-0">

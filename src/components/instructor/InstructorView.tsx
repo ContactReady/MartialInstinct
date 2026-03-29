@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
 import { useApp, MODULES, BLOCKS, COURSES } from '../../context/AppContext';
+import { INSTRUCTOR_TRACKS } from '../../data/instructorCurriculum';
 import { ModuleOrder, RolePermissions, InstructorTabId, MemberTabId, JoinRequest, CreateMemberData } from '../../types';
 import {
   LEVEL_DISPLAY,
@@ -49,7 +50,7 @@ function canApproveCheckIn(role: InstructorRole, instructorId: string, checkIn: 
 }
 
 type Tab = 'dashboard' | 'training' | 'community' | 'admin' | 'profil';
-type DashboardSubTab = 'anfragen' | 'board' | 'bewerten';
+type DashboardSubTab = 'anfragen' | 'board' | 'bewerten' | 'fortschritt';
 type CommunitySubTab = 'online' | 'mitglieder' | 'training' | 'rangliste';
 type AdminSubTab = 'analytics' | 'verwaltung' | 'bewerbungen';
 type VerwaltungSubTab = 'plattform' | 'training' | 'mitglieder';
@@ -957,9 +958,10 @@ export const InstructorView: React.FC = () => {
     const boardBadge = unreadBoardNotifs;
 
     const subTabs: { id: DashboardSubTab; label: string; badge?: number }[] = [
-      { id: 'anfragen', label: '📋 Anfragen', badge: anfragenBadge > 0 ? anfragenBadge : undefined },
-      { id: 'board',    label: '💬 Board',    badge: boardBadge > 0 ? boardBadge : undefined },
-      { id: 'bewerten', label: '✏️ Bewerten' },
+      { id: 'anfragen',   label: '📋 Anfragen',  badge: anfragenBadge > 0 ? anfragenBadge : undefined },
+      { id: 'board',      label: '💬 Board',     badge: boardBadge > 0 ? boardBadge : undefined },
+      { id: 'bewerten',   label: '✏️ Bewerten' },
+      { id: 'fortschritt', label: '📊 Fortschritt' },
     ];
 
     return (
@@ -991,6 +993,111 @@ export const InstructorView: React.FC = () => {
         {dashboardSubTab === 'anfragen' && renderRequestsTab()}
         {dashboardSubTab === 'board' && renderBoardTab()}
         {dashboardSubTab === 'bewerten' && renderEvaluateTab()}
+        {dashboardSubTab === 'fortschritt' && renderProgressTab()}
+      </div>
+    );
+  };
+
+  // ── FORTSCHRITT TAB ────────────────────────────────────────────────────────
+  const renderProgressTab = () => {
+    const progress = currentUser?.instructorLessonProgress ?? {};
+    const allLessons = INSTRUCTOR_TRACKS.flatMap(t => t.lessons);
+    const totalLessons = allLessons.length;
+    const completedTotal = allLessons.filter(l => progress[l.id]?.completed).length;
+    const overallPct = totalLessons > 0 ? Math.round((completedTotal / totalLessons) * 100) : 0;
+
+    return (
+      <div className="space-y-4">
+        {/* Gesamt-Fortschritt */}
+        <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-white text-sm font-semibold">Gesamtfortschritt</span>
+            <span className="text-gray-400 text-xs">{completedTotal}/{totalLessons} Lektionen</span>
+          </div>
+          <div className="h-2.5 bg-gray-700 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-red-600 rounded-full transition-all duration-500"
+              style={{ width: `${overallPct}%` }}
+            />
+          </div>
+          <div className="text-right text-xs text-gray-500 mt-1">{overallPct}%</div>
+        </div>
+
+        {/* Pro Track */}
+        {INSTRUCTOR_TRACKS.map(track => {
+          const done = track.lessons.filter(l => progress[l.id]?.completed).length;
+          const total = track.lessons.length;
+          const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+          const isComplete = done === total;
+
+          return (
+            <div key={track.id} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+              {/* Track-Header */}
+              <div className="px-4 py-3 border-b border-gray-700/50 flex items-center gap-3">
+                <span className="text-xl">{track.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-white text-sm font-semibold truncate">{track.title}</span>
+                    {isComplete && <span className="text-green-400 text-xs font-bold flex-shrink-0">✓ Abgeschlossen</span>}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${isComplete ? 'bg-green-500' : 'bg-red-600'}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-gray-500 text-xs flex-shrink-0">{done}/{total}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lektionen-Liste */}
+              <div className="divide-y divide-gray-700/30">
+                {track.lessons.map((lesson, idx) => {
+                  const lessonDone = progress[lesson.id]?.completed;
+                  const completedAt = progress[lesson.id]?.completedAt;
+                  const quizScore = progress[lesson.id]?.quizScore;
+
+                  return (
+                    <div key={lesson.id} className="px-4 py-2.5 flex items-center gap-3">
+                      {/* Status-Icon */}
+                      <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        lessonDone ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-500'
+                      }`}>
+                        {lessonDone ? '✓' : <span>{idx + 1}</span>}
+                      </div>
+
+                      {/* Titel + Meta */}
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm truncate ${lessonDone ? 'text-white' : 'text-gray-400'}`}>
+                          {lesson.title}
+                        </p>
+                        {lessonDone && completedAt && (
+                          <p className="text-[10px] text-gray-600 mt-0.5">
+                            {new Date(completedAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Quiz-Score */}
+                      {lessonDone && quizScore !== undefined && (
+                        <span className={`text-xs font-bold flex-shrink-0 ${
+                          quizScore >= 80 ? 'text-green-400' : quizScore >= 50 ? 'text-yellow-400' : 'text-red-400'
+                        }`}>
+                          {quizScore}%
+                        </span>
+                      )}
+                      {lessonDone && quizScore === undefined && (
+                        <span className="text-xs text-gray-600 flex-shrink-0">–</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   };
