@@ -199,20 +199,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
             </div>
           </div>
 
-          {/* Badges */}
+          {/* Abzeichen */}
           {badges.length > 0 && (
             <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
               <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Abzeichen</div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3">
                 {badges.map(badge => (
-                  <div
-                    key={badge.id}
-                    title={badge.description}
-                    className="flex items-center gap-1.5 bg-gray-700/80 border border-gray-600 rounded-full px-3 py-1.5"
-                  >
-                    <span className="text-base">{badge.icon}</span>
-                    <span className="text-xs font-medium text-gray-200">{badge.label}</span>
-                  </div>
+                  badge.imageUrl ? (
+                    <div key={badge.id} className="flex flex-col items-center gap-1.5" title={badge.description}>
+                      <img
+                        src={badge.imageUrl}
+                        alt={badge.label}
+                        className="w-16 h-16 object-contain"
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                      <span className="text-[10px] text-gray-400 text-center leading-tight max-w-[72px]">{badge.label}</span>
+                    </div>
+                  ) : (
+                    <div
+                      key={badge.id}
+                      title={badge.description}
+                      className="flex items-center gap-1.5 bg-gray-700/80 border border-gray-600 rounded-full px-3 py-1.5"
+                    >
+                      <span className="text-base">{badge.icon}</span>
+                      <span className="text-xs font-medium text-gray-200">{badge.label}</span>
+                    </div>
+                  )
                 ))}
               </div>
             </div>

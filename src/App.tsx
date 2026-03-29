@@ -466,7 +466,7 @@ interface UserDropdownProps {
 }
 
 const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onClose }) => {
-  const { currentUser, members, switchUser, logout, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference, updateProfile, updateAnzeigename, updateDataVisibility, updateMemberCoreData } = useApp();
+  const { currentUser, members, switchUser, logout, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference, updateProfile, updateAnzeigename, updateDataVisibility, updateMemberCoreData, computeBadges } = useApp();
   const [badgesOpen, setBadgesOpen] = useState(false);
   const [designOpen, setDesignOpen] = useState(false);
   const [persoenlichOpen, setPersoenlichOpen] = useState(false);
@@ -580,13 +580,39 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
       <div className="px-3 py-3 border-t border-gray-800 space-y-2">
         <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest px-1 mb-1">Einstellungen</div>
 
-        {/* Anzeige-Badge */}
-        {accordionBtn(badgesOpen, '🏅', 'Anzeige-Badge', () => setBadgesOpen(v => !v))}
-        {badgesOpen && (
-          <div className="px-1 py-2">
-            <p className="text-sm text-gray-500">Noch keine Abzeichen verdient. Absolviere Prüfungen um Badges freizuschalten.</p>
-          </div>
-        )}
+        {/* Badge-Galerie */}
+        {accordionBtn(badgesOpen, '🏅', 'Badge-Galerie', () => setBadgesOpen(v => !v))}
+        {badgesOpen && (() => {
+          const earnedBadges = currentUser ? computeBadges(currentUser) : [];
+          return (
+            <div className="px-1 py-2">
+              {earnedBadges.length === 0 ? (
+                <p className="text-xs text-gray-500">Noch keine Abzeichen verdient. Absolviere Prüfungen um Badges freizuschalten.</p>
+              ) : (
+                <div className="flex flex-wrap gap-3">
+                  {earnedBadges.map(badge => (
+                    badge.imageUrl ? (
+                      <div key={badge.id} className="flex flex-col items-center gap-1" title={badge.description}>
+                        <img
+                          src={badge.imageUrl}
+                          alt={badge.label}
+                          className="w-14 h-14 object-contain"
+                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                        <span className="text-[10px] text-gray-400 text-center max-w-[60px] leading-tight">{badge.label}</span>
+                      </div>
+                    ) : (
+                      <div key={badge.id} className="flex flex-col items-center gap-1" title={badge.description}>
+                        <div className="w-12 h-12 rounded-full bg-gray-700 border border-gray-600 flex items-center justify-center text-2xl">{badge.icon}</div>
+                        <span className="text-[10px] text-gray-400 text-center max-w-[56px] leading-tight">{badge.label}</span>
+                      </div>
+                    )
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Design & Sound */}
         {accordionBtn(designOpen, '🎨', 'Design & Sound', () => setDesignOpen(v => !v))}

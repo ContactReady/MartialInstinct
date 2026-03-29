@@ -198,7 +198,8 @@ export type BandaidReason =
 export interface Badge {
   id: string;
   label: string;
-  icon: string;
+  icon: string;        // Emoji-Fallback
+  imageUrl?: string;   // Optionales Patch-Bild (PNG mit Transparenz)
   description: string;
   earnedAt: Date;
 }
