@@ -70,23 +70,33 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
   });
 
   const dv = member.dataVisibility;
+  const viewerRole = currentUser?.role ?? 'member';
+  // Ab Instructor (nicht assistant_instructor) alle Daten sichtbar
+  const canSeeAll = isOwnProfile || ['instructor', 'full_instructor', 'head_instructor', 'admin'].includes(viewerRole);
 
-  // Geburtsdatum-Anzeige je nach Sichtbarkeits-Einstellung
-  const formatBirthDate = () => {
+  // Geburtsdatum formatieren
+  const formatBirthDate = (visibility: 'hidden' | 'dayMonth' | 'full' | 'all') => {
     if (!member.birthDate) return null;
-    const visibility = dv?.birthDateVisibility ?? 'hidden';
     if (visibility === 'hidden') return null;
-    const d = new Date(member.birthDate);
-    if (visibility === 'dayMonth') return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-    return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    // Unterstützt ISO "YYYY-MM-DD" und TT.MM.YYYY
+    const raw = member.birthDate;
+    let day = '', month = '', year = '';
+    if (raw.includes('-')) { [year, month, day] = raw.split('-'); }
+    else if (raw.includes('.')) { [day, month, year] = raw.split('.'); }
+    if (!day || !month) return raw;
+    if (visibility === 'dayMonth') return `${day}.${month}.`;
+    return `${day}.${month}.${year}`;
   };
-  const birthDateDisplay = formatBirthDate();
+
+  const birthDateDisplay = canSeeAll
+    ? formatBirthDate('all')
+    : formatBirthDate(dv?.birthDateVisibility ?? 'hidden');
 
   // Welche Felder auf dem Profil sichtbar sind
   const profileFields: { label: string; value: string }[] = [
-    { label: 'Vorname', value: member.firstName ?? '' },
-    ...(dv?.showLastName && member.lastName ? [{ label: 'Nachname', value: member.lastName }] : []),
-    ...(dv?.showMemberId && member.memberId ? [{ label: 'Member ID', value: member.memberId }] : []),
+    ...(member.firstName ? [{ label: 'Vorname', value: member.firstName }] : []),
+    ...((canSeeAll || dv?.showLastName) && member.lastName ? [{ label: 'Nachname', value: member.lastName }] : []),
+    ...((canSeeAll || dv?.showMemberId) && member.memberId ? [{ label: 'Member ID', value: member.memberId }] : []),
     ...(birthDateDisplay ? [{ label: 'Geburtstag', value: birthDateDisplay }] : []),
   ].filter(f => f.value);
 

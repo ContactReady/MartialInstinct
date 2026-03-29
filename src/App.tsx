@@ -621,7 +621,12 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
           setAnzeigenameDraft(currentUser?.name ?? '');
           setFirstNameDraft(currentUser?.firstName ?? '');
           setLastNameDraft(currentUser?.lastName ?? '');
-          setBirthDateDraft(currentUser?.birthDate ?? '');
+          // ISO → TT.MM.YYYY für Anzeige
+          const bd = currentUser?.birthDate ?? '';
+          if (bd && bd.includes('-')) {
+            const [y, m, d] = bd.split('-');
+            setBirthDateDraft(`${d}.${m}.${y}`);
+          } else { setBirthDateDraft(bd); }
           setMemberIdDraft(currentUser?.memberId ?? '');
           setPersoenlichError('');
           setPersoenlichSaved(false);
@@ -664,8 +669,8 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
               <div>
                 <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Geburtsdatum</label>
                 {canSwitchProfiles
-                  ? <input type="date" value={birthDateDraft} onChange={e => { setBirthDateDraft(e.target.value); setPersoenlichSaved(false); }} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400" />
-                  : <div className="px-3 py-2 bg-gray-800 rounded-lg text-sm text-gray-300">{currentUser?.birthDate ? new Date(currentUser.birthDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : <span className="text-gray-600 italic">–</span>}</div>
+                  ? <input type="text" value={birthDateDraft} onChange={e => { setBirthDateDraft(e.target.value); setPersoenlichSaved(false); }} placeholder="TT.MM.YYYY" className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400 placeholder-gray-600" />
+                  : <div className="px-3 py-2 bg-gray-800 rounded-lg text-sm text-gray-300">{currentUser?.birthDate ? (() => { const bd = currentUser.birthDate!; if (bd.includes('-')) { const [y,m,d] = bd.split('-'); return `${d}.${m}.${y}`; } return bd; })() : <span className="text-gray-600 italic">–</span>}</div>
                 }
               </div>
 
@@ -689,7 +694,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
                   updateMemberCoreData(currentUser.id, {
                     firstName: firstNameDraft,
                     lastName: lastNameDraft,
-                    birthDate: birthDateDraft || undefined,
+                    birthDate: birthDateDraft ? (() => { const p = birthDateDraft.split('.'); return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : birthDateDraft; })() : undefined,
                     memberId: memberIdDraft || undefined,
                   });
                 }
