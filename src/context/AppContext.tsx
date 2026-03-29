@@ -1359,7 +1359,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       badges.push({ id: 'instructor', label: 'Instructor', icon: '🎓', description: 'Ausbilderrang erreicht', earnedAt: new Date() });
     }
     if (member.stopTheBleedCertified) {
-      badges.push({ id: 'stop_the_bleed', label: 'Stop The Bleed®', icon: '🩸', imageUrl: '/logos/stop-the-bleed.png', description: 'Stop The Bleed® Kurs absolviert — Lebensrettende Erste Hilfe', earnedAt: new Date() });
+      badges.push({ id: 'stop_the_bleed', label: 'Stop The Bleed®', icon: '🩸', imageUrl: '/logos/stop-the-bleed-patch.png', description: 'Stop The Bleed® Kurs absolviert — Lebensrettende Erste Hilfe', earnedAt: new Date() });
     }
 
     return badges;
