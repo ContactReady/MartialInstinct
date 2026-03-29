@@ -744,8 +744,8 @@ const AppContent: React.FC = () => {
             className="h-8 w-auto object-contain flex-shrink-0"
           />
 
-          {/* Center: Streak + Gesamt-XP — nur Member-View */}
-          {actualViewMode === 'member' && (
+          {/* Center: Streak + Gesamt-XP */}
+          {(
             <div className="flex items-center gap-3 flex-1 justify-center">
               <span className="flex items-center gap-1 text-orange-400 font-bold text-xs sm:text-sm">
                 🔥 <span>{currentUser.streak.currentStreak}W</span>
