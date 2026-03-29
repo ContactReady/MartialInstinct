@@ -466,7 +466,7 @@ interface UserDropdownProps {
 }
 
 const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onClose }) => {
-  const { currentUser, members, switchUser, logout, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference, updateProfile, updateAnzeigename, updateDataVisibility } = useApp();
+  const { currentUser, members, switchUser, logout, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference, updateProfile, updateAnzeigename, updateDataVisibility, updateMemberCoreData } = useApp();
   const [badgesOpen, setBadgesOpen] = useState(false);
   const [designOpen, setDesignOpen] = useState(false);
   const [persoenlichOpen, setPersoenlichOpen] = useState(false);
@@ -699,7 +699,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
                   });
                 }
                 setPersoenlichSaved(true);
-                setTimeout(() => setPersoenlichSaved(false), 2000);
+                setTimeout(() => setPersoenlichSaved(false), 3000);
               }}
               className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all ${persoenlichSaved ? 'bg-green-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'}`}
             >
