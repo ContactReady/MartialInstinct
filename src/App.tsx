@@ -522,14 +522,18 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
 
       {/* User Info */}
       <div className="px-4 py-3 border-b border-gray-800 flex items-center gap-3">
-        {(() => { const ps = getProfileImgSettings(currentUser.id); return (
+        {(() => { const ps = getProfileImgSettings(currentUser.id); return currentUser.profileImageUrl ? (
           <div className="w-10 h-10 rounded-full border border-gray-700 flex-shrink-0" style={{
-            backgroundImage: `url(${currentUser.profileImageUrl || '/logos/mi-icon.jpg'})`,
+            backgroundImage: `url(${currentUser.profileImageUrl})`,
             backgroundSize: `${Math.round(ps.scale * 100)}%`,
             backgroundPosition: `${ps.posX}% ${ps.posY}%`,
             backgroundRepeat: 'no-repeat',
             backgroundColor: '#fff',
           }} />
+        ) : (
+          <div className="w-10 h-10 rounded-full border border-gray-700 flex-shrink-0 overflow-hidden">
+            <img src="/logos/mi-icon.jpg" alt="" className="w-full h-full object-cover" />
+          </div>
         );})()}
         <div className="min-w-0">
           <div className="text-white font-semibold text-sm truncate">{currentUser.name}</div>
@@ -918,14 +922,18 @@ const AppContent: React.FC = () => {
                 onClick={() => { setShowUserDropdown(v => !v); setShowNotifications(false); }}
                 className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl px-2 py-1.5 transition-colors"
               >
-                {(() => { const ps = getProfileImgSettings(currentUser.id); return (
+                {(() => { const ps = getProfileImgSettings(currentUser.id); return currentUser.profileImageUrl ? (
                   <div className="w-6 h-6 rounded-full flex-shrink-0" style={{
-                    backgroundImage: `url(${currentUser.profileImageUrl || '/logos/mi-icon.jpg'})`,
+                    backgroundImage: `url(${currentUser.profileImageUrl})`,
                     backgroundSize: `${Math.round(ps.scale * 100)}%`,
                     backgroundPosition: `${ps.posX}% ${ps.posY}%`,
                     backgroundRepeat: 'no-repeat',
                     backgroundColor: '#fff',
                   }} />
+                ) : (
+                  <div className="w-6 h-6 rounded-full flex-shrink-0 overflow-hidden">
+                    <img src="/logos/mi-icon.jpg" alt="" className="w-full h-full object-cover" />
+                  </div>
                 );})()}
                 <span className="text-white text-xs font-medium hidden sm:block max-w-[80px] truncate">{currentUser.name.split(' ')[0]}</span>
                 <span className="text-gray-400 text-xs">▾</span>

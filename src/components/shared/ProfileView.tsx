@@ -154,15 +154,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
             <>
               <div
                 className={`relative w-24 h-24 rounded-full overflow-hidden border-4 border-gray-700 ${canEditImage ? 'cursor-pointer' : ''}`}
-                style={{
-                  backgroundImage: `url(${displayUrl})`,
+                style={member.profileImageUrl ? {
+                  backgroundImage: `url(${member.profileImageUrl})`,
                   backgroundSize: `${Math.round(displaySettings.scale * 100)}%`,
                   backgroundPosition: `${displaySettings.posX}% ${displaySettings.posY}%`,
                   backgroundRepeat: 'no-repeat',
                   backgroundColor: '#fff',
-                }}
+                } : {}}
                 onClick={handleImageClick}
               >
+                {!member.profileImageUrl && (
+                  <img src="/logos/mi-icon.jpg" alt="" className="w-full h-full object-cover" />
+                )}
                 {canEditImage && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full">
                     <span className="text-white text-2xl">📷</span>
