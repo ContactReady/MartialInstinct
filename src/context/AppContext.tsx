@@ -197,6 +197,8 @@ interface AppContextType {
   getPendingBuddyRequests: () => BuddyRequest[];
   getBuddies: () => Member[];
 
+  getBadgeScale: (badgeId: string) => number;
+  setBadgeScale: (badgeId: string, scale: number) => void;
   getMemberById: (id: string) => Member | undefined;
   getCheckedInMembers: () => Member[];
   getOnlineMembers: () => Member[];
@@ -1916,6 +1918,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return members.filter(m => (currentUser.connections ?? []).includes(m.id));
   };
 
+  const BADGE_SCALES_KEY = 'mi_badge_scales';
+  const getBadgeScale = (badgeId: string): number => {
+    const scales: Record<string, number> = JSON.parse(localStorage.getItem(BADGE_SCALES_KEY) || '{}');
+    return scales[badgeId] ?? 1.15;
+  };
+  const setBadgeScale = (badgeId: string, scale: number): void => {
+    const scales: Record<string, number> = JSON.parse(localStorage.getItem(BADGE_SCALES_KEY) || '{}');
+    scales[badgeId] = Math.round(scale * 100) / 100;
+    localStorage.setItem(BADGE_SCALES_KEY, JSON.stringify(scales));
+  };
+
   const updateAdminAccess = useCallback((memberId: string, hasAccess: boolean) => {
     setMembers(prev => prev.map(m =>
       m.id === memberId ? { ...m, adminAccess: hasAccess } : m
@@ -2003,6 +2016,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     acceptBuddyRequest,
     getPendingBuddyRequests,
     getBuddies,
+    getBadgeScale,
+    setBadgeScale,
     getMemberById,
     getCheckedInMembers,
     getOnlineMembers,

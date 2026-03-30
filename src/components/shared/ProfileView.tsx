@@ -14,7 +14,7 @@ interface ProfileViewProps {
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = false, onClose }) => {
-  const { currentUser, updateProfileImage, computeBadges, getSessionsForMember } = useApp();
+  const { currentUser, updateProfileImage, computeBadges, getSessionsForMember, getBadgeScale } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isOwnProfile = currentUser?.id === member.id;
@@ -204,18 +204,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
             <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
               <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Abzeichen</div>
               <div className="flex flex-wrap gap-4">
-                {badges.filter(b => b.imageUrl).map(badge => (
-                  <div key={badge.id} className="flex flex-col items-center gap-1.5" title={badge.description}>
-                    <div className="w-16 h-16 rounded-full overflow-hidden">
-                      <img
-                        src={badge.imageUrl}
-                        alt={badge.label}
-                        className="w-full h-full object-cover scale-[1.55]"
-                      />
+                {badges.filter(b => b.imageUrl).map(badge => {
+                  const scale = getBadgeScale(badge.id);
+                  return (
+                    <div key={badge.id} className="flex flex-col items-center gap-1.5" title={badge.description}>
+                      <div className="w-16 h-16 rounded-full overflow-hidden">
+                        <img
+                          src={badge.imageUrl}
+                          alt={badge.label}
+                          className="w-full h-full object-cover"
+                          style={{ transform: `scale(${scale})` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-gray-400 text-center leading-tight whitespace-nowrap">{badge.label}</span>
                     </div>
-                    <span className="text-[10px] text-gray-400 text-center leading-tight whitespace-nowrap">{badge.label}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

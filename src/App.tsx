@@ -466,7 +466,8 @@ interface UserDropdownProps {
 }
 
 const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onClose }) => {
-  const { currentUser, members, switchUser, logout, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference, updateProfile, updateAnzeigename, updateDataVisibility, updateMemberCoreData, computeBadges } = useApp();
+  const { currentUser, members, switchUser, logout, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference, updateProfile, updateAnzeigename, updateDataVisibility, updateMemberCoreData, computeBadges, getBadgeScale, setBadgeScale } = useApp();
+  const [badgeScaleVersion, setBadgeScaleVersion] = useState(0);
   const [badgesOpen, setBadgesOpen] = useState(false);
   const [designOpen, setDesignOpen] = useState(false);
   const [persoenlichOpen, setPersoenlichOpen] = useState(false);
@@ -589,19 +590,34 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
               {earnedBadges.length === 0 ? (
                 <p className="text-xs text-gray-500">Noch keine Abzeichen verdient. Absolviere Prüfungen um Badges freizuschalten.</p>
               ) : (
-                <div className="flex flex-wrap gap-3">
-                  {earnedBadges.filter(b => b.imageUrl).map(badge => (
-                    <div key={badge.id} className="flex flex-col items-center gap-1" title={badge.description}>
-                      <div className="w-12 h-12 rounded-full overflow-hidden">
-                        <img
-                          src={badge.imageUrl}
-                          alt={badge.label}
-                          className="w-full h-full object-cover scale-[1.55]"
-                        />
+                <div className="flex flex-wrap gap-4">
+                  {earnedBadges.filter(b => b.imageUrl).map(badge => {
+                    const scale = getBadgeScale(badge.id);
+                    return (
+                      <div key={`${badge.id}-${badgeScaleVersion}`} className="flex flex-col items-center gap-2">
+                        <div className="w-14 h-14 rounded-full overflow-hidden">
+                          <img
+                            src={badge.imageUrl}
+                            alt={badge.label}
+                            className="w-full h-full object-cover"
+                            style={{ transform: `scale(${scale})` }}
+                          />
+                        </div>
+                        <span className="text-[9px] text-gray-400 text-center leading-tight whitespace-nowrap">{badge.label}</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => { setBadgeScale(badge.id, Math.max(1.0, scale - 0.05)); setBadgeScaleVersion(v => v + 1); }}
+                            className="w-5 h-5 rounded bg-gray-700 text-gray-300 text-xs flex items-center justify-center hover:bg-gray-600"
+                          >−</button>
+                          <span className="text-[9px] text-gray-500 w-8 text-center">{Math.round(scale * 100)}%</span>
+                          <button
+                            onClick={() => { setBadgeScale(badge.id, Math.min(2.0, scale + 0.05)); setBadgeScaleVersion(v => v + 1); }}
+                            className="w-5 h-5 rounded bg-gray-700 text-gray-300 text-xs flex items-center justify-center hover:bg-gray-600"
+                          >+</button>
+                        </div>
                       </div>
-                      <span className="text-[10px] text-gray-400 text-center leading-tight whitespace-nowrap">{badge.label}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

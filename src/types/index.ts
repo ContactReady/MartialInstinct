@@ -200,6 +200,7 @@ export interface Badge {
   label: string;
   icon: string;        // Emoji-Fallback
   imageUrl?: string;   // Optionales Patch-Bild (PNG mit Transparenz)
+  scale?: number;      // Zoom-Faktor (1.0 = normal, >1 = reingezoomt)
   description: string;
   earnedAt: Date;
 }
