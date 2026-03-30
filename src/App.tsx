@@ -728,7 +728,43 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
               {persoenlichSaved ? '✅ Gespeichert!' : 'Speichern'}
             </button>
 
-            {/* ── Profil-Sichtbarkeit ── */}
+          </div>
+        )}
+
+        {/* Profile — nur Admin/Owner */}
+        {canSwitchProfiles && (<>
+          {accordionBtn(profilesOpen, '👥', 'Profile', () => setProfilesOpen(v => !v))}
+          {profilesOpen && (
+            <div className="px-1 space-y-1 max-h-48 overflow-y-auto">
+              {members.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => { switchUser(m.id); onClose(); }}
+                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors text-left ${m.id === currentUser.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                >
+                  <span className="text-base flex-shrink-0">{m.avatar}</span>
+                  <span className="truncate flex-1">{m.name}</span>
+                  <span className={`flex-shrink-0 text-[10px] font-medium ${ROLE_DISPLAY[m.role].color}`}>{ROLE_DISPLAY[m.role].label}</span>
+                  {m.id === currentUser.id && <span className="text-green-400 text-[10px]">✓</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </>)}
+
+        {/* Sichtbarkeit */}
+        {accordionBtn(sichtbarkeitOpen, '👁️', 'Sichtbarkeit', () => setSichtbarkeitOpen(v => !v))}
+        {sichtbarkeitOpen && (
+          <div className="px-1 space-y-3 pb-1">
+            {/* Online-Status */}
+            <div>
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Online- & Trainingsstatus</div>
+              <div className="flex gap-2">
+                <button onClick={() => updateVisibilityPreference('all')} className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border ${visibility === 'all' ? 'bg-gray-700 text-white border-gray-600' : 'bg-transparent text-gray-500 border-gray-700 hover:text-gray-300'}`}>Alle Mitglieder</button>
+                <button onClick={() => updateVisibilityPreference('buddies')} className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border ${visibility === 'buddies' ? 'bg-gray-700 text-white border-gray-600' : 'bg-transparent text-gray-500 border-gray-700 hover:text-gray-300'}`}>Trainingspartner</button>
+              </div>
+            </div>
+            {/* Profil-Sichtbarkeit */}
             <div className="border-t border-gray-800 pt-3">
               <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Auf Profil sichtbar</div>
               <div className="space-y-2">
@@ -761,39 +797,6 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Profile — nur Admin/Owner */}
-        {canSwitchProfiles && (<>
-          {accordionBtn(profilesOpen, '👥', 'Profile', () => setProfilesOpen(v => !v))}
-          {profilesOpen && (
-            <div className="px-1 space-y-1 max-h-48 overflow-y-auto">
-              {members.map(m => (
-                <button
-                  key={m.id}
-                  onClick={() => { switchUser(m.id); onClose(); }}
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors text-left ${m.id === currentUser.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
-                >
-                  <span className="text-base flex-shrink-0">{m.avatar}</span>
-                  <span className="truncate flex-1">{m.name}</span>
-                  <span className={`flex-shrink-0 text-[10px] font-medium ${ROLE_DISPLAY[m.role].color}`}>{ROLE_DISPLAY[m.role].label}</span>
-                  {m.id === currentUser.id && <span className="text-green-400 text-[10px]">✓</span>}
-                </button>
-              ))}
-            </div>
-          )}
-        </>)}
-
-        {/* Sichtbarkeit */}
-        {accordionBtn(sichtbarkeitOpen, '👁️', 'Sichtbarkeit', () => setSichtbarkeitOpen(v => !v))}
-        {sichtbarkeitOpen && (
-          <div className="px-1 space-y-1 pb-1">
-            <div className="text-xs text-gray-500 mb-2">Wer sieht deinen Online- und Trainingsstatus?</div>
-            <div className="flex gap-2">
-              <button onClick={() => updateVisibilityPreference('all')} className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border ${visibility === 'all' ? 'bg-gray-700 text-white border-gray-600' : 'bg-transparent text-gray-500 border-gray-700 hover:text-gray-300'}`}>Alle Mitglieder</button>
-              <button onClick={() => updateVisibilityPreference('buddies')} className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border ${visibility === 'buddies' ? 'bg-gray-700 text-white border-gray-600' : 'bg-transparent text-gray-500 border-gray-700 hover:text-gray-300'}`}>Trainingspartner</button>
             </div>
           </div>
         )}

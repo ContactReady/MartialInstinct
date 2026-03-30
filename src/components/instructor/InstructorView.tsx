@@ -2308,9 +2308,9 @@ export const InstructorView: React.FC = () => {
                         <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${roleInfo.bgColor} ${roleInfo.color}`}>
                           {roleInfo.label}
                         </span>
-                        {memberHasAdmin && (
+                        {memberHasAdmin && !adminFixed && (
                           <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-red-900/30 text-red-400">
-                            {adminFixed ? '🔐 fix' : '🔐 Admin'}
+                            🔐 Admin
                           </span>
                         )}
                       </div>
