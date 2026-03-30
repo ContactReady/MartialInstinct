@@ -888,7 +888,7 @@ const AppContent: React.FC = () => {
           <img
             src={darkMode ? '/logos/mi-logo-landscape-dark.svg' : '/logos/mi-logo-landscape-light.svg'}
             alt="Martial Instinct"
-            className="h-8 w-auto object-contain flex-shrink-0"
+            className="h-11 w-auto object-contain flex-shrink-0"
           />
 
           <div className="flex-1" />
