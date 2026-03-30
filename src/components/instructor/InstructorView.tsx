@@ -151,7 +151,7 @@ export const InstructorView: React.FC = () => {
   const [badgeEditScale, setBadgeEditScale] = useState(1.15);
   const [badgeEditPosX, setBadgeEditPosX] = useState(50);
   const [badgeEditPosY, setBadgeEditPosY] = useState(50);
-  const [badgeSaved, setBadgeSaved] = useState(false);
+  const [badgeSaveState, setBadgeSaveState] = useState<'idle' | 'dirty' | 'saved'>('idle');
 
   // Kerndaten-Editing State (Admin)
   const [coreDataOpen, setCoreDataOpen] = useState<string | null>(null);
@@ -2268,6 +2268,19 @@ export const InstructorView: React.FC = () => {
         {/* ── MITGLIEDER ──────────────────────────────────────────────── */}
         {adminSubTab === 'verwaltung' && verwaltungSubTab === 'mitglieder' && (
           <div className="space-y-3">
+            <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
+              <button
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-700/20 transition-all"
+                onClick={() => togglePlattform('mitglieder_liste')}
+              >
+                <div className="text-left">
+                  <div className="text-sm font-semibold text-white">Mitglieder verwalten</div>
+                  <div className="text-xs text-gray-500 mt-0.5">Rollen, Admin-Zugang, Kerndaten und Streak.</div>
+                </div>
+                <span className="text-gray-500 text-xs ml-3 flex-shrink-0">{plattformOpen['mitglieder_liste'] ? '▲' : '▼'}</span>
+              </button>
+              {plattformOpen['mitglieder_liste'] && (
+              <div className="border-t border-gray-700/50 p-3 space-y-3">
             <div className="bg-gray-800/30 rounded-xl p-3 border border-gray-700/50 text-xs text-gray-500">
               Owner & Admin: immer Admin-Zugang. Head Instructor: standardmäßig, individuell entziehbar.
             </div>
@@ -2440,6 +2453,9 @@ export const InstructorView: React.FC = () => {
                 </div>
               );
             })}
+              </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -2647,12 +2663,28 @@ export const InstructorView: React.FC = () => {
             await saveModuleSettings(contentModuleId, val);
           };
 
+          const TrainingAccordionHeader = ({ id, title, subtitle }: { id: string; title: string; subtitle: string }) => (
+            <button
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-700/20 transition-all"
+              onClick={() => togglePlattform(id)}
+            >
+              <div className="text-left">
+                <div className="text-sm font-semibold text-white">{title}</div>
+                <div className="text-xs text-gray-500 mt-0.5">{subtitle}</div>
+              </div>
+              <span className="text-gray-500 text-xs ml-3 flex-shrink-0">{plattformOpen[id] ? '▲' : '▼'}</span>
+            </button>
+          );
+
           return (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* ── Modul-Reihenfolge ── */}
-            <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 p-3">
+            <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
+              <TrainingAccordionHeader id="training_reihenfolge" title="Modul-Reihenfolge" subtitle="Drag & Drop — Reihenfolge und Block-Zuordnung ändern." />
+              {plattformOpen['training_reihenfolge'] && (
+              <div className="border-t border-gray-700/50 p-3">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-gray-300 text-sm font-semibold">Modul-Reihenfolge</span>
+                <span className="text-gray-500 text-xs">Ziehe Module per Drag & Drop innerhalb oder zwischen Blöcken.</span>
                 <button
                   onClick={handleSave}
                   className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${
@@ -2662,7 +2694,6 @@ export const InstructorView: React.FC = () => {
                   {dndSaved ? '✓ Gespeichert' : 'Speichern'}
                 </button>
               </div>
-              <p className="text-gray-600 text-xs mb-3">Ziehe Module per Drag & Drop innerhalb oder zwischen Blöcken.</p>
 
               {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level').map(block => (
                 <div
@@ -2712,10 +2743,14 @@ export const InstructorView: React.FC = () => {
                 </div>
               ))}
             </div>
+            )}
+            </div>
 
             {/* ── Modul-Inhalt bearbeiten ── */}
-            <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 p-3">
-              <span className="text-gray-300 text-sm font-semibold block mb-3">Modul-Inhalt bearbeiten</span>
+            <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
+              <TrainingAccordionHeader id="training_inhalt" title="Modul-Inhalt bearbeiten" subtitle="Techniken und Quiz-Fragen pro Modul pflegen." />
+              {plattformOpen['training_inhalt'] && (
+              <div className="border-t border-gray-700/50 p-3">
 
               {/* Modul-Auswahl */}
               <div className="flex flex-wrap gap-2 mb-4">
@@ -2928,6 +2963,8 @@ export const InstructorView: React.FC = () => {
               {!selectedModule && (
                 <div className="text-gray-600 text-xs text-center py-6 border border-dashed border-gray-700/40 rounded-lg">Wähle ein Modul oben aus, um Inhalte zu bearbeiten.</div>
               )}
+              </div>
+              )}
             </div>
           </div>
           );
@@ -2984,10 +3021,10 @@ export const InstructorView: React.FC = () => {
 
           const joinUrl = typeof window !== 'undefined' ? `${window.location.origin}?join=true` : '';
 
-          const AccordionHeader = ({ id, title, subtitle }: { id: string; title: string; subtitle: string }) => (
+          const AccordionHeader = ({ id, title, subtitle, onClose }: { id: string; title: string; subtitle: string; onClose?: () => void }) => (
             <button
               className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-700/20 transition-all"
-              onClick={() => togglePlattform(id)}
+              onClick={() => { if (plattformOpen[id] && onClose) onClose(); togglePlattform(id); }}
             >
               <div className="text-left">
                 <div className="text-sm font-semibold text-white">{title}</div>
@@ -3012,21 +3049,29 @@ export const InstructorView: React.FC = () => {
                   backgroundPosition: `${badgeEditPosX}% ${badgeEditPosY}%`,
                   backgroundRepeat: 'no-repeat' as const,
                 };
+                const saveBtnClass =
+                  badgeSaveState === 'saved' ? 'bg-green-600 text-white cursor-default' :
+                  badgeSaveState === 'dirty' ? 'bg-red-600 hover:bg-red-500 text-white' :
+                  'bg-gray-700 text-gray-500 cursor-not-allowed';
+                const saveBtnLabel =
+                  badgeSaveState === 'saved' ? '✓ Gespeichert' :
+                  badgeSaveState === 'dirty' ? 'Speichern' :
+                  'Speichern';
                 return (
                   <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
-                    <AccordionHeader id="badges" title="Badge-Anzeige" subtitle="Zoom und Position pro Badge einstellen." />
+                    <AccordionHeader id="badges" title="Badge-Anzeige" subtitle="Zoom und Position pro Badge einstellen." onClose={() => setBadgeSaveState('idle')} />
                     {plattformOpen['badges'] && (
                       <div className="border-t border-gray-700/50 px-4 py-4 space-y-4">
                         <div className="flex items-center justify-between gap-3">
-                          <button onClick={() => { const ni = (idxA - 1 + imageBadgesA.length) % imageBadgesA.length; const b = imageBadgesA[ni]; const s = getBadgeDisplaySettings(b.id); setBadgeEditId(b.id); setBadgeEditScale(s.scale); setBadgeEditPosX(s.posX); setBadgeEditPosY(s.posY); setBadgeSaved(false); }} className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 text-sm flex items-center justify-center hover:bg-gray-600 flex-shrink-0" disabled={imageBadgesA.length <= 1}>←</button>
+                          <button onClick={() => { const ni = (idxA - 1 + imageBadgesA.length) % imageBadgesA.length; const b = imageBadgesA[ni]; const s = getBadgeDisplaySettings(b.id); setBadgeEditId(b.id); setBadgeEditScale(s.scale); setBadgeEditPosX(s.posX); setBadgeEditPosY(s.posY); setBadgeSaveState('idle'); }} className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 text-sm flex items-center justify-center hover:bg-gray-600 flex-shrink-0" disabled={imageBadgesA.length <= 1}>←</button>
                           <span className="text-sm text-white font-medium text-center">{badgeA.label}</span>
-                          <button onClick={() => { const ni = (idxA + 1) % imageBadgesA.length; const b = imageBadgesA[ni]; const s = getBadgeDisplaySettings(b.id); setBadgeEditId(b.id); setBadgeEditScale(s.scale); setBadgeEditPosX(s.posX); setBadgeEditPosY(s.posY); setBadgeSaved(false); }} className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 text-sm flex items-center justify-center hover:bg-gray-600 flex-shrink-0" disabled={imageBadgesA.length <= 1}>→</button>
+                          <button onClick={() => { const ni = (idxA + 1) % imageBadgesA.length; const b = imageBadgesA[ni]; const s = getBadgeDisplaySettings(b.id); setBadgeEditId(b.id); setBadgeEditScale(s.scale); setBadgeEditPosX(s.posX); setBadgeEditPosY(s.posY); setBadgeSaveState('idle'); }} className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 text-sm flex items-center justify-center hover:bg-gray-600 flex-shrink-0" disabled={imageBadgesA.length <= 1}>→</button>
                         </div>
                         <div className="flex justify-center"><div className="w-20 h-20 rounded-full border-2 border-gray-600" style={previewStyleA} /></div>
-                        <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-400">Zoom</label><span className="text-xs text-gray-500">{Math.round(badgeEditScale * 100)}%</span></div><input type="range" min={100} max={200} step={1} value={Math.round(badgeEditScale * 100)} onChange={e => { setBadgeEditScale(Number(e.target.value) / 100); setBadgeSaved(false); }} className="w-full accent-red-500" /></div>
-                        <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-400">Position Horizontal</label><span className="text-xs text-gray-500">{badgeEditPosX}%</span></div><input type="range" min={0} max={100} step={1} value={badgeEditPosX} onChange={e => { setBadgeEditPosX(Number(e.target.value)); setBadgeSaved(false); }} className="w-full accent-red-500" /></div>
-                        <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-400">Position Vertikal</label><span className="text-xs text-gray-500">{badgeEditPosY}%</span></div><input type="range" min={0} max={100} step={1} value={badgeEditPosY} onChange={e => { setBadgeEditPosY(Number(e.target.value)); setBadgeSaved(false); }} className="w-full accent-red-500" /></div>
-                        <button onClick={() => { setBadgeDisplaySettings(badgeA.id, { scale: badgeEditScale, posX: badgeEditPosX, posY: badgeEditPosY }); setBadgeSaved(true); setTimeout(() => setBadgeSaved(false), 2000); }} className={`w-full py-2 rounded-lg text-sm font-semibold transition-all ${badgeSaved ? 'bg-green-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'}`}>{badgeSaved ? '✓ Gespeichert' : 'Speichern'}</button>
+                        <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-400">Zoom</label><span className="text-xs text-gray-500">{Math.round(badgeEditScale * 100)}%</span></div><input type="range" min={100} max={250} step={1} value={Math.round(badgeEditScale * 100)} onChange={e => { setBadgeEditScale(Number(e.target.value) / 100); setBadgeSaveState('dirty'); }} className="w-full accent-red-500" /></div>
+                        <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-400">Position Horizontal</label><span className="text-xs text-gray-500">{badgeEditPosX}%</span></div><input type="range" min={0} max={100} step={1} value={badgeEditPosX} onChange={e => { setBadgeEditPosX(Number(e.target.value)); setBadgeSaveState('dirty'); }} className="w-full accent-red-500" /></div>
+                        <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-400">Position Vertikal</label><span className="text-xs text-gray-500">{badgeEditPosY}%</span></div><input type="range" min={0} max={100} step={1} value={badgeEditPosY} onChange={e => { setBadgeEditPosY(Number(e.target.value)); setBadgeSaveState('dirty'); }} className="w-full accent-red-500" /></div>
+                        <button disabled={badgeSaveState !== 'dirty'} onClick={() => { setBadgeDisplaySettings(badgeA.id, { scale: badgeEditScale, posX: badgeEditPosX, posY: badgeEditPosY }); setBadgeSaveState('saved'); }} className={`w-full py-2 rounded-lg text-sm font-semibold transition-all ${saveBtnClass}`}>{saveBtnLabel}</button>
                       </div>
                     )}
                   </div>
