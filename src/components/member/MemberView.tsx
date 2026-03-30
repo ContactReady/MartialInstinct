@@ -301,8 +301,7 @@ export const MemberView: React.FC = () => {
             {myConnections.length === 0 ? (
               <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
                 <div className="text-3xl mb-2">👥</div>
-                <p className="text-gray-400 text-sm font-medium">Noch keine Verbindungen</p>
-                <p className="text-gray-500 text-xs mt-1">Verbinde dich im Training unter "Mitglieder".</p>
+                <p className="text-gray-400 text-sm font-medium">Noch keine Trainingspartner</p>
               </div>
             ) : onlineConnected.length === 0 ? (
               <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
@@ -333,8 +332,7 @@ export const MemberView: React.FC = () => {
             {myConnections.length === 0 ? (
               <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
                 <div className="text-3xl mb-2">🥋</div>
-                <p className="text-gray-400 text-sm font-medium">Noch keine Verbindungen</p>
-                <p className="text-gray-500 text-xs mt-1">Verbinde dich im Training unter "Mitglieder".</p>
+                <p className="text-gray-400 text-sm font-medium">Noch keine Trainingspartner</p>
               </div>
             ) : trainingConnected.length === 0 ? (
               <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
