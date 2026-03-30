@@ -749,7 +749,7 @@ export const MemberView: React.FC = () => {
                 }`}
               >
                 {tabEnabled && activeTab === tab.id && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-red-500 rounded-full" />
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-gray-500 rounded-full" />
                 )}
                 <span className={`text-xl transition-transform ${activeTab === tab.id ? 'scale-110' : ''}`}>{tab.icon}</span>
                 <span className={`text-[11px] ${activeTab === tab.id ? 'font-semibold' : ''}`}>{tab.label}</span>
