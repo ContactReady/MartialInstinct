@@ -3361,7 +3361,7 @@ export const InstructorView: React.FC = () => {
                 }`}
               >
                 {tabEnabled && activeTab === tab.id && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-7 h-0.5 bg-gray-500 rounded-full" />
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-7 h-0.5 bg-red-500 rounded-full" />
                 )}
                 <span className={`text-lg leading-tight transition-transform ${activeTab === tab.id ? 'scale-110' : ''}`}>{tab.icon}</span>
                 <span className={`text-[10px] leading-tight whitespace-nowrap ${activeTab === tab.id ? 'font-semibold' : ''}`}>{tab.label}</span>
