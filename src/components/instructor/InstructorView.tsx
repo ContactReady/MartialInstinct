@@ -2280,10 +2280,7 @@ export const InstructorView: React.FC = () => {
                 <span className="text-gray-500 text-xs ml-3 flex-shrink-0">{plattformOpen['mitglieder_liste'] ? '▲' : '▼'}</span>
               </button>
               {plattformOpen['mitglieder_liste'] && (
-              <div className="border-t border-gray-700/50 p-3 space-y-3">
-            <div className="bg-gray-800/30 rounded-xl p-3 border border-gray-700/50 text-xs text-gray-500">
-              Owner & Admin: immer Admin-Zugang. Head Instructor: standardmäßig, individuell entziehbar.
-            </div>
+              <div className="border-t border-gray-700/50 divide-y divide-gray-700/40">
             {members.map(m => {
               const roleInfo = ROLE_DISPLAY[m.role];
               const memberHasAdmin = hasAdminAccess(m);
@@ -2293,13 +2290,13 @@ export const InstructorView: React.FC = () => {
               const isCoreDataOpen = coreDataOpen === m.id;
 
               return (
-                <div key={m.id} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
-                  <div className="flex items-center gap-3 p-4">
-                    <div className="w-10 h-10 rounded-full bg-white border border-gray-600 flex-shrink-0 overflow-hidden">
+                <div key={m.id} className="overflow-hidden">
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <div className="w-9 h-9 rounded-full bg-white border border-gray-600 flex-shrink-0 overflow-hidden">
                       <img src={m.profileImageUrl || '/logos/mi-icon.jpg'} alt="" className="w-full h-full object-cover" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-white font-semibold text-sm">{m.name}</span>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${roleInfo.bgColor} ${roleInfo.color}`}>
                           {roleInfo.label}
@@ -2311,9 +2308,20 @@ export const InstructorView: React.FC = () => {
                         )}
                       </div>
                       <div className="text-gray-500 text-xs mt-0.5 flex items-center gap-2">
-                        <span className="truncate">{m.email}</span>
                         <span className="text-orange-400/70 flex-shrink-0">🔥 {m.streak.currentStreak}W</span>
+                        <span className="truncate">{m.email}</span>
                       </div>
+                      {isOwnerOrAdmin && m.id !== currentUser.id && (
+                        <select
+                          value={m.role}
+                          onChange={e => updateMemberRole(m.id, e.target.value as InstructorRole)}
+                          className="mt-1.5 bg-gray-700 border border-gray-600 text-white text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-red-500 max-w-[160px]"
+                        >
+                          {roleOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {canToggleAdmin && (
@@ -2325,17 +2333,6 @@ export const InstructorView: React.FC = () => {
                         >
                           {memberHasAdmin ? '🔓' : '🔐'}
                         </button>
-                      )}
-                      {isOwnerOrAdmin && m.id !== currentUser.id && (
-                        <select
-                          value={m.role}
-                          onChange={e => updateMemberRole(m.id, e.target.value as InstructorRole)}
-                          className="bg-gray-700 border border-gray-600 text-white text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-red-500"
-                        >
-                          {roleOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
                       )}
                       {isOwnerOrAdmin && (
                         <button
