@@ -594,14 +594,12 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
                     const { scale, posX, posY } = getBadgeDisplaySettings(badge.id);
                     return (
                       <div key={badge.id} className="flex flex-col items-center gap-1">
-                        <div className="w-12 h-12 rounded-full overflow-hidden">
-                          <img
-                            src={badge.imageUrl}
-                            alt={badge.label}
-                            className="w-full h-full object-cover"
-                            style={{ transform: `scale(${scale})`, objectPosition: `${posX}% ${posY}%` }}
-                          />
-                        </div>
+                        <div className="w-12 h-12 rounded-full" style={{
+                          backgroundImage: `url(${badge.imageUrl})`,
+                          backgroundSize: `${Math.round(scale * 100)}%`,
+                          backgroundPosition: `${posX}% ${posY}%`,
+                          backgroundRepeat: 'no-repeat',
+                        }} />
                         <span className="text-[9px] text-gray-400 text-center leading-tight whitespace-nowrap">{badge.label}</span>
                       </div>
                     );

@@ -208,14 +208,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
                   const { scale, posX, posY } = getBadgeDisplaySettings(badge.id);
                   return (
                     <div key={badge.id} className="flex flex-col items-center gap-1.5" title={badge.description}>
-                      <div className="w-16 h-16 rounded-full overflow-hidden">
-                        <img
-                          src={badge.imageUrl}
-                          alt={badge.label}
-                          className="w-full h-full object-cover"
-                          style={{ transform: `scale(${scale})`, objectPosition: `${posX}% ${posY}%` }}
-                        />
-                      </div>
+                      <div className="w-16 h-16 rounded-full" style={{
+                        backgroundImage: `url(${badge.imageUrl})`,
+                        backgroundSize: `${Math.round(scale * 100)}%`,
+                        backgroundPosition: `${posX}% ${posY}%`,
+                        backgroundRepeat: 'no-repeat',
+                      }} />
                       <span className="text-[10px] text-gray-400 text-center leading-tight whitespace-nowrap">{badge.label}</span>
                     </div>
                   );

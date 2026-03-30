@@ -53,7 +53,7 @@ type Tab = 'dashboard' | 'training' | 'community' | 'admin' | 'profil';
 type DashboardSubTab = 'anfragen' | 'board' | 'bewerten' | 'fortschritt';
 type CommunitySubTab = 'online' | 'mitglieder' | 'training' | 'rangliste';
 type AdminSubTab = 'analytics' | 'verwaltung' | 'bewerbungen';
-type VerwaltungSubTab = 'plattform' | 'training' | 'mitglieder' | 'badges';
+type VerwaltungSubTab = 'plattform' | 'training' | 'mitglieder';
 
 export const InstructorView: React.FC = () => {
   const {
@@ -2008,7 +2008,6 @@ export const InstructorView: React.FC = () => {
               ['plattform', '🔧 Plattform'],
               ['training', '🥋 Training'],
               ['mitglieder', '👥 Mitglieder'],
-              ['badges', '🎖 Badges'],
             ] as [VerwaltungSubTab, string][]).map(([id, label]) => (
               <button
                 key={id}
@@ -2441,101 +2440,6 @@ export const InstructorView: React.FC = () => {
           </div>
         )}
 
-        {/* ── BADGES ──────────────────────────────────────────────────── */}
-        {adminSubTab === 'verwaltung' && verwaltungSubTab === 'badges' && (() => {
-          const allBadges = currentUser ? computeBadges(currentUser) : [];
-          const imageBadges = allBadges.filter(b => b.imageUrl);
-          return (
-            <div className="space-y-4">
-              <p className="text-xs text-gray-500">Zoom und Position für jeden Badge anpassen. Einstellungen gelten für alle Mitglieder.</p>
-              {imageBadges.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-8">Keine Bild-Badges vorhanden.</p>
-              )}
-              {imageBadges.map(badge => {
-                const isOpen = badgeEditId === badge.id;
-                const { scale, posX, posY } = getBadgeDisplaySettings(badge.id);
-                return (
-                  <div key={badge.id} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
-                    <button
-                      className="w-full flex items-center gap-4 px-4 py-3 hover:bg-gray-700/30 transition-all"
-                      onClick={() => {
-                        if (isOpen) { setBadgeEditId(null); }
-                        else {
-                          const s = getBadgeDisplaySettings(badge.id);
-                          setBadgeEditId(badge.id);
-                          setBadgeEditScale(s.scale);
-                          setBadgeEditPosX(s.posX);
-                          setBadgeEditPosY(s.posY);
-                          setBadgeSaved(false);
-                        }
-                      }}
-                    >
-                      <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-                        <img src={badge.imageUrl} alt={badge.label} className="w-full h-full object-cover" style={{ transform: `scale(${scale})`, objectPosition: `${posX}% ${posY}%` }} />
-                      </div>
-                      <span className="text-sm text-white font-medium flex-1 text-left">{badge.label}</span>
-                      <span className="text-xs text-gray-500">{isOpen ? '▲' : '▼'}</span>
-                    </button>
-                    {isOpen && (
-                      <div className="border-t border-gray-700/50 px-4 py-4 space-y-4">
-                        {/* Vorschau */}
-                        <div className="flex justify-center">
-                          <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-gray-600">
-                            <img src={badge.imageUrl} alt={badge.label} className="w-full h-full object-cover" style={{ transform: `scale(${badgeEditScale})`, objectPosition: `${badgeEditPosX}% ${badgeEditPosY}%` }} />
-                          </div>
-                        </div>
-                        {/* Zoom */}
-                        <div>
-                          <div className="flex justify-between mb-1">
-                            <label className="text-xs text-gray-400">Zoom</label>
-                            <span className="text-xs text-gray-500">{Math.round(badgeEditScale * 100)}%</span>
-                          </div>
-                          <input type="range" min={100} max={200} step={1} value={Math.round(badgeEditScale * 100)}
-                            onChange={e => setBadgeEditScale(Number(e.target.value) / 100)}
-                            className="w-full accent-red-500"
-                          />
-                        </div>
-                        {/* Position X */}
-                        <div>
-                          <div className="flex justify-between mb-1">
-                            <label className="text-xs text-gray-400">Position Horizontal</label>
-                            <span className="text-xs text-gray-500">{badgeEditPosX}%</span>
-                          </div>
-                          <input type="range" min={0} max={100} step={1} value={badgeEditPosX}
-                            onChange={e => setBadgeEditPosX(Number(e.target.value))}
-                            className="w-full accent-red-500"
-                          />
-                        </div>
-                        {/* Position Y */}
-                        <div>
-                          <div className="flex justify-between mb-1">
-                            <label className="text-xs text-gray-400">Position Vertikal</label>
-                            <span className="text-xs text-gray-500">{badgeEditPosY}%</span>
-                          </div>
-                          <input type="range" min={0} max={100} step={1} value={badgeEditPosY}
-                            onChange={e => setBadgeEditPosY(Number(e.target.value))}
-                            className="w-full accent-red-500"
-                          />
-                        </div>
-                        {/* Speichern */}
-                        <button
-                          onClick={() => {
-                            setBadgeDisplaySettings(badge.id, { scale: badgeEditScale, posX: badgeEditPosX, posY: badgeEditPosY });
-                            setBadgeSaved(true);
-                            setTimeout(() => setBadgeSaved(false), 2000);
-                          }}
-                          className={`w-full py-2 rounded-lg text-sm font-semibold transition-all ${badgeSaved ? 'bg-green-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'}`}
-                        >
-                          {badgeSaved ? '✓ Gespeichert' : 'Speichern'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })()}
 
         {/* ── BEWERBUNGEN ─────────────────────────────────────────────── */}
         {adminSubTab === 'bewerbungen' && (
@@ -3209,6 +3113,106 @@ export const InstructorView: React.FC = () => {
                   </div>
                 </div>
               </div>
+              {/* Badge-Anzeige */}
+              {(() => {
+                const imageBadges = currentUser ? computeBadges(currentUser).filter(b => b.imageUrl) : [];
+                if (imageBadges.length === 0) return null;
+                const currentIdx = badgeEditId ? imageBadges.findIndex(b => b.id === badgeEditId) : 0;
+                const idx = currentIdx < 0 ? 0 : currentIdx;
+                const badge = imageBadges[idx];
+                if (!badgeEditId) {
+                  const s = getBadgeDisplaySettings(badge.id);
+                  // init on first render without triggering re-render here — handled via useEffect-like inline
+                }
+                const previewStyle = {
+                  backgroundImage: `url(${badge.imageUrl})`,
+                  backgroundSize: `${Math.round(badgeEditScale * 100)}%`,
+                  backgroundPosition: `${badgeEditPosX}% ${badgeEditPosY}%`,
+                  backgroundRepeat: 'no-repeat',
+                };
+                return (
+                  <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-700/50">
+                      <div className="text-sm font-semibold text-white">Badge-Anzeige</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Zoom und Position pro Badge einstellen.</div>
+                    </div>
+                    <div className="px-4 py-4 space-y-4">
+                      {/* Badge-Navigation */}
+                      <div className="flex items-center justify-between gap-3">
+                        <button
+                          onClick={() => {
+                            const newIdx = (idx - 1 + imageBadges.length) % imageBadges.length;
+                            const b = imageBadges[newIdx];
+                            const s = getBadgeDisplaySettings(b.id);
+                            setBadgeEditId(b.id); setBadgeEditScale(s.scale); setBadgeEditPosX(s.posX); setBadgeEditPosY(s.posY); setBadgeSaved(false);
+                          }}
+                          className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 text-sm flex items-center justify-center hover:bg-gray-600 flex-shrink-0"
+                          disabled={imageBadges.length <= 1}
+                        >←</button>
+                        <span className="text-sm text-white font-medium text-center">{badge.label}</span>
+                        <button
+                          onClick={() => {
+                            const newIdx = (idx + 1) % imageBadges.length;
+                            const b = imageBadges[newIdx];
+                            const s = getBadgeDisplaySettings(b.id);
+                            setBadgeEditId(b.id); setBadgeEditScale(s.scale); setBadgeEditPosX(s.posX); setBadgeEditPosY(s.posY); setBadgeSaved(false);
+                          }}
+                          className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 text-sm flex items-center justify-center hover:bg-gray-600 flex-shrink-0"
+                          disabled={imageBadges.length <= 1}
+                        >→</button>
+                      </div>
+                      {/* Vorschau */}
+                      <div className="flex justify-center">
+                        <div className="w-20 h-20 rounded-full border-2 border-gray-600" style={previewStyle} />
+                      </div>
+                      {/* Zoom */}
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <label className="text-xs text-gray-400">Zoom</label>
+                          <span className="text-xs text-gray-500">{Math.round(badgeEditScale * 100)}%</span>
+                        </div>
+                        <input type="range" min={100} max={200} step={1} value={Math.round(badgeEditScale * 100)}
+                          onChange={e => { setBadgeEditScale(Number(e.target.value) / 100); setBadgeSaved(false); }}
+                          className="w-full accent-red-500"
+                        />
+                      </div>
+                      {/* Position H */}
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <label className="text-xs text-gray-400">Position Horizontal</label>
+                          <span className="text-xs text-gray-500">{badgeEditPosX}%</span>
+                        </div>
+                        <input type="range" min={0} max={100} step={1} value={badgeEditPosX}
+                          onChange={e => { setBadgeEditPosX(Number(e.target.value)); setBadgeSaved(false); }}
+                          className="w-full accent-red-500"
+                        />
+                      </div>
+                      {/* Position V */}
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <label className="text-xs text-gray-400">Position Vertikal</label>
+                          <span className="text-xs text-gray-500">{badgeEditPosY}%</span>
+                        </div>
+                        <input type="range" min={0} max={100} step={1} value={badgeEditPosY}
+                          onChange={e => { setBadgeEditPosY(Number(e.target.value)); setBadgeSaved(false); }}
+                          className="w-full accent-red-500"
+                        />
+                      </div>
+                      {/* Speichern */}
+                      <button
+                        onClick={() => {
+                          setBadgeDisplaySettings(badge.id, { scale: badgeEditScale, posX: badgeEditPosX, posY: badgeEditPosY });
+                          setBadgeSaved(true);
+                          setTimeout(() => setBadgeSaved(false), 2000);
+                        }}
+                        className={`w-full py-2 rounded-lg text-sm font-semibold transition-all ${badgeSaved ? 'bg-green-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'}`}
+                      >
+                        {badgeSaved ? '✓ Gespeichert' : 'Speichern'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           );
         })()}
