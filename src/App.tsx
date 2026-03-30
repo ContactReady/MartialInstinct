@@ -887,12 +887,7 @@ const AppContent: React.FC = () => {
             className="h-8 w-auto object-contain flex-shrink-0"
           />
 
-          {/* Center: Level */}
-          <div className="flex items-center gap-3 flex-1 justify-center">
-            <span className={`text-xs font-semibold ${LEVEL_DISPLAY[currentUser.currentLevel].color}`}>
-              {LEVEL_DISPLAY[currentUser.currentLevel].icon} {LEVEL_DISPLAY[currentUser.currentLevel].name}
-            </span>
-          </div>
+          <div className="flex-1" />
 
           {/* Right: Bell + Avatar */}
           <div className="flex items-center gap-2 flex-shrink-0">
