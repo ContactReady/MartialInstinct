@@ -108,12 +108,6 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => boolean; d
     if (!success) setError('Ungültige Anmeldedaten');
   };
 
-  const demoAccounts = [
-    { email: 'jay@martialinstinct.de',    password: 'MI_Admin1!', name: '👑 Jay (Admin)' },
-    { email: 'holger@martialinstinct.de', password: 'Trainer1!',  name: '🥋 Holger (Instructor)' },
-    { email: 'test@martialinstinct.de',   password: 'Member01!',  name: '💪 Test Member' },
-  ];
-
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
       <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md border border-gray-800">
@@ -165,20 +159,6 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => boolean; d
           </button>
         </form>
 
-        <div className="mt-6">
-          <p className="text-gray-500 text-sm text-center mb-4">Demo-Accounts:</p>
-          <div className="space-y-2">
-            {demoAccounts.map((account) => (
-              <button
-                key={account.email}
-                onClick={() => { setEmail(account.email); setPassword(account.password); }}
-                className="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 px-4 rounded-lg text-sm text-left transition-colors"
-              >
-                {account.name}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

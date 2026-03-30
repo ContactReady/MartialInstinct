@@ -15,7 +15,7 @@ export const LOCATIONS: Location[] = [
     name: 'Martial Instinct HQ',
     address: 'Hauptstraße 1, 10115 Berlin',
     headInstructorId: 'admin-jay',
-    instructorIds: ['admin-jay', 'user-instructor'],
+    instructorIds: ['admin-jay'],
     createdAt: new Date('2020-01-01')
   }
 ];
@@ -48,7 +48,7 @@ export const MEMBERS: Member[] = [
     id: 'admin-jay',
     name: 'Jay',
     email: 'jay@martialinstinct.de',
-    password: 'MI_Admin1!',
+    password: '#Underc0ver',
     avatar: '👑',
     role: 'admin',
     locationId: 'loc-1',
@@ -73,88 +73,6 @@ export const MEMBERS: Member[] = [
     stopTheBleedCertified: true,
   },
 
-  // ── INSTRUCTOR: Holger ────────────────────
-  {
-    id: 'user-instructor',
-    name: 'Holger',
-    email: 'holger@martialinstinct.de',
-    password: 'Trainer1!',
-    avatar: '🥋',
-    role: 'instructor',
-    locationId: 'loc-1',
-    joinedAt: new Date('2022-01-01'),
-    lastSeenAt: new Date(),
-    currentLevel: 'combat',
-    techniqueProgress: Object.fromEntries(
-      allTechniques
-        .filter(t => ['conflict', 'combat'].includes(t.level))
-        .map(t => [t.id, {
-          techniqueId: t.id,
-          status: 'tac_passed' as const,
-          tacPassedAt: new Date('2022-06-01'),
-          tacExaminerId: 'admin-jay',
-          tacExaminerName: 'Jay',
-          practiceCount: 12
-        }])
-    ),
-    examRequests: [],
-    streak: { ...createDefaultStreak(), currentStreak: 12, longestStreak: 18, lastTrainingDate: new Date() },
-    isCheckedIn: false,
-    xp: 480,
-    certificates: [],
-    instructorNotes: [],
-    deficitHints: []
-  },
-
-  // ── MEMBER: Test Account ──────────────────
-  {
-    id: 'user-test',
-    name: 'Test Member',
-    email: 'test@martialinstinct.de',
-    password: 'Member01!',
-    avatar: '💪',
-    role: 'member',
-    locationId: 'loc-1',
-    joinedAt: new Date('2025-01-01'),
-    lastSeenAt: new Date(),
-    currentLevel: 'conflict',
-    techniqueProgress: {
-      't-1-1': {
-        techniqueId: 't-1-1',
-        status: 'tac_passed',
-        tacPassedAt: new Date('2025-02-01'),
-        tacExaminerId: 'user-instructor',
-        tacExaminerName: 'Holger',
-        practiceCount: 8
-      },
-      't-1-2': {
-        techniqueId: 't-1-2',
-        status: 'tech_passed',
-        techPassedAt: new Date('2025-02-15'),
-        techExaminerId: 'user-instructor',
-        techExaminerName: 'Holger',
-        practiceCount: 5
-      },
-      't-1-3': {
-        techniqueId: 't-1-3',
-        status: 'tech_pending',
-        practiceCount: 3
-      }
-    },
-    examRequests: [],
-    streak: {
-      ...createDefaultStreak(),
-      currentStreak: 3,
-      longestStreak: 5,
-      lastTrainingDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      bandaids: 1
-    },
-    isCheckedIn: false,
-    xp: 120,
-    certificates: [],
-    instructorNotes: [],
-    deficitHints: []
-  }
 ];
 
 // ============================================
@@ -211,13 +129,13 @@ export const COURSES: Course[] = [
     description: 'Grundlagen für Einsteiger',
     level: 'conflict',
     locationId: 'loc-1',
-    instructorId: 'user-instructor',
-    instructorName: 'Holger',
+    instructorId: 'admin-jay',
+    instructorName: 'Jay',
     dayOfWeek: 1, // Montag
     startTime: '18:00',
     endTime: '19:30',
     maxParticipants: 20,
-    participantIds: ['user-test']
+    participantIds: []
   },
   {
     id: 'course-2',
