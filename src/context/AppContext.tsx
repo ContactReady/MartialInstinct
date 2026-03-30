@@ -225,8 +225,15 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 // ============================================
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<Member | null>(null);
   const [members, setMembers] = useState<Member[]>(MEMBERS);
+  const [currentUser, setCurrentUser] = useState<Member | null>(() => {
+    const savedId = localStorage.getItem('mi_session_user');
+    if (!savedId) return null;
+    const member = MEMBERS.find(m => m.id === savedId);
+    if (!member) return null;
+    const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
+    return imgs[member.id] ? { ...member, profileImageUrl: imgs[member.id] } : member;
+  });
   const [checkIns, setCheckIns] = useState<CheckIn[]>(CHECK_INS);
   const [boardMessages, setBoardMessages] = useState<BoardMessage[]>(BOARD_MESSAGES);
   const [notifications, setNotifications] = useState<Notification[]>(NOTIFICATIONS);
@@ -362,6 +369,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const online = { ...member, onlineSince: now, lastSeenAt: now, ...(savedImg ? { profileImageUrl: savedImg } : {}) };
       setMembers(prev => prev.map(m => m.id === member.id ? online : m));
       setCurrentUser(online);
+      localStorage.setItem('mi_session_user', member.id);
       return true;
     }
     return false;
@@ -375,6 +383,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ));
     }
     setCurrentUser(null);
+    localStorage.removeItem('mi_session_user');
   }, [currentUser]);
 
   const switchUser = useCallback((userId: string) => {
