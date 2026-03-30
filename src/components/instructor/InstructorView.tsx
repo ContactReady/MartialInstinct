@@ -90,7 +90,6 @@ export const InstructorView: React.FC = () => {
     getBlockProgress,
     getOnlineMembers,
     getPendingTechniqueWishes,
-    acknowledgeWish,
     completeTrainingSession,
     updateMemberRole,
     updateAdminAccess,
@@ -142,6 +141,10 @@ export const InstructorView: React.FC = () => {
   const [streakRestoreOpen, setStreakRestoreOpen] = useState<string | null>(null);
   const [streakRestoreValue, setStreakRestoreValue] = useState(1);
   const [streakRestoreReason, setStreakRestoreReason] = useState('');
+
+  // Plattform-Accordion State
+  const [plattformOpen, setPlattformOpen] = useState<Record<string, boolean>>({});
+  const togglePlattform = (key: string) => setPlattformOpen(prev => ({ ...prev, [key]: !prev[key] }));
 
   // Badge-Display State (Admin)
   const [badgeEditId, setBadgeEditId] = useState<string | null>(null);
@@ -2981,14 +2984,60 @@ export const InstructorView: React.FC = () => {
 
           const joinUrl = typeof window !== 'undefined' ? `${window.location.origin}?join=true` : '';
 
+          const AccordionHeader = ({ id, title, subtitle }: { id: string; title: string; subtitle: string }) => (
+            <button
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-700/20 transition-all"
+              onClick={() => togglePlattform(id)}
+            >
+              <div className="text-left">
+                <div className="text-sm font-semibold text-white">{title}</div>
+                <div className="text-xs text-gray-500 mt-0.5">{subtitle}</div>
+              </div>
+              <span className="text-gray-500 text-xs ml-3 flex-shrink-0">{plattformOpen[id] ? '▲' : '▼'}</span>
+            </button>
+          );
+
           return (
-            <div className="space-y-6">
-              {/* QR-Code Beitritt */}
+            <div className="space-y-3">
+              {/* A: Badge-Anzeige */}
+              {(() => {
+                const imageBadgesA = currentUser ? computeBadges(currentUser).filter(b => b.imageUrl) : [];
+                if (imageBadgesA.length === 0) return null;
+                const currentIdxA = badgeEditId ? imageBadgesA.findIndex(b => b.id === badgeEditId) : 0;
+                const idxA = currentIdxA < 0 ? 0 : currentIdxA;
+                const badgeA = imageBadgesA[idxA];
+                const previewStyleA = {
+                  backgroundImage: `url(${badgeA.imageUrl})`,
+                  backgroundSize: `${Math.round(badgeEditScale * 100)}%`,
+                  backgroundPosition: `${badgeEditPosX}% ${badgeEditPosY}%`,
+                  backgroundRepeat: 'no-repeat' as const,
+                };
+                return (
+                  <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
+                    <AccordionHeader id="badges" title="Badge-Anzeige" subtitle="Zoom und Position pro Badge einstellen." />
+                    {plattformOpen['badges'] && (
+                      <div className="border-t border-gray-700/50 px-4 py-4 space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <button onClick={() => { const ni = (idxA - 1 + imageBadgesA.length) % imageBadgesA.length; const b = imageBadgesA[ni]; const s = getBadgeDisplaySettings(b.id); setBadgeEditId(b.id); setBadgeEditScale(s.scale); setBadgeEditPosX(s.posX); setBadgeEditPosY(s.posY); setBadgeSaved(false); }} className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 text-sm flex items-center justify-center hover:bg-gray-600 flex-shrink-0" disabled={imageBadgesA.length <= 1}>←</button>
+                          <span className="text-sm text-white font-medium text-center">{badgeA.label}</span>
+                          <button onClick={() => { const ni = (idxA + 1) % imageBadgesA.length; const b = imageBadgesA[ni]; const s = getBadgeDisplaySettings(b.id); setBadgeEditId(b.id); setBadgeEditScale(s.scale); setBadgeEditPosX(s.posX); setBadgeEditPosY(s.posY); setBadgeSaved(false); }} className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 text-sm flex items-center justify-center hover:bg-gray-600 flex-shrink-0" disabled={imageBadgesA.length <= 1}>→</button>
+                        </div>
+                        <div className="flex justify-center"><div className="w-20 h-20 rounded-full border-2 border-gray-600" style={previewStyleA} /></div>
+                        <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-400">Zoom</label><span className="text-xs text-gray-500">{Math.round(badgeEditScale * 100)}%</span></div><input type="range" min={100} max={200} step={1} value={Math.round(badgeEditScale * 100)} onChange={e => { setBadgeEditScale(Number(e.target.value) / 100); setBadgeSaved(false); }} className="w-full accent-red-500" /></div>
+                        <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-400">Position Horizontal</label><span className="text-xs text-gray-500">{badgeEditPosX}%</span></div><input type="range" min={0} max={100} step={1} value={badgeEditPosX} onChange={e => { setBadgeEditPosX(Number(e.target.value)); setBadgeSaved(false); }} className="w-full accent-red-500" /></div>
+                        <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-400">Position Vertikal</label><span className="text-xs text-gray-500">{badgeEditPosY}%</span></div><input type="range" min={0} max={100} step={1} value={badgeEditPosY} onChange={e => { setBadgeEditPosY(Number(e.target.value)); setBadgeSaved(false); }} className="w-full accent-red-500" /></div>
+                        <button onClick={() => { setBadgeDisplaySettings(badgeA.id, { scale: badgeEditScale, posX: badgeEditPosX, posY: badgeEditPosY }); setBadgeSaved(true); setTimeout(() => setBadgeSaved(false), 2000); }} className={`w-full py-2 rounded-lg text-sm font-semibold transition-all ${badgeSaved ? 'bg-green-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'}`}>{badgeSaved ? '✓ Gespeichert' : 'Speichern'}</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* B: Beitritts-QR-Code */}
               <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-700/50">
-                  <div className="text-sm font-semibold text-white">Beitritts-QR-Code</div>
-                  <div className="text-xs text-gray-500 mt-0.5">Schüler scannen diesen Code und senden eine Beitrittsanfrage — kein Login nötig.</div>
-                </div>
+                <AccordionHeader id="qr" title="Beitritts-QR-Code" subtitle="Schüler scannen diesen Code und senden eine Beitrittsanfrage — kein Login nötig." />
+                {plattformOpen['qr'] && (
+                <div className="border-t border-gray-700/50">
                 <div className="p-5 flex flex-col items-center gap-3">
                   <div className="bg-white p-3 rounded-xl">
                     <QRCode value={joinUrl} size={160} />
@@ -2996,14 +3045,15 @@ export const InstructorView: React.FC = () => {
                   <div className="text-[10px] text-gray-500 text-center font-mono break-all">{joinUrl}</div>
                   <div className="text-xs text-gray-400 text-center">Anfragen erscheinen unter <span className="text-white font-semibold">Anfragen → Beitrittsanfragen</span></div>
                 </div>
+                </div>
+                )}
               </div>
 
-              {/* Rechte-Matrix */}
+              {/* C: Rechte-Matrix */}
               <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-700/50">
-                  <div className="text-sm font-semibold text-white">Rechte-Matrix</div>
-                  <div className="text-xs text-gray-500 mt-0.5">Legt fest, was jede Rolle tun darf. Admin hat immer alle Rechte.</div>
-                </div>
+                <AccordionHeader id="rechte" title="Rechte-Matrix" subtitle="Legt fest, was jede Rolle tun darf. Admin hat immer alle Rechte." />
+                {plattformOpen['rechte'] && (
+                <div className="border-t border-gray-700/50">
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
@@ -3050,14 +3100,15 @@ export const InstructorView: React.FC = () => {
                 <div className="px-4 py-2.5 border-t border-gray-700/30 text-[10px] text-gray-600">
                   Änderungen werden sofort gespeichert und sind nach Seitenneuladung aktiv.
                 </div>
+                </div>
+                )}
               </div>
 
-              {/* Tab-Verwaltung */}
+              {/* D: Reiter-Verwaltung */}
               <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-700/50">
-                  <div className="text-sm font-semibold text-white">Reiter-Verwaltung</div>
-                  <div className="text-xs text-gray-500 mt-0.5">Deaktivierte Reiter sind ausgegraut und nicht aufrufbar — ideal für schrittweises Rollout.</div>
-                </div>
+                <AccordionHeader id="reiter" title="Reiter-Verwaltung" subtitle="Deaktivierte Reiter sind ausgegraut und nicht aufrufbar." />
+                {plattformOpen['reiter'] && (
+                <div className="border-t border-gray-700/50">
                 <div className="divide-y divide-gray-700/30">
                   {/* Member-Bereich */}
                   <div className="px-4 py-3">
@@ -3112,107 +3163,9 @@ export const InstructorView: React.FC = () => {
                     </div>
                   </div>
                 </div>
+                </div>
+                )}
               </div>
-              {/* Badge-Anzeige */}
-              {(() => {
-                const imageBadges = currentUser ? computeBadges(currentUser).filter(b => b.imageUrl) : [];
-                if (imageBadges.length === 0) return null;
-                const currentIdx = badgeEditId ? imageBadges.findIndex(b => b.id === badgeEditId) : 0;
-                const idx = currentIdx < 0 ? 0 : currentIdx;
-                const badge = imageBadges[idx];
-                if (!badgeEditId) {
-                  const s = getBadgeDisplaySettings(badge.id);
-                  // init on first render without triggering re-render here — handled via useEffect-like inline
-                }
-                const previewStyle = {
-                  backgroundImage: `url(${badge.imageUrl})`,
-                  backgroundSize: `${Math.round(badgeEditScale * 100)}%`,
-                  backgroundPosition: `${badgeEditPosX}% ${badgeEditPosY}%`,
-                  backgroundRepeat: 'no-repeat',
-                };
-                return (
-                  <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-gray-700/50">
-                      <div className="text-sm font-semibold text-white">Badge-Anzeige</div>
-                      <div className="text-xs text-gray-500 mt-0.5">Zoom und Position pro Badge einstellen.</div>
-                    </div>
-                    <div className="px-4 py-4 space-y-4">
-                      {/* Badge-Navigation */}
-                      <div className="flex items-center justify-between gap-3">
-                        <button
-                          onClick={() => {
-                            const newIdx = (idx - 1 + imageBadges.length) % imageBadges.length;
-                            const b = imageBadges[newIdx];
-                            const s = getBadgeDisplaySettings(b.id);
-                            setBadgeEditId(b.id); setBadgeEditScale(s.scale); setBadgeEditPosX(s.posX); setBadgeEditPosY(s.posY); setBadgeSaved(false);
-                          }}
-                          className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 text-sm flex items-center justify-center hover:bg-gray-600 flex-shrink-0"
-                          disabled={imageBadges.length <= 1}
-                        >←</button>
-                        <span className="text-sm text-white font-medium text-center">{badge.label}</span>
-                        <button
-                          onClick={() => {
-                            const newIdx = (idx + 1) % imageBadges.length;
-                            const b = imageBadges[newIdx];
-                            const s = getBadgeDisplaySettings(b.id);
-                            setBadgeEditId(b.id); setBadgeEditScale(s.scale); setBadgeEditPosX(s.posX); setBadgeEditPosY(s.posY); setBadgeSaved(false);
-                          }}
-                          className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 text-sm flex items-center justify-center hover:bg-gray-600 flex-shrink-0"
-                          disabled={imageBadges.length <= 1}
-                        >→</button>
-                      </div>
-                      {/* Vorschau */}
-                      <div className="flex justify-center">
-                        <div className="w-20 h-20 rounded-full border-2 border-gray-600" style={previewStyle} />
-                      </div>
-                      {/* Zoom */}
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <label className="text-xs text-gray-400">Zoom</label>
-                          <span className="text-xs text-gray-500">{Math.round(badgeEditScale * 100)}%</span>
-                        </div>
-                        <input type="range" min={100} max={200} step={1} value={Math.round(badgeEditScale * 100)}
-                          onChange={e => { setBadgeEditScale(Number(e.target.value) / 100); setBadgeSaved(false); }}
-                          className="w-full accent-red-500"
-                        />
-                      </div>
-                      {/* Position H */}
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <label className="text-xs text-gray-400">Position Horizontal</label>
-                          <span className="text-xs text-gray-500">{badgeEditPosX}%</span>
-                        </div>
-                        <input type="range" min={0} max={100} step={1} value={badgeEditPosX}
-                          onChange={e => { setBadgeEditPosX(Number(e.target.value)); setBadgeSaved(false); }}
-                          className="w-full accent-red-500"
-                        />
-                      </div>
-                      {/* Position V */}
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <label className="text-xs text-gray-400">Position Vertikal</label>
-                          <span className="text-xs text-gray-500">{badgeEditPosY}%</span>
-                        </div>
-                        <input type="range" min={0} max={100} step={1} value={badgeEditPosY}
-                          onChange={e => { setBadgeEditPosY(Number(e.target.value)); setBadgeSaved(false); }}
-                          className="w-full accent-red-500"
-                        />
-                      </div>
-                      {/* Speichern */}
-                      <button
-                        onClick={() => {
-                          setBadgeDisplaySettings(badge.id, { scale: badgeEditScale, posX: badgeEditPosX, posY: badgeEditPosY });
-                          setBadgeSaved(true);
-                          setTimeout(() => setBadgeSaved(false), 2000);
-                        }}
-                        className={`w-full py-2 rounded-lg text-sm font-semibold transition-all ${badgeSaved ? 'bg-green-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'}`}
-                      >
-                        {badgeSaved ? '✓ Gespeichert' : 'Speichern'}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })()}
             </div>
           );
         })()}

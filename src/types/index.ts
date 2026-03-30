@@ -282,6 +282,9 @@ export interface Member {
   // Sichtbarkeit: wer sieht Online- und Trainingsstatus
   visibilityPreference?: 'all' | 'buddies'; // default: 'all'
 
+  // MI-Mitgliedsnummer (z.B. MI-0042)
+  memberId?: string;
+
   // Verbundene Mitglieder (in-person Connect via Code)
   connections?: string[];  // Array von Member-IDs
 

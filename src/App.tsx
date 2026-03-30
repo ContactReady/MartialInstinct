@@ -185,7 +185,7 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => boolean; d
 };
 
 // ── Settings Modal ─────────────────────────────────────────────────────────────
-const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { currentUser, updateProfile, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference } = useApp();
   const [email, setEmail] = useState(currentUser?.email ?? '');
   const [currentPw, setCurrentPw] = useState('');
