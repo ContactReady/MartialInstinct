@@ -152,6 +152,11 @@ export const InstructorView: React.FC = () => {
   const [badgeEditPosX, setBadgeEditPosX] = useState(50);
   const [badgeEditPosY, setBadgeEditPosY] = useState(50);
   const [badgeSaveState, setBadgeSaveState] = useState<'idle' | 'dirty' | 'saved'>('idle');
+  const [badgePendingClose, setBadgePendingClose] = useState(false);
+  const [coreDataSaveState, setCoreDataSaveState] = useState<'idle' | 'dirty' | 'saved'>('idle');
+  const [coreDataPendingClose, setCoreDataPendingClose] = useState(false);
+  const [streakSaveState, setStreakSaveState] = useState<'idle' | 'dirty' | 'saved'>('idle');
+  const [streakPendingClose, setStreakPendingClose] = useState(false);
 
   // Kerndaten-Editing State (Admin)
   const [coreDataOpen, setCoreDataOpen] = useState<string | null>(null);
@@ -165,7 +170,8 @@ export const InstructorView: React.FC = () => {
   const [localModuleOrder, setLocalModuleOrder] = useState<ModuleOrder[]>([]);
   const [dndDragId, setDndDragId] = useState<string | null>(null);
   const [dndIndicator, setDndIndicator] = useState<{ moduleId: string; insertBefore: boolean } | null>(null);
-  const [dndSaved, setDndSaved] = useState(false);
+  const [dndSaveState, setDndSaveState] = useState<'idle' | 'dirty' | 'saved'>('idle');
+  const [dndPendingClose, setDndPendingClose] = useState(false);
 
   // Content Editor State (Rules of Hooks: alle auf Top-Level)
   const [contentModuleId, setContentModuleId] = useState<string | null>(null);
@@ -1894,7 +1900,6 @@ export const InstructorView: React.FC = () => {
 
     const handleDragStart = (moduleId: string) => {
       setDndDragId(moduleId);
-      setDndSaved(false);
       setDndIndicator(null);
     };
 
@@ -1947,6 +1952,7 @@ export const InstructorView: React.FC = () => {
       });
 
       setLocalModuleOrder(newOrder);
+      setDndSaveState('dirty');
       setDndDragId(null);
       setDndIndicator(null);
     };
@@ -1962,12 +1968,13 @@ export const InstructorView: React.FC = () => {
           .map((o, i) => ({ ...o, position: i }))
       );
       setLocalModuleOrder(reindexed);
-      setDndSaved(false);
+      setDndSaveState('dirty');
     };
 
     const handleSave = async () => {
       await saveModuleOrder(getWorkingOrder());
-      setDndSaved(true);
+      setDndSaveState('saved');
+      setDndPendingClose(false);
     };
 
     // ── Role options ────────────────────────────────────────────────────────
@@ -2338,7 +2345,7 @@ export const InstructorView: React.FC = () => {
                         <button
                           onClick={() => {
                             if (isStreakOpen) { setStreakRestoreOpen(null); }
-                            else { setStreakRestoreOpen(m.id); setStreakRestoreValue(m.streak.currentStreak); setStreakRestoreReason(''); setCoreDataOpen(null); }
+                            else { setStreakRestoreOpen(m.id); setStreakRestoreValue(m.streak.currentStreak); setStreakRestoreReason(''); setCoreDataOpen(null); setStreakSaveState('idle'); setStreakPendingClose(false); }
                           }}
                           className="text-xs px-2 py-1.5 rounded-lg bg-orange-900/30 text-orange-400 hover:bg-orange-900/50 transition-all"
                           title="Streak wiederherstellen"
@@ -2350,7 +2357,7 @@ export const InstructorView: React.FC = () => {
                         <button
                           onClick={() => {
                             if (isCoreDataOpen) { setCoreDataOpen(null); }
-                            else { setCoreDataOpen(m.id); setCoreName(m.name); setCoreFirstName(m.firstName ?? ''); setCoreLastName(m.lastName ?? ''); setCoreBirthDate(m.birthDate ?? ''); setCoreMemberId(m.memberId ?? ''); setStreakRestoreOpen(null); }
+                            else { setCoreDataOpen(m.id); setCoreName(m.name); setCoreFirstName(m.firstName ?? ''); setCoreLastName(m.lastName ?? ''); setCoreBirthDate(m.birthDate ?? ''); setCoreMemberId(m.memberId ?? ''); setStreakRestoreOpen(null); setCoreDataSaveState('idle'); setCoreDataPendingClose(false); }
                           }}
                           className="text-xs px-2 py-1.5 rounded-lg bg-blue-900/30 text-blue-400 hover:bg-blue-900/50 transition-all"
                           title="Persönliche Daten bearbeiten"
@@ -2367,35 +2374,57 @@ export const InstructorView: React.FC = () => {
                       <div className="space-y-2">
                         <div>
                           <label className="text-xs text-gray-500 block mb-1">Anzeigename</label>
-                          <input type="text" value={coreName} onChange={e => setCoreName(e.target.value)} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
+                          <input type="text" value={coreName} onChange={e => { setCoreName(e.target.value); setCoreDataSaveState('dirty'); setCoreDataPendingClose(false); }} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className="text-xs text-gray-500 block mb-1">Vorname</label>
-                            <input type="text" value={coreFirstName} onChange={e => setCoreFirstName(e.target.value)} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
+                            <input type="text" value={coreFirstName} onChange={e => { setCoreFirstName(e.target.value); setCoreDataSaveState('dirty'); setCoreDataPendingClose(false); }} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
                           </div>
                           <div>
                             <label className="text-xs text-gray-500 block mb-1">Nachname</label>
-                            <input type="text" value={coreLastName} onChange={e => setCoreLastName(e.target.value)} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
+                            <input type="text" value={coreLastName} onChange={e => { setCoreLastName(e.target.value); setCoreDataSaveState('dirty'); setCoreDataPendingClose(false); }} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
                           </div>
                         </div>
                         <div>
                           <label className="text-xs text-gray-500 block mb-1">Member ID</label>
-                          <input type="text" value={coreMemberId} onChange={e => setCoreMemberId(e.target.value)} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
+                          <input type="text" value={coreMemberId} onChange={e => { setCoreMemberId(e.target.value); setCoreDataSaveState('dirty'); setCoreDataPendingClose(false); }} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
                         </div>
                         <div>
                           <label className="text-xs text-gray-500 block mb-1">Geburtsdatum</label>
-                          <input type="date" value={coreBirthDate} onChange={e => setCoreBirthDate(e.target.value)} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
+                          <input type="date" value={coreBirthDate} onChange={e => { setCoreBirthDate(e.target.value); setCoreDataSaveState('dirty'); setCoreDataPendingClose(false); }} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
                         </div>
                       </div>
+                      {coreDataPendingClose && (
+                        <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-3 py-2.5 flex items-center justify-between gap-3">
+                          <span className="text-xs text-yellow-400">⚠ Nicht gespeicherte Änderungen</span>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <button onClick={() => { setCoreDataPendingClose(false); setCoreDataSaveState('idle'); setCoreDataOpen(null); }} className="text-xs px-2.5 py-1 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all">Verwerfen</button>
+                            <button onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined }); setCoreDataPendingClose(false); setCoreDataSaveState('saved'); }} className="text-xs px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-all">Speichern</button>
+                          </div>
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <button
-                          onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined }); setCoreDataOpen(null); }}
-                          className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-sm font-medium transition-all"
+                          disabled={coreDataSaveState !== 'dirty'}
+                          onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined }); setCoreDataSaveState('saved'); }}
+                          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                            coreDataSaveState === 'saved' ? 'bg-green-600 text-white cursor-default' :
+                            coreDataSaveState === 'dirty' ? 'bg-blue-600 hover:bg-blue-500 text-white' :
+                            'bg-gray-700 text-gray-500 cursor-not-allowed'
+                          }`}
                         >
-                          Speichern
+                          {coreDataSaveState === 'saved' ? '✓ Gespeichert' : 'Speichern'}
                         </button>
-                        <button onClick={() => setCoreDataOpen(null)} className="px-4 bg-gray-700 text-gray-300 py-2 rounded-lg text-sm">Abbrechen</button>
+                        <button
+                          onClick={() => {
+                            if (coreDataSaveState === 'dirty') { setCoreDataPendingClose(true); }
+                            else { setCoreDataOpen(null); setCoreDataSaveState('idle'); setCoreDataPendingClose(false); }
+                          }}
+                          className="px-4 bg-gray-700 text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-600 transition-all"
+                        >
+                          Abbrechen
+                        </button>
                       </div>
                     </div>
                   )}
@@ -2411,7 +2440,7 @@ export const InstructorView: React.FC = () => {
                             min={1}
                             max={52}
                             value={streakRestoreValue}
-                            onChange={e => setStreakRestoreValue(Number(e.target.value))}
+                            onChange={e => { setStreakRestoreValue(Number(e.target.value)); setStreakSaveState('dirty'); setStreakPendingClose(false); }}
                             className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500"
                           />
                         </div>
@@ -2421,26 +2450,42 @@ export const InstructorView: React.FC = () => {
                             type="text"
                             placeholder="z.B. War 4 Wochen im Urlaub"
                             value={streakRestoreReason}
-                            onChange={e => setStreakRestoreReason(e.target.value)}
+                            onChange={e => { setStreakRestoreReason(e.target.value); setStreakSaveState('dirty'); setStreakPendingClose(false); }}
                             className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500"
                           />
                         </div>
                       </div>
+                      {streakPendingClose && (
+                        <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-3 py-2.5 flex items-center justify-between gap-3">
+                          <span className="text-xs text-yellow-400">⚠ Nicht gespeicherte Änderungen</span>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <button onClick={() => { setStreakPendingClose(false); setStreakSaveState('idle'); setStreakRestoreOpen(null); }} className="text-xs px-2.5 py-1 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all">Verwerfen</button>
+                            <button onClick={() => { if (!streakRestoreReason.trim()) return; restoreStreak(m.id, streakRestoreValue, streakRestoreReason); setStreakPendingClose(false); setStreakSaveState('saved'); setStreakRestoreOpen(null); }} className="text-xs px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-all">Speichern</button>
+                          </div>
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <button
+                          disabled={streakSaveState !== 'dirty'}
                           onClick={() => {
                             if (!streakRestoreReason.trim()) return;
                             restoreStreak(m.id, streakRestoreValue, streakRestoreReason);
-                            setStreakRestoreOpen(null);
+                            setStreakSaveState('saved');
                           }}
-                          disabled={!streakRestoreReason.trim()}
-                          className="flex-1 bg-orange-600 hover:bg-orange-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 rounded-lg text-sm font-medium transition-all"
+                          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                            streakSaveState === 'saved' ? 'bg-green-600 text-white cursor-default' :
+                            streakSaveState === 'dirty' ? 'bg-orange-600 hover:bg-orange-500 text-white' :
+                            'bg-gray-700 text-gray-500 cursor-not-allowed'
+                          }`}
                         >
-                          Streak auf {streakRestoreValue}W setzen
+                          {streakSaveState === 'saved' ? '✓ Gespeichert' : `Streak auf ${streakRestoreValue}W setzen`}
                         </button>
                         <button
-                          onClick={() => setStreakRestoreOpen(null)}
-                          className="px-4 bg-gray-700 text-gray-300 py-2 rounded-lg text-sm"
+                          onClick={() => {
+                            if (streakSaveState === 'dirty') { setStreakPendingClose(true); }
+                            else { setStreakRestoreOpen(null); setStreakSaveState('idle'); setStreakPendingClose(false); }
+                          }}
+                          className="px-4 bg-gray-700 text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-600 transition-all"
                         >
                           Abbrechen
                         </button>
@@ -2660,10 +2705,13 @@ export const InstructorView: React.FC = () => {
             await saveModuleSettings(contentModuleId, val);
           };
 
-          const TrainingAccordionHeader = ({ id, title, subtitle }: { id: string; title: string; subtitle: string }) => (
+          const TrainingAccordionHeader = ({ id, title, subtitle, onBeforeClose }: { id: string; title: string; subtitle: string; onBeforeClose?: () => boolean }) => (
             <button
               className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-700/20 transition-all"
-              onClick={() => togglePlattform(id)}
+              onClick={() => {
+                if (plattformOpen[id] && onBeforeClose && !onBeforeClose()) return;
+                togglePlattform(id);
+              }}
             >
               <div className="text-left">
                 <div className="text-sm font-semibold text-white">{title}</div>
@@ -2673,25 +2721,47 @@ export const InstructorView: React.FC = () => {
             </button>
           );
 
+          const TrainingUnsavedWarning = ({ onDiscard, onSave }: { onDiscard: () => void; onSave: () => void }) => (
+            <div className="mb-3 bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-3 py-2.5 flex items-center justify-between gap-3">
+              <span className="text-xs text-yellow-400">⚠ Nicht gespeicherte Änderungen</span>
+              <div className="flex gap-2 flex-shrink-0">
+                <button onClick={onDiscard} className="text-xs px-2.5 py-1 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all">Verwerfen</button>
+                <button onClick={onSave} className="text-xs px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-all">Speichern</button>
+              </div>
+            </div>
+          );
+
           return (
           <div className="space-y-3">
             {/* ── Modul-Reihenfolge ── */}
             <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
-              <TrainingAccordionHeader id="training_reihenfolge" title="Modul-Reihenfolge" subtitle="Drag & Drop — Reihenfolge und Block-Zuordnung ändern." />
+              <TrainingAccordionHeader id="training_reihenfolge" title="Modul-Reihenfolge" subtitle="Drag & Drop — Reihenfolge und Block-Zuordnung ändern."
+                onBeforeClose={() => {
+                  if (dndSaveState === 'dirty') { setDndPendingClose(true); return false; }
+                  setDndSaveState('idle'); setDndPendingClose(false); return true;
+                }}
+              />
               {plattformOpen['training_reihenfolge'] && (
               <div className="border-t border-gray-700/50 p-3">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-gray-500 text-xs">Ziehe Module per Drag & Drop innerhalb oder zwischen Blöcken.</span>
                 <button
+                  disabled={dndSaveState !== 'dirty'}
                   onClick={handleSave}
                   className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${
-                    dndSaved ? 'bg-green-700/40 text-green-400 cursor-default' : 'bg-red-600 hover:bg-red-500 text-white'
+                    dndSaveState === 'saved' ? 'bg-green-700/40 text-green-400 cursor-default' :
+                    dndSaveState === 'dirty' ? 'bg-red-600 hover:bg-red-500 text-white' :
+                    'bg-gray-700 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  {dndSaved ? '✓ Gespeichert' : 'Speichern'}
+                  {dndSaveState === 'saved' ? '✓ Gespeichert' : 'Speichern'}
                 </button>
               </div>
 
+              {dndPendingClose && <TrainingUnsavedWarning
+                onDiscard={() => { setDndPendingClose(false); setDndSaveState('idle'); togglePlattform('training_reihenfolge'); }}
+                onSave={() => { handleSave(); togglePlattform('training_reihenfolge'); }}
+              />}
               {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level').map(block => (
                 <div
                   key={block.id}
@@ -3018,10 +3088,13 @@ export const InstructorView: React.FC = () => {
 
           const joinUrl = typeof window !== 'undefined' ? `${window.location.origin}?join=true` : '';
 
-          const AccordionHeader = ({ id, title, subtitle, onClose }: { id: string; title: string; subtitle: string; onClose?: () => void }) => (
+          const AccordionHeader = ({ id, title, subtitle, onBeforeClose }: { id: string; title: string; subtitle: string; onBeforeClose?: () => boolean }) => (
             <button
               className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-700/20 transition-all"
-              onClick={() => { if (plattformOpen[id] && onClose) onClose(); togglePlattform(id); }}
+              onClick={() => {
+                if (plattformOpen[id] && onBeforeClose && !onBeforeClose()) return;
+                togglePlattform(id);
+              }}
             >
               <div className="text-left">
                 <div className="text-sm font-semibold text-white">{title}</div>
@@ -3029,6 +3102,16 @@ export const InstructorView: React.FC = () => {
               </div>
               <span className="text-gray-500 text-xs ml-3 flex-shrink-0">{plattformOpen[id] ? '▲' : '▼'}</span>
             </button>
+          );
+
+          const UnsavedWarning = ({ onDiscard, onSave }: { onDiscard: () => void; onSave: () => void }) => (
+            <div className="mx-4 mb-3 bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-3 py-2.5 flex items-center justify-between gap-3">
+              <span className="text-xs text-yellow-400">⚠ Nicht gespeicherte Änderungen</span>
+              <div className="flex gap-2 flex-shrink-0">
+                <button onClick={onDiscard} className="text-xs px-2.5 py-1 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all">Verwerfen</button>
+                <button onClick={onSave} className="text-xs px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-all">Speichern</button>
+              </div>
+            </div>
           );
 
           return (
@@ -3056,18 +3139,27 @@ export const InstructorView: React.FC = () => {
                   'Speichern';
                 return (
                   <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
-                    <AccordionHeader id="badges" title="Badge-Anzeige" subtitle="Zoom und Position pro Badge einstellen." onClose={() => setBadgeSaveState('idle')} />
+                    <AccordionHeader id="badges" title="Badge-Anzeige" subtitle="Zoom und Position pro Badge einstellen."
+                      onBeforeClose={() => {
+                        if (badgeSaveState === 'dirty') { setBadgePendingClose(true); return false; }
+                        setBadgeSaveState('idle'); setBadgePendingClose(false); return true;
+                      }}
+                    />
                     {plattformOpen['badges'] && (
                       <div className="border-t border-gray-700/50 px-4 py-4 space-y-4">
                         <div className="flex items-center justify-between gap-3">
-                          <button onClick={() => { const ni = (idxA - 1 + imageBadgesA.length) % imageBadgesA.length; const b = imageBadgesA[ni]; const s = getBadgeDisplaySettings(b.id); setBadgeEditId(b.id); setBadgeEditScale(s.scale); setBadgeEditPosX(s.posX); setBadgeEditPosY(s.posY); setBadgeSaveState('idle'); }} className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 text-sm flex items-center justify-center hover:bg-gray-600 flex-shrink-0" disabled={imageBadgesA.length <= 1}>←</button>
+                          <button onClick={() => { const ni = (idxA - 1 + imageBadgesA.length) % imageBadgesA.length; const b = imageBadgesA[ni]; const s = getBadgeDisplaySettings(b.id); setBadgeEditId(b.id); setBadgeEditScale(s.scale); setBadgeEditPosX(s.posX); setBadgeEditPosY(s.posY); setBadgeSaveState('idle'); setBadgePendingClose(false); }} className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 text-sm flex items-center justify-center hover:bg-gray-600 flex-shrink-0" disabled={imageBadgesA.length <= 1}>←</button>
                           <span className="text-sm text-white font-medium text-center">{badgeA.label}</span>
-                          <button onClick={() => { const ni = (idxA + 1) % imageBadgesA.length; const b = imageBadgesA[ni]; const s = getBadgeDisplaySettings(b.id); setBadgeEditId(b.id); setBadgeEditScale(s.scale); setBadgeEditPosX(s.posX); setBadgeEditPosY(s.posY); setBadgeSaveState('idle'); }} className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 text-sm flex items-center justify-center hover:bg-gray-600 flex-shrink-0" disabled={imageBadgesA.length <= 1}>→</button>
+                          <button onClick={() => { const ni = (idxA + 1) % imageBadgesA.length; const b = imageBadgesA[ni]; const s = getBadgeDisplaySettings(b.id); setBadgeEditId(b.id); setBadgeEditScale(s.scale); setBadgeEditPosX(s.posX); setBadgeEditPosY(s.posY); setBadgeSaveState('idle'); setBadgePendingClose(false); }} className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 text-sm flex items-center justify-center hover:bg-gray-600 flex-shrink-0" disabled={imageBadgesA.length <= 1}>→</button>
                         </div>
                         <div className="flex justify-center"><div className="w-20 h-20 rounded-full border-2 border-gray-600" style={previewStyleA} /></div>
-                        <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-400">Zoom</label><span className="text-xs text-gray-500">{Math.round(badgeEditScale * 100)}%</span></div><input type="range" min={100} max={250} step={1} value={Math.round(badgeEditScale * 100)} onChange={e => { setBadgeEditScale(Number(e.target.value) / 100); setBadgeSaveState('dirty'); }} className="w-full accent-red-500" /></div>
-                        <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-400">Position Horizontal</label><span className="text-xs text-gray-500">{badgeEditPosX}%</span></div><input type="range" min={0} max={100} step={1} value={badgeEditPosX} onChange={e => { setBadgeEditPosX(Number(e.target.value)); setBadgeSaveState('dirty'); }} className="w-full accent-red-500" /></div>
-                        <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-400">Position Vertikal</label><span className="text-xs text-gray-500">{badgeEditPosY}%</span></div><input type="range" min={0} max={100} step={1} value={badgeEditPosY} onChange={e => { setBadgeEditPosY(Number(e.target.value)); setBadgeSaveState('dirty'); }} className="w-full accent-red-500" /></div>
+                        <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-400">Zoom</label><span className="text-xs text-gray-500">{Math.round(badgeEditScale * 100)}%</span></div><input type="range" min={100} max={250} step={1} value={Math.round(badgeEditScale * 100)} onChange={e => { setBadgeEditScale(Number(e.target.value) / 100); setBadgeSaveState('dirty'); setBadgePendingClose(false); }} className="w-full accent-red-500" /></div>
+                        <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-400">Position Horizontal</label><span className="text-xs text-gray-500">{badgeEditPosX}%</span></div><input type="range" min={0} max={100} step={1} value={badgeEditPosX} onChange={e => { setBadgeEditPosX(Number(e.target.value)); setBadgeSaveState('dirty'); setBadgePendingClose(false); }} className="w-full accent-red-500" /></div>
+                        <div><div className="flex justify-between mb-1"><label className="text-xs text-gray-400">Position Vertikal</label><span className="text-xs text-gray-500">{badgeEditPosY}%</span></div><input type="range" min={0} max={100} step={1} value={badgeEditPosY} onChange={e => { setBadgeEditPosY(Number(e.target.value)); setBadgeSaveState('dirty'); setBadgePendingClose(false); }} className="w-full accent-red-500" /></div>
+                        {badgePendingClose && <UnsavedWarning
+                          onDiscard={() => { setBadgePendingClose(false); setBadgeSaveState('idle'); togglePlattform('badges'); }}
+                          onSave={() => { setBadgeDisplaySettings(badgeA.id, { scale: badgeEditScale, posX: badgeEditPosX, posY: badgeEditPosY }); setBadgePendingClose(false); setBadgeSaveState('idle'); togglePlattform('badges'); }}
+                        />}
                         <button disabled={badgeSaveState !== 'dirty'} onClick={() => { setBadgeDisplaySettings(badgeA.id, { scale: badgeEditScale, posX: badgeEditPosX, posY: badgeEditPosY }); setBadgeSaveState('saved'); }} className={`w-full py-2 rounded-lg text-sm font-semibold transition-all ${saveBtnClass}`}>{saveBtnLabel}</button>
                       </div>
                     )}
