@@ -592,14 +592,14 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
                 <div className="flex flex-wrap gap-3">
                   {earnedBadges.filter(b => b.imageUrl).map(badge => (
                     <div key={badge.id} className="flex flex-col items-center gap-1" title={badge.description}>
-                      <div className="w-14 h-14 rounded-full overflow-hidden">
+                      <div className="w-12 h-12 rounded-full overflow-hidden">
                         <img
                           src={badge.imageUrl}
                           alt={badge.label}
                           className="w-full h-full object-cover scale-[1.55]"
                         />
                       </div>
-                      <span className="text-[10px] text-gray-400 text-center max-w-[60px] leading-tight">{badge.label}</span>
+                      <span className="text-[10px] text-gray-400 text-center leading-tight whitespace-nowrap">{badge.label}</span>
                     </div>
                   ))}
                 </div>
