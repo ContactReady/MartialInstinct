@@ -22,9 +22,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
 
   // Profilbild-Editor State
   const [imgDraft, setImgDraft] = useState<string | null>(null);
-  const [imgScale, setImgScale] = useState(1.0);
-  const [imgPosX, setImgPosX] = useState(50);
-  const [imgPosY, setImgPosY] = useState(50);
+  const [imgScale, setImgScale] = useState(150);
+  const [imgPosX, setImgPosX] = useState(150);
+  const [imgPosY, setImgPosY] = useState(150);
 
   const badges = computeBadges(member);
   const recentSessions = getSessionsForMember(member.id)
@@ -164,8 +164,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
                 className={`relative w-24 h-24 rounded-full overflow-hidden border-4 border-gray-700 ${canEditImage ? 'cursor-pointer' : ''}`}
                 style={member.profileImageUrl ? {
                   backgroundImage: `url(${member.profileImageUrl})`,
-                  backgroundSize: `${Math.round(displaySettings.scale * 100)}%`,
-                  backgroundPosition: `${displaySettings.posX}% ${displaySettings.posY}%`,
+                  backgroundSize: `${displaySettings.scale}%`,
+                  backgroundPosition: `${displaySettings.posX / 3}% ${displaySettings.posY / 3}%`,
                   backgroundRepeat: 'no-repeat',
                   backgroundColor: '#fff',
                 } : {}}
@@ -198,8 +198,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
               <div className="flex justify-center">
                 <div className="w-24 h-24 rounded-full border-4 border-red-500" style={{
                   backgroundImage: `url(${imgDraft})`,
-                  backgroundSize: `${Math.round(imgScale * 100)}%`,
-                  backgroundPosition: `${imgPosX}% ${imgPosY}%`,
+                  backgroundSize: `${imgScale}%`,
+                  backgroundPosition: `${imgPosX / 3}% ${imgPosY / 3}%`,
                   backgroundRepeat: 'no-repeat',
                   backgroundColor: '#fff',
                 }} />
@@ -208,23 +208,23 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
                 <div>
                   <div className="flex justify-between mb-1">
                     <label className="text-xs text-gray-400">Zoom</label>
-                    <span className="text-xs text-gray-500">{Math.round(imgScale * 100)}%</span>
+                    <span className="text-xs text-gray-500">{imgScale}%</span>
                   </div>
-                  <input type="range" min={100} max={250} step={1} value={Math.round(imgScale * 100)} onChange={e => setImgScale(Number(e.target.value) / 100)} className="w-full accent-red-500" />
+                  <input type="range" min={0} max={300} step={1} value={imgScale} onChange={e => setImgScale(Number(e.target.value))} className="w-full accent-red-500" />
                 </div>
                 <div>
                   <div className="flex justify-between mb-1">
                     <label className="text-xs text-gray-400">Position Horizontal</label>
-                    <span className="text-xs text-gray-500">{imgPosX}%</span>
+                    <span className="text-xs text-gray-500">{imgPosX}</span>
                   </div>
-                  <input type="range" min={0} max={100} step={1} value={imgPosX} onChange={e => setImgPosX(Number(e.target.value))} className="w-full accent-red-500" />
+                  <input type="range" min={0} max={300} step={1} value={imgPosX} onChange={e => setImgPosX(Number(e.target.value))} className="w-full accent-red-500" />
                 </div>
                 <div>
                   <div className="flex justify-between mb-1">
                     <label className="text-xs text-gray-400">Position Vertikal</label>
-                    <span className="text-xs text-gray-500">{imgPosY}%</span>
+                    <span className="text-xs text-gray-500">{imgPosY}</span>
                   </div>
-                  <input type="range" min={0} max={100} step={1} value={imgPosY} onChange={e => setImgPosY(Number(e.target.value))} className="w-full accent-red-500" />
+                  <input type="range" min={0} max={300} step={1} value={imgPosY} onChange={e => setImgPosY(Number(e.target.value))} className="w-full accent-red-500" />
                 </div>
               </div>
               <div className="flex gap-2">

@@ -525,8 +525,8 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
         {(() => { const ps = getProfileImgSettings(currentUser.id); return currentUser.profileImageUrl ? (
           <div className="w-10 h-10 rounded-full border border-gray-700 flex-shrink-0" style={{
             backgroundImage: `url(${currentUser.profileImageUrl})`,
-            backgroundSize: `${Math.round(ps.scale * 100)}%`,
-            backgroundPosition: `${ps.posX}% ${ps.posY}%`,
+            backgroundSize: `${ps.scale}%`,
+            backgroundPosition: `${ps.posX / 3}% ${ps.posY / 3}%`,
             backgroundRepeat: 'no-repeat',
             backgroundColor: '#fff',
           }} />
@@ -925,8 +925,8 @@ const AppContent: React.FC = () => {
                 {(() => { const ps = getProfileImgSettings(currentUser.id); return currentUser.profileImageUrl ? (
                   <div className="w-6 h-6 rounded-full flex-shrink-0" style={{
                     backgroundImage: `url(${currentUser.profileImageUrl})`,
-                    backgroundSize: `${Math.round(ps.scale * 100)}%`,
-                    backgroundPosition: `${ps.posX}% ${ps.posY}%`,
+                    backgroundSize: `${ps.scale}%`,
+                    backgroundPosition: `${ps.posX / 3}% ${ps.posY / 3}%`,
                     backgroundRepeat: 'no-repeat',
                     backgroundColor: '#fff',
                   }} />

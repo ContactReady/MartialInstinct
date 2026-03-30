@@ -1933,7 +1933,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const PROFILE_IMG_KEY = 'mi_profile_img_display';
   const getProfileImgSettings = (memberId: string): { scale: number; posX: number; posY: number } => {
     const all: Record<string, { scale: number; posX: number; posY: number }> = JSON.parse(localStorage.getItem(PROFILE_IMG_KEY) || '{}');
-    return all[memberId] ?? { scale: 1.0, posX: 50, posY: 50 };
+    return all[memberId] ?? { scale: 150, posX: 150, posY: 150 };
   };
   const setProfileImgSettings = (memberId: string, settings: { scale: number; posX: number; posY: number }): void => {
     const all: Record<string, { scale: number; posX: number; posY: number }> = JSON.parse(localStorage.getItem(PROFILE_IMG_KEY) || '{}');
