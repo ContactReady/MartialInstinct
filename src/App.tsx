@@ -466,7 +466,7 @@ interface UserDropdownProps {
 }
 
 const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onClose }) => {
-  const { currentUser, members, switchUser, logout, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference, updateProfile, updateAnzeigename, updateDataVisibility, updateMemberCoreData, computeBadges, getBadgeDisplaySettings } = useApp();
+  const { currentUser, members, switchUser, logout, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference, updateProfile, updateAnzeigename, updateDataVisibility, updateMemberCoreData, computeBadges, getBadgeDisplaySettings, getProfileImgSettings } = useApp();
   const [badgesOpen, setBadgesOpen] = useState(false);
   const [designOpen, setDesignOpen] = useState(false);
   const [persoenlichOpen, setPersoenlichOpen] = useState(false);
@@ -542,13 +542,15 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
 
       {/* User Info */}
       <div className="px-4 py-3 border-b border-gray-800 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-white border border-gray-700 overflow-hidden flex-shrink-0">
-          <img
-            src={currentUser.profileImageUrl || '/logos/mi-icon.jpg'}
-            alt=""
-            className="w-full h-full object-cover"
-          />
-        </div>
+        {(() => { const ps = getProfileImgSettings(currentUser.id); return (
+          <div className="w-10 h-10 rounded-full border border-gray-700 flex-shrink-0" style={{
+            backgroundImage: `url(${currentUser.profileImageUrl || '/logos/mi-icon.jpg'})`,
+            backgroundSize: `${Math.round(ps.scale * 100)}%`,
+            backgroundPosition: `${ps.posX}% ${ps.posY}%`,
+            backgroundRepeat: 'no-repeat',
+            backgroundColor: '#fff',
+          }} />
+        );})()}
         <div className="min-w-0">
           <div className="text-white font-semibold text-sm truncate">{currentUser.name}</div>
           <span className={`text-xs font-medium ${roleInfo.color}`}>{roleInfo.label}</span>
@@ -861,7 +863,7 @@ function playNotificationSound() {
 }
 
 const AppContent: React.FC = () => {
-  const { currentUser, login, darkMode, notifications } = useApp();
+  const { currentUser, login, darkMode, notifications, getProfileImgSettings } = useApp();
   const [viewMode, setViewMode] = useState<'member' | 'instructor'>('member');
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -948,13 +950,15 @@ const AppContent: React.FC = () => {
                 onClick={() => { setShowUserDropdown(v => !v); setShowNotifications(false); }}
                 className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl px-2 py-1.5 transition-colors"
               >
-                <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-sm overflow-hidden flex-shrink-0">
-                  <img
-                    src={currentUser.profileImageUrl || '/logos/mi-icon.jpg'}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                {(() => { const ps = getProfileImgSettings(currentUser.id); return (
+                  <div className="w-6 h-6 rounded-full flex-shrink-0" style={{
+                    backgroundImage: `url(${currentUser.profileImageUrl || '/logos/mi-icon.jpg'})`,
+                    backgroundSize: `${Math.round(ps.scale * 100)}%`,
+                    backgroundPosition: `${ps.posX}% ${ps.posY}%`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundColor: '#fff',
+                  }} />
+                );})()}
                 <span className="text-white text-xs font-medium hidden sm:block max-w-[80px] truncate">{currentUser.name.split(' ')[0]}</span>
                 <span className="text-gray-400 text-xs">▾</span>
               </button>

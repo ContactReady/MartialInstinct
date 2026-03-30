@@ -2,7 +2,7 @@
 // PROFIL-ANSICHT — Member & Instructor
 // ============================================
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Member, ROLE_DISPLAY, LEVEL_DISPLAY } from '../../types';
 import { MODULES } from '../../data/modules';
@@ -14,11 +14,17 @@ interface ProfileViewProps {
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = false, onClose }) => {
-  const { currentUser, updateProfileImage, computeBadges, getSessionsForMember, getBadgeDisplaySettings } = useApp();
+  const { currentUser, updateProfileImage, computeBadges, getSessionsForMember, getBadgeDisplaySettings, getProfileImgSettings, setProfileImgSettings } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isOwnProfile = currentUser?.id === member.id;
   const canEditImage = isOwnProfile;
+
+  // Profilbild-Editor State
+  const [imgDraft, setImgDraft] = useState<string | null>(null);
+  const [imgScale, setImgScale] = useState(1.0);
+  const [imgPosX, setImgPosX] = useState(50);
+  const [imgPosY, setImgPosY] = useState(50);
 
   const badges = computeBadges(member);
   const recentSessions = getSessionsForMember(member.id)
@@ -49,7 +55,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
   );
 
   const handleImageClick = () => {
-    if (canEditImage) fileInputRef.current?.click();
+    if (canEditImage && !imgDraft) fileInputRef.current?.click();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,10 +63,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      updateProfileImage(reader.result as string);
+      const saved = getProfileImgSettings(member.id);
+      setImgDraft(reader.result as string);
+      setImgScale(saved.scale);
+      setImgPosX(saved.posX);
+      setImgPosY(saved.posY);
     };
     reader.readAsDataURL(file);
+    e.target.value = '';
   };
+
+  const handleSaveImage = () => {
+    if (!imgDraft) return;
+    updateProfileImage(imgDraft);
+    setProfileImgSettings(member.id, { scale: imgScale, posX: imgPosX, posY: imgPosY });
+    setImgDraft(null);
+  };
+
+  const handleCancelImage = () => {
+    setImgDraft(null);
+  };
+
+  // Aktuelle Anzeigeeinstellungen (gespeichert oder Default)
+  const displaySettings = getProfileImgSettings(member.id);
+  const displayUrl = member.profileImageUrl || '/logos/mi-icon.jpg';
 
   const roleInfo = ROLE_DISPLAY[member.role];
   const levelInfo = LEVEL_DISPLAY[member.currentLevel];
@@ -124,29 +150,69 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
         {/* Hero — Bild + Name */}
         <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 px-6 pt-6 pb-5 flex flex-col items-center">
           {/* Avatar / Foto */}
-          <div
-            className={`relative w-24 h-24 rounded-full overflow-hidden border-4 border-gray-700 bg-white flex items-center justify-center text-5xl ${canEditImage ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
-            onClick={handleImageClick}
-          >
-            <img
-              src={member.profileImageUrl || '/logos/mi-icon.jpg'}
-              alt="Profil"
-              className="w-full h-full object-cover"
-            />
-            {canEditImage && (
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                <span className="text-white text-2xl">📷</span>
+          {!imgDraft ? (
+            <>
+              <div
+                className={`relative w-24 h-24 rounded-full overflow-hidden border-4 border-gray-700 ${canEditImage ? 'cursor-pointer' : ''}`}
+                style={{
+                  backgroundImage: `url(${displayUrl})`,
+                  backgroundSize: `${Math.round(displaySettings.scale * 100)}%`,
+                  backgroundPosition: `${displaySettings.posX}% ${displaySettings.posY}%`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundColor: '#fff',
+                }}
+                onClick={handleImageClick}
+              >
+                {canEditImage && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full">
+                    <span className="text-white text-2xl">📷</span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          {canEditImage && (
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+              {canEditImage && (
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+              )}
+            </>
+          ) : (
+            /* ── Profilbild-Editor ── */
+            <div className="w-full space-y-3">
+              <div className="flex justify-center">
+                <div className="w-24 h-24 rounded-full border-4 border-red-500" style={{
+                  backgroundImage: `url(${imgDraft})`,
+                  backgroundSize: `${Math.round(imgScale * 100)}%`,
+                  backgroundPosition: `${imgPosX}% ${imgPosY}%`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundColor: '#fff',
+                }} />
+              </div>
+              <div className="space-y-2">
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <label className="text-xs text-gray-400">Zoom</label>
+                    <span className="text-xs text-gray-500">{Math.round(imgScale * 100)}%</span>
+                  </div>
+                  <input type="range" min={100} max={250} step={1} value={Math.round(imgScale * 100)} onChange={e => setImgScale(Number(e.target.value) / 100)} className="w-full accent-red-500" />
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <label className="text-xs text-gray-400">Position Horizontal</label>
+                    <span className="text-xs text-gray-500">{imgPosX}%</span>
+                  </div>
+                  <input type="range" min={0} max={100} step={1} value={imgPosX} onChange={e => setImgPosX(Number(e.target.value))} className="w-full accent-red-500" />
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <label className="text-xs text-gray-400">Position Vertikal</label>
+                    <span className="text-xs text-gray-500">{imgPosY}%</span>
+                  </div>
+                  <input type="range" min={0} max={100} step={1} value={imgPosY} onChange={e => setImgPosY(Number(e.target.value))} className="w-full accent-red-500" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={handleSaveImage} className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-xl text-sm font-semibold transition-all">Speichern</button>
+                <button onClick={handleCancelImage} className="px-4 bg-gray-700 text-gray-300 py-2 rounded-xl text-sm hover:bg-gray-600 transition-all">Abbrechen</button>
+              </div>
+            </div>
           )}
 
           {/* Name + Rang */}

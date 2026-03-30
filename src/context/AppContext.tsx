@@ -201,6 +201,8 @@ interface AppContextType {
   setBadgeScale: (badgeId: string, scale: number) => void;
   getBadgeDisplaySettings: (badgeId: string) => { scale: number; posX: number; posY: number };
   setBadgeDisplaySettings: (badgeId: string, settings: { scale: number; posX: number; posY: number }) => void;
+  getProfileImgSettings: (memberId: string) => { scale: number; posX: number; posY: number };
+  setProfileImgSettings: (memberId: string, settings: { scale: number; posX: number; posY: number }) => void;
   getMemberById: (id: string) => Member | undefined;
   getCheckedInMembers: () => Member[];
   getOnlineMembers: () => Member[];
@@ -1922,6 +1924,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const BADGE_SCALES_KEY = 'mi_badge_scales';
   const BADGE_DISPLAY_KEY = 'mi_badge_display';
+  const PROFILE_IMG_KEY = 'mi_profile_img_display';
+  const getProfileImgSettings = (memberId: string): { scale: number; posX: number; posY: number } => {
+    const all: Record<string, { scale: number; posX: number; posY: number }> = JSON.parse(localStorage.getItem(PROFILE_IMG_KEY) || '{}');
+    return all[memberId] ?? { scale: 1.0, posX: 50, posY: 50 };
+  };
+  const setProfileImgSettings = (memberId: string, settings: { scale: number; posX: number; posY: number }): void => {
+    const all: Record<string, { scale: number; posX: number; posY: number }> = JSON.parse(localStorage.getItem(PROFILE_IMG_KEY) || '{}');
+    all[memberId] = settings;
+    localStorage.setItem(PROFILE_IMG_KEY, JSON.stringify(all));
+  };
   const getBadgeScale = (badgeId: string): number => {
     return getBadgeDisplaySettings(badgeId).scale;
   };
@@ -2034,6 +2046,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setBadgeScale,
     getBadgeDisplaySettings,
     setBadgeDisplaySettings,
+    getProfileImgSettings,
+    setProfileImgSettings,
     getMemberById,
     getCheckedInMembers,
     getOnlineMembers,
