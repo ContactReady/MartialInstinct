@@ -940,7 +940,7 @@ const AppContent: React.FC = () => {
           />
 
           {/* Search */}
-          <div ref={searchRef} className="relative flex-1 max-w-[200px] mx-2">
+          <div ref={searchRef} className="relative flex-1 max-w-[120px] mx-2">
             <div className="flex items-center bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
               <input
                 type="text"
