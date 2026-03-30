@@ -2299,12 +2299,15 @@ export const InstructorView: React.FC = () => {
               return (
                 <div key={m.id} className="overflow-hidden">
                   <div className="flex items-center gap-3 px-4 py-3">
-                    <div className="w-9 h-9 rounded-full bg-white border border-gray-600 flex-shrink-0 overflow-hidden">
+                    <button
+                      onClick={() => setProfileMember(m)}
+                      className="w-9 h-9 rounded-full bg-white border border-gray-600 flex-shrink-0 overflow-hidden hover:ring-2 hover:ring-red-500/50 transition-all"
+                    >
                       <img src={m.profileImageUrl || '/logos/mi-icon.jpg'} alt="" className="w-full h-full object-cover" />
-                    </div>
+                    </button>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-white font-semibold text-sm">{m.name}</span>
+                        <button onClick={() => setProfileMember(m)} className="text-white font-semibold text-sm hover:text-red-400 transition-colors">{m.name}</button>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${roleInfo.bgColor} ${roleInfo.color}`}>
                           {roleInfo.label}
                         </span>
