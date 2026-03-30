@@ -183,9 +183,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
               {canEditImage && (
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
               )}
-              {canEditImage && (
+              {canEditImage && member.profileImageUrl && (
                 <button
-                  onClick={member.profileImageUrl ? handleEditExisting : handleImageClick}
+                  onClick={handleEditExisting}
                   className="text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-gray-700/50 mt-2"
                 >
                   ✏️ Bild bearbeiten

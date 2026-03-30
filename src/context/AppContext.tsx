@@ -357,7 +357,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const member = members.find(m => m.email === email && m.password === password);
     if (member) {
       const now = new Date();
-      const online = { ...member, onlineSince: now, lastSeenAt: now };
+      const stored: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
+      const savedImg = stored[member.id];
+      const online = { ...member, onlineSince: now, lastSeenAt: now, ...(savedImg ? { profileImageUrl: savedImg } : {}) };
       setMembers(prev => prev.map(m => m.id === member.id ? online : m));
       setCurrentUser(online);
       return true;
@@ -1324,8 +1326,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(prev => prev ? { ...prev, email, password } : null);
   }, [currentUser]);
 
+  const PROFILE_IMG_URL_KEY = 'mi_profile_img_url';
   const updateProfileImage = useCallback((base64: string) => {
     if (!currentUser) return;
+    const stored: Record<string, string> = JSON.parse(localStorage.getItem(PROFILE_IMG_URL_KEY) || '{}');
+    stored[currentUser.id] = base64;
+    localStorage.setItem(PROFILE_IMG_URL_KEY, JSON.stringify(stored));
     setMembers(prev => prev.map(m =>
       m.id === currentUser.id ? { ...m, profileImageUrl: base64 } : m
     ));
