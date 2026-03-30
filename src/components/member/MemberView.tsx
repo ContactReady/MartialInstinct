@@ -382,7 +382,7 @@ export const MemberView: React.FC = () => {
 
             {/* Trainingspartner-Kachel */}
             <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4 space-y-3">
-              <p className="text-gray-500 text-xs uppercase tracking-wider">Trainingspartner</p>
+              <p className="text-gray-500 text-xs uppercase tracking-wider">Verbinden</p>
 
               {/* Code generieren Button */}
               <button
@@ -463,7 +463,7 @@ export const MemberView: React.FC = () => {
                 disabled={!/^[A-Z0-9-]{6,}$/.test(connectCode)}
                 className="w-full py-2.5 rounded-lg font-semibold text-sm transition-all disabled:bg-gray-700 disabled:text-gray-500 bg-red-600 hover:bg-red-500 text-white"
               >
-                Verbinden
+                Trainingspartner
               </button>
 
               {/* Feedback */}
