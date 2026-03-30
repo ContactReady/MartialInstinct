@@ -210,7 +210,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
                       <img
                         src={badge.imageUrl}
                         alt={badge.label}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover scale-[1.3]"
                       />
                     </div>
                     <span className="text-[10px] text-gray-400 text-center leading-tight max-w-[72px]">{badge.label}</span>
