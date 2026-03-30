@@ -887,17 +887,9 @@ const AppContent: React.FC = () => {
             className="h-8 w-auto object-contain flex-shrink-0"
           />
 
-          {/* Center: Streak + Gesamt-XP */}
+          {/* Center: Level */}
           <div className="flex items-center gap-3 flex-1 justify-center">
-            <span className="flex items-center gap-1 text-orange-400 font-bold text-xs sm:text-sm">
-              🔥 <span>{currentUser.streak.currentStreak}W</span>
-            </span>
-            <span className="w-px h-3 bg-gray-700 flex-shrink-0" />
-            <span className="flex items-center gap-1 text-yellow-400 font-bold text-xs sm:text-sm">
-              ⚡ <span>{currentUser.xp ?? 0} XP</span>
-            </span>
-            <span className="w-px h-3 bg-gray-700 flex-shrink-0 hidden sm:block" />
-            <span className={`text-xs font-semibold hidden sm:block ${LEVEL_DISPLAY[currentUser.currentLevel].color}`}>
+            <span className={`text-xs font-semibold ${LEVEL_DISPLAY[currentUser.currentLevel].color}`}>
               {LEVEL_DISPLAY[currentUser.currentLevel].icon} {LEVEL_DISPLAY[currentUser.currentLevel].name}
             </span>
           </div>
