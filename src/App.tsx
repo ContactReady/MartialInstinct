@@ -596,7 +596,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
                         <img
                           src={badge.imageUrl}
                           alt={badge.label}
-                          className="w-full h-full object-cover scale-[1.3]"
+                          className="w-full h-full object-cover scale-[1.55]"
                         />
                       </div>
                       <span className="text-[10px] text-gray-400 text-center max-w-[60px] leading-tight">{badge.label}</span>
