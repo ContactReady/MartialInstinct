@@ -927,6 +927,7 @@ const AppContent: React.FC = () => {
             {/* Avatar Button → User Dropdown */}
             <div className="relative">
               <button
+                onMouseDown={e => e.stopPropagation()}
                 onClick={() => { setShowUserDropdown(v => !v); setShowNotifications(false); }}
                 className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl px-2 py-1.5 transition-colors"
               >
