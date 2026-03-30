@@ -33,7 +33,8 @@ export const MemberView: React.FC = () => {
     getPendingBuddyRequests,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [activeTab, setActiveTab] = useState<Tab>(() => (localStorage.getItem('mi_active_tab_member') as Tab) || 'dashboard');
+  const setActiveTabPersisted = (tab: Tab) => { setActiveTab(tab); localStorage.setItem('mi_active_tab_member', tab); };
   const [showApplicationModal, setShowApplicationModal] = useState<ApplicationType>(null);
   const [communitySubTab, setCommunitySubTab] = useState<'online' | 'training' | 'mitglieder' | 'rangliste'>('online');
   const [connectCode, setConnectCode] = useState('');
@@ -741,7 +742,7 @@ export const MemberView: React.FC = () => {
             return (
               <button
                 key={tab.id}
-                onClick={() => { if (tabEnabled) setActiveTab(tab.id); }}
+                onClick={() => { if (tabEnabled) setActiveTabPersisted(tab.id); }}
                 className={`flex-1 py-3 flex flex-col items-center gap-0.5 transition-all relative ${
                   !tabEnabled ? 'opacity-30 cursor-not-allowed'
                     : activeTab === tab.id ? 'text-white' : 'text-gray-500 hover:text-gray-300'

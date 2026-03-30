@@ -113,7 +113,8 @@ export const InstructorView: React.FC = () => {
     computeBadges,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [activeTab, setActiveTab] = useState<Tab>(() => (localStorage.getItem('mi_active_tab_instructor') as Tab) || 'dashboard');
+  const setActiveTabPersisted = (tab: Tab) => { setActiveTab(tab); localStorage.setItem('mi_active_tab_instructor', tab); };
   const [dashboardSubTab, setDashboardSubTab] = useState<DashboardSubTab>('fortschritt');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
@@ -3349,7 +3350,7 @@ export const InstructorView: React.FC = () => {
                 key={tab.id}
                 onClick={() => {
                   if (!tabEnabled) return; // deaktivierte Tabs nicht klickbar
-                  setActiveTab(tab.id);
+                  setActiveTabPersisted(tab.id);
                   if (tab.id !== 'dashboard') {
                     setSelectedMember(null);
                     setSelectedModule(null);
