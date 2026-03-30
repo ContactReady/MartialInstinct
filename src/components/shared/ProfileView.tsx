@@ -219,9 +219,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
           <div className="mt-3 text-center">
             <h2 className="text-xl font-bold text-white">{member.name}</h2>
             <div className="flex items-center justify-center gap-2 mt-1 flex-wrap">
-              <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${roleInfo.bgColor} ${roleInfo.color}`}>
-                {roleInfo.label}
-              </span>
+              {member.role !== 'admin' && (
+                <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${roleInfo.bgColor} ${roleInfo.color}`}>
+                  {roleInfo.label}
+                </span>
+              )}
               <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${levelInfo.bgColor} ${levelInfo.color}`}>
                 {levelInfo.icon} {levelInfo.name}
               </span>
