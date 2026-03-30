@@ -948,7 +948,7 @@ const AppContent: React.FC = () => {
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
                 placeholder="Suchen..."
-                className="flex-1 bg-transparent text-white text-xs px-3 py-1.5 focus:outline-none placeholder-gray-500"
+                className="flex-1 bg-transparent text-white text-xs px-3 py-1.5 focus:outline-none placeholder-gray-500" style={{ fontSize: '16px' }}
               />
               <button onClick={handleSearch} className="px-2 py-1.5 text-gray-400 hover:text-white transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
