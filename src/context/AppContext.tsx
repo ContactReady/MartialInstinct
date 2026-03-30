@@ -199,6 +199,8 @@ interface AppContextType {
 
   getBadgeScale: (badgeId: string) => number;
   setBadgeScale: (badgeId: string, scale: number) => void;
+  getBadgeDisplaySettings: (badgeId: string) => { scale: number; posX: number; posY: number };
+  setBadgeDisplaySettings: (badgeId: string, settings: { scale: number; posX: number; posY: number }) => void;
   getMemberById: (id: string) => Member | undefined;
   getCheckedInMembers: () => Member[];
   getOnlineMembers: () => Member[];
@@ -1919,13 +1921,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const BADGE_SCALES_KEY = 'mi_badge_scales';
+  const BADGE_DISPLAY_KEY = 'mi_badge_display';
   const getBadgeScale = (badgeId: string): number => {
-    const scales: Record<string, number> = JSON.parse(localStorage.getItem(BADGE_SCALES_KEY) || '{}');
-    return scales[badgeId] ?? 1.15;
+    return getBadgeDisplaySettings(badgeId).scale;
   };
   const setBadgeScale = (badgeId: string, scale: number): void => {
+    const s = getBadgeDisplaySettings(badgeId);
+    setBadgeDisplaySettings(badgeId, { ...s, scale: Math.round(scale * 100) / 100 });
+  };
+  const getBadgeDisplaySettings = (badgeId: string): { scale: number; posX: number; posY: number } => {
+    const all: Record<string, { scale: number; posX: number; posY: number }> = JSON.parse(localStorage.getItem(BADGE_DISPLAY_KEY) || '{}');
+    return all[badgeId] ?? { scale: 1.15, posX: 50, posY: 50 };
+  };
+  const setBadgeDisplaySettings = (badgeId: string, settings: { scale: number; posX: number; posY: number }): void => {
+    const all: Record<string, { scale: number; posX: number; posY: number }> = JSON.parse(localStorage.getItem(BADGE_DISPLAY_KEY) || '{}');
+    all[badgeId] = settings;
+    localStorage.setItem(BADGE_DISPLAY_KEY, JSON.stringify(all));
+    // Legacy key sync
     const scales: Record<string, number> = JSON.parse(localStorage.getItem(BADGE_SCALES_KEY) || '{}');
-    scales[badgeId] = Math.round(scale * 100) / 100;
+    scales[badgeId] = settings.scale;
     localStorage.setItem(BADGE_SCALES_KEY, JSON.stringify(scales));
   };
 
@@ -2018,6 +2032,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     getBuddies,
     getBadgeScale,
     setBadgeScale,
+    getBadgeDisplaySettings,
+    setBadgeDisplaySettings,
     getMemberById,
     getCheckedInMembers,
     getOnlineMembers,
