@@ -548,13 +548,13 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
           <div className="flex bg-gray-800 rounded-lg p-1 gap-1">
             <button
               onClick={() => { setViewMode('member'); onClose(); }}
-              className={`flex-1 py-1.5 rounded text-xs font-medium transition-colors ${viewMode === 'member' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`flex-1 py-1.5 rounded text-xs font-medium transition-colors ${viewMode === 'member' ? 'bg-gray-600 text-white' : 'text-gray-400 hover:text-white'}`}
             >
               👤 Member
             </button>
             <button
               onClick={() => { setViewMode('instructor'); onClose(); }}
-              className={`flex-1 py-1.5 rounded text-xs font-medium transition-colors ${viewMode === 'instructor' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`flex-1 py-1.5 rounded text-xs font-medium transition-colors ${viewMode === 'instructor' ? 'bg-gray-600 text-white' : 'text-gray-400 hover:text-white'}`}
             >
               🥋 Instructor
             </button>

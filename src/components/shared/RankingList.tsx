@@ -108,7 +108,7 @@ export const RankingList: React.FC<RankingListProps> = ({
     <button
       onClick={() => setSortKey(k)}
       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-        sortKey === k ? 'bg-red-600 text-white' : 'bg-gray-700/60 text-gray-400 hover:text-white'
+        sortKey === k ? 'bg-gray-600 text-white' : 'bg-gray-700/60 text-gray-400 hover:text-white'
       }`}
     >
       {label}
@@ -137,7 +137,7 @@ export const RankingList: React.FC<RankingListProps> = ({
           return (
             <button key={k} onClick={() => setFilterKey(k)}
               className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                filterKey === k ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'
+                filterKey === k ? 'bg-gray-600 text-white' : 'text-gray-400 hover:text-white'
               }`}
             >
               {labels[k]}
