@@ -463,7 +463,7 @@ export const MemberView: React.FC = () => {
                 disabled={!/^[A-Z0-9-]{6,}$/.test(connectCode)}
                 className="w-full py-2.5 rounded-lg font-semibold text-sm transition-all disabled:bg-gray-700 disabled:text-gray-500 bg-red-600 hover:bg-red-500 text-white"
               >
-                Trainingspartner
+                Verbinden
               </button>
 
               {/* Feedback */}
@@ -479,12 +479,11 @@ export const MemberView: React.FC = () => {
             {/* Verbundene Mitglieder */}
             <div>
               <p className="text-gray-500 text-xs uppercase tracking-wider px-1 mb-2">
-                Verbindungen ({connectedMembers.length})
+                Trainingspartner ({connectedMembers.length})
               </p>
               {connectedMembers.length === 0 ? (
                 <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-6 text-center">
                   <p className="text-gray-500 text-sm">Noch keine Verbindungen</p>
-                  <p className="text-gray-600 text-xs mt-1">Tauscht im Training eure Codes aus.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
