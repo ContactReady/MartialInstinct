@@ -47,7 +47,7 @@ export const MEMBERS: Member[] = [
   {
     id: 'admin-jay',
     name: 'Jay',
-    email: 'jay@martialinstinct.de',
+    email: 'jay@martial-instinct.de',
     password: '#Underc0ver',
     avatar: '👑',
     role: 'admin',
