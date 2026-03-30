@@ -483,7 +483,7 @@ export const MemberView: React.FC = () => {
               </p>
               {connectedMembers.length === 0 ? (
                 <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-6 text-center">
-                  <p className="text-gray-500 text-sm">Noch keine Verbindungen</p>
+                  <p className="text-gray-500 text-sm">Noch keine Trainingspartner</p>
                 </div>
               ) : (
                 <div className="space-y-2">
