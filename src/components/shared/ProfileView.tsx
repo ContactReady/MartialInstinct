@@ -200,31 +200,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
           </div>
 
           {/* Abzeichen */}
-          {badges.length > 0 && (
+          {badges.filter(b => b.imageUrl).length > 0 && (
             <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
               <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Abzeichen</div>
-              <div className="flex flex-wrap gap-3">
-                {badges.map(badge => (
-                  badge.imageUrl ? (
-                    <div key={badge.id} className="flex flex-col items-center gap-1.5" title={badge.description}>
+              <div className="flex flex-wrap gap-4">
+                {badges.filter(b => b.imageUrl).map(badge => (
+                  <div key={badge.id} className="flex flex-col items-center gap-1.5" title={badge.description}>
+                    <div className="w-16 h-16 rounded-full overflow-hidden">
                       <img
                         src={badge.imageUrl}
                         alt={badge.label}
-                        className="w-16 h-16 object-contain"
-                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        className="w-full h-full object-cover"
                       />
-                      <span className="text-[10px] text-gray-400 text-center leading-tight max-w-[72px]">{badge.label}</span>
                     </div>
-                  ) : (
-                    <div
-                      key={badge.id}
-                      title={badge.description}
-                      className="flex items-center gap-1.5 bg-gray-700/80 border border-gray-600 rounded-full px-3 py-1.5"
-                    >
-                      <span className="text-base">{badge.icon}</span>
-                      <span className="text-xs font-medium text-gray-200">{badge.label}</span>
-                    </div>
-                  )
+                    <span className="text-[10px] text-gray-400 text-center leading-tight max-w-[72px]">{badge.label}</span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -303,7 +293,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
           )}
 
           {/* Leerer Zustand für badges */}
-          {badges.length === 0 && passedTechniques.length === 0 && (
+          {badges.filter(b => b.imageUrl).length === 0 && passedTechniques.length === 0 && (
             <div className="text-center py-8 text-gray-500">
               <div className="text-4xl mb-2">🥋</div>
               <p className="text-sm">Noch keine Abzeichen oder Prüfungen</p>

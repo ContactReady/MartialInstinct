@@ -590,23 +590,17 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
                 <p className="text-xs text-gray-500">Noch keine Abzeichen verdient. Absolviere Prüfungen um Badges freizuschalten.</p>
               ) : (
                 <div className="flex flex-wrap gap-3">
-                  {earnedBadges.map(badge => (
-                    badge.imageUrl ? (
-                      <div key={badge.id} className="flex flex-col items-center gap-1" title={badge.description}>
+                  {earnedBadges.filter(b => b.imageUrl).map(badge => (
+                    <div key={badge.id} className="flex flex-col items-center gap-1" title={badge.description}>
+                      <div className="w-14 h-14 rounded-full overflow-hidden">
                         <img
                           src={badge.imageUrl}
                           alt={badge.label}
-                          className="w-14 h-14 object-contain"
-                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          className="w-full h-full object-cover"
                         />
-                        <span className="text-[10px] text-gray-400 text-center max-w-[60px] leading-tight">{badge.label}</span>
                       </div>
-                    ) : (
-                      <div key={badge.id} className="flex flex-col items-center gap-1" title={badge.description}>
-                        <div className="w-12 h-12 rounded-full bg-gray-700 border border-gray-600 flex items-center justify-center text-2xl">{badge.icon}</div>
-                        <span className="text-[10px] text-gray-400 text-center max-w-[56px] leading-tight">{badge.label}</span>
-                      </div>
-                    )
+                      <span className="text-[10px] text-gray-400 text-center max-w-[60px] leading-tight">{badge.label}</span>
+                    </div>
                   ))}
                 </div>
               )}
