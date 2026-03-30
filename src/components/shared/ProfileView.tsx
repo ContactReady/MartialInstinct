@@ -73,9 +73,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
     e.target.value = '';
   };
 
+  const handleEditExisting = () => {
+    const saved = getProfileImgSettings(member.id);
+    setImgDraft(member.profileImageUrl!);
+    setImgScale(saved.scale);
+    setImgPosX(saved.posX);
+    setImgPosY(saved.posY);
+  };
+
   const handleSaveImage = () => {
     if (!imgDraft) return;
-    updateProfileImage(imgDraft);
+    if (imgDraft !== member.profileImageUrl) updateProfileImage(imgDraft);
     setProfileImgSettings(member.id, { scale: imgScale, posX: imgPosX, posY: imgPosY });
     setImgDraft(null);
   };
@@ -174,6 +182,24 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
               </div>
               {canEditImage && (
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+              )}
+              {canEditImage && (
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={handleImageClick}
+                    className="text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-gray-700/50"
+                  >
+                    📷 Bild hochladen
+                  </button>
+                  {member.profileImageUrl && (
+                    <button
+                      onClick={handleEditExisting}
+                      className="text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-gray-700/50"
+                    >
+                      ✏️ Bild bearbeiten
+                    </button>
+                  )}
+                </div>
               )}
             </>
           ) : (
