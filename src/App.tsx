@@ -235,7 +235,7 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                     onClick={() => updateVisibilityPreference('all')}
                     className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all border ${visibility === 'all' ? 'bg-gray-700 text-white border-gray-600' : 'bg-transparent text-gray-500 border-gray-700 hover:text-gray-300'}`}
                   >
-                    Alle Mitglieder
+                    Alle Member
                   </button>
                   <button
                     onClick={() => updateVisibilityPreference('buddies')}
@@ -724,7 +724,7 @@ const [sichtbarkeitOpen, setSichtbarkeitOpen] = useState(false);
             <div>
               <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Online- & Trainingsstatus</div>
               <div className="flex gap-2">
-                <button onClick={() => updateVisibilityPreference('all')} className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border ${visibility === 'all' ? 'bg-gray-700 text-white border-gray-600' : 'bg-transparent text-gray-500 border-gray-700 hover:text-gray-300'}`}>Alle Mitglieder</button>
+                <button onClick={() => updateVisibilityPreference('all')} className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border ${visibility === 'all' ? 'bg-gray-700 text-white border-gray-600' : 'bg-transparent text-gray-500 border-gray-700 hover:text-gray-300'}`}>Alle Member</button>
                 <button onClick={() => updateVisibilityPreference('buddies')} className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border ${visibility === 'buddies' ? 'bg-gray-700 text-white border-gray-600' : 'bg-transparent text-gray-500 border-gray-700 hover:text-gray-300'}`}>Trainingspartner</button>
               </div>
             </div>
@@ -867,7 +867,7 @@ const AppContent: React.FC = () => {
           <img
             src={darkMode ? '/logos/mi-logo-landscape-dark.svg' : '/logos/mi-logo-landscape-light.svg'}
             alt="Martial Instinct"
-            className="h-11 w-auto object-contain flex-shrink-0"
+            className="h-12 w-auto object-contain flex-shrink-0"
           />
 
           <div className="flex-1" />

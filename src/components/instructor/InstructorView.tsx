@@ -318,7 +318,7 @@ export const InstructorView: React.FC = () => {
           {([
             { id: 'online' as CommunitySubTab, label: 'Online', badge: onlineMembers.length, dot: true },
             { id: 'training' as CommunitySubTab, label: 'Training', badge: todayCheckIns.length, dot: false },
-            { id: 'mitglieder' as CommunitySubTab, label: 'Mitglieder', badge: 0, dot: false },
+            { id: 'mitglieder' as CommunitySubTab, label: 'Member', badge: 0, dot: false },
             { id: 'rangliste' as CommunitySubTab, label: 'Rangliste', badge: 0, dot: false },
           ] as { id: CommunitySubTab; label: string; badge: number; dot: boolean }[]).map(item => (
             <button
@@ -778,7 +778,7 @@ export const InstructorView: React.FC = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <h3 className="text-lg font-bold text-white">
-                  Mitglieder
+                  Member
                   <span className="text-gray-500 font-normal text-sm ml-2">({allMembers.length})</span>
                 </h3>
                 <div className="flex items-center gap-3 text-xs text-gray-400">
@@ -2018,7 +2018,7 @@ export const InstructorView: React.FC = () => {
             {([
               ['plattform', '🔧 Plattform'],
               ['training', '🥋 Training'],
-              ['mitglieder', '👥 Mitglieder'],
+              ['mitglieder', '👥 Member'],
             ] as [VerwaltungSubTab, string][]).map(([id, label]) => (
               <button
                 key={id}
@@ -2113,8 +2113,8 @@ export const InstructorView: React.FC = () => {
               {/* ── KPI Karten ── */}
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: 'Mitglieder', value: allM.length, icon: '👥', sub: `${activeThisWeek} aktiv diese Woche` },
-                  { label: 'Ø Streak', value: `${avgStreak}W`, icon: '🔥', sub: 'Durchschnitt aller Member' },
+                  { label: 'Member', value: allM.length, icon: '👥', sub: `${activeThisWeek} aktiv diese Woche` },
+                  { label: 'Ø Streak', value: `${avgStreak} W`, icon: '🔥', sub: 'Durchschnitt aller Member' },
                   { label: 'Stop The Bleed', value: stbCount, icon: '🩸', sub: `${allM.length ? Math.round(stbCount / allM.length * 100) : 0}% zertifiziert` },
                   { label: 'Gesamt XP', value: totalXP.toLocaleString('de-DE'), icon: '⭐', sub: `Ø ${allM.length ? Math.round(totalXP / allM.length) : 0} XP/Mitglied` },
                 ].map(k => (
@@ -2197,7 +2197,7 @@ export const InstructorView: React.FC = () => {
                 <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 overflow-hidden">
                   <div className="px-4 py-3 border-b border-gray-700/30">
                     <div className="text-sm font-semibold text-white">Inaktiv &gt;14 Tage</div>
-                    <div className="text-[10px] text-gray-500 mt-0.5">{inactive.length} Mitglieder</div>
+                    <div className="text-[10px] text-gray-500 mt-0.5">{inactive.length} Member</div>
                   </div>
                   <div className="divide-y divide-gray-700/30 max-h-52 overflow-y-auto">
                     {inactive.length === 0 ? (
@@ -2282,7 +2282,7 @@ export const InstructorView: React.FC = () => {
                 onClick={() => togglePlattform('mitglieder_liste')}
               >
                 <div className="text-left">
-                  <div className="text-sm font-semibold text-white">Mitglieder verwalten</div>
+                  <div className="text-sm font-semibold text-white">Member verwalten</div>
                   <div className="text-xs text-gray-500 mt-0.5">Rollen, Admin-Zugang, Kerndaten und Streak.</div>
                 </div>
                 <span className="text-gray-500 text-xs ml-3 flex-shrink-0">{plattformOpen['mitglieder_liste'] ? '▲' : '▼'}</span>
@@ -2319,7 +2319,7 @@ export const InstructorView: React.FC = () => {
                         )}
                       </div>
                       <div className="text-gray-500 text-xs mt-0.5 flex items-center gap-2">
-                        <span className="text-orange-400/70 flex-shrink-0">🔥 {m.streak.currentStreak}W</span>
+                        <span className="text-orange-400/70 flex-shrink-0">🔥 {m.streak.currentStreak} W</span>
                         <span className="truncate">{m.email}</span>
                       </div>
                       {isOwnerOrAdmin && m.id !== currentUser.id && (
@@ -3047,7 +3047,7 @@ export const InstructorView: React.FC = () => {
           const PERMISSION_LABELS: { key: keyof RolePermissions; label: string; description: string; adminOnly?: boolean }[] = [
             { key: 'canPostToBoard',              label: 'Board: Posten',                description: 'Darf Nachrichten im Instructor-Board verfassen' },
             { key: 'canRestrictBoardVisibility',  label: 'Board: Einschränken',          description: 'Darf Posts auf "Nur Ausgewählte" beschränken', adminOnly: true },
-            { key: 'canViewAllMembers',           label: 'Alle Mitglieder sehen',        description: 'Vollständige Mitgliederliste einsehen' },
+            { key: 'canViewAllMembers',           label: 'Alle Member sehen',            description: 'Vollständige Memberliste einsehen' },
             { key: 'canApproveExams',             label: 'Prüfungen abnehmen',           description: 'Technische Prüfungen durchführen und bestätigen' },
             { key: 'canManageOwnStudents',        label: 'Eigene Schüler verwalten',     description: 'Eigene Kursteilnehmer einsehen und verwalten' },
             { key: 'canManageCenter',             label: 'Center verwalten',             description: 'Standort/Center-Verwaltung und -Einstellungen' },

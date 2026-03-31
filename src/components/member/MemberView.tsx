@@ -276,7 +276,7 @@ export const MemberView: React.FC = () => {
           {([
             { id: 'online' as const, label: '🟢 Online', badge: onlineConnected.length },
             { id: 'training' as const, label: '🥋 Training', badge: trainingConnected.length },
-            { id: 'mitglieder' as const, label: '👥 Mitglieder' },
+            { id: 'mitglieder' as const, label: '👥 Member' },
             { id: 'rangliste' as const, label: '🏆 Rang' },
           ]).map(tab => (
             <button
@@ -302,7 +302,7 @@ export const MemberView: React.FC = () => {
               <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
                 <div className="text-3xl mb-2">👥</div>
                 <p className="text-gray-400 text-sm font-medium">Noch keine Trainingspartner</p>
-                <p className="text-gray-500 text-xs mt-1">Verbinde dich im Training unter "Mitglieder".</p>
+                <p className="text-gray-500 text-xs mt-1">Verbinde dich im Training unter "Member".</p>
               </div>
             ) : onlineConnected.length === 0 ? (
               <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
@@ -334,7 +334,7 @@ export const MemberView: React.FC = () => {
               <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
                 <div className="text-3xl mb-2">🥋</div>
                 <p className="text-gray-400 text-sm font-medium">Noch keine Trainingspartner</p>
-                <p className="text-gray-500 text-xs mt-1">Verbinde dich im Training unter "Mitglieder".</p>
+                <p className="text-gray-500 text-xs mt-1">Verbinde dich im Training unter "Member".</p>
               </div>
             ) : trainingConnected.length === 0 ? (
               <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
@@ -383,7 +383,7 @@ export const MemberView: React.FC = () => {
 
             {/* Trainingspartner-Kachel */}
             <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4 space-y-3">
-              <p className="text-gray-500 text-xs uppercase tracking-wider">Verbinden</p>
+              <p className="text-gray-500 text-xs uppercase tracking-wider">Mit Trainingspartner verbinden</p>
 
               {/* Code generieren Button */}
               <button
