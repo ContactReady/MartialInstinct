@@ -178,8 +178,8 @@ export const MemberView: React.FC = () => {
             <div className="text-[10px] text-orange-300/60 mt-1 leading-tight">🔥 Streak</div>
           </div>
           <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 text-center">
-            <div className="text-2xl font-black text-gray-300 leading-none">{currentUser.streak.longestStreak}</div>
-            <div className="text-[10px] text-gray-500 mt-1 leading-tight">🏅 Rekord</div>
+            <div className="text-2xl font-black text-yellow-400 leading-none">{currentUser.xp ?? 0}</div>
+            <div className="text-[10px] text-yellow-500/60 mt-1 leading-tight">⭐ XP</div>
           </div>
           <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 text-center">
             <div className="text-2xl font-black text-white leading-none">

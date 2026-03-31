@@ -266,10 +266,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
           )}
 
           {/* Stats — kompakt */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
-              <div className="text-xl font-black text-orange-400">{member.streak.currentStreak} W</div>
-              <div className="text-xs text-gray-400 mt-0.5">🔥 Streak</div>
+              <div className="text-xl font-black text-orange-400">{member.streak.longestStreak} W</div>
+              <div className="text-xs text-gray-400 mt-0.5">🏅 Rekord</div>
+            </div>
+            <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
+              <div className="text-xl font-black text-yellow-400">{member.xp ?? 0}</div>
+              <div className="text-xs text-gray-400 mt-0.5">⭐ XP</div>
             </div>
             <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
               <div className="text-xl font-black text-blue-400">{techPassedCount}</div>
