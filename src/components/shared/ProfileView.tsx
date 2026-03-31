@@ -14,7 +14,7 @@ interface ProfileViewProps {
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = false, onClose }) => {
-  const { currentUser, updateProfileImage, computeBadges, getSessionsForMember, getBadgeDisplaySettings, getProfileImgSettings, setProfileImgSettings } = useApp();
+  const { currentUser, updateProfileImage, computeBadges, getSessionsForMember, getBadgeDisplaySettings, getProfileImgSettings, setProfileImgSettings, darkMode } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isOwnProfile = currentUser?.id === member.id;
@@ -288,19 +288,39 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
           {/* Abzeichen */}
           {badges.filter(b => b.imageUrl).length > 0 && (
             <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-              <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Abzeichen</div>
-              <div className="flex flex-wrap gap-4">
+              <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-4">Abzeichen</div>
+              <div className="flex flex-wrap gap-6">
                 {badges.filter(b => b.imageUrl).map(badge => {
                   const { scale, posX, posY } = getBadgeDisplaySettings(badge.id);
+                  const sockelBg = darkMode ? '#0a0a0a' : '#d1d5db';
+                  const shadowStack = darkMode
+                    ? [
+                        '0 1px 0 rgba(255,255,255,0.08) inset',
+                        '0 -1px 0 rgba(0,0,0,0.6) inset',
+                        '0 4px 8px rgba(0,0,0,0.7)',
+                        '0 12px 32px rgba(0,0,0,0.55)',
+                        '0 0 0 1.5px rgba(255,255,255,0.06)',
+                      ].join(', ')
+                    : [
+                        '0 1px 0 rgba(255,255,255,0.6) inset',
+                        '0 -1px 0 rgba(0,0,0,0.15) inset',
+                        '0 4px 8px rgba(0,0,0,0.2)',
+                        '0 12px 28px rgba(0,0,0,0.15)',
+                        '0 0 0 1.5px rgba(0,0,0,0.08)',
+                      ].join(', ');
                   return (
-                    <div key={badge.id} className="flex flex-col items-center gap-1.5" title={badge.description}>
-                      <div className="w-16 h-16 rounded-full" style={{
+                    <div key={badge.id} className="flex flex-col items-center gap-2" title={badge.description}>
+                      <div style={{
+                        width: 88, height: 88,
+                        borderRadius: '50%',
+                        backgroundColor: sockelBg,
                         backgroundImage: `url(${badge.imageUrl})`,
                         backgroundSize: `${Math.round(scale * 100)}%`,
                         backgroundPosition: `${posX}% ${posY}%`,
                         backgroundRepeat: 'no-repeat',
+                        boxShadow: shadowStack,
                       }} />
-                      <span className="text-[10px] text-gray-400 text-center leading-tight whitespace-nowrap">{badge.label}</span>
+                      <span className="text-[10px] text-gray-400 text-center leading-tight max-w-[88px]">{badge.label}</span>
                     </div>
                   );
                 })}
