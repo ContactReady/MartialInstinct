@@ -3,7 +3,7 @@
 // Simpel für Members - nur Status, keine Prozente
 // ============================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { MemberTabId } from '../../types';
@@ -37,6 +37,18 @@ export const MemberView: React.FC = () => {
   const setActiveTabPersisted = (tab: Tab) => { setActiveTab(tab); localStorage.setItem('mi_active_tab_member', tab); };
   const [showApplicationModal, setShowApplicationModal] = useState<ApplicationType>(null);
   const [communitySubTab, setCommunitySubTab] = useState<'online' | 'training' | 'mitglieder' | 'rangliste'>('online');
+  const communityTabs = ['online', 'training', 'mitglieder', 'rangliste'] as const;
+  const swipeStartX = useRef(0);
+  const swipeStartY = useRef(0);
+  const onSwipeStart = (e: React.TouchEvent) => { swipeStartX.current = e.touches[0].clientX; swipeStartY.current = e.touches[0].clientY; };
+  const onSwipeEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - swipeStartX.current;
+    const dy = e.changedTouches[0].clientY - swipeStartY.current;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const idx = communityTabs.indexOf(communitySubTab);
+    if (dx < 0 && idx < communityTabs.length - 1) setCommunitySubTab(communityTabs[idx + 1]);
+    if (dx > 0 && idx > 0) setCommunitySubTab(communityTabs[idx - 1]);
+  };
   const [connectCode, setConnectCode] = useState('');
   const [generatedBuddyCode, setGeneratedBuddyCode] = useState<string | null>(null);
   const [buddyCodeExpiresAt, setBuddyCodeExpiresAt] = useState<number | null>(null);
@@ -725,7 +737,7 @@ export const MemberView: React.FC = () => {
       <main className={`max-w-4xl mx-auto ${activeTab === 'training' ? 'h-[calc(100vh-4rem)] flex flex-col' : 'pb-24'}`}>
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'training' && <MemberLearningView />}
-        {activeTab === 'community' && <div className="p-4 pb-24">{renderCommunity()}</div>}
+        {activeTab === 'community' && <div className="p-4 pb-24" onTouchStart={onSwipeStart} onTouchEnd={onSwipeEnd}>{renderCommunity()}</div>}
         {activeTab === 'profil' && <ProfileView member={currentUser} />}
       </main>
 

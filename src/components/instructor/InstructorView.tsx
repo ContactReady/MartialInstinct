@@ -3,7 +3,7 @@
 // Strukturiert, autoritätsbasiert und skalierbar
 // ============================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'react-qr-code';
 import { useApp, MODULES, BLOCKS, COURSES } from '../../context/AppContext';
 import { INSTRUCTOR_TRACKS } from '../../data/instructorCurriculum';
@@ -194,6 +194,18 @@ export const InstructorView: React.FC = () => {
 
   // Sub-Tab States (an Top-Level wegen Rules of Hooks)
   const [communitySubTab, setCommunitySubTab] = useState<CommunitySubTab>('training');
+  const communityTabOrder: CommunitySubTab[] = ['online', 'training', 'mitglieder', 'rangliste'];
+  const swipeStartX = useRef(0);
+  const swipeStartY = useRef(0);
+  const onCommunitySwipeStart = (e: React.TouchEvent) => { swipeStartX.current = e.touches[0].clientX; swipeStartY.current = e.touches[0].clientY; };
+  const onCommunitySwipeEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - swipeStartX.current;
+    const dy = e.changedTouches[0].clientY - swipeStartY.current;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const idx = communityTabOrder.indexOf(communitySubTab);
+    if (dx < 0 && idx < communityTabOrder.length - 1) setCommunitySubTab(communityTabOrder[idx + 1]);
+    if (dx > 0 && idx > 0) setCommunitySubTab(communityTabOrder[idx - 1]);
+  };
   const [requestSubTab, setRequestSubTab] = useState<'exams' | 'checkins' | 'beitritt'>('exams');
 
   // Beitrittsanfragen Modal State
@@ -3330,7 +3342,11 @@ export const InstructorView: React.FC = () => {
       <main className="max-w-6xl mx-auto p-4 pb-24">
         {activeTab === 'dashboard' && renderDashboardTab()}
         {activeTab === 'training' && <InstructorLearningView />}
-        {activeTab === 'community' && renderCommunityTab()}
+        {activeTab === 'community' && (
+          <div onTouchStart={onCommunitySwipeStart} onTouchEnd={onCommunitySwipeEnd}>
+            {renderCommunityTab()}
+          </div>
+        )}
         {activeTab === 'profil' && <ProfileView member={currentUser} />}
         {activeTab === 'admin' && renderAdminTab()}
       </main>
