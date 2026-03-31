@@ -38,17 +38,26 @@ export const MemberView: React.FC = () => {
   const [showApplicationModal, setShowApplicationModal] = useState<ApplicationType>(null);
   const [communitySubTab, setCommunitySubTab] = useState<'online' | 'training' | 'mitglieder' | 'rangliste'>('online');
   const communityTabs = ['online', 'training', 'mitglieder', 'rangliste'] as const;
-  const swipeStartX = useRef(0);
-  const swipeStartY = useRef(0);
-  const onSwipeStart = (e: React.TouchEvent) => { swipeStartX.current = e.touches[0].clientX; swipeStartY.current = e.touches[0].clientY; };
-  const onSwipeEnd = (e: React.TouchEvent) => {
-    const dx = e.changedTouches[0].clientX - swipeStartX.current;
-    const dy = e.changedTouches[0].clientY - swipeStartY.current;
-    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    const idx = communityTabs.indexOf(communitySubTab);
-    if (dx < 0 && idx < communityTabs.length - 1) setCommunitySubTab(communityTabs[idx + 1]);
-    if (dx > 0 && idx > 0) setCommunitySubTab(communityTabs[idx - 1]);
-  };
+  const communitySubTabRef = useRef(communitySubTab);
+  useEffect(() => { communitySubTabRef.current = communitySubTab; }, [communitySubTab]);
+
+  useEffect(() => {
+    if (activeTab !== 'community') return;
+    let startX = 0, startY = 0;
+    const onStart = (e: TouchEvent) => { startX = e.touches[0].clientX; startY = e.touches[0].clientY; };
+    const onEnd = (e: TouchEvent) => {
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
+      if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      const tabs = communityTabs;
+      const idx = tabs.indexOf(communitySubTabRef.current);
+      if (dx < 0 && idx < tabs.length - 1) setCommunitySubTab(tabs[idx + 1]);
+      if (dx > 0 && idx > 0) setCommunitySubTab(tabs[idx - 1]);
+    };
+    document.addEventListener('touchstart', onStart, { passive: true });
+    document.addEventListener('touchend', onEnd, { passive: true });
+    return () => { document.removeEventListener('touchstart', onStart); document.removeEventListener('touchend', onEnd); };
+  }, [activeTab]);
   const [connectCode, setConnectCode] = useState('');
   const [generatedBuddyCode, setGeneratedBuddyCode] = useState<string | null>(null);
   const [buddyCodeExpiresAt, setBuddyCodeExpiresAt] = useState<number | null>(null);
@@ -737,7 +746,7 @@ export const MemberView: React.FC = () => {
       <main className={`max-w-4xl mx-auto ${activeTab === 'training' ? 'h-[calc(100vh-4rem)] flex flex-col' : 'pb-24'}`}>
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'training' && <MemberLearningView />}
-        {activeTab === 'community' && <div className="p-4 pb-24" onTouchStart={onSwipeStart} onTouchEnd={onSwipeEnd}>{renderCommunity()}</div>}
+        {activeTab === 'community' && <div className="p-4 pb-24">{renderCommunity()}</div>}
         {activeTab === 'profil' && <ProfileView member={currentUser} />}
       </main>
 
