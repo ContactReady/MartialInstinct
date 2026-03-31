@@ -20,6 +20,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
   const isOwnProfile = currentUser?.id === member.id;
   const canEditImage = isOwnProfile;
 
+  // Dropdown-States für Sektionen unterhalb der Abzeichen
+  const [techOpen, setTechOpen] = useState(false);
+  const [certOpen, setCertOpen] = useState(false);
+  const [sessionOpen, setSessionOpen] = useState(false);
+
   // Profilbild-Editor State
   const [imgDraft, setImgDraft] = useState<string | null>(null);
   const [imgScale, setImgScale] = useState(150);
@@ -329,75 +334,103 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
             </div>
           )}
 
-          {/* Bestandene Techniken */}
+          {/* Bestandene Techniken — Dropdown */}
           {passedTechniques.length > 0 && (
-            <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-              <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">
-                Bestandene Techniken ({passedTechniques.length})
-              </div>
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                {passedTechniques.map(t => (
-                  <div key={t.id} className="flex items-center gap-2 py-1.5 border-b border-gray-700/50 last:border-0">
-                    <span className={`text-sm ${t.status === 'tac_passed' ? 'text-green-400' : 'text-blue-400'}`}>
-                      {t.status === 'tac_passed' ? '●' : '◐'}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-sm text-white truncate">{t.name}</div>
-                      <div className="text-xs text-gray-500">{t.moduleName}</div>
-                    </div>
-                    {t.passedAt && (
-                      <div className="ml-auto text-xs text-gray-500 flex-shrink-0">
-                        {new Date(t.passedAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
+            <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+              <button
+                onClick={() => setTechOpen(v => !v)}
+                className="w-full flex items-center justify-between px-4 py-3 text-left"
+              >
+                <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">
+                  Bestandene Techniken ({passedTechniques.length})
+                </span>
+                <span className="text-gray-500 text-xs ml-2">{techOpen ? '▲' : '▼'}</span>
+              </button>
+              {techOpen && (
+                <div className="px-4 pb-3 space-y-0 max-h-60 overflow-y-auto border-t border-gray-700/50">
+                  {passedTechniques.map(t => (
+                    <div key={t.id} className="flex items-center gap-2 py-1.5 border-b border-gray-700/50 last:border-0">
+                      <span className={`text-sm ${t.status === 'tac_passed' ? 'text-green-400' : 'text-blue-400'}`}>
+                        {t.status === 'tac_passed' ? '●' : '◐'}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-sm text-white truncate">{t.name}</div>
+                        <div className="text-xs text-gray-500">{t.moduleName}</div>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Zertifikate */}
-          {member.certificates.length > 0 && (
-            <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-              <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Zertifikate</div>
-              <div className="space-y-2">
-                {member.certificates.map(cert => (
-                  <div key={cert.id} className="flex items-center gap-3 bg-gray-700/50 rounded-lg p-3">
-                    <span className="text-2xl">📜</span>
-                    <div>
-                      <div className="text-sm font-semibold text-white">{LEVEL_DISPLAY[cert.level].name}</div>
-                      <div className="text-xs text-gray-400">
-                        {new Date(cert.issuedAt).toLocaleDateString('de-DE')} · {cert.examinerName}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Trainings-Sessions */}
-          {recentSessions.length > 0 && (
-            <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-              <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Zuletzt trainiert</div>
-              <div className="space-y-2">
-                {recentSessions.map(session => {
-                  const techCount = [...new Set(session.groups.flatMap(g => g.techniqueIds))].length;
-                  return (
-                    <div key={session.id} className="flex items-center gap-3 py-1.5 border-b border-gray-700/50 last:border-0">
-                      <span className="text-lg">🥋</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm text-white">
-                          {new Date(session.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })}
-                          {session.courseName && <span className="text-gray-500 ml-2 text-xs">{session.courseName}</span>}
+                      {t.passedAt && (
+                        <div className="ml-auto text-xs text-gray-500 flex-shrink-0">
+                          {new Date(t.passedAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
                         </div>
-                        <div className="text-xs text-gray-500">{techCount} Technik{techCount !== 1 ? 'en' : ''}</div>
-                      </div>
-                      <div className="text-xs text-yellow-500 font-semibold">+{techCount * 10} XP</div>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Zertifikate — Dropdown */}
+          {member.certificates.length > 0 && (
+            <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+              <button
+                onClick={() => setCertOpen(v => !v)}
+                className="w-full flex items-center justify-between px-4 py-3 text-left"
+              >
+                <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">
+                  Zertifikate ({member.certificates.length})
+                </span>
+                <span className="text-gray-500 text-xs ml-2">{certOpen ? '▲' : '▼'}</span>
+              </button>
+              {certOpen && (
+                <div className="px-4 pb-3 space-y-2 border-t border-gray-700/50 pt-3">
+                  {member.certificates.map(cert => (
+                    <div key={cert.id} className="flex items-center gap-3 bg-gray-700/50 rounded-lg p-3">
+                      <span className="text-2xl">📜</span>
+                      <div>
+                        <div className="text-sm font-semibold text-white">{LEVEL_DISPLAY[cert.level].name}</div>
+                        <div className="text-xs text-gray-400">
+                          {new Date(cert.issuedAt).toLocaleDateString('de-DE')} · {cert.examinerName}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Trainings-Sessions — Dropdown */}
+          {recentSessions.length > 0 && (
+            <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+              <button
+                onClick={() => setSessionOpen(v => !v)}
+                className="w-full flex items-center justify-between px-4 py-3 text-left"
+              >
+                <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">
+                  Zuletzt trainiert ({recentSessions.length})
+                </span>
+                <span className="text-gray-500 text-xs ml-2">{sessionOpen ? '▲' : '▼'}</span>
+              </button>
+              {sessionOpen && (
+                <div className="px-4 pb-3 border-t border-gray-700/50 pt-1">
+                  {recentSessions.map(session => {
+                    const techCount = [...new Set(session.groups.flatMap(g => g.techniqueIds))].length;
+                    return (
+                      <div key={session.id} className="flex items-center gap-3 py-1.5 border-b border-gray-700/50 last:border-0">
+                        <span className="text-lg">🥋</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm text-white">
+                            {new Date(session.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                            {session.courseName && <span className="text-gray-500 ml-2 text-xs">{session.courseName}</span>}
+                          </div>
+                          <div className="text-xs text-gray-500">{techCount} Technik{techCount !== 1 ? 'en' : ''}</div>
+                        </div>
+                        <div className="text-xs text-yellow-500 font-semibold">+{techCount * 10} XP</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
