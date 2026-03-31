@@ -450,8 +450,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
   const [badgesOpen, setBadgesOpen] = useState(false);
   const [designOpen, setDesignOpen] = useState(false);
   const [persoenlichOpen, setPersoenlichOpen] = useState(false);
-  const [profilesOpen, setProfilesOpen] = useState(false);
-  const [sichtbarkeitOpen, setSichtbarkeitOpen] = useState(false);
+const [sichtbarkeitOpen, setSichtbarkeitOpen] = useState(false);
   const [kontoOpen, setKontoOpen] = useState(false);
   const [anzeigenameDraft, setAnzeigenameDraft] = useState('');
   const [firstNameDraft, setFirstNameDraft] = useState('');
@@ -717,27 +716,6 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ viewMode, setViewMode, onCl
           </div>
         )}
 
-        {/* Profile — nur Admin/Owner */}
-        {canSwitchProfiles && (<>
-          {accordionBtn(profilesOpen, '👥', 'Profile', () => setProfilesOpen(v => !v))}
-          {profilesOpen && (
-            <div className="px-1 space-y-1 max-h-48 overflow-y-auto">
-              {members.map(m => (
-                <button
-                  key={m.id}
-                  onClick={() => { switchUser(m.id); onClose(); }}
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors text-left ${m.id === currentUser.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
-                >
-                  <span className="text-base flex-shrink-0">{m.avatar}</span>
-                  <span className="truncate flex-1">{m.name}</span>
-                  <span className={`flex-shrink-0 text-[10px] font-medium ${ROLE_DISPLAY[m.role].color}`}>{ROLE_DISPLAY[m.role].label}</span>
-                  {m.id === currentUser.id && <span className="text-green-400 text-[10px]">✓</span>}
-                </button>
-              ))}
-            </div>
-          )}
-        </>)}
-
         {/* Sichtbarkeit */}
         {accordionBtn(sichtbarkeitOpen, '👁️', 'Sichtbarkeit', () => setSichtbarkeitOpen(v => !v))}
         {sichtbarkeitOpen && (
@@ -847,59 +825,12 @@ function playNotificationSound() {
 }
 
 const AppContent: React.FC = () => {
-  const { currentUser, login, darkMode, notifications, getProfileImgSettings, members } = useApp();
+  const { currentUser, login, darkMode, notifications, getProfileImgSettings } = useApp();
   const [viewMode, setViewMode] = useState<'member' | 'instructor'>('member');
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
-  // ── Suche ──
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<{ type: 'member' | 'technique'; id: string; label: string; sub: string }[]>([]);
-  const [showSearchResults, setShowSearchResults] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowSearchResults(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const handleSearch = () => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q || !currentUser) return;
-    const results: typeof searchResults = [];
-
-    // Berechtigung: instructor+ (nicht assistant_instructor) sieht alles
-    const canSeeAll = ['instructor', 'full_instructor', 'head_instructor', 'admin'].includes(currentUser.role);
-    const myConnections = currentUser.connections ?? [];
-
-    // Mitglieder nach Name + Member ID
-    members.forEach(m => {
-      if (m.id === currentUser.id) return; // eigenes Profil nicht in Suche
-      // Sichtbarkeits-Filter für normale Mitglieder / Assistant-Instructors
-      if (!canSeeAll) {
-        const buddiesOnly = m.visibilityPreference === 'buddies';
-        const isConnected = myConnections.includes(m.id);
-        if (buddiesOnly && !isConnected) return;
-      }
-      if (m.name.toLowerCase().includes(q) || (m.memberId ?? '').toLowerCase().includes(q)) {
-        results.push({ type: 'member', id: m.id, label: m.name, sub: m.memberId ?? m.email });
-      }
-    });
-    // Techniken
-    MODULES.forEach(mod => {
-      mod.techniques.forEach(t => {
-        if (t.name.toLowerCase().includes(q)) {
-          results.push({ type: 'technique', id: t.id, label: t.name, sub: mod.name });
-        }
-      });
-    });
-    setSearchResults(results);
-    setShowSearchResults(true);
-  };
   const [showJoinForm, setShowJoinForm] = useState(() =>
     new URLSearchParams(window.location.search).get('join') === 'true'
   );
@@ -939,38 +870,7 @@ const AppContent: React.FC = () => {
             className="h-11 w-auto object-contain flex-shrink-0"
           />
 
-          {/* Search */}
-          <div ref={searchRef} className="relative flex-1 max-w-[120px] mx-2">
-            <div className="flex items-center bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                placeholder="Suchen..."
-                className="flex-1 bg-transparent text-white text-xs px-3 py-1.5 focus:outline-none placeholder-gray-500" style={{ fontSize: '16px' }}
-              />
-              <button onClick={handleSearch} className="px-2 py-1.5 text-gray-400 hover:text-white transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
-                </svg>
-              </button>
-            </div>
-            {showSearchResults && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden max-h-80 overflow-y-auto">
-                {searchResults.length === 0 ? (
-                  <p className="text-gray-500 text-xs px-4 py-3">Keine Ergebnisse</p>
-                ) : (
-                  searchResults.map(r => (
-                    <div key={`${r.type}-${r.id}`} className="px-4 py-2.5 hover:bg-gray-800 cursor-pointer border-b border-gray-800/50 last:border-0">
-                      <div className="text-white text-xs font-medium">{r.label}</div>
-                      <div className="text-gray-500 text-[10px]">{r.type === 'member' ? '👤' : '⚔️'} {r.sub}</div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
+          <div className="flex-1" />
 
           {/* Right: Bell + Avatar */}
           <div className="flex items-center gap-2 flex-shrink-0">
