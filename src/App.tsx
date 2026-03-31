@@ -867,7 +867,7 @@ const AppContent: React.FC = () => {
           <img
             src={darkMode ? '/logos/mi-logo-landscape-dark.svg' : '/logos/mi-logo-landscape-light.svg'}
             alt="Martial Instinct"
-            className="h-12 w-auto object-contain flex-shrink-0"
+            className="h-[53px] w-auto object-contain flex-shrink-0"
           />
 
           <div className="flex-1" />
@@ -882,7 +882,7 @@ const AppContent: React.FC = () => {
                 className="relative p-1.5 text-gray-400 hover:text-white transition-colors"
                 title="Benachrichtigungen"
               >
-                <span className="text-lg leading-none">🔔</span>
+                <span className="text-xl leading-none">🔔</span>
                 {unreadCount > 0 && (
                   <span className="absolute top-0 right-0 bg-red-600 text-white text-[9px] min-w-[15px] h-[15px] flex items-center justify-center rounded-full font-bold px-0.5 leading-none">
                     {unreadCount > 9 ? '9+' : unreadCount}

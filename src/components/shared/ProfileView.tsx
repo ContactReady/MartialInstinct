@@ -214,17 +214,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
                 </div>
                 <div>
                   <div className="flex justify-between mb-1">
-                    <label className="text-xs text-gray-400">Position Horizontal</label>
-                    <span className="text-xs text-gray-500">{imgPosX}</span>
-                  </div>
-                  <input type="range" min={0} max={300} step={1} value={imgPosX} onChange={e => setImgPosX(Number(e.target.value))} className="w-full accent-red-500" />
-                </div>
-                <div>
-                  <div className="flex justify-between mb-1">
                     <label className="text-xs text-gray-400">Position Vertikal</label>
                     <span className="text-xs text-gray-500">{imgPosY}</span>
                   </div>
                   <input type="range" min={0} max={300} step={1} value={imgPosY} onChange={e => setImgPosY(Number(e.target.value))} className="w-full accent-red-500" />
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <label className="text-xs text-gray-400">Position Horizontal</label>
+                    <span className="text-xs text-gray-500">{imgPosX}</span>
+                  </div>
+                  <input type="range" min={0} max={300} step={1} value={imgPosX} onChange={e => setImgPosX(Number(e.target.value))} className="w-full accent-red-500" />
                 </div>
               </div>
               <div className="flex gap-2">
@@ -273,7 +273,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
             </div>
             <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
               <div className="text-xl font-black text-yellow-400">{member.xp ?? 0}</div>
-              <div className="text-xs text-gray-400 mt-0.5">⭐ XP</div>
+              <div className="text-xs text-gray-400 mt-0.5">XP</div>
             </div>
             <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
               <div className="text-xl font-black text-blue-400">{techPassedCount}</div>
