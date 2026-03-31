@@ -155,46 +155,63 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
           </div>
         )}
 
-        {/* Hero — Bild + Name */}
-        <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 px-6 pt-14 pb-5 flex flex-col items-center">
-          {/* Avatar / Foto */}
+        {/* Hero — horizontal: Bild links, Info rechts */}
+        <div className="bg-gradient-to-b from-gray-800 to-gray-900 px-5 pt-8 pb-5">
           {!imgDraft ? (
-            <>
-              <div
-                className={`relative w-24 h-24 rounded-full overflow-hidden border-4 border-gray-700 ${canEditImage ? 'cursor-pointer' : ''}`}
-                style={member.profileImageUrl ? {
-                  backgroundImage: `url(${member.profileImageUrl})`,
-                  backgroundSize: `${displaySettings.scale}%`,
-                  backgroundPosition: `${displaySettings.posX / 3}% ${displaySettings.posY / 3}%`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundColor: '#fff',
-                } : {}}
-                onClick={handleImageClick}
-              >
-                {!member.profileImageUrl && (
-                  <img src="/logos/mi-icon.jpg" alt="" className="w-full h-full object-cover" />
-                )}
-                {canEditImage && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full">
-                    <span className="text-white text-2xl">📷</span>
-                  </div>
+            <div className="flex items-center gap-4">
+              {/* Avatar */}
+              <div className="relative flex-shrink-0">
+                <div
+                  className={`w-[100px] h-[100px] rounded-full overflow-hidden border-4 border-gray-700 ${canEditImage ? 'cursor-pointer' : ''}`}
+                  style={member.profileImageUrl ? {
+                    backgroundImage: `url(${member.profileImageUrl})`,
+                    backgroundSize: `${displaySettings.scale}%`,
+                    backgroundPosition: `${displaySettings.posX / 3}% ${displaySettings.posY / 3}%`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundColor: '#fff',
+                  } : {}}
+                  onClick={handleImageClick}
+                >
+                  {!member.profileImageUrl && (
+                    <img src="/logos/mi-icon.jpg" alt="" className="w-full h-full object-cover" />
+                  )}
+                  {canEditImage && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full">
+                      <span className="text-white text-2xl">📷</span>
+                    </div>
+                  )}
+                </div>
+                {canEditImage && member.profileImageUrl && (
+                  <button
+                    onClick={handleEditExisting}
+                    className="absolute -bottom-1 -right-1 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-full w-7 h-7 flex items-center justify-center text-sm transition-colors"
+                    title="Bild bearbeiten"
+                  >✏️</button>
                 )}
               </div>
               {canEditImage && (
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
               )}
-              {canEditImage && member.profileImageUrl && (
-                <button
-                  onClick={handleEditExisting}
-                  className="text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-gray-700/50 mt-2"
-                >
-                  ✏️ Bild bearbeiten
-                </button>
-              )}
-            </>
+
+              {/* Info rechts */}
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl font-bold text-white leading-tight truncate">{member.name}</h2>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {member.role !== 'admin' && (
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${roleInfo.bgColor} ${roleInfo.color}`}>
+                      {roleInfo.label}
+                    </span>
+                  )}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${levelInfo.bgColor} ${levelInfo.color}`}>
+                    {levelInfo.icon} {levelInfo.name}
+                  </span>
+                </div>
+                <p className="text-gray-500 text-xs mt-2">Dabei seit {joinedFormatted}</p>
+              </div>
+            </div>
           ) : (
             /* ── Profilbild-Editor ── */
-            <div className="w-full space-y-3">
+            <div className="space-y-3">
               <div className="flex justify-center">
                 <div className="w-24 h-24 rounded-full border-4 border-red-500" style={{
                   backgroundImage: `url(${imgDraft})`,
@@ -234,24 +251,28 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
             </div>
           )}
 
-          {/* Name + Rang */}
-          <div className="mt-3 text-center">
-            <h2 className="text-xl font-bold text-white">{member.name}</h2>
-            <div className="flex items-center justify-center gap-2 mt-1 flex-wrap">
-              {member.role !== 'admin' && (
-                <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${roleInfo.bgColor} ${roleInfo.color}`}>
-                  {roleInfo.label}
-                </span>
-              )}
-              <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${levelInfo.bgColor} ${levelInfo.color}`}>
-                {levelInfo.icon} {levelInfo.name}
-              </span>
+          {/* Stats — direkt unter dem Hero, kein eigener Block */}
+          <div className="grid grid-cols-4 gap-2 mt-4">
+            <div className="bg-black/30 rounded-xl p-2.5 border border-gray-700/60 text-center">
+              <div className="text-lg font-black text-orange-400">{member.streak.longestStreak} W</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">🏅 Rekord</div>
             </div>
-            <p className="text-gray-500 text-xs mt-2">Dabei seit {joinedFormatted}</p>
+            <div className="bg-black/30 rounded-xl p-2.5 border border-gray-700/60 text-center">
+              <div className="text-lg font-black text-yellow-400">{member.xp ?? 0}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">XP</div>
+            </div>
+            <div className="bg-black/30 rounded-xl p-2.5 border border-gray-700/60 text-center">
+              <div className="text-lg font-black text-blue-400">{techPassedCount}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">◐ Tech.</div>
+            </div>
+            <div className="bg-black/30 rounded-xl p-2.5 border border-gray-700/60 text-center">
+              <div className="text-lg font-black text-green-400">{tacPassedCount}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">● Vollst.</div>
+            </div>
           </div>
         </div>
 
-        <div className="px-5 pb-28 space-y-5 mt-1">
+        <div className="px-5 pb-28 space-y-5 mt-4">
 
           {/* Persönliche Daten — nur wenn mindestens ein Feld sichtbar */}
           {profileFields.length > 0 && (
@@ -264,26 +285,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
               ))}
             </div>
           )}
-
-          {/* Stats — kompakt */}
-          <div className="grid grid-cols-4 gap-3">
-            <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
-              <div className="text-xl font-black text-orange-400">{member.streak.longestStreak} W</div>
-              <div className="text-xs text-gray-400 mt-0.5">🏅 Rekord</div>
-            </div>
-            <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
-              <div className="text-xl font-black text-yellow-400">{member.xp ?? 0}</div>
-              <div className="text-xs text-gray-400 mt-0.5">XP</div>
-            </div>
-            <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
-              <div className="text-xl font-black text-blue-400">{techPassedCount}</div>
-              <div className="text-xs text-gray-400 mt-0.5">◐ Technisch</div>
-            </div>
-            <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
-              <div className="text-xl font-black text-green-400">{tacPassedCount}</div>
-              <div className="text-xs text-gray-400 mt-0.5">● Vollständig</div>
-            </div>
-          </div>
 
           {/* Abzeichen */}
           {badges.filter(b => b.imageUrl).length > 0 && (
