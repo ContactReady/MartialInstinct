@@ -156,7 +156,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
         )}
 
         {/* Hero — Bild + Name */}
-        <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 px-6 pt-8 pb-5 flex flex-col items-center">
+        <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 px-6 pt-14 pb-5 flex flex-col items-center">
           {/* Avatar / Foto */}
           {!imgDraft ? (
             <>
@@ -235,7 +235,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
           )}
 
           {/* Name + Rang */}
-          <div className="mt-8 text-center">
+          <div className="mt-3 text-center">
             <h2 className="text-xl font-bold text-white">{member.name}</h2>
             <div className="flex items-center justify-center gap-2 mt-1 flex-wrap">
               {member.role !== 'admin' && (
