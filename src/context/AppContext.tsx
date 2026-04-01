@@ -382,20 +382,38 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Beim Start: Lerninhalte (Techniken + Quiz) aus Supabase laden
   // Mit localStorage-Cache für Offline-Betrieb, Fallback auf hardcoded Daten
   useEffect(() => {
-    const CACHE_KEY = 'mi_content_v1';
+    const CACHE_KEY = 'mi_content_v3'; // v3: type/pairs/correctIndices support
 
     const mapTech = (r: { id: string; module_id: string; name: string; description: string; is_required: boolean; position: number }): ContentTechnique => ({
       id: r.id, moduleId: r.module_id, name: r.name, description: r.description ?? '', isRequired: r.is_required, position: r.position
     });
-    const mapQ = (r: { id: string; module_id: string; question: string; options: string[]; correct_index: number; explanation: string; position: number }): QuizQuestion => ({
-      id: r.id, moduleId: r.module_id, question: r.question, options: r.options, correctIndex: r.correct_index, explanation: r.explanation ?? '', position: r.position
+    const mapQ = (r: Record<string, unknown>): QuizQuestion => ({
+      id: r.id as string,
+      moduleId: r.module_id as string,
+      question: r.question as string,
+      type: (r.type as QuizQuestion['type']) ?? undefined,
+      options: (r.options as string[] | null) ?? undefined,
+      correctIndex: (r.correct_index as number | null) ?? undefined,
+      correctIndices: (r.correct_indices as number[] | null) ?? undefined,
+      pairs: (r.pairs as { left: string; right: string }[] | null) ?? undefined,
+      explanation: (r.explanation as string) ?? '',
+      position: r.position as number,
     });
 
     const buildHardcoded = () => {
       const techniques: ContentTechnique[] = [];
       MODULES.forEach(mod => mod.techniques.forEach(t => techniques.push({ id: t.id, moduleId: t.moduleId, name: t.name, description: t.description, isRequired: t.isRequired, position: t.order })));
       const questions: QuizQuestion[] = [];
-      Object.entries(MODULE_QUIZ_DATA).forEach(([moduleId, qs]) => qs.forEach((q, i) => questions.push({ id: q.id, moduleId, question: q.question, options: q.options, correctIndex: q.correctIndex, explanation: q.explanation ?? '', position: i })));
+      Object.entries(MODULE_QUIZ_DATA).forEach(([moduleId, qs]) => qs.forEach((q, i) => questions.push({
+        id: q.id, moduleId, question: q.question,
+        type: q.type,
+        options: q.options,
+        correctIndex: q.correctIndex,
+        correctIndices: q.correctIndices,
+        pairs: q.pairs,
+        explanation: q.explanation ?? '',
+        position: i,
+      })));
       return { techniques, questions };
     };
 
@@ -420,7 +438,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
         if (questions.length === 0) {
           const { questions: fallQ } = buildHardcoded();
-          await supabase.from('content_quiz_questions').insert(fallQ.map(q => ({ module_id: q.moduleId, question: q.question, options: q.options, correct_index: q.correctIndex, explanation: q.explanation ?? '', position: q.position ?? 0 })));
+          await supabase.from('content_quiz_questions').insert(fallQ.map(q => ({
+            module_id: q.moduleId,
+            question: q.question,
+            type: q.type ?? null,
+            options: q.options ?? null,
+            correct_index: q.correctIndex ?? null,
+            correct_indices: q.correctIndices ?? null,
+            pairs: q.pairs ?? null,
+            explanation: q.explanation ?? '',
+            position: q.position ?? 0,
+          })));
           const { data: freshQ } = await supabase.from('content_quiz_questions').select('*').order('module_id').order('position');
           questions = (freshQ ?? []).map(mapQ);
         }
@@ -1877,7 +1905,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const saveQuizQuestion = useCallback(async (q: QuizQuestion & { moduleId: string }) => {
     const existing = q.id ? quizQuestions.find(x => x.id === q.id) : null;
-    const row = { module_id: q.moduleId, question: q.question, options: q.options, correct_index: q.correctIndex, explanation: q.explanation ?? '', position: q.position ?? 0 };
+    const row = {
+      module_id: q.moduleId, question: q.question,
+      type: q.type ?? null,
+      options: q.options ?? null,
+      correct_index: q.correctIndex ?? null,
+      correct_indices: q.correctIndices ?? null,
+      pairs: q.pairs ?? null,
+      explanation: q.explanation ?? '',
+      position: q.position ?? 0,
+    };
     if (existing) {
       await supabase.from('content_quiz_questions').update(row).eq('id', q.id);
       setQuizQuestions(prev => prev.map(x => x.id === q.id ? { ...q } : x));
