@@ -425,6 +425,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           supabase.from('module_settings').select('*'),
         ]);
 
+        // Supabase-Fehler (z.B. pausiertes Projekt) → Fallback
+        const supabaseOk = !techRes.error && !quizRes.error;
+        if (!supabaseOk) throw new Error('Supabase unavailable');
+
         let techniques: ContentTechnique[] = (techRes.data ?? []).map(mapTech);
         let questions: QuizQuestion[] = (quizRes.data ?? []).map(mapQ);
         const settings: Record<string, ModuleSettings> = {};
@@ -451,6 +455,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           })));
           const { data: freshQ } = await supabase.from('content_quiz_questions').select('*').order('module_id').order('position');
           questions = (freshQ ?? []).map(mapQ);
+        }
+
+        // Falls Supabase-Seed gescheitert ist → hardcoded als Fallback
+        if (questions.length === 0) {
+          const { questions: fallQ, techniques: fallT } = buildHardcoded();
+          setContentTechniques(techniques.length > 0 ? techniques : fallT);
+          setQuizQuestions(fallQ);
+          return;
         }
 
         setContentTechniques(techniques);
