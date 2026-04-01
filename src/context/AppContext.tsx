@@ -273,8 +273,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [techniqueWishes, setTechniqueWishes] = useState<TechniqueWish[]>([]);
   const [trainingSessions, setTrainingSessions] = useState<TrainingSession[]>([]);
   const [moduleOrder, setModuleOrder] = useState<ModuleOrder[]>([]);
-  const [contentTechniques, setContentTechniques] = useState<ContentTechnique[]>([]);
-  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [contentTechniques, setContentTechniques] = useState<ContentTechnique[]>(() => {
+    const techniques: ContentTechnique[] = [];
+    MODULES.forEach(mod => mod.techniques.forEach(t => techniques.push({ id: t.id, moduleId: t.moduleId, name: t.name, description: t.description, isRequired: t.isRequired, position: t.order })));
+    return techniques;
+  });
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>(() => {
+    const questions: QuizQuestion[] = [];
+    Object.entries(MODULE_QUIZ_DATA).forEach(([moduleId, qs]) => qs.forEach((q, i) => questions.push({
+      id: q.id, moduleId, question: q.question,
+      type: q.type, options: q.options, correctIndex: q.correctIndex,
+      correctIndices: q.correctIndices, pairs: q.pairs,
+      explanation: q.explanation ?? '', position: i,
+    })));
+    return questions;
+  });
   const [moduleSettings, setModuleSettings] = useState<Record<string, ModuleSettings>>({});
   const [permissionsConfig, setPermissionsConfig] = useState<PermissionsConfig>(() => {
     try {
