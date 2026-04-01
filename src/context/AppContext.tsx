@@ -37,6 +37,8 @@ import {
   CreateMemberData,
   BuddyCode,
   BuddyRequest,
+  FlaggedQuestion,
+  QuizExamAttempt,
 } from '../types';
 import { MODULE_QUIZ_DATA } from '../data/memberQuizData';
 import { supabase } from '../lib/supabase';
@@ -212,6 +214,33 @@ interface AppContextType {
   getModuleProgress: (memberId: string, moduleId: string) => { total: number; completed: number; percentage: number };
   getBlockProgress: (memberId: string, blockLevel: ModuleLevel) => { total: number; completed: number; percentage: number };
   isBlockUnlocked: (memberId: string, blockLevel: ModuleLevel) => boolean;
+
+  // Quiz — Stern-System (⭐)
+  starredQuestions: string[];
+  isQuestionStarred: (questionId: string) => boolean;
+  starQuestion: (questionId: string) => void;
+  unstarQuestion: (questionId: string) => void;
+
+  // Quiz — Antwort-Tracking (für Exam-Voraussetzung)
+  answeredQuestions: string[];
+  recordQuizAnswer: (questionId: string, correct: boolean) => void;
+
+  // Quiz — Prüfungsmodus
+  quizExamState: Record<string, QuizExamAttempt>;
+  canTakeExam: (moduleId: string) => { allowed: boolean; reason?: string };
+  completeQuizExam: (moduleId: string, passed: boolean) => void;
+
+  // Quiz — Flag-System (🚩)
+  flaggedQuestions: FlaggedQuestion[];
+  flagSystemEnabled: boolean;
+  flagQuestion: (questionId: string, moduleId: string, comment: string) => void;
+  unflagQuestion: (questionId: string) => void;
+  releaseFlaggedQuestion: (questionId: string) => void;
+  toggleFlagSystem: (enabled: boolean) => void;
+
+  // Quiz — Admin-Korrekturen (Overrides)
+  questionOverrides: Record<string, Partial<QuizQuestion>>;
+  editQuestionOverride: (questionId: string, overrides: Partial<QuizQuestion>) => void;
 }
 
 // ============================================
@@ -266,6 +295,70 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return JSON.parse(saved).map((r: JoinRequest) => ({ ...r, submittedAt: new Date(r.submittedAt), processedAt: r.processedAt ? new Date(r.processedAt) : undefined }));
     } catch { return []; }
   });
+
+  // ── Quiz: Stern-System ──────────────────────────────────────────────────────
+  const [starredQuestions, setStarredQuestions] = useState<string[]>([]);
+  const [, setQuestionStreaks] = useState<Record<string, number>>({});
+  const [answeredQuestions, setAnsweredQuestions] = useState<string[]>([]);
+  const [quizExamState, setQuizExamState] = useState<Record<string, QuizExamAttempt>>({});
+
+  // ── Quiz: Flag-System ───────────────────────────────────────────────────────
+  const [flaggedQuestions, setFlaggedQuestions] = useState<FlaggedQuestion[]>(() => {
+    try {
+      const saved = localStorage.getItem('mi-quiz-flags');
+      if (!saved) return [];
+      return JSON.parse(saved).map((f: FlaggedQuestion) => ({ ...f, flaggedAt: new Date(f.flaggedAt) }));
+    } catch { return []; }
+  });
+  const [flagSystemEnabled, setFlagSystemEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('mi-quiz-flag-enabled');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [questionOverrides, setQuestionOverrides] = useState<Record<string, Partial<QuizQuestion>>>(() => {
+    try {
+      const saved = localStorage.getItem('mi-quiz-overrides');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  // Quiz-State bei User-Wechsel neu laden
+  useEffect(() => {
+    if (!currentUser) {
+      setStarredQuestions([]);
+      setQuestionStreaks({});
+      setAnsweredQuestions([]);
+      setQuizExamState({});
+      return;
+    }
+    const uid = currentUser.id;
+    try {
+      const stars = localStorage.getItem(`mi-quiz-stars-${uid}`);
+      setStarredQuestions(stars ? JSON.parse(stars) : []);
+    } catch { setStarredQuestions([]); }
+    try {
+      const streaks = localStorage.getItem(`mi-quiz-streaks-${uid}`);
+      setQuestionStreaks(streaks ? JSON.parse(streaks) : {});
+    } catch { setQuestionStreaks({}); }
+    try {
+      const answered = localStorage.getItem(`mi-quiz-answered-${uid}`);
+      setAnsweredQuestions(answered ? JSON.parse(answered) : []);
+    } catch { setAnsweredQuestions([]); }
+    try {
+      const exam = localStorage.getItem(`mi-quiz-exam-${uid}`);
+      if (!exam) { setQuizExamState({}); return; }
+      const parsed = JSON.parse(exam) as Record<string, QuizExamAttempt>;
+      const revived: Record<string, QuizExamAttempt> = {};
+      Object.entries(parsed).forEach(([k, v]) => {
+        revived[k] = {
+          ...v,
+          lastAttemptAt: v.lastAttemptAt ? new Date(v.lastAttemptAt) : null,
+          passedAt: v.passedAt ? new Date(v.passedAt) : null,
+          banUntil: v.banUntil ? new Date(v.banUntil) : null,
+        };
+      });
+      setQuizExamState(revived);
+    } catch { setQuizExamState({}); }
+  }, [currentUser?.id]);
 
   // Beim Start: Modulreihenfolge aus Supabase laden
   // SQL: CREATE TABLE module_order (module_id text PRIMARY KEY, block_level text NOT NULL, position integer NOT NULL);
@@ -481,6 +574,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               isCheckedIn: true,
               checkedInAt: approvedAt,
               lastSeenAt: approvedAt,
+              xp: (m.xp ?? 0) + 100,
               streak: {
                 ...m.streak,
                 lastTrainingDate: approvedAt,
@@ -1551,6 +1645,200 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [currentUser]);
 
   // ============================================
+  // QUIZ — STERN-SYSTEM
+  // ============================================
+
+  const isQuestionStarred = useCallback((questionId: string): boolean =>
+    starredQuestions.includes(questionId),
+  [starredQuestions]);
+
+  const starQuestion = useCallback((questionId: string) => {
+    if (!currentUser) return;
+    setStarredQuestions(prev => {
+      if (prev.includes(questionId)) return prev;
+      const next = [...prev, questionId];
+      localStorage.setItem(`mi-quiz-stars-${currentUser.id}`, JSON.stringify(next));
+      return next;
+    });
+  }, [currentUser]);
+
+  const unstarQuestion = useCallback((questionId: string) => {
+    if (!currentUser) return;
+    setStarredQuestions(prev => {
+      const next = prev.filter(id => id !== questionId);
+      localStorage.setItem(`mi-quiz-stars-${currentUser.id}`, JSON.stringify(next));
+      return next;
+    });
+  }, [currentUser]);
+
+  // ============================================
+  // QUIZ — ANTWORT-TRACKING & AUTO-STERN
+  // ============================================
+
+  const recordQuizAnswer = useCallback((questionId: string, correct: boolean) => {
+    if (!currentUser) return;
+    const uid = currentUser.id;
+
+    // Antwort als "mindestens 1× beantwortet" markieren
+    setAnsweredQuestions(prev => {
+      if (prev.includes(questionId)) return prev;
+      const next = [...prev, questionId];
+      localStorage.setItem(`mi-quiz-answered-${uid}`, JSON.stringify(next));
+      return next;
+    });
+
+    // Streak zählen und Auto-Stern nach 5× richtig
+    if (correct) {
+      setQuestionStreaks(prev => {
+        const current = (prev[questionId] ?? 0) + 1;
+        const next = { ...prev, [questionId]: current };
+        localStorage.setItem(`mi-quiz-streaks-${uid}`, JSON.stringify(next));
+
+        // Auto-Stern wenn 5× hintereinander richtig
+        if (current >= 5) {
+          setStarredQuestions(stars => {
+            if (stars.includes(questionId)) return stars;
+            const nextStars = [...stars, questionId];
+            localStorage.setItem(`mi-quiz-stars-${uid}`, JSON.stringify(nextStars));
+            return nextStars;
+          });
+        }
+        return next;
+      });
+    } else {
+      // Falsche Antwort: Streak zurücksetzen
+      setQuestionStreaks(prev => {
+        const next = { ...prev, [questionId]: 0 };
+        localStorage.setItem(`mi-quiz-streaks-${uid}`, JSON.stringify(next));
+        return next;
+      });
+    }
+  }, [currentUser]);
+
+  // ============================================
+  // QUIZ — PRÜFUNGSMODUS
+  // ============================================
+
+  const canTakeExam = useCallback((moduleId: string): { allowed: boolean; reason?: string } => {
+    if (!currentUser) return { allowed: false, reason: 'Nicht eingeloggt' };
+
+    const examState = quizExamState[moduleId];
+
+    // Bereits bestanden?
+    if (examState?.passedAt) return { allowed: false, reason: 'Bereits bestanden' };
+
+    // Gesperrt?
+    if (examState?.banUntil && new Date() < new Date(examState.banUntil)) {
+      const ban = new Date(examState.banUntil);
+      const dateStr = ban.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      return { allowed: false, reason: `Gesperrt bis ${dateStr}` };
+    }
+
+    // Voraussetzung: alle Fragen mindestens 1× beantwortet
+    const moduleQuestions = quizQuestions.filter(q => q.moduleId === moduleId);
+    const allAnswered = moduleQuestions.every(q => answeredQuestions.includes(q.id));
+    if (!allAnswered) {
+      const remaining = moduleQuestions.filter(q => !answeredQuestions.includes(q.id)).length;
+      return { allowed: false, reason: `Noch ${remaining} Frage${remaining !== 1 ? 'n' : ''} nicht beantwortet` };
+    }
+
+    return { allowed: true };
+  }, [currentUser, quizExamState, quizQuestions, answeredQuestions]);
+
+  const completeQuizExam = useCallback((moduleId: string, passed: boolean) => {
+    if (!currentUser) return;
+    const uid = currentUser.id;
+    const prev = quizExamState[moduleId] ?? { attempts: 0, lastAttemptAt: null, passedAt: null, banUntil: null };
+    const now = new Date();
+    const attempts = prev.attempts + 1;
+
+    let banUntil: Date | null = null;
+    if (!passed && attempts >= 2) {
+      banUntil = new Date(now);
+      banUntil.setDate(banUntil.getDate() + 30); // 30 Tage Sperre
+    }
+
+    const next: QuizExamAttempt = {
+      attempts,
+      lastAttemptAt: now,
+      passedAt: passed ? now : null,
+      banUntil: passed ? null : banUntil,
+    };
+
+    setQuizExamState(prev => {
+      const updated = { ...prev, [moduleId]: next };
+      localStorage.setItem(`mi-quiz-exam-${uid}`, JSON.stringify(updated));
+      return updated;
+    });
+
+    // XP bei Bestehen: 80 XP
+    if (passed) {
+      const update = (m: Member): Member => ({ ...m, xp: (m.xp ?? 0) + 80 });
+      setMembers(prev => prev.map(m => m.id === uid ? update(m) : m));
+      setCurrentUser(prev => prev ? update(prev) : null);
+    }
+  }, [currentUser, quizExamState]);
+
+  // ============================================
+  // QUIZ — FLAG-SYSTEM
+  // ============================================
+
+  const flagQuestion = useCallback((questionId: string, moduleId: string, comment: string) => {
+    if (!currentUser || !flagSystemEnabled) return;
+    const flag: FlaggedQuestion = {
+      questionId,
+      moduleId,
+      flaggedBy: currentUser.id,
+      flaggedByName: currentUser.name,
+      flaggedByRole: currentUser.role,
+      comment,
+      flaggedAt: new Date(),
+    };
+    setFlaggedQuestions(prev => {
+      // Kein doppeltes Flag vom selben User
+      const filtered = prev.filter(f => !(f.questionId === questionId && f.flaggedBy === currentUser.id));
+      const next = [...filtered, flag];
+      localStorage.setItem('mi-quiz-flags', JSON.stringify(next));
+      return next;
+    });
+  }, [currentUser, flagSystemEnabled]);
+
+  const unflagQuestion = useCallback((questionId: string) => {
+    if (!currentUser) return;
+    setFlaggedQuestions(prev => {
+      const next = prev.filter(f => !(f.questionId === questionId && f.flaggedBy === currentUser.id));
+      localStorage.setItem('mi-quiz-flags', JSON.stringify(next));
+      return next;
+    });
+  }, [currentUser]);
+
+  const releaseFlaggedQuestion = useCallback((questionId: string) => {
+    // Admin: alle Flags für diese Frage entfernen
+    setFlaggedQuestions(prev => {
+      const next = prev.filter(f => f.questionId !== questionId);
+      localStorage.setItem('mi-quiz-flags', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const toggleFlagSystem = useCallback((enabled: boolean) => {
+    setFlagSystemEnabled(enabled);
+    localStorage.setItem('mi-quiz-flag-enabled', String(enabled));
+  }, []);
+
+  // ============================================
+  // QUIZ — ADMIN OVERRIDES
+  // ============================================
+
+  const editQuestionOverride = useCallback((questionId: string, overrides: Partial<QuizQuestion>) => {
+    setQuestionOverrides(prev => {
+      const next = { ...prev, [questionId]: { ...(prev[questionId] ?? {}), ...overrides } };
+      localStorage.setItem('mi-quiz-overrides', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  // ============================================
   // CONTENT MANAGEMENT — Getter
   // ============================================
 
@@ -2091,6 +2379,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     deleteQuizQuestion,
     reorderQuizQuestions,
     saveModuleSettings,
+    // Quiz — Stern
+    starredQuestions,
+    isQuestionStarred,
+    starQuestion,
+    unstarQuestion,
+    // Quiz — Tracking
+    answeredQuestions,
+    recordQuizAnswer,
+    // Quiz — Prüfung
+    quizExamState,
+    canTakeExam,
+    completeQuizExam,
+    // Quiz — Flag
+    flaggedQuestions,
+    flagSystemEnabled,
+    flagQuestion,
+    unflagQuestion,
+    releaseFlaggedQuestion,
+    toggleFlagSystem,
+    // Quiz — Overrides
+    questionOverrides,
+    editQuestionOverride,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

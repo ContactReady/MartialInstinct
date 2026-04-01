@@ -111,6 +111,12 @@ export const InstructorView: React.FC = () => {
     getBadgeDisplaySettings,
     setBadgeDisplaySettings,
     computeBadges,
+    flaggedQuestions,
+    flagSystemEnabled,
+    toggleFlagSystem,
+    releaseFlaggedQuestion,
+    editQuestionOverride,
+    questionOverrides,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>(() => (localStorage.getItem('mi_active_tab_instructor') as Tab) || 'dashboard');
@@ -2838,6 +2844,104 @@ export const InstructorView: React.FC = () => {
             )}
             </div>
 
+            {/* ── Quiz-Fragen: Flag-System ── */}
+            <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
+              <TrainingAccordionHeader id="training_flags" title="🚩 Gemeldete Fragen" subtitle={`${flaggedQuestions.length} Meldung${flaggedQuestions.length !== 1 ? 'en' : ''} offen · Flag-System verwalten`} />
+              {plattformOpen['training_flags'] && (
+              <div className="border-t border-gray-700/50 p-3 space-y-4">
+
+                {/* Flag-System Toggle */}
+                <div className="flex items-center justify-between bg-gray-800/50 rounded-xl p-3 border border-gray-700">
+                  <div>
+                    <div className="text-white font-semibold text-sm">Flag-System</div>
+                    <div className="text-gray-500 text-xs">Mitglieder können Fragen als fehlerhaft melden</div>
+                  </div>
+                  <button
+                    onClick={() => toggleFlagSystem(!flagSystemEnabled)}
+                    className={`relative w-12 h-6 rounded-full transition-all ${flagSystemEnabled ? 'bg-red-600' : 'bg-gray-600'}`}
+                  >
+                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${flagSystemEnabled ? 'left-6' : 'left-0.5'}`} />
+                  </button>
+                </div>
+
+                {/* Gemeldete Fragen */}
+                {flaggedQuestions.length === 0 ? (
+                  <div className="text-center text-gray-600 text-sm py-4">Keine offenen Meldungen</div>
+                ) : (
+                  <div className="space-y-3">
+                    {flaggedQuestions.map(flag => {
+                      const moduleQuestions = getQuizQuestionsForModule(flag.moduleId);
+                      const q = moduleQuestions.find(qq => qq.id === flag.questionId);
+                      const override = questionOverrides[flag.questionId] ?? {};
+                      const module = MODULES.find(m => m.id === flag.moduleId);
+                      return (
+                        <div key={`${flag.questionId}-${flag.flaggedBy}`} className="bg-gray-900/60 rounded-xl border border-red-500/30 p-4 space-y-3">
+                          {/* Flag-Header */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[10px] text-red-400 font-bold uppercase tracking-widest mb-1">
+                                {module?.icon} {module?.name} · {flag.flaggedByName} · {new Date(flag.flaggedAt).toLocaleDateString('de-DE')}
+                              </div>
+                              <div className="text-white text-sm font-medium leading-snug">
+                                {q?.question ?? <span className="text-gray-500 italic">Frage nicht gefunden</span>}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Kommentar */}
+                          <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-sm text-red-300 leading-snug">
+                            💬 "{flag.comment}"
+                          </div>
+
+                          {/* Aktuelle Antwort */}
+                          {q && (
+                            <div className="text-xs text-gray-500 space-y-1">
+                              {q.type === 'matching' ? (
+                                q.pairs?.map((p, i) => (
+                                  <div key={i} className="flex gap-2"><span className="text-gray-400">{p.left}</span><span>→</span><span className="text-gray-400">{p.right}</span></div>
+                                ))
+                              ) : q.type === 'multiple' ? (
+                                <div>Korrekt: {q.correctIndices?.map(i => q.options?.[i]).filter(Boolean).join(', ')}</div>
+                              ) : (
+                                <div>Korrekte Antwort: <span className="text-gray-300">{q.options?.[q.correctIndex ?? 0] ?? '–'}</span></div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Quick-Edit: Erklärung */}
+                          {q && (
+                            <div className="space-y-2">
+                              <div className="text-xs text-gray-500 font-medium">Erklärung (Override):</div>
+                              <textarea
+                                defaultValue={override.explanation ?? q.explanation ?? ''}
+                                onBlur={e => {
+                                  const val = e.target.value.trim();
+                                  if (val !== (q.explanation ?? '')) editQuestionOverride(flag.questionId, { explanation: val });
+                                }}
+                                rows={2}
+                                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-white resize-none focus:outline-none focus:border-yellow-500"
+                              />
+                            </div>
+                          )}
+
+                          {/* Aktionen */}
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => releaseFlaggedQuestion(flag.questionId)}
+                              className="flex-1 bg-green-600/80 hover:bg-green-600 text-white text-xs py-2 rounded-lg font-semibold transition-all"
+                            >
+                              ✓ Freigeben (Meldung schließen)
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              )}
+            </div>
+
             {/* ── Modul-Inhalt bearbeiten ── */}
             <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
               <TrainingAccordionHeader id="training_inhalt" title="Modul-Inhalt bearbeiten" subtitle="Techniken und Quiz-Fragen pro Modul pflegen." />
@@ -3037,9 +3141,9 @@ export const InstructorView: React.FC = () => {
                           <div key={q.id} className="flex items-start gap-2 bg-gray-800/50 rounded-lg px-3 py-2.5 group border border-gray-700/30 hover:border-gray-600/50">
                             <div className="flex-1 min-w-0">
                               <div className="text-gray-200 text-sm leading-relaxed">{q.question}</div>
-                              <div className="text-gray-500 text-xs mt-0.5">✓ {q.options[q.correctIndex]}</div>
+                              <div className="text-gray-500 text-xs mt-0.5">✓ {q.options?.[q.correctIndex ?? 0]}</div>
                             </div>
-                            <button onClick={() => openEditQuestion(q.id, q.question, q.options, q.correctIndex, q.explanation ?? '')} className="text-gray-500 hover:text-white text-xs flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">✏️</button>
+                            <button onClick={() => openEditQuestion(q.id, q.question, q.options ?? [], q.correctIndex ?? 0, q.explanation ?? '')} className="text-gray-500 hover:text-white text-xs flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">✏️</button>
                           </div>
                         )
                       ))}

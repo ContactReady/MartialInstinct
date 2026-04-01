@@ -7,128 +7,992 @@
 import { QuizQuestion } from '../types';
 
 // ============================================
-// MODUL 1 — Mission Begins (Grundlagen)
+// MODUL 1 — Mission Begins
+// 65 Fragen — 5 Typen:
+// 15 × truefalse | 20 × single | 10 × multiple | 8 × matching | 12 × fillblank
+// Inhalte: Gesetzliche Grundlagen, 7 Verhaltensrichtlinien,
+//          Stellungen, Eingänge, Distanzmanagement, Grundtechniken
 // ============================================
 export const mod1Questions: QuizQuestion[] = [
+
+  // ── RICHTIG / FALSCH (15) ──────────────────────────────────────────────────
+
   {
-    id: 'm1q1',
-    question: 'Welche drei Grundstellungen unterscheidet das M.I. System?',
+    id: 'm1tf1',
+    type: 'truefalse',
+    question: '§ 32 StGB (Notwehr) gilt nur bei Angriffen von Menschen.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 0,
+    explanation: '§ 32 StGB und § 227 BGB gelten nur für menschliche Angriffe. Für Angriffe von Tieren oder Gefahren von Sachen gilt § 228 BGB.'
+  },
+  {
+    id: 'm1tf2',
+    type: 'truefalse',
+    question: 'Putativnotwehr bedeutet, der Täter handelt absichtlich außerhalb der Notwehr.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Putativnotwehr ist eine irrtümliche Notwehr — der Täter glaubt fälschlicherweise, dass die Voraussetzungen der Notwehr vorliegen.'
+  },
+  {
+    id: 'm1tf3',
+    type: 'truefalse',
+    question: '§ 33 StGB schützt den Täter, der die Notwehr aus Furcht oder Schrecken überschreitet, vor Bestrafung.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 0,
+    explanation: '§ 33 StGB: Überschreitung der Notwehr aus Verwirrung, Furcht oder Schrecken → keine Bestrafung.'
+  },
+  {
+    id: 'm1tf4',
+    type: 'truefalse',
+    question: 'Der Versuch einer einfachen Körperverletzung (§ 223 StGB) ist nicht strafbar.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. § 223 Abs. 2 StGB besagt ausdrücklich: "Der Versuch ist strafbar."'
+  },
+  {
+    id: 'm1tf5',
+    type: 'truefalse',
+    question: '"Einsatzbereit" bedeutet zwei bis drei Bewegungen bis zum Einsatz der Waffe.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. "Einsatzbereit" = eine Bewegung bis zum effektiven Einsatz. "Griffbereit" = zwei bis drei Bewegungen.'
+  },
+  {
+    id: 'm1tf6',
+    type: 'truefalse',
+    question: 'Die Ready Position ist die Kampfstellung, die bei tatsächlichem Kontakt eingenommen wird.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Die Ready Position ist für potenzielle Konfliktsituationen. Bei tatsächlichem Kontakt wechselt man in die Contact Ready Position.'
+  },
+  {
+    id: 'm1tf7',
+    type: 'truefalse',
+    question: 'Laut Verhaltensrichtlinie 6 soll man nach einem Treffer sofort aufhören zu kämpfen.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Richtlinie 6: Wenn du getroffen wirst, machst du weiter — kämpfen, reagieren oder flüchten. Der Gegner macht auch weiter.'
+  },
+  {
+    id: 'm1tf8',
+    type: 'truefalse',
+    question: '§ 228 BGB gilt für Angriffe von Tieren oder ausgehende Gefahren von Sachen.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 0,
+    explanation: '§ 228 BGB (nicht § 32 StGB) regelt die Notwehr bei Tierangriffen oder Gefahren von Sachen.'
+  },
+  {
+    id: 'm1tf9',
+    type: 'truefalse',
+    question: 'Beim Slide-Step wird zuerst der hintere Fuß bewegt.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Beim Slide-Step wird zuerst der VORDERE Fuß aus der Gefahrenzone bewegt (Slide), dann folgt der hintere (Step).'
+  },
+  {
+    id: 'm1tf10',
+    type: 'truefalse',
+    question: 'Der Switch-Auslagenwechsel ist schneller und explosiver als der Schritt.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 0,
+    explanation: 'Richtig. Switch = beide Füße nahezu gleichzeitig, schnell und explosiv. Schritt = nacheinander, kontrollierter.'
+  },
+  {
+    id: 'm1tf11',
+    type: 'truefalse',
+    question: 'Verhaltensrichtlinie 7 sagt: Nach einem Konflikt davon ausgehen, dass alles in Ordnung ist.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Genau das Gegenteil: NICHT davon ausgehen, dass alles okay ist. Körper aktiv abtasten, auf Blut achten, Stop the Bleed wenn nötig.'
+  },
+  {
+    id: 'm1tf12',
+    type: 'truefalse',
+    question: 'Der Push ist die kontrollierteste und langsamste Grundbewegung.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Der Push ist die EXPLOSIVSTE Bewegung — für schnelle Distanzveränderung. Step & Slide ist die kontrollierteste.'
+  },
+  {
+    id: 'm1tf13',
+    type: 'truefalse',
+    question: 'Wer bei einem Unglücksfall keine Hilfe leistet, kann nach § 323c StGB bestraft werden.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 0,
+    explanation: '§ 323c StGB: Unterlassene Hilfeleistung wird mit bis zu einem Jahr Freiheitsstrafe oder Geldstrafe bestraft — wenn Hilfe möglich und zumutbar war.'
+  },
+  {
+    id: 'm1tf14',
+    type: 'truefalse',
+    question: 'Strong-Side-Forward bedeutet, die schwache Seite ist vorne für bessere Reichweite.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Strong-Side-Forward = starke (dominante) Seite ist vorne. Kürzerer Weg zum Ziel = schnellere Aktion.'
+  },
+  {
+    id: 'm1tf15',
+    type: 'truefalse',
+    question: '§ 34 StGB rechtfertigt eine Handlung im Notstand nur, wenn das geschützte Rechtsgut wesentlich höherwertig ist als der entstandene Schaden.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 0,
+    explanation: '§ 34 StGB (Rechtfertigender Notstand): Das geschützte Gut muss wesentlich höherwertig sein als der Schaden — sonst keine Rechtfertigung.'
+  },
+
+  // ── SINGLE CHOICE (20) ────────────────────────────────────────────────────
+
+  {
+    id: 'm1sc1',
+    type: 'single',
+    question: 'Welcher Paragraph regelt die schwere Körperverletzung mit dauerhaften Folgen?',
+    options: ['§ 223 StGB', '§ 224 StGB', '§ 226 StGB', '§ 323c StGB'],
+    correctIndex: 2,
+    explanation: '§ 226 StGB regelt die schwere Körperverletzung — mit Folgen wie Verlust von Sehvermögen, Gehör, Körperteilen oder dauerhafter Entstellung.'
+  },
+  {
+    id: 'm1sc2',
+    type: 'single',
+    question: 'Was ist die Mindeststrafe bei § 224 StGB (gefährliche Körperverletzung)?',
+    options: ['Geldstrafe', 'Sechs Monate Freiheitsstrafe', 'Ein Jahr Freiheitsstrafe', 'Drei Jahre Freiheitsstrafe'],
+    correctIndex: 1,
+    explanation: '§ 224 StGB: Freiheitsstrafe von sechs Monaten bis zu zehn Jahren.'
+  },
+  {
+    id: 'm1sc3',
+    type: 'single',
+    question: 'Welche Stellung wird eingenommen, sobald Kontakt entsteht?',
+    options: ['Neutrale Position', 'Ready Position', 'Contact Ready Position', 'Strong-Side-Forward'],
+    correctIndex: 2,
+    explanation: 'Kernregel: Sobald Kontakt entsteht → Contact Ready. Diese Position ist auf Stabilität, Agilität und sofortige Handlungsfähigkeit ausgelegt.'
+  },
+  {
+    id: 'm1sc4',
+    type: 'single',
+    question: 'Was bedeutet "griffbereit" bei einer Waffe?',
+    options: ['Eine Bewegung bis zum Einsatz', 'Zwei bis drei Bewegungen bis zum Einsatz', 'Die Waffe ist bereits gezogen', 'Die Waffe ist gesichert'],
+    correctIndex: 1,
+    explanation: 'Griffbereit = 2–3 Bewegungen bis zum effektiven Einsatz. Einsatzbereit = eine Bewegung.'
+  },
+  {
+    id: 'm1sc5',
+    type: 'single',
+    question: 'Welche Verhaltensrichtlinie betont: "Der beste Kampf ist der, der nicht stattfindet"?',
+    options: ['Richtlinie 1', 'Richtlinie 2', 'Richtlinie 3', 'Richtlinie 4'],
+    correctIndex: 1,
+    explanation: 'Verhaltensrichtlinie 2: Vermeide Konfliktsituationen. Meide Orte mit hohem Konfliktpotenzial, erkenne Gefahren frühzeitig, handle deeskalierend.'
+  },
+  {
+    id: 'm1sc6',
+    type: 'single',
+    question: 'Welche Vorbereitungsebene umfasst den Umgang mit Tools wie Pfefferspray und Tactical Pen?',
+    options: ['Physisch', 'Mental', 'Emotional', 'Taktisch'],
+    correctIndex: 3,
+    explanation: 'Die taktische Ebene umfasst den Umgang mit Tools: Pfefferspray, Tactical Pen, Messer, Stock. Handlung beginnt vor dem Konflikt.'
+  },
+  {
+    id: 'm1sc7',
+    type: 'single',
+    question: 'Was ist der Hauptvorteil von Strong-Side-Forward?',
+    options: ['Bessere Balance im Sparring', 'Kürzerer Weg zum Ziel für schnellere Aktionen', 'Schwächere Hand schützt den Körper', 'Bessere Optik beim Training'],
+    correctIndex: 1,
+    explanation: 'Wenn die starke Hand vorne ist, ist der Weg zum Ziel kürzer — schnellere Aktion, mehr Überraschungseffekt, universell einsetzbar mit Tool oder Hand.'
+  },
+  {
+    id: 'm1sc8',
+    type: 'single',
+    question: 'Was trainiert Mirror Drill 1?',
+    options: ['Distanz zum Partner halten', 'Schritte vom Partner kopieren', 'Angriffe imitieren', 'Tempowechsel üben'],
+    correctIndex: 1,
+    explanation: 'Mirror Drill 1: Schritte vom Partner kopieren. Mirror Drill 2: Distanz zum Partner halten.'
+  },
+  {
+    id: 'm1sc9',
+    type: 'single',
+    question: 'Welcher Auslagenwechsel wird als schnell und explosiv beschrieben?',
+    options: ['Vorderer Wechsel', 'Hinterer Wechsel', 'Switch', 'Schritt'],
+    correctIndex: 2,
+    explanation: 'Switch = beide Füße nahezu gleichzeitig → schnell und explosiv. Schritt = kontrolliert, nacheinander.'
+  },
+  {
+    id: 'm1sc10',
+    type: 'single',
+    question: 'Was ist die Strafe bei § 226 StGB, wenn die schwere Körperverletzung mit Absicht begangen wurde?',
+    options: ['Mindestens 6 Monate', 'Mindestens 1 Jahr', 'Mindestens 3 Jahre', 'Mindestens 5 Jahre'],
+    correctIndex: 2,
+    explanation: '§ 226 Abs. 2 StGB: Bei Absicht mindestens 3 Jahre Freiheitsstrafe.'
+  },
+  {
+    id: 'm1sc11',
+    type: 'single',
+    question: 'Was passiert beim Vorderen Auslagenwechsel zuerst?',
+    options: ['Der hintere Fuß bewegt sich', 'Beide Füße gleichzeitig', 'Der vordere Fuß leitet den Wechsel ein', 'Der Körperschwerpunkt sinkt'],
+    correctIndex: 2,
+    explanation: 'Beim vorderen Wechsel bewegt sich der vordere Fuß zuerst und leitet den Wechsel ein. Danach wird der hintere Fuß passend nachgeführt.'
+  },
+  {
+    id: 'm1sc12',
+    type: 'single',
+    question: 'Wofür ist der Push als Grundbewegung gedacht?',
+    options: ['Kontrolle in engen Situationen', 'Explosive, schnelle Distanzveränderung', 'Sicherer Rückzug', 'Balance beim Angriff'],
+    correctIndex: 1,
+    explanation: 'Der Push kommt immer dann zum Einsatz, wenn Zeit ein kritischer Faktor ist — du willst sofort reagieren, nicht "gehen". Geschwindigkeit + Energie.'
+  },
+  {
+    id: 'm1sc13',
+    type: 'single',
+    question: 'Welcher Paragraph schützt bei Überschreitung der Notwehr aus Verwirrung oder Schrecken?',
+    options: ['§ 32 StGB', '§ 33 StGB', '§ 34 StGB', '§ 228 BGB'],
+    correctIndex: 1,
+    explanation: '§ 33 StGB: Wer die Notwehr aus Verwirrung, Furcht oder Schrecken überschreitet, wird nicht bestraft.'
+  },
+  {
+    id: 'm1sc14',
+    type: 'single',
+    question: 'Was unterscheidet die Ready Position von der Contact Ready Position taktisch?',
+    options: ['Contact Ready ist defensiver', 'Ready für potenzielle Konflikte, Contact Ready für tatsächlichen Kontakt', 'Beide sind gleich — nur optisch verschieden', 'Ready wird nur im Sparring verwendet'],
+    correctIndex: 1,
+    explanation: 'Ready = vorbereitet ohne Aggression zu signalisieren. Contact Ready = für tatsächlichen oder unmittelbar bevorstehenden Kontakt — auf Stabilität und Agilität ausgelegt.'
+  },
+  {
+    id: 'm1sc15',
+    type: 'single',
+    question: 'Was beschreibt der defensive Eingang?',
+    options: ['Schritt nach vorne', 'Schritt + Angriff', 'Schritt zurück', 'Seitlicher Schritt'],
+    correctIndex: 2,
+    explanation: 'Der defensive Eingang ist ein Schritt zurück — Übergang in Contact Ready durch Rückwärtsbewegung, um Distanz zu schaffen.'
+  },
+  {
+    id: 'm1sc16',
+    type: 'single',
+    question: 'Was ist das unveränderliche Grundprinzip beim Slide-Step?',
     options: [
-      'Angriffs-, Verteidigungs- und Fluchthaltung',
-      'Ready Position, Contact Ready Position und Neutrale Stellung',
-      'Kampfstellung, Ruhehaltung und Laufposition',
-      'Offensiv-, Defensiv- und Neutralhaltung'
-    ],
-    correctIndex: 1,
-    explanation: 'Das M.I. System unterscheidet drei Grundstellungen: die Ready Position (Bereitschaftsstellung), die Contact Ready Position (Konfliktstellung) und die Neutrale Stellung.'
-  },
-  {
-    id: 'm1q2',
-    question: 'Wofür dient die Ready-Position?',
-    options: ['Für den Angriff', 'Als Deeskalations- und Alarmbereitschaftshaltung', 'Nur für das Sparring', 'Als Ruhehaltung zwischen Techniken'],
-    correctIndex: 1,
-    explanation: 'Die Ready-Position ist eine Deeskalations- und Alarmbereitschaftshaltung — sie signalisiert keine Aggressivität, hält dich aber kampfbereit.'
-  },
-  {
-    id: 'm1q3',
-    question: 'Was versteht man unter "Distanzgefühl"?',
-    options: ['Die Fähigkeit, Entfernungen zu schätzen', 'Das Gefühl für Raum und Reichweite im Kampf', 'Den Abstand zum nächsten Ausgang', 'Die Laufgeschwindigkeit'],
-    correctIndex: 1,
-    explanation: 'Distanzgefühl ist das Gespür für Raum und Reichweite — du weißt intuitiv, wann du in Reichweite eines Angriffs bist und wann nicht.'
-  },
-  {
-    id: 'm1q4',
-    question: 'Warum sind Grundbewegungen so wichtig?',
-    options: ['Für besseres Aussehen beim Training', 'Für sichere Fortbewegung in alle Richtungen unter Druck', 'Nur für Wettkampfsport relevant', 'Um schneller laufen zu können'],
-    correctIndex: 1,
-    explanation: 'Grundbewegungen ermöglichen sichere Fortbewegung in alle Richtungen — auch unter Druck, wenn der Kopf nicht mehr klar denkt.'
-  },
-  {
-    id: 'm1q5',
-    question: 'Was umfasst "Mobility" im Kontext des M.I. Trainings?',
-    options: ['Das Tragen von Handys', 'Stretching, Dehnen und Stabilität', 'Schnelle Beinarbeit', 'Beweglichkeit der Hände'],
-    correctIndex: 1,
-    explanation: 'Mobility umfasst Stretching, Dehnen und Stabilität — die Grundlage für verletzungsfreies und effektives Training.'
-  },
-  {
-    id: 'm1q6',
-    question: 'Welcher Fuß steht im M.I. System in der Regel vorne?',
-    options: [
-      'Immer der schwache Fuß — der starke Fuß generiert Kraft von hinten',
-      'Beide Füße stehen parallel — es gibt keine Vorgabe',
-      'In der Regel der starke Fuß, wenn die Situation es erlaubt — aber situativ kann auch der schwache Fuß vorne sein',
-      'Immer der linke Fuß, unabhängig von der Dominanz'
+      'Der vordere Fuß bewegt sich immer zuerst',
+      'Der hintere Fuß bewegt sich immer zuerst',
+      'Die Gleitbewegung kommt immer vor dem Schritt',
+      'Beide Füße bewegen sich gleichzeitig'
     ],
     correctIndex: 2,
-    explanation: 'Trainiert wird hauptsächlich Strong Side Forward — starker Fuß vorne. Das ist die bevorzugte Ausgangsposition. In der Realität kann man das jedoch nicht immer steuern: die Situation zwingt einen manchmal in die andere Auslage. Daher muss man beide Seiten kennen.'
+    explanation: 'Das Grundprinzip: Slide (Gleiten) kommt immer vor Step (Schritt). Welcher Fuß gleitet, hängt von der Bewegungsrichtung ab — vorwärts: hinterer Fuß, rückwärts: vorderer Fuß.'
   },
   {
-    id: 'm1q7',
-    question: 'Was ist der Zweck von kampfkunstspezifischer Fitness?',
-    options: ['Muskeln aufbauen für besseres Aussehen', 'Die Kondition für realistische Konfliktsituationen aufbauen', 'Marathon-Vorbereitung', 'Gewichtheben lernen'],
-    correctIndex: 1,
-    explanation: 'Kampfkunstspezifische Fitness bereitet dich auf die körperlichen Anforderungen in echten Konfliktsituationen vor — Ausdauer, Explosivität, Belastbarkeit.'
-  },
-  {
-    id: 'm1q8',
-    question: 'Was ist der Unterschied zwischen Ready Position und Contact Ready Position?',
+    id: 'm1sc17',
+    type: 'single',
+    question: 'Was fordert Verhaltensrichtlinie 5?',
     options: [
-      'Kein Unterschied — beide sind identisch',
-      'Ready Position ist die Bereitschaftsstellung zur Deeskalation; Contact Ready Position ist die Konfliktstellung wenn Kontakt unmittelbar bevorsteht',
-      'Die Contact Ready Position ist defensiver als die Ready Position',
-      'Die Ready Position wird nur im Sparring verwendet'
+      'Verletzungen durch Distanz aktiv vermeiden',
+      'Psychologische Vorbereitung darauf, verletzt zu werden',
+      'Immer zuerst fliehen, wenn Gefahr besteht',
+      'Keine Waffe einsetzen, wenn man getroffen wird'
     ],
     correctIndex: 1,
-    explanation: 'Die Ready Position (Bereitschaftsstellung) signalisiert keine Aggression und hält dich kampfbereit. Die Contact Ready Position (Konfliktstellung) ist die aktivere Stellung, wenn physischer Kontakt unmittelbar bevorsteht oder bereits stattfindet.'
+    explanation: 'Richtlinie 5: Du musst damit rechnen, getroffen zu werden — mentale Vorbereitung, Training unter Druck, mit Schmerz umgehen, Stresssituationen erleben.'
   },
   {
-    id: 'm1q9',
-    question: 'Warum müssen Grundbewegungen zur Gewohnheit werden?',
-    options: ['Für bessere Noten beim Grading', 'Weil unter Stress nur automatisierte Bewegungen funktionieren', 'Um Zeit im Training zu sparen', 'Weil der Instructor es verlangt'],
-    correctIndex: 1,
-    explanation: 'Unter echtem Stress greift das Gehirn auf automatisierte Bewegungen zurück. Wenn Grundbewegungen nicht zur Gewohnheit wurden, versagen sie im Ernstfall.'
+    id: 'm1sc18',
+    type: 'single',
+    question: 'Welcher Paragraph definiert "unterlassene Hilfeleistung"?',
+    options: ['§ 223 StGB', '§ 226 StGB', '§ 34 StGB', '§ 323c StGB'],
+    correctIndex: 3,
+    explanation: '§ 323c StGB: Wer bei Unglücksfällen oder Gefahr keine Hilfe leistet, obwohl möglich und zumutbar, wird mit Freiheitsstrafe bis zu einem Jahr oder Geldstrafe bestraft.'
   },
   {
-    id: 'm1q10',
-    question: 'Was ist die wichtigste Eigenschaft guter Grundbewegungen?',
-    options: ['Schnelligkeit', 'Sicherheit und Kontrolle in alle Richtungen', 'Geräuschlosigkeit', 'Eleganz'],
-    correctIndex: 1,
-    explanation: 'Gute Grundbewegungen sind sicher und kontrolliert in alle Richtungen — du kannst angreifen, ausweichen und fliehen ohne die Stellung zu verlieren.'
+    id: 'm1sc19',
+    type: 'single',
+    question: 'Was passiert beim Hinteren Auslagenwechsel zuerst?',
+    options: ['Der vordere Fuß bewegt sich', 'Beide Füße gleichzeitig', 'Der hintere Fuß leitet den Wechsel ein', 'Der Körperschwerpunkt sinkt'],
+    correctIndex: 2,
+    explanation: 'Beim Hinteren Wechsel bewegt sich der hintere Fuß zuerst und leitet den Wechsel ein. Danach folgt der vordere Fuß in die neue Position.'
   },
   {
-    id: 'm1q11',
-    question: 'Wie oft sollten Mobility-Übungen durchgeführt werden?',
-    options: ['Nur vor Wettkämpfen', 'Regelmäßig als Teil jeder Trainingseinheit', 'Einmal pro Monat', 'Nur wenn Schmerzen vorhanden sind'],
-    correctIndex: 1,
-    explanation: 'Mobility ist ein regelmäßiger Bestandteil jeder Trainingseinheit — nur durch Kontinuität verbessert sich Beweglichkeit und Verletzungsprävention.'
+    id: 'm1sc20',
+    type: 'single',
+    question: 'Welche Aussage über den Schritt-Auslagenwechsel ist FALSCH?',
+    options: [
+      'Der Wechsel erfolgt nacheinander',
+      'Die Bewegung ist kontrollierter als der Switch',
+      'Es ist der explosivste Auslagenwechsel',
+      'Ein Fuß geht am anderen vorbei nach vorne'
+    ],
+    correctIndex: 2,
+    explanation: 'Der Switch ist explosiver, nicht der Schritt. Der Schritt ist kontrolliert und nacheinander — der hintere Fuß geht am vorderen vorbei nach vorne.'
+  },
+
+  // ── MULTIPLE CHOICE (10) ──────────────────────────────────────────────────
+
+  {
+    id: 'm1mc1',
+    type: 'multiple',
+    question: 'Welche Paragraphen regeln Notwehr direkt? (Mehrere möglich)',
+    options: ['§ 32 StGB', '§ 33 StGB', '§ 227 BGB', '§ 228 BGB'],
+    correctIndices: [0, 2],
+    explanation: '§ 32 StGB und § 227 BGB regeln Notwehr gegen menschliche Angriffe. § 33 ist Notwehrüberschreitung, § 228 BGB gilt für Tiere/Sachen.'
   },
   {
-    id: 'm1q12',
-    question: 'Wofür steht Modul 1 "Mission Begins"?',
-    options: ['Der erste Kampf', 'Das Fundament aller weiteren Techniken und Fähigkeiten', 'Die Einführung in den Wettkampf', 'Die theoretische Ausbildung'],
-    correctIndex: 1,
-    explanation: 'Mission Begins legt das Fundament — alle weiteren Module bauen auf den hier gelernten Grundlagen auf.'
+    id: 'm1mc2',
+    type: 'multiple',
+    question: 'Welche Vorbereitungsebenen nennt Verhaltensrichtlinie 1? (Mehrere möglich)',
+    options: ['Physisch', 'Mental', 'Emotional', 'Taktisch'],
+    correctIndices: [0, 1, 2, 3],
+    explanation: 'Alle vier Ebenen sind korrekt: Physisch (Training), Mental (Routine), Emotional (Stresstraining), Taktisch (Tools). Vorbereitung beginnt vor dem Konflikt.'
   },
   {
-    id: 'm1q13',
-    question: 'Was passiert, wenn das Distanzgefühl fehlt?',
-    options: ['Nichts — Distanz ist unwichtig', 'Du bist zu nah oder zu weit — Angriffe treffen oder du kannst nicht kontern', 'Du wirst müde', 'Du verlierst die Balance'],
-    correctIndex: 1,
-    explanation: 'Ohne Distanzgefühl kannst du weder sicher angreifen noch verteidigen — du befindest dich ständig in der falschen Position.'
+    id: 'm1mc3',
+    type: 'multiple',
+    question: 'Welche Voraussetzungen müssen für eine Strafbarkeit erfüllt sein? (Mehrere möglich)',
+    options: ['Tatbestand', 'Absicht', 'Rechtswidrigkeit', 'Schuld'],
+    correctIndices: [0, 2, 3],
+    explanation: 'Tatbestand, Rechtswidrigkeit und Schuld müssen alle drei erfüllt sein. "Absicht" ist keine eigenständige Grundvoraussetzung der Strafbarkeit.'
   },
   {
-    id: 'm1q14',
-    question: 'Was ist der Unterschied zwischen Fitness und Mobility im Training?',
-    options: ['Kein Unterschied — beides ist dasselbe', 'Fitness = Kondition/Kraft; Mobility = Beweglichkeit/Stabilität', 'Fitness ist für Anfänger, Mobility für Fortgeschrittene', 'Mobility ist optionales Extra'],
-    correctIndex: 1,
-    explanation: 'Fitness bezieht sich auf Kondition und Kraft; Mobility auf Beweglichkeit, Dehnung und Gelenkstabilität. Beide sind essentiell und ergänzen sich.'
+    id: 'm1mc4',
+    type: 'multiple',
+    question: 'Welche Merkmale können § 224 StGB (gefährliche Körperverletzung) erfüllen? (Mehrere möglich)',
+    options: ['Mittels einer Waffe', 'Durch Gift oder Stoffe', 'Gemeinschaftlich mit anderen', 'Nur bei Verlust eines Körperteils'],
+    correctIndices: [0, 1, 2],
+    explanation: '§ 224 listet 5 Merkmale: Gift/Stoffe, Waffe/Werkzeug, hinterlistiger Überfall, gemeinschaftlich, lebensgefährdend. Verlust von Körperteilen ist § 226.'
   },
   {
-    id: 'm1q15',
-    question: 'Warum ist die Schulterbreite beim Stand wichtig?',
-    options: ['Für besseres Aussehen', 'Für optimale Stabilität und Gleichgewicht', 'Vorschrift laut Hausordnung', 'Für schnelleres Laufen'],
+    id: 'm1mc5',
+    type: 'multiple',
+    question: 'Was verändert sich in der Contact Ready Position gegenüber der Ready Position? (Mehrere möglich)',
+    options: ['Tieferer Körperschwerpunkt', 'Hände höher und kampfbereiter', 'Füße klar versetzt', 'Entspanntere Körperhaltung'],
+    correctIndices: [0, 1, 2],
+    explanation: 'In Contact Ready sinkt der Schwerpunkt tiefer, Hände sind höher/kampfbereiter, Füße klarer versetzt — alles auf tatsächlichen Konflikt ausgelegt.'
+  },
+  {
+    id: 'm1mc6',
+    type: 'multiple',
+    question: 'Welche Auslagenwechsel gibt es im M.I. System? (Mehrere möglich)',
+    options: ['Vorderer Wechsel', 'Hinterer Wechsel', 'Switch', 'Schritt'],
+    correctIndices: [0, 1, 2, 3],
+    explanation: 'Alle vier sind korrekt: Vorderer Wechsel, Hinterer Wechsel, Switch und Schritt. Jeder hat eigene Einsatzsituationen.'
+  },
+  {
+    id: 'm1mc7',
+    type: 'multiple',
+    question: 'Was fordert Verhaltensrichtlinie 7 nach einem Konflikt? (Mehrere möglich)',
+    options: ['Körper aktiv abtasten', 'Auf Blut achten', 'Sofort davon ausgehen, dass alles okay ist', 'Stop the Bleed anwenden wenn nötig'],
+    correctIndices: [0, 1, 3],
+    explanation: 'Richtlinie 7: Körper abtasten, auf Blut achten, Stop the Bleed wenn nötig. Schmerz kann verzögert auftreten — NICHT davon ausgehen, dass alles okay ist.'
+  },
+  {
+    id: 'm1mc8',
+    type: 'multiple',
+    question: 'Welche der folgenden sind Schrittkombinationen im Distanzmanagement? (Mehrere möglich)',
+    options: ['Step & Slide', 'Slide-Step', 'Push', 'Switch'],
+    correctIndices: [0, 1, 2],
+    explanation: 'Step & Slide, Slide-Step und Push sind die drei Schrittkombinationen. Switch ist ein Auslagenwechsel, keine Schrittkombination.'
+  },
+  {
+    id: 'm1mc9',
+    type: 'multiple',
+    question: 'Welche Grundtechniken gehören zu den Hand-/Armtechniken? (Mehrere möglich)',
+    options: ['Jab', 'Stoppkick vorne', 'Ellenbogen', 'Uppercut'],
+    correctIndices: [0, 2, 3],
+    explanation: 'Jab, Ellenbogen und Uppercut sind Hand-/Armtechniken. Stoppkick vorne ist ein Kick.'
+  },
+  {
+    id: 'm1mc10',
+    type: 'multiple',
+    question: 'Welche Folgen können zu § 226 StGB (schwere Körperverletzung) führen? (Mehrere möglich)',
+    options: ['Verlust des Sehvermögens', 'Verlust des Gehörs', 'Dauerhafte Entstellung', 'Kleine Schnittwunde ohne Dauerfolge'],
+    correctIndices: [0, 1, 2],
+    explanation: '§ 226 gilt bei dauerhaften schweren Folgen: Verlust von Sehvermögen, Gehör, Sprache, Körperteilen oder dauerhafter Entstellung. Kleine Wunden ohne Dauerfolge nicht.'
+  },
+
+  // ── MATCHING (8) ─────────────────────────────────────────────────────────
+
+  {
+    id: 'm1ma1',
+    type: 'matching',
+    question: 'Ordne die Paragraphen ihren Themen zu:',
+    pairs: [
+      { left: '§ 32 StGB', right: 'Notwehr (menschliche Angriffe)' },
+      { left: '§ 34 StGB', right: 'Rechtfertigender Notstand' },
+      { left: '§ 224 StGB', right: 'Gefährliche Körperverletzung' },
+      { left: '§ 323c StGB', right: 'Unterlassene Hilfeleistung' },
+    ],
+    explanation: '§ 32 = Notwehr, § 34 = Notstand, § 224 = Gefährliche KV, § 323c = Unterlassene Hilfeleistung.'
+  },
+  {
+    id: 'm1ma2',
+    type: 'matching',
+    question: 'Ordne die Positionen ihrer Bedeutung zu:',
+    pairs: [
+      { left: 'Neutrale Position', right: 'Alltag' },
+      { left: 'Ready Position', right: 'Potenzieller Konflikt' },
+      { left: 'Contact Ready', right: 'Tatsächlicher Kontakt' },
+      { left: 'Strong-Side-Forward', right: 'Starke Seite vorne' },
+    ],
+    explanation: 'Neutral → Alltag, Ready → potenzieller Konflikt, Contact Ready → tatsächlicher Kontakt, Strong-Side-Forward → starke Seite vorne.'
+  },
+  {
+    id: 'm1ma3',
+    type: 'matching',
+    question: 'Ordne Verhaltensrichtlinien 1–4 ihrem Kern zu:',
+    pairs: [
+      { left: 'Richtlinie 1', right: 'Sei vorbereitet' },
+      { left: 'Richtlinie 2', right: 'Vermeide Konflikte' },
+      { left: 'Richtlinie 3', right: 'Waffe einsatzbereit' },
+      { left: 'Richtlinie 4', right: 'Kontrolliere die Distanz' },
+    ],
+    explanation: 'R1 = Vorbereitung, R2 = Konfliktvermeidung, R3 = Waffe einsatzbereit, R4 = Distanzkontrolle.'
+  },
+  {
+    id: 'm1ma4',
+    type: 'matching',
+    question: 'Ordne Verhaltensrichtlinien 5–7 und Putativnotwehr zu:',
+    pairs: [
+      { left: 'Richtlinie 5', right: 'Rechne mit Verletzungen' },
+      { left: 'Richtlinie 6', right: 'Nach Treffer: mach weiter' },
+      { left: 'Richtlinie 7', right: 'Körper danach prüfen' },
+      { left: 'Putativnotwehr', right: 'Irrtümliche Notwehrannahme' },
+    ],
+    explanation: 'R5 = mentale Vorbereitung auf Verletzungen, R6 = Weiterkämpfen, R7 = Körper nach Konflikt prüfen, Putativnotwehr = Irrtum über Notwehrlage.'
+  },
+  {
+    id: 'm1ma5',
+    type: 'matching',
+    question: 'Ordne die Auslagenwechsel ihrer Beschreibung zu:',
+    pairs: [
+      { left: 'Vorderer Wechsel', right: 'Vorderer Fuß leitet ein' },
+      { left: 'Hinterer Wechsel', right: 'Hinterer Fuß leitet ein' },
+      { left: 'Switch', right: 'Beide Füße gleichzeitig' },
+      { left: 'Schritt', right: 'Kontrolliert, nacheinander' },
+    ],
+    explanation: 'Jeder Wechsel hat eine klar definierte Einleitungsbewegung. Switch ist am explosivsten, Schritt am kontrolliertesten.'
+  },
+  {
+    id: 'm1ma6',
+    type: 'matching',
+    question: 'Ordne die Grundbewegungen ihrer Eigenschaft zu:',
+    pairs: [
+      { left: 'Step & Slide', right: 'Kontrolliert und stabil' },
+      { left: 'Slide-Step', right: 'Schnell und reaktiv' },
+      { left: 'Push', right: 'Explosiv, maximale Energie' },
+      { left: 'Mirror Drill 2', right: 'Distanz zum Partner halten' },
+    ],
+    explanation: 'Step & Slide = kontrolliert, Slide-Step = reaktiv (ideal für Defense), Push = explosiv, Mirror Drill 2 = Distanzkontrolle.'
+  },
+  {
+    id: 'm1ma7',
+    type: 'matching',
+    question: 'Ordne Paragraphen ihrem Strafmaß zu:',
+    pairs: [
+      { left: '§ 223 StGB', right: 'Bis zu 5 Jahre' },
+      { left: '§ 224 StGB', right: '6 Monate bis 10 Jahre' },
+      { left: '§ 226 StGB', right: '1 bis 10 Jahre' },
+      { left: '§ 323c StGB', right: 'Bis zu 1 Jahr / Geldstrafe' },
+    ],
+    explanation: '§ 223 = bis 5J, § 224 = 6M–10J, § 226 = 1–10J (bei Absicht: min. 3J), § 323c = bis 1J oder Geldstrafe.'
+  },
+  {
+    id: 'm1ma8',
+    type: 'matching',
+    question: 'Ordne die Vorbereitungsebenen ihrem Inhalt zu:',
+    pairs: [
+      { left: 'Physisch', right: 'Kraft- und Selbstverteidigungstraining' },
+      { left: 'Mental', right: 'Routine und regelmäßiges Training' },
+      { left: 'Emotional', right: 'Sparring und Stresstraining' },
+      { left: 'Taktisch', right: 'Umgang mit Tools wie Pfefferspray' },
+    ],
+    explanation: 'Die 4 Ebenen aus Richtlinie 1: Physisch, Mental, Emotional, Taktisch. Alle vier gemeinsam bilden echte Vorbereitung.'
+  },
+
+  // ── LÜCKENTEXT / FILL-IN-BLANK (12) ─────────────────────────────────────
+
+  {
+    id: 'm1fb1',
+    type: 'fillblank',
+    question: '§ 32 StGB Notwehr gilt nur gegen ___ Angriffe.',
+    options: ['menschliche', 'tierische', 'zufällige', 'staatliche'],
+    correctIndex: 0,
+    explanation: '§ 32 StGB schützt nur vor menschlichen Angriffen. Für Tiere oder Sachen gilt § 228 BGB.'
+  },
+  {
+    id: 'm1fb2',
+    type: 'fillblank',
+    question: '§ 33 StGB schützt die Notwehrüberschreitung aus Verwirrung, Furcht oder ___.',
+    options: ['Schrecken', 'Wut', 'Absicht', 'Irrtum'],
+    correctIndex: 0,
+    explanation: '§ 33 StGB nennt drei Zustände: Verwirrung, Furcht, Schrecken — bei diesen wird die Überschreitung nicht bestraft.'
+  },
+  {
+    id: 'm1fb3',
+    type: 'fillblank',
+    question: '"Einsatzbereit" bedeutet ___ Bewegung bis zum Einsatz der Waffe.',
+    options: ['eine', 'zwei', 'drei', 'keine'],
+    correctIndex: 0,
+    explanation: 'Einsatzbereit = eine Bewegung. Griffbereit = zwei bis drei Bewegungen. Das Ziel: sofort handlungsfähig sein.'
+  },
+  {
+    id: 'm1fb4',
+    type: 'fillblank',
+    question: 'Wer die Distanz kontrolliert, kontrolliert das ___.',
+    options: ['Geschehen', 'Ergebnis', 'Training', 'Gegenüber'],
+    correctIndex: 0,
+    explanation: 'Verhaltensrichtlinie 4: Du bestimmst die Distanz — nicht dein Gegner. Wer die Distanz kontrolliert, kontrolliert das Geschehen.'
+  },
+  {
+    id: 'm1fb5',
+    type: 'fillblank',
+    question: 'Der beste Kampf ist der, der nicht ___.',
+    options: ['stattfindet', 'gewonnen wird', 'verloren wird', 'endet'],
+    correctIndex: 0,
+    explanation: 'Verhaltensrichtlinie 2: Vermeide Konfliktsituationen — der beste Kampf ist der, der gar nicht erst stattfindet.'
+  },
+  {
+    id: 'm1fb6',
+    type: 'fillblank',
+    question: 'Beim Slide-Step kommt die ___ -Bewegung immer zuerst, dann der Schritt.',
+    options: ['Gleit', 'Tritt', 'Sprung', 'Stopp'],
+    correctIndex: 0,
+    explanation: 'Das Grundprinzip Slide-Step: Die Gleitbewegung (Slide) geht immer dem Schritt voraus. Welcher Fuß gleitet, hängt von der Bewegungsrichtung ab.'
+  },
+  {
+    id: 'm1fb7',
+    type: 'fillblank',
+    question: '"Griffbereit" bedeutet ___ bis drei Bewegungen bis zum effektiven Einsatz.',
+    options: ['zwei', 'eine', 'vier', 'keine'],
+    correctIndex: 0,
+    explanation: 'Griffbereit = 2–3 Bewegungen. Einsatzbereit = 1 Bewegung. Ziel ist immer: so wenige Bewegungen wie möglich.'
+  },
+  {
+    id: 'm1fb8',
+    type: 'fillblank',
+    question: '§ 226 Abs. 2 StGB: Bei Absicht gilt eine Mindeststrafe von ___ Jahren.',
+    options: ['drei', 'einem', 'fünf', 'zehn'],
+    correctIndex: 0,
+    explanation: '§ 226 Abs. 2: Schwere Körperverletzung mit Absicht → mindestens 3 Jahre Freiheitsstrafe.'
+  },
+  {
+    id: 'm1fb9',
+    type: 'fillblank',
+    question: 'Die Handlung beginnt ___ dem Konflikt — nicht im Konflikt.',
+    options: ['vor', 'nach', 'während', 'trotz'],
+    correctIndex: 0,
+    explanation: 'Verhaltensrichtlinie 1: Vorbereitung erfolgt vor dem Konflikt. Handlung beginnt vor dem Konflikt — nicht erst wenn er da ist.'
+  },
+  {
+    id: 'm1fb10',
+    type: 'fillblank',
+    question: '§ 228 BGB gilt für Angriffe von ___ oder ausgehende Gefahren von Sachen.',
+    options: ['Tieren', 'Gruppen', 'Minderjährigen', 'Werkzeugen'],
+    correctIndex: 0,
+    explanation: '§ 228 BGB regelt die Notwehr gegen Tiere und Gefahren von Sachen — im Gegensatz zu § 32 StGB, der nur menschliche Angriffe erfasst.'
+  },
+  {
+    id: 'm1fb11',
+    type: 'fillblank',
+    question: 'Mirror Drill ___ trainiert das Halten der Distanz zum Partner.',
+    options: ['2', '1', '3', '4'],
+    correctIndex: 0,
+    explanation: 'Mirror Drill 1 = Schritte kopieren. Mirror Drill 2 = Distanz zum Partner halten. Beide Drills schulen Distanzgefühl und Reaktion.'
+  },
+  {
+    id: 'm1fb12',
+    type: 'fillblank',
+    question: 'Strong-Side-Forward: Die ___ Seite ist vorne.',
+    options: ['starke', 'schwache', 'linke', 'rechte'],
+    correctIndex: 0,
+    explanation: 'Strong-Side-Forward = starke (dominante) Seite vorne. Kürzerer Weg zum Ziel, universell einsetzbar mit Hand und Tool.'
+  },
+
+  // ── ERWEITERUNG: TECHNIKEN & KICKS (35 neue Fragen) ──────────────────────
+
+  // ── RICHTIG / FALSCH — Techniken (8 neu) ─────────────────────────────────
+
+  {
+    id: 'm1tf16',
+    type: 'truefalse',
+    question: 'Der Fingerstich zielt primär auf das Auge, um den Gegner zu schocken und zu stoppen.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 0,
+    explanation: 'Richtig. Ziel des Fingerstichs ist das Auge. Der Schockeffekt stoppt den Angriff ohne maximale Kraft — ideal als erster Angriff auf Distanz.'
+  },
+  {
+    id: 'm1tf17',
+    type: 'truefalse',
+    question: 'Der Nackenzug dient hauptsächlich dazu, dem Gegner Schmerz zuzufügen.',
+    options: ['Richtig', 'Falsch'],
     correctIndex: 1,
-    explanation: 'Schulterbreiter Stand gibt maximale Stabilität und Gleichgewicht — schmal = leicht umzuwerfen, zu breit = langsam und unbeweglich.'
+    explanation: 'Falsch. Der Nackenzug dient primär der Kontrolle — er schränkt die Bewegung des Gegners ein und ermöglicht es, Kopf und Körper zu steuern.'
+  },
+  {
+    id: 'm1tf18',
+    type: 'truefalse',
+    question: 'Knie und Ellbogen sind auf engstem Raum besonders effektiv, weil sie kurze Wege haben.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 0,
+    explanation: 'Richtig. Im Infight haben Knie und Ellbogen kurze Hebelwege — sie entfalten auf engstem Raum maximale Wirkung ohne Ausholbewegung.'
+  },
+  {
+    id: 'm1tf19',
+    type: 'truefalse',
+    question: 'Die Kettenfaust ist eine Einzeltechnik, die mit voller Kraft eingesetzt wird.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Die Kettenfaust ist eine Infight-Technik mit hoher Schlagfrequenz — viele schnelle Schläge in Serie, nicht ein einzelner Kraftschlag.'
+  },
+  {
+    id: 'm1tf20',
+    type: 'truefalse',
+    question: 'Der Stoppkick setzt Bewegung des Gegners voraus — er stoppt den eingehenden Angriff.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 0,
+    explanation: 'Richtig. Der Stoppkick trifft den Gegner im Moment seiner Vorwärtsbewegung. Er nutzt die kinetische Energie des Angreifers gegen ihn.'
+  },
+  {
+    id: 'm1tf21',
+    type: 'truefalse',
+    question: 'Der Fingerstich kann ohne Nahkampferfahrung aus größerer Entfernung präzise auf das Auge treffen.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Präzision erfordert Training. Auf Distanz ist Präzision schwerer — der Fingerstich ist am effektivsten im nahen Kontaktbereich.'
+  },
+  {
+    id: 'm1tf22',
+    type: 'truefalse',
+    question: 'Der Nackenzug kann den Kopf des Gegners nach unten ziehen, um Knie- oder Ellbogentechniken vorzubereiten.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 0,
+    explanation: 'Richtig. Eine klassische Kombination: Nackenzug → Kopf nach unten → Knie hoch. Der Nackenzug steuert die Körperposition des Gegners.'
+  },
+  {
+    id: 'm1tf23',
+    type: 'truefalse',
+    question: 'Beim Stoppkick ist das Timing unwichtig — er wirkt auch, wenn der Gegner stillsteht.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Der Stoppkick lebt vom Timing. Er stoppt Bewegung — wenn der Gegner steht, fehlt die Energie, die den Kick wirksam macht.'
+  },
+
+  // ── SINGLE CHOICE — Techniken (12 neu) ───────────────────────────────────
+
+  {
+    id: 'm1sc21',
+    type: 'single',
+    question: 'Warum ist der Fingerstich als erster Angriff besonders wertvoll?',
+    options: [
+      'Er ist die stärkste aller Techniken',
+      'Er schockt den Gegner und schafft Reaktionszeit',
+      'Er erfordert keine Körperspannung',
+      'Er ist nur gegen Untrainierte wirksam'
+    ],
+    correctIndex: 1,
+    explanation: 'Der Fingerstich zum Auge erzeugt einen Schockmoment — reflexartige Reaktion des Gegners schafft wertvolle Zeit für weitere Aktionen oder Flucht.'
+  },
+  {
+    id: 'm1sc22',
+    type: 'single',
+    question: 'Welche Körperregion wird beim Nackenzug kontrolliert?',
+    options: ['Schulter', 'Nacken und Hinterkopf', 'Hüfte', 'Handgelenk'],
+    correctIndex: 1,
+    explanation: 'Der Nackenzug greift Nacken und Hinterkopf — von dort lässt sich der Kopf und damit der gesamte Körper des Gegners steuern.'
+  },
+  {
+    id: 'm1sc23',
+    type: 'single',
+    question: 'Wann sind Knie und Ellbogen als Waffe besonders sinnvoll?',
+    options: [
+      'Auf weite Distanz',
+      'Im engen Kontaktbereich (Clinch)',
+      'Wenn man ausweichen möchte',
+      'Nur auf dem Boden'
+    ],
+    correctIndex: 1,
+    explanation: 'Im Clinch und auf engem Raum können Fäuste und Tritte nicht mehr voll entfaltet werden — hier sind Knie und Ellbogen mit kurzen Wegen ideal.'
+  },
+  {
+    id: 'm1sc24',
+    type: 'single',
+    question: 'Was charakterisiert die Kettenfaust im Infight?',
+    options: [
+      'Ein einzelner, maximal kraftvoller Schlag',
+      'Hohe Schlagfrequenz mit vielen schnellen Schlägen',
+      'Schläge mit gestrecktem Arm auf weite Distanz',
+      'Defensive Abwehrtechnik'
+    ],
+    correctIndex: 1,
+    explanation: 'Kettenfaust = hohe Frequenz. Nicht ein starker Schlag, sondern eine Serie schneller Schläge — der Gegner kann nicht reagieren, weil die Schläge sich kettenartig aneinanderreihen.'
+  },
+  {
+    id: 'm1sc25',
+    type: 'single',
+    question: 'In welchem Moment ist der Stoppkick am wirksamsten?',
+    options: [
+      'Wenn der Gegner stillsteht',
+      'Wenn der Gegner sich vorwärts bewegt und angreift',
+      'Wenn der Gegner sich zurückzieht',
+      'Auf dem Boden liegend'
+    ],
+    correctIndex: 1,
+    explanation: 'Der Stoppkick trifft den Gegner in seiner Vorwärtsbewegung — die eigene Kinetik des Angreifers verdoppelt die Kraftwirkung des Kicks.'
+  },
+  {
+    id: 'm1sc26',
+    type: 'single',
+    question: 'Was ist die primäre Wirkung des Fingerstichs auf den Gegner?',
+    options: [
+      'Maximale Verletzung verursachen',
+      'Den Gegner zu Boden bringen',
+      'Schockreaktion auslösen und Zeit schaffen',
+      'Die Distanz vergrößern'
+    ],
+    correctIndex: 2,
+    explanation: 'Der Fingerstich zielt auf das Auge — erzeugt eine unwillkürliche Schutzreaktion und Schock. Das schafft Zeit für weitere Aktionen oder Rückzug.'
+  },
+  {
+    id: 'm1sc27',
+    type: 'single',
+    question: 'Welche Kombination ist mit dem Nackenzug besonders effektiv?',
+    options: [
+      'Nackenzug → Schritt zurück → warten',
+      'Nackenzug → Kopf nach unten → Knie hoch',
+      'Nackenzug → Armhebel → Boden',
+      'Nackenzug → Seitwärtsschritt → Wegrennen'
+    ],
+    correctIndex: 1,
+    explanation: 'Klassische Kombo: Nackenzug zieht den Kopf nach unten, das Knie trifft auf den gesenkten Kopf/Rumpf. Kurze, explosive Kombination im engen Raum.'
+  },
+  {
+    id: 'm1sc28',
+    type: 'single',
+    question: 'Warum ist der Ellbogen dem Faustschlag im Infight oft überlegen?',
+    options: [
+      'Er ist schmerzloser für den Anwender',
+      'Er hat kürzere Wege und braucht weniger Ausholraum',
+      'Er ist nur gegen den Kopf einsetzbar',
+      'Er braucht keine Körperspannung'
+    ],
+    correctIndex: 1,
+    explanation: 'Ellbogen haben kürzere Wege als Fäuste — auf engstem Raum kann kein Punch vollständig ausgeführt werden. Der Ellbogen trifft auch ohne Ausholbewegung mit voller Wirkung.'
+  },
+  {
+    id: 'm1sc29',
+    type: 'single',
+    question: 'Was unterscheidet die Kettenfaust von einem klassischen Schlagabtausch?',
+    options: [
+      'Sie ist langsamer und präziser',
+      'Sie setzt auf Einzelschläge mit maximaler Kraft',
+      'Sie überwältigt durch hohe Frequenz, nicht durch Einzelkraft',
+      'Sie ist nur für Fortgeschrittene geeignet'
+    ],
+    correctIndex: 2,
+    explanation: 'Kettenfaust = Mentalität der Überwältigung durch Masse und Tempo, nicht durch einen einzelnen Knockout-Schlag. Der Gegner wird von der Frequenz überrollt.'
+  },
+  {
+    id: 'm1sc30',
+    type: 'single',
+    question: 'Auf welcher Distanz funktioniert der Fingerstich am besten?',
+    options: [
+      'Lange Distanz (mehr als 2 Meter)',
+      'Mittlere bis nahe Distanz',
+      'Nur auf dem Boden',
+      'Ausschließlich im Clinch'
+    ],
+    correctIndex: 1,
+    explanation: 'Der Fingerstich braucht Reichweite, aber keine extreme Distanz — mittlere bis nahe Distanz, wo der ausgestreckte Arm das Auge tatsächlich erreicht.'
+  },
+  {
+    id: 'm1sc31',
+    type: 'single',
+    question: 'Welcher Begriff beschreibt am besten die Funktion des Nackenzugs?',
+    options: [
+      'Angriffstechnik',
+      'Kontroll- und Lenktechnik',
+      'Würgetechnik',
+      'Blocktechnik'
+    ],
+    correctIndex: 1,
+    explanation: 'Der Nackenzug ist eine Kontroll- und Lenktechnik — er schränkt die Bewegungsfreiheit ein und erlaubt es, die Position und Richtung des Gegners zu bestimmen.'
+  },
+  {
+    id: 'm1sc32',
+    type: 'single',
+    question: 'Was macht den Stoppkick zur defensiven Angriffstechnik?',
+    options: [
+      'Er wird nach dem Angriff eingesetzt',
+      'Er stoppt den eingehenden Angriff und greift gleichzeitig an',
+      'Er ist eine rein defensive Blockbewegung',
+      'Er wird nur tief eingesetzt'
+    ],
+    correctIndex: 1,
+    explanation: 'Der Stoppkick ist defensiv-offensiv: Er stoppt den Angriff des Gegners und greift gleichzeitig an. Defense und Offense in einem Moment.'
+  },
+
+  // ── MULTIPLE CHOICE — Techniken (5 neu) ──────────────────────────────────
+
+  {
+    id: 'm1mc11',
+    type: 'multiple',
+    question: 'Welche Aussagen zum Fingerstich sind korrekt? (Mehrere möglich)',
+    options: [
+      'Das Ziel ist das Auge des Gegners',
+      'Er verursacht maximale dauerhafte Verletzungen',
+      'Er löst eine Schockreaktion aus',
+      'Er ist besonders wirksam auf mittlere bis nahe Distanz',
+      'Er erfordert keine Genauigkeit'
+    ],
+    correctIndices: [0, 2, 3],
+    explanation: 'Fingerstich: Ziel ist das Auge, Wirkung ist Schock (nicht primär Verletzung), effektiv auf mittlerer bis naher Distanz. Genauigkeit ist wichtig, aber nicht perfekt nötig.'
+  },
+  {
+    id: 'm1mc12',
+    type: 'multiple',
+    question: 'Was trifft auf Knie und Ellbogen als Techniken zu? (Mehrere möglich)',
+    options: [
+      'Effektiv auf langer Distanz',
+      'Kurze Hebelwege, daher ideal im engen Raum',
+      'Harte Körperstellen, erzeugen viel Wirkung',
+      'Werden nur defensiv eingesetzt',
+      'Ideal im Clinch-Bereich'
+    ],
+    correctIndices: [1, 2, 4],
+    explanation: 'Knie und Ellbogen sind harte Körperstellen mit kurzen Wegen — ideal auf engem Raum und im Clinch. Auf langer Distanz können sie ihre Kraft nicht entfalten.'
+  },
+  {
+    id: 'm1mc13',
+    type: 'multiple',
+    question: 'Welche Eigenschaften beschreiben die Kettenfaust? (Mehrere möglich)',
+    options: [
+      'Hohe Schlagfrequenz',
+      'Ein einziger maximaler Schlag',
+      'Infight-Technik auf engem Raum',
+      'Überwältigt durch Masse und Tempo',
+      'Erfordert viel Ausholraum'
+    ],
+    correctIndices: [0, 2, 3],
+    explanation: 'Kettenfaust: hohe Frequenz, Infight-Technik, Überwältigung durch viele schnelle Schläge — kein einzelner Kraftschlag, kein langer Ausholweg.'
+  },
+  {
+    id: 'm1mc14',
+    type: 'multiple',
+    question: 'Was sind Funktionen des Nackenzugs? (Mehrere möglich)',
+    options: [
+      'Gegner kontrollieren',
+      'Bewegungsfreiheit des Gegners einschränken',
+      'Maximalen Schmerz erzeugen',
+      'Kopf/Körper des Gegners steuern',
+      'Distanz vergrößern'
+    ],
+    correctIndices: [0, 1, 3],
+    explanation: 'Nackenzug: Kontrolle, Bewegungseinschränkung, Steuerung des Gegners. Schmerz ist ein Nebeneffekt, nicht das primäre Ziel. Distanz wird eher verringert.'
+  },
+  {
+    id: 'm1mc15',
+    type: 'multiple',
+    question: 'Welche Bedingungen machen den Stoppkick wirkungsvoller? (Mehrere möglich)',
+    options: [
+      'Gegner bewegt sich vorwärts (auf dich zu)',
+      'Gegner steht still',
+      'Richtiges Timing im Moment des Angriffs',
+      'Eigene Rückwärtsbewegung beim Kick',
+      'Ziel ist die Mitte des Körpers (z.B. Oberschenkel, Hüfte)'
+    ],
+    correctIndices: [0, 2, 4],
+    explanation: 'Stoppkick: maximale Wirkung wenn der Gegner sich nähert (Impuls), mit richtigem Timing, auf Körpermitte. Der Gegner trägt seine eigene Energie in den Kick hinein.'
+  },
+
+  // ── MATCHING — Techniken (4 neu) ─────────────────────────────────────────
+
+  {
+    id: 'm1ma9',
+    type: 'matching',
+    question: 'Ordne die Techniken ihrer Hauptwirkung zu:',
+    pairs: [
+      { left: 'Fingerstich', right: 'Schockreaktion / Auge' },
+      { left: 'Nackenzug', right: 'Kontrolle & Steuerung' },
+      { left: 'Kettenfaust', right: 'Hohe Frequenz / Infight' },
+      { left: 'Stoppkick', right: 'Eingehenden Angriff stoppen' },
+    ],
+    explanation: 'Jede Technik hat ein klares Primärziel: Fingerstich → Schock, Nackenzug → Kontrolle, Kettenfaust → Frequenz, Stoppkick → Momentum stoppen.'
+  },
+  {
+    id: 'm1ma10',
+    type: 'matching',
+    question: 'Ordne die Technik der optimalen Distanz/Situation zu:',
+    pairs: [
+      { left: 'Ellbogen', right: 'Enger Kontaktbereich' },
+      { left: 'Fingerstich', right: 'Mittlere bis nahe Distanz' },
+      { left: 'Stoppkick', right: 'Gegner in Vorwärtsbewegung' },
+      { left: 'Kettenfaust', right: 'Clinch / enges Infight' },
+    ],
+    explanation: 'Jede Technik hat ihre optimale Einsatzsituation. Ellbogen & Kettenfaust = enger Raum, Fingerstich = nahe Distanz, Stoppkick = Bewegungsmoment des Gegners.'
+  },
+  {
+    id: 'm1ma11',
+    type: 'matching',
+    question: 'Ordne Grundbewegungstyp seiner Haupteigenschaft zu:',
+    pairs: [
+      { left: 'Step & Slide', right: 'Kontrollierteste Bewegung' },
+      { left: 'Push', right: 'Explosivste Bewegung' },
+      { left: 'Slide-Step', right: 'Gleit kommt vor Schritt' },
+      { left: 'Step', right: 'Einfachste Grundbewegung' },
+    ],
+    explanation: 'Step & Slide = kontrolliert, Push = explosiv, Slide-Step = Gleitprinzip zuerst, Step = Basis. Jede Bewegung hat ihren taktischen Einsatzbereich.'
+  },
+  {
+    id: 'm1ma12',
+    type: 'matching',
+    question: 'Ordne die Stellung ihrer Beschreibung zu:',
+    pairs: [
+      { left: 'Neutral Position', right: 'Unauffällig, Alltagshaltung' },
+      { left: 'Ready Position', right: 'Potenzielle Konfliktsituation' },
+      { left: 'Contact Ready', right: 'Unmittelbarer Kontakt' },
+      { left: 'Strong-Side-Forward', right: 'Starke Seite vorne' },
+    ],
+    explanation: 'Drei Ebenen der Bereitschaft: Neutral (Alltag) → Ready (Vorsicht) → Contact Ready (Kampf). Strong-Side-Forward = dominante Seite in Angriffsposition.'
+  },
+
+  // ── FILL-IN-BLANK — Techniken (6 neu) ────────────────────────────────────
+
+  {
+    id: 'm1fb13',
+    type: 'fillblank',
+    question: 'Der Fingerstich zielt primär auf das ___ des Gegners.',
+    options: ['Auge', 'Kinn', 'Ohr', 'Hals'],
+    correctIndex: 0,
+    explanation: 'Das Ziel des Fingerstichs ist das Auge — ein Treffer erzeugt sofortige Schutzreaktion und Schock, unabhängig von der Körpergröße des Gegners.'
+  },
+  {
+    id: 'm1fb14',
+    type: 'fillblank',
+    question: 'Der Nackenzug dient primär der ___ des Gegners.',
+    options: ['Kontrolle', 'Verletzung', 'Fixierung', 'Distanzierung'],
+    correctIndex: 0,
+    explanation: 'Kontrolle ist das Ziel des Nackenzugs — durch Kontrolle des Kopfes wird der gesamte Körper steuerbar. Verletzung ist ein Nebeneffekt, kein Ziel.'
+  },
+  {
+    id: 'm1fb15',
+    type: 'fillblank',
+    question: 'Die Kettenfaust überwältigt nicht durch Kraft, sondern durch ___.',
+    options: ['Frequenz', 'Reichweite', 'Gewicht', 'Geschwindigkeit des Einzelschlags'],
+    correctIndex: 0,
+    explanation: 'Frequenz ist der Schlüssel der Kettenfaust — viele schnelle Schläge überlasten die Verteidigung des Gegners. Nicht ein harter Schlag, sondern ein Hagel.'
+  },
+  {
+    id: 'm1fb16',
+    type: 'fillblank',
+    question: 'Der Stoppkick ist dann am stärksten, wenn der Gegner sich ___ bewegt.',
+    options: ['vorwärts', 'rückwärts', 'seitwärts', 'nicht'],
+    correctIndex: 0,
+    explanation: 'Vorwärtsbewegung des Gegners verdoppelt die Wirkung des Stoppkicks. Seine kinetische Energie trifft auf den Kick — enormer Kraftzuwachs.'
+  },
+  {
+    id: 'm1fb17',
+    type: 'fillblank',
+    question: 'Knie und Ellbogen sind besonders effektiv auf ___ Raum.',
+    options: ['engem', 'weitem', 'mittlerem', 'offenem'],
+    correctIndex: 0,
+    explanation: 'Auf engem Raum können Fäuste und Tritte ihre Kraft nicht voll entfalten — Knie und Ellbogen haben kurze Wege und brauchen keinen Ausholraum.'
+  },
+  {
+    id: 'm1fb18',
+    type: 'fillblank',
+    question: 'Verhaltensrichtlinie 1 lautet: Vermeidet ___ Situationen.',
+    options: ['Konfliktsituationen', 'alle sozialen', 'Trainings-', 'Reaktions-'],
+    correctIndex: 0,
+    explanation: 'Verhaltensrichtlinie 1: Vermeide Konfliktsituationen. Der beste Kampf findet gar nicht statt. Deeskalation ist immer der erste Schritt.'
   },
 ];
 

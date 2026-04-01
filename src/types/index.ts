@@ -562,11 +562,21 @@ export interface Quiz {
   passingScore: number;
 }
 
+export type QuizQuestionType = 'single' | 'truefalse' | 'multiple' | 'matching' | 'fillblank';
+
+export interface MatchingPair {
+  left: string;
+  right: string;
+}
+
 export interface QuizQuestion {
   id: string;
+  type?: QuizQuestionType;    // undefined → 'single' (rückwärtskompatibel)
   question: string;
-  options: string[];
-  correctIndex: number;
+  options?: string[];          // single / truefalse / fillblank / multiple
+  correctIndex?: number;       // single / truefalse / fillblank
+  correctIndices?: number[];   // multiple: alle korrekten Indizes
+  pairs?: MatchingPair[];      // matching: immer 4 Paare
   explanation?: string;
   moduleId?: string;
   position?: number;
@@ -586,6 +596,25 @@ export interface ContentTechnique {
 export interface ModuleSettings {
   moduleId: string;
   quizCount: number;
+}
+
+// ── Quiz-Flagging ─────────────────────────────────────────────────────────────
+export interface FlaggedQuestion {
+  questionId: string;
+  moduleId: string;
+  flaggedBy: string;
+  flaggedByName: string;
+  flaggedByRole: InstructorRole;
+  comment: string;
+  flaggedAt: Date;
+}
+
+// ── Quiz-Prüfungsstatus pro Modul ─────────────────────────────────────────────
+export interface QuizExamAttempt {
+  attempts: number;          // 0 | 1 | 2
+  lastAttemptAt: Date | null;
+  passedAt: Date | null;
+  banUntil: Date | null;     // gesetzt nach 2 Fehlversuchen (+ 30 Tage)
 }
 
 export interface QuizResult {

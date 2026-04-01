@@ -171,13 +171,24 @@ const BlockSection: React.FC<BlockSectionProps> = ({ block, modules, quizProgres
 // ============================================
 
 export const MemberLearningView: React.FC = () => {
-  const { currentUser, completeModuleQuiz, getOrderedModules, getTechniquesForModule, getQuizQuestionsForModule, getQuizCountForModule, checkIns } = useApp();
+  const {
+    currentUser, completeModuleQuiz, getOrderedModules,
+    getTechniquesForModule, getQuizQuestionsForModule, getQuizCountForModule, checkIns,
+    starredQuestions, starQuestion, unstarQuestion,
+    answeredQuestions, recordQuizAnswer,
+    quizExamState, canTakeExam, completeQuizExam,
+    flaggedQuestions, flagSystemEnabled, flagQuestion, unflagQuestion,
+  } = useApp();
   const [activeModule, setActiveModule] = useState<Module | null>(null);
   const [showQuiz, setShowQuiz] = useState(false);
+  const [showExam, setShowExam] = useState(false);
   const [learningTab, setLearningTab] = useState<'theorie' | 'praxis' | 'anfragen'>('theorie');
   const [requestSubTab, setRequestSubTab] = useState<'exams' | 'checkins'>('exams');
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [showCertificate, setShowCertificate] = useState(false);
+
+  const getFlaggedIds = (moduleId: string) =>
+    flaggedQuestions.filter(f => f.moduleId === moduleId).map(f => f.questionId);
 
   if (!currentUser) return null;
 
@@ -199,17 +210,57 @@ export const MemberLearningView: React.FC = () => {
   const masteredModules = allModulesWithQuiz.filter(m => (quizProgress[m.id]?.bestScore ?? 0) >= 70).length;
   const totalSessions = Object.values(quizProgress).reduce((sum, p) => sum + (p.totalSessions ?? 0), 0);
 
-  // Quiz screen
+  // Exam screen
+  if (showExam && activeModule) {
+    const questions = getQuizQuestionsForModule(activeModule.id);
+    const flaggedIds = getFlaggedIds(activeModule.id);
+    return (
+      <div className="flex flex-col h-screen bg-gray-950">
+        <QuizEngine
+          title={`${activeModule.icon} ${activeModule.name}`}
+          questions={questions}
+          mode="exam"
+          accentColor="bg-red-600"
+          starredIds={starredQuestions}
+          onStar={starQuestion}
+          onUnstar={unstarQuestion}
+          flagEnabled={flagSystemEnabled}
+          flaggedIds={flaggedIds}
+          onFlag={(qId, comment) => flagQuestion(qId, activeModule.id, comment)}
+          onUnflag={unflagQuestion}
+          onAnswer={recordQuizAnswer}
+          onComplete={(score) => {
+            const passed = score >= 90;
+            completeQuizExam(activeModule.id, passed);
+            setShowExam(false);
+          }}
+          onBack={() => setShowExam(false)}
+        />
+      </div>
+    );
+  }
+
+  // Practice quiz screen
   if (showQuiz && activeModule) {
     const questions = getQuizQuestionsForModule(activeModule.id);
     const quizCount = getQuizCountForModule(activeModule.id);
+    const flaggedIds = getFlaggedIds(activeModule.id);
     return (
       <div className="flex flex-col h-screen bg-gray-950">
         <QuizEngine
           title={`${activeModule.icon} ${activeModule.name}`}
           questions={questions}
           questionsPerSession={quizCount}
+          mode="practice"
           accentColor="bg-red-600"
+          starredIds={starredQuestions}
+          onStar={starQuestion}
+          onUnstar={unstarQuestion}
+          flagEnabled={flagSystemEnabled}
+          flaggedIds={flaggedIds}
+          onFlag={(qId, comment) => flagQuestion(qId, activeModule.id, comment)}
+          onUnflag={unflagQuestion}
+          onAnswer={recordQuizAnswer}
           onComplete={(score, xpEarned) => {
             completeModuleQuiz(activeModule.id, score, xpEarned);
             setShowQuiz(false);
@@ -285,11 +336,65 @@ export const MemberLearningView: React.FC = () => {
             </div>
             <ul className="space-y-1 text-sm text-gray-300">
               <li>• {q.length} Fragen im Pool — {quizCount} werden zufällig gewählt</li>
-              <li>• 10 XP pro richtige Antwort (max. {quizCount * 10} XP)</li>
-              <li>• Mindestens 70% für "Gemeistert"</li>
+              <li>• 2 XP pro richtige Antwort + 10 Bonus bei 100%</li>
+              <li>• ⭐ Stern = Frage öfter üben (25% der Session)</li>
               <li>• Wiederholung empfohlen für echten Lernerfolg</li>
             </ul>
           </div>
+
+          {/* Prüfungs-Bereich */}
+          {(() => {
+            const examState = quizExamState[activeModule.id];
+            const { allowed, reason } = canTakeExam(activeModule.id);
+            const answered = q.filter(qq => answeredQuestions.includes(qq.id)).length;
+            const allAnswered = answered >= q.length;
+            const isPassed = !!examState?.passedAt;
+            const isBanned = examState?.banUntil && new Date() < new Date(examState.banUntil);
+            const attemptsLeft = 2 - (examState?.attempts ?? 0);
+
+            return (
+              <div className={`rounded-xl p-4 border space-y-3 ${
+                isPassed ? 'bg-green-500/10 border-green-500/30' :
+                isBanned ? 'bg-red-500/10 border-red-500/30' :
+                'bg-gray-800/50 border-gray-700'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-sm text-white">🎓 Modulprüfung</span>
+                  {isPassed && <span className="text-green-400 text-xs font-bold">✓ Bestanden</span>}
+                  {isBanned && <span className="text-red-400 text-xs font-bold">Gesperrt</span>}
+                  {!isPassed && !isBanned && <span className="text-gray-500 text-xs">{attemptsLeft > 0 ? `${attemptsLeft}× Versuch` : 'Keine Versuche mehr'}</span>}
+                </div>
+                <ul className="text-xs text-gray-400 space-y-0.5">
+                  <li>• 30 Fragen · 90% zum Bestehen · 2 Versuche</li>
+                  <li>• Voraussetzung: alle {q.length} Fragen mind. 1× beantwortet</li>
+                  {isBanned && (
+                    <li className="text-red-400">• Sperre bis: {new Date(examState!.banUntil!).toLocaleDateString('de-DE')}</li>
+                  )}
+                </ul>
+                {!allAnswered && !isPassed && (
+                  <div className="text-xs text-gray-500">
+                    Noch {q.length - answered} von {q.length} Fragen nicht beantwortet
+                    <div className="mt-1.5 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-yellow-500 rounded-full" style={{ width: `${q.length > 0 ? Math.round((answered / q.length) * 100) : 0}%` }} />
+                    </div>
+                  </div>
+                )}
+                {!isPassed && (
+                  <button
+                    onClick={() => setShowExam(true)}
+                    disabled={!allowed}
+                    className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all ${
+                      allowed
+                        ? 'bg-red-700 hover:bg-red-600 text-white'
+                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {isBanned ? reason : allowed ? 'Zur Prüfung →' : reason ?? 'Prüfung gesperrt'}
+                  </button>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         <div className="px-4 pb-4 pt-2 border-t border-gray-700/50">
