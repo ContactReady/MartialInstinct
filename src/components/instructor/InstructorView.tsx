@@ -183,6 +183,16 @@ export const InstructorView: React.FC = () => {
   const [dndSaveState, setDndSaveState] = useState<'idle' | 'dirty' | 'saved'>('idle');
   const [dndPendingClose, setDndPendingClose] = useState(false);
 
+  // Theorie-Meldungen (von Membern gemeldete Fehler in Theorie-Texten)
+  const [theoryFlags, setTheoryFlags] = useState<{id:string;moduleId:string;topicId:string;topicTitle:string;comment:string;memberName:string;timestamp:string}[]>(() => {
+    try { return JSON.parse(localStorage.getItem('mi-theory-flags') || '[]'); } catch { return []; }
+  });
+  const dismissTheoryFlag = (id: string) => {
+    const next = theoryFlags.filter(f => f.id !== id);
+    setTheoryFlags(next);
+    localStorage.setItem('mi-theory-flags', JSON.stringify(next));
+  };
+
   // Content Editor State (Rules of Hooks: alle auf Top-Level)
   const [contentModuleId, setContentModuleId] = useState<string | null>(null);
   const [contentSubTab, setContentSubTab] = useState<'techniques' | 'quiz' | 'theorie'>('techniques');
@@ -2958,7 +2968,7 @@ export const InstructorView: React.FC = () => {
                     key={m.id}
                     onClick={() => { setContentModuleId(m.id); setEditingTechniqueId(null); setEditingQuestionId(null); setShowBulkImport(false); setContentQuizCount(getQuizCountForModule(m.id)); }}
                     className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
-                      contentModuleId === m.id ? 'bg-red-600 border-red-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
+                      contentModuleId === m.id ? 'bg-gray-600 border-gray-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
                     }`}
                   >
                     {m.icon} {m.name}
@@ -3174,11 +3184,17 @@ export const InstructorView: React.FC = () => {
                           const overrideKey = `${contentModuleId}:${topic.id}`;
                           const currentText = topicOverrides[overrideKey] ?? topic.theoryText;
                           const isEditing = editingQuestionId === overrideKey;
+                          const topicFlags = theoryFlags.filter(f => f.moduleId === contentModuleId && f.topicId === topic.id);
                           return (
                             <div key={topic.id} className="bg-gray-900/50 rounded-lg border border-gray-700/50 overflow-hidden">
                               <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-700/50">
                                 <span>{topic.icon}</span>
                                 <span className="text-white text-xs font-semibold flex-1">{topic.title}</span>
+                                {topicFlags.length > 0 && (
+                                  <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-1.5 py-0.5 rounded">
+                                    🚩 {topicFlags.length}
+                                  </span>
+                                )}
                                 <button
                                   onClick={() => setEditingQuestionId(isEditing ? null : overrideKey)}
                                   className="text-xs text-gray-400 hover:text-white px-2 py-0.5 rounded"
@@ -3195,6 +3211,21 @@ export const InstructorView: React.FC = () => {
                                   </button>
                                 )}
                               </div>
+                              {topicFlags.length > 0 && (
+                                <div className="px-3 py-2 space-y-1.5 border-b border-gray-700/50 bg-orange-500/5">
+                                  {topicFlags.map(flag => (
+                                    <div key={flag.id} className="flex items-start gap-2 text-xs">
+                                      <span className="text-orange-400 flex-shrink-0">🚩</span>
+                                      <div className="flex-1 min-w-0">
+                                        <span className="text-gray-400">{flag.memberName}</span>
+                                        <span className="text-gray-600 mx-1">·</span>
+                                        <span className="text-gray-300">{flag.comment}</span>
+                                      </div>
+                                      <button onClick={() => dismissTheoryFlag(flag.id)} className="text-gray-600 hover:text-gray-400 flex-shrink-0">✕</button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                               {isEditing ? (
                                 <div className="p-2 space-y-2">
                                   <textarea

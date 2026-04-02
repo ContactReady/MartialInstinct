@@ -188,6 +188,8 @@ export const MemberLearningView: React.FC = () => {
   const [requestSubTab, setRequestSubTab] = useState<'exams' | 'checkins'>('exams');
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [showCertificate, setShowCertificate] = useState(false);
+  const [showTheoryFlagModal, setShowTheoryFlagModal] = useState(false);
+  const [theoryFlagComment, setTheoryFlagComment] = useState('');
 
   const getFlaggedIds = (moduleId: string) =>
     flaggedQuestions.filter(f => f.moduleId === moduleId).map(f => f.questionId);
@@ -356,8 +358,57 @@ export const MemberLearningView: React.FC = () => {
       });
     };
 
+    const submitTheoryFlag = () => {
+      if (!theoryFlagComment.trim()) return;
+      const flags = (() => { try { return JSON.parse(localStorage.getItem('mi-theory-flags') || '[]'); } catch { return []; } })();
+      flags.push({
+        id: `tf-${Date.now()}`,
+        moduleId: activeModule.id,
+        topicId: activeTopic.id,
+        topicTitle: activeTopic.title,
+        comment: theoryFlagComment.trim(),
+        memberName: currentUser.firstName ? `${currentUser.firstName} ${currentUser.lastName ?? ''}`.trim() : currentUser.name,
+        timestamp: new Date().toISOString(),
+      });
+      localStorage.setItem('mi-theory-flags', JSON.stringify(flags));
+      setTheoryFlagComment('');
+      setShowTheoryFlagModal(false);
+    };
+
     return (
       <div className="flex flex-col h-full overflow-hidden">
+        {/* Theory-Flag-Modal */}
+        {showTheoryFlagModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
+            onPointerDown={e => e.stopPropagation()}
+            onTouchStart={e => e.stopPropagation()}
+          >
+            <div className="w-full max-w-lg bg-gray-900 border border-gray-700 rounded-t-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white">🚩 Theorie melden</span>
+                <button onClick={() => { setShowTheoryFlagModal(false); setTheoryFlagComment(''); }} className="text-gray-400 hover:text-white text-xl">✕</button>
+              </div>
+              <p className="text-gray-400 text-sm">Was stimmt an diesem Theorie-Text nicht? (Fehler, unklare Formulierung, veraltete Info…)</p>
+              <textarea
+                value={theoryFlagComment}
+                onChange={e => setTheoryFlagComment(e.target.value)}
+                placeholder="Beschreibe das Problem kurz…"
+                rows={3}
+                className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white text-sm resize-none focus:outline-none focus:border-red-500"
+              />
+              <div className="flex gap-3">
+                <button onClick={() => { setShowTheoryFlagModal(false); setTheoryFlagComment(''); }} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-semibold text-sm">Abbrechen</button>
+                <button
+                  onClick={submitTheoryFlag}
+                  disabled={!theoryFlagComment.trim()}
+                  className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${theoryFlagComment.trim() ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                >Melden</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-700/50 flex-shrink-0">
           <button onClick={() => setActiveTopic(null)} className="text-gray-400 hover:text-white">
@@ -368,6 +419,7 @@ export const MemberLearningView: React.FC = () => {
             <div className="text-white font-semibold text-sm">{activeTopic.title}</div>
             <div className="text-gray-500 text-xs">{activeModule.name}</div>
           </div>
+          <button onClick={() => setShowTheoryFlagModal(true)} className="text-gray-600 hover:text-orange-400 transition-colors p-1" title="Theorie melden">🏳</button>
           <span className="text-xs text-gray-600 bg-gray-800 px-2 py-0.5 rounded-full">{topicQ.length} Fragen</span>
         </div>
 
