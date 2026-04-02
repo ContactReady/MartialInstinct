@@ -580,6 +580,7 @@ export interface QuizQuestion {
   explanation?: string;
   moduleId?: string;
   position?: number;
+  topic?: string;              // Themen-Slug für topic-basierte Navigation (z.B. 'paragraphen', 'stellungen')
 }
 
 // Dynamische Technik (aus Supabase, ersetzt hardcoded Techniques in modules.ts)

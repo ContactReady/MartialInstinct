@@ -241,6 +241,10 @@ interface AppContextType {
   // Quiz — Admin-Korrekturen (Overrides)
   questionOverrides: Record<string, Partial<QuizQuestion>>;
   editQuestionOverride: (questionId: string, overrides: Partial<QuizQuestion>) => void;
+
+  // Theorie-Texte (Admin-editierbar, nicht flaggbar durch Member)
+  topicOverrides: Record<string, string>;
+  updateTopicText: (topicId: string, text: string) => void;
 }
 
 // ============================================
@@ -395,7 +399,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Beim Start: Lerninhalte (Techniken + Quiz) aus Supabase laden
   // Mit localStorage-Cache für Offline-Betrieb, Fallback auf hardcoded Daten
   useEffect(() => {
-    const CACHE_KEY = 'mi_content_v3'; // v3: type/pairs/correctIndices support
+    const CACHE_KEY = 'mi_content_v4'; // v4: guard gegen leere Cache-Daten
 
     const mapTech = (r: { id: string; module_id: string; name: string; description: string; is_required: boolean; position: number }): ContentTechnique => ({
       id: r.id, moduleId: r.module_id, name: r.name, description: r.description ?? '', isRequired: r.is_required, position: r.position
@@ -438,8 +442,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           supabase.from('module_settings').select('*'),
         ]);
 
-        // Supabase-Fehler (z.B. pausiertes Projekt) → Fallback
-        const supabaseOk = !techRes.error && !quizRes.error;
+        // Supabase-Fehler oder pausiertes Projekt → Fallback
+        const supabaseOk = !techRes.error && !quizRes.error && techRes.data !== null && quizRes.data !== null;
         if (!supabaseOk) throw new Error('Supabase unavailable');
 
         let techniques: ContentTechnique[] = (techRes.data ?? []).map(mapTech);
@@ -483,18 +487,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setModuleSettings(settings);
         localStorage.setItem(CACHE_KEY, JSON.stringify({ techniques, questions, settings }));
       } catch (_) {
-        // Offline: localStorage-Cache
+        // Offline: localStorage-Cache — nur verwenden wenn Daten vorhanden
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
           try {
-            const { techniques, questions, settings } = JSON.parse(cached) as { techniques: ContentTechnique[]; questions: QuizQuestion[]; settings: Record<string, ModuleSettings> };
-            setContentTechniques(techniques);
-            setQuizQuestions(questions);
-            setModuleSettings(settings);
-            return;
+            const parsed = JSON.parse(cached) as { techniques: ContentTechnique[]; questions: QuizQuestion[]; settings: Record<string, ModuleSettings> };
+            if (parsed.questions?.length > 0 && parsed.techniques?.length > 0) {
+              setContentTechniques(parsed.techniques);
+              setQuizQuestions(parsed.questions);
+              setModuleSettings(parsed.settings ?? {});
+              return;
+            }
           } catch (_) { /* ignore parse errors */ }
         }
-        // Letzter Fallback: hardcoded
+        // Letzter Fallback: hardcoded (niemals leere Arrays setzen)
         const { techniques, questions } = buildHardcoded();
         setContentTechniques(techniques);
         setQuizQuestions(questions);
@@ -1892,6 +1898,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, []);
 
   // ============================================
+  // THEORIE-TEXTE (Admin-editierbar)
+  // ============================================
+
+  const [topicOverrides, setTopicOverrides] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem('mi-topic-overrides');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  const updateTopicText = useCallback((topicId: string, text: string) => {
+    setTopicOverrides(prev => {
+      const next = { ...prev, [topicId]: text };
+      localStorage.setItem('mi-topic-overrides', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  // ============================================
   // CONTENT MANAGEMENT — Getter
   // ============================================
 
@@ -2463,6 +2488,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Quiz — Overrides
     questionOverrides,
     editQuestionOverride,
+    // Theorie-Texte
+    topicOverrides,
+    updateTopicText,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -7,6 +7,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'react-qr-code';
 import { useApp, MODULES, BLOCKS, COURSES } from '../../context/AppContext';
 import { INSTRUCTOR_TRACKS } from '../../data/instructorCurriculum';
+import { getTopicsForModule } from '../../data/moduleTopics';
 import { ModuleOrder, RolePermissions, InstructorTabId, MemberTabId, JoinRequest, CreateMemberData } from '../../types';
 import {
   LEVEL_DISPLAY,
@@ -117,6 +118,8 @@ export const InstructorView: React.FC = () => {
     releaseFlaggedQuestion,
     editQuestionOverride,
     questionOverrides,
+    topicOverrides,
+    updateTopicText,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>(() => (localStorage.getItem('mi_active_tab_instructor') as Tab) || 'dashboard');
@@ -182,7 +185,7 @@ export const InstructorView: React.FC = () => {
 
   // Content Editor State (Rules of Hooks: alle auf Top-Level)
   const [contentModuleId, setContentModuleId] = useState<string | null>(null);
-  const [contentSubTab, setContentSubTab] = useState<'techniques' | 'quiz'>('techniques');
+  const [contentSubTab, setContentSubTab] = useState<'techniques' | 'quiz' | 'theorie'>('techniques');
   const [editingTechniqueId, setEditingTechniqueId] = useState<string | null>(null);
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
@@ -2968,9 +2971,9 @@ export const InstructorView: React.FC = () => {
                 <div className="space-y-3">
                   {/* Sub-Tab */}
                   <div className="flex bg-gray-900/50 rounded-lg p-0.5 gap-0.5">
-                    {(['techniques', 'quiz'] as const).map(tab => (
+                    {(['techniques', 'quiz', 'theorie'] as const).map(tab => (
                       <button key={tab} onClick={() => setContentSubTab(tab)} className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all ${contentSubTab === tab ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}>
-                        {tab === 'techniques' ? `🥋 Techniken (${moduleTechniques.length})` : `📝 Quiz (${moduleQuestions.length})`}
+                        {tab === 'techniques' ? `🥋 Techniken (${moduleTechniques.length})` : tab === 'quiz' ? `📝 Quiz (${moduleQuestions.length})` : '📖 Theorie'}
                       </button>
                     ))}
                   </div>
@@ -3153,6 +3156,65 @@ export const InstructorView: React.FC = () => {
                       )}
                     </div>
                   )}
+
+                  {/* ── THEORIE ── */}
+                  {contentSubTab === 'theorie' && (() => {
+                    const moduleTopicsList = getTopicsForModule(contentModuleId ?? '');
+                    if (moduleTopicsList.length === 0) {
+                      return (
+                        <div className="text-gray-600 text-xs text-center py-6 border border-dashed border-gray-700/40 rounded-lg">
+                          Für dieses Modul sind noch keine Theorie-Abschnitte definiert.
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="space-y-3">
+                        <p className="text-gray-500 text-xs">Bearbeite die Theorie-Texte der einzelnen Abschnitte. Änderungen sind sofort für alle Member sichtbar.</p>
+                        {moduleTopicsList.map(topic => {
+                          const overrideKey = `${contentModuleId}:${topic.id}`;
+                          const currentText = topicOverrides[overrideKey] ?? topic.theoryText;
+                          const isEditing = editingQuestionId === overrideKey;
+                          return (
+                            <div key={topic.id} className="bg-gray-900/50 rounded-lg border border-gray-700/50 overflow-hidden">
+                              <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-700/50">
+                                <span>{topic.icon}</span>
+                                <span className="text-white text-xs font-semibold flex-1">{topic.title}</span>
+                                <button
+                                  onClick={() => setEditingQuestionId(isEditing ? null : overrideKey)}
+                                  className="text-xs text-gray-400 hover:text-white px-2 py-0.5 rounded"
+                                >
+                                  {isEditing ? 'Schließen' : 'Bearbeiten'}
+                                </button>
+                                {topicOverrides[overrideKey] && (
+                                  <button
+                                    onClick={() => updateTopicText(overrideKey, topic.theoryText)}
+                                    className="text-xs text-orange-400 hover:text-orange-300 px-2 py-0.5 rounded"
+                                    title="Standard-Text wiederherstellen"
+                                  >
+                                    Reset
+                                  </button>
+                                )}
+                              </div>
+                              {isEditing ? (
+                                <div className="p-2 space-y-2">
+                                  <textarea
+                                    value={currentText}
+                                    onChange={e => updateTopicText(overrideKey, e.target.value)}
+                                    rows={12}
+                                    className="w-full bg-gray-800 text-gray-200 text-xs rounded px-2 py-2 border border-gray-600 resize-y font-mono leading-relaxed"
+                                  />
+                                  <p className="text-gray-600 text-[10px]">Formatierung: ## Überschrift 1, ### Überschrift 2, **fett**, - Liste, --- Trennlinie</p>
+                                </div>
+                              ) : (
+                                <p className="text-gray-600 text-xs px-3 py-2 line-clamp-2">{currentText.slice(0, 100)}…</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
                 </div>
               )}
 

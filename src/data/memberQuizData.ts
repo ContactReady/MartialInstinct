@@ -8,10 +8,10 @@ import { QuizQuestion } from '../types';
 
 // ============================================
 // MODUL 1 — Mission Begins
-// 65 Fragen — 5 Typen:
-// 15 × truefalse | 20 × single | 10 × multiple | 8 × matching | 12 × fillblank
-// Inhalte: Gesetzliche Grundlagen, 7 Verhaltensrichtlinien,
-//          Stellungen, Eingänge, Distanzmanagement, Grundtechniken
+// 94 Fragen — 5 Typen (6 Kettenfaust-Fragen entfernt):
+// 22 × truefalse | 30 × single | 14 × multiple | 11 × matching | 17 × fillblank
+// Themen (topic-Feld): paragraphen | verhaltensrichtlinien | stellungen
+//                      eingaenge | distanz | angriffe
 // ============================================
 export const mod1Questions: QuizQuestion[] = [
 
@@ -19,6 +19,7 @@ export const mod1Questions: QuizQuestion[] = [
 
   {
     id: 'm1tf1',
+    topic: 'paragraphen',
     type: 'truefalse',
     question: '§ 32 StGB (Notwehr) gilt nur bei Angriffen von Menschen.',
     options: ['Richtig', 'Falsch'],
@@ -27,6 +28,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf2',
+    topic: 'paragraphen',
     type: 'truefalse',
     question: 'Putativnotwehr bedeutet, der Täter handelt absichtlich außerhalb der Notwehr.',
     options: ['Richtig', 'Falsch'],
@@ -35,6 +37,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf3',
+    topic: 'paragraphen',
     type: 'truefalse',
     question: '§ 33 StGB schützt den Täter, der die Notwehr aus Furcht oder Schrecken überschreitet, vor Bestrafung.',
     options: ['Richtig', 'Falsch'],
@@ -43,6 +46,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf4',
+    topic: 'paragraphen',
     type: 'truefalse',
     question: 'Der Versuch einer einfachen Körperverletzung (§ 223 StGB) ist nicht strafbar.',
     options: ['Richtig', 'Falsch'],
@@ -51,6 +55,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf5',
+    topic: 'verhaltensrichtlinien',
     type: 'truefalse',
     question: '"Einsatzbereit" bedeutet zwei bis drei Bewegungen bis zum Einsatz der Waffe.',
     options: ['Richtig', 'Falsch'],
@@ -59,6 +64,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf6',
+    topic: 'stellungen',
     type: 'truefalse',
     question: 'Die Ready Position ist die Kampfstellung, die bei tatsächlichem Kontakt eingenommen wird.',
     options: ['Richtig', 'Falsch'],
@@ -67,6 +73,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf7',
+    topic: 'verhaltensrichtlinien',
     type: 'truefalse',
     question: 'Laut Verhaltensrichtlinie 6 soll man nach einem Treffer sofort aufhören zu kämpfen.',
     options: ['Richtig', 'Falsch'],
@@ -75,6 +82,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf8',
+    topic: 'paragraphen',
     type: 'truefalse',
     question: '§ 228 BGB gilt für Angriffe von Tieren oder ausgehende Gefahren von Sachen.',
     options: ['Richtig', 'Falsch'],
@@ -83,6 +91,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf9',
+    topic: 'distanz',
     type: 'truefalse',
     question: 'Beim Slide-Step wird zuerst der hintere Fuß bewegt.',
     options: ['Richtig', 'Falsch'],
@@ -91,6 +100,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf10',
+    topic: 'eingaenge',
     type: 'truefalse',
     question: 'Der Switch-Auslagenwechsel ist schneller und explosiver als der Schritt.',
     options: ['Richtig', 'Falsch'],
@@ -99,6 +109,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf11',
+    topic: 'verhaltensrichtlinien',
     type: 'truefalse',
     question: 'Verhaltensrichtlinie 7 sagt: Nach einem Konflikt davon ausgehen, dass alles in Ordnung ist.',
     options: ['Richtig', 'Falsch'],
@@ -107,6 +118,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf12',
+    topic: 'distanz',
     type: 'truefalse',
     question: 'Der Push ist die kontrollierteste und langsamste Grundbewegung.',
     options: ['Richtig', 'Falsch'],
@@ -115,6 +127,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf13',
+    topic: 'paragraphen',
     type: 'truefalse',
     question: 'Wer bei einem Unglücksfall keine Hilfe leistet, kann nach § 323c StGB bestraft werden.',
     options: ['Richtig', 'Falsch'],
@@ -123,6 +136,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf14',
+    topic: 'stellungen',
     type: 'truefalse',
     question: 'Strong-Side-Forward bedeutet, die schwache Seite ist vorne für bessere Reichweite.',
     options: ['Richtig', 'Falsch'],
@@ -131,6 +145,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf15',
+    topic: 'paragraphen',
     type: 'truefalse',
     question: '§ 34 StGB rechtfertigt eine Handlung im Notstand nur, wenn das geschützte Rechtsgut wesentlich höherwertig ist als der entstandene Schaden.',
     options: ['Richtig', 'Falsch'],
@@ -142,6 +157,7 @@ export const mod1Questions: QuizQuestion[] = [
 
   {
     id: 'm1sc1',
+    topic: 'paragraphen',
     type: 'single',
     question: 'Welcher Paragraph regelt die schwere Körperverletzung mit dauerhaften Folgen?',
     options: ['§ 223 StGB', '§ 224 StGB', '§ 226 StGB', '§ 323c StGB'],
@@ -150,6 +166,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc2',
+    topic: 'paragraphen',
     type: 'single',
     question: 'Was ist die Mindeststrafe bei § 224 StGB (gefährliche Körperverletzung)?',
     options: ['Geldstrafe', 'Sechs Monate Freiheitsstrafe', 'Ein Jahr Freiheitsstrafe', 'Drei Jahre Freiheitsstrafe'],
@@ -158,6 +175,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc3',
+    topic: 'stellungen',
     type: 'single',
     question: 'Welche Stellung wird eingenommen, sobald Kontakt entsteht?',
     options: ['Neutrale Position', 'Ready Position', 'Contact Ready Position', 'Strong-Side-Forward'],
@@ -166,6 +184,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc4',
+    topic: 'verhaltensrichtlinien',
     type: 'single',
     question: 'Was bedeutet "griffbereit" bei einer Waffe?',
     options: ['Eine Bewegung bis zum Einsatz', 'Zwei bis drei Bewegungen bis zum Einsatz', 'Die Waffe ist bereits gezogen', 'Die Waffe ist gesichert'],
@@ -174,6 +193,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc5',
+    topic: 'verhaltensrichtlinien',
     type: 'single',
     question: 'Welche Verhaltensrichtlinie betont: "Der beste Kampf ist der, der nicht stattfindet"?',
     options: ['Richtlinie 1', 'Richtlinie 2', 'Richtlinie 3', 'Richtlinie 4'],
@@ -182,6 +202,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc6',
+    topic: 'verhaltensrichtlinien',
     type: 'single',
     question: 'Welche Vorbereitungsebene umfasst den Umgang mit Tools wie Pfefferspray und Tactical Pen?',
     options: ['Physisch', 'Mental', 'Emotional', 'Taktisch'],
@@ -190,6 +211,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc7',
+    topic: 'stellungen',
     type: 'single',
     question: 'Was ist der Hauptvorteil von Strong-Side-Forward?',
     options: ['Bessere Balance im Sparring', 'Kürzerer Weg zum Ziel für schnellere Aktionen', 'Schwächere Hand schützt den Körper', 'Bessere Optik beim Training'],
@@ -198,6 +220,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc8',
+    topic: 'distanz',
     type: 'single',
     question: 'Was trainiert Mirror Drill 1?',
     options: ['Distanz zum Partner halten', 'Schritte vom Partner kopieren', 'Angriffe imitieren', 'Tempowechsel üben'],
@@ -206,6 +229,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc9',
+    topic: 'eingaenge',
     type: 'single',
     question: 'Welcher Auslagenwechsel wird als schnell und explosiv beschrieben?',
     options: ['Vorderer Wechsel', 'Hinterer Wechsel', 'Switch', 'Schritt'],
@@ -214,6 +238,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc10',
+    topic: 'paragraphen',
     type: 'single',
     question: 'Was ist die Strafe bei § 226 StGB, wenn die schwere Körperverletzung mit Absicht begangen wurde?',
     options: ['Mindestens 6 Monate', 'Mindestens 1 Jahr', 'Mindestens 3 Jahre', 'Mindestens 5 Jahre'],
@@ -222,6 +247,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc11',
+    topic: 'eingaenge',
     type: 'single',
     question: 'Was passiert beim Vorderen Auslagenwechsel zuerst?',
     options: ['Der hintere Fuß bewegt sich', 'Beide Füße gleichzeitig', 'Der vordere Fuß leitet den Wechsel ein', 'Der Körperschwerpunkt sinkt'],
@@ -230,6 +256,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc12',
+    topic: 'distanz',
     type: 'single',
     question: 'Wofür ist der Push als Grundbewegung gedacht?',
     options: ['Kontrolle in engen Situationen', 'Explosive, schnelle Distanzveränderung', 'Sicherer Rückzug', 'Balance beim Angriff'],
@@ -238,6 +265,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc13',
+    topic: 'paragraphen',
     type: 'single',
     question: 'Welcher Paragraph schützt bei Überschreitung der Notwehr aus Verwirrung oder Schrecken?',
     options: ['§ 32 StGB', '§ 33 StGB', '§ 34 StGB', '§ 228 BGB'],
@@ -246,6 +274,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc14',
+    topic: 'stellungen',
     type: 'single',
     question: 'Was unterscheidet die Ready Position von der Contact Ready Position taktisch?',
     options: ['Contact Ready ist defensiver', 'Ready für potenzielle Konflikte, Contact Ready für tatsächlichen Kontakt', 'Beide sind gleich — nur optisch verschieden', 'Ready wird nur im Sparring verwendet'],
@@ -254,6 +283,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc15',
+    topic: 'eingaenge',
     type: 'single',
     question: 'Was beschreibt der defensive Eingang?',
     options: ['Schritt nach vorne', 'Schritt + Angriff', 'Schritt zurück', 'Seitlicher Schritt'],
@@ -262,6 +292,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc16',
+    topic: 'distanz',
     type: 'single',
     question: 'Was ist das unveränderliche Grundprinzip beim Slide-Step?',
     options: [
@@ -275,6 +306,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc17',
+    topic: 'verhaltensrichtlinien',
     type: 'single',
     question: 'Was fordert Verhaltensrichtlinie 5?',
     options: [
@@ -288,6 +320,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc18',
+    topic: 'paragraphen',
     type: 'single',
     question: 'Welcher Paragraph definiert "unterlassene Hilfeleistung"?',
     options: ['§ 223 StGB', '§ 226 StGB', '§ 34 StGB', '§ 323c StGB'],
@@ -296,6 +329,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc19',
+    topic: 'eingaenge',
     type: 'single',
     question: 'Was passiert beim Hinteren Auslagenwechsel zuerst?',
     options: ['Der vordere Fuß bewegt sich', 'Beide Füße gleichzeitig', 'Der hintere Fuß leitet den Wechsel ein', 'Der Körperschwerpunkt sinkt'],
@@ -304,6 +338,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc20',
+    topic: 'eingaenge',
     type: 'single',
     question: 'Welche Aussage über den Schritt-Auslagenwechsel ist FALSCH?',
     options: [
@@ -320,6 +355,7 @@ export const mod1Questions: QuizQuestion[] = [
 
   {
     id: 'm1mc1',
+    topic: 'paragraphen',
     type: 'multiple',
     question: 'Welche Paragraphen regeln Notwehr direkt? (Mehrere möglich)',
     options: ['§ 32 StGB', '§ 33 StGB', '§ 227 BGB', '§ 228 BGB'],
@@ -328,6 +364,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1mc2',
+    topic: 'verhaltensrichtlinien',
     type: 'multiple',
     question: 'Welche Vorbereitungsebenen nennt Verhaltensrichtlinie 1? (Mehrere möglich)',
     options: ['Physisch', 'Mental', 'Emotional', 'Taktisch'],
@@ -336,6 +373,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1mc3',
+    topic: 'paragraphen',
     type: 'multiple',
     question: 'Welche Voraussetzungen müssen für eine Strafbarkeit erfüllt sein? (Mehrere möglich)',
     options: ['Tatbestand', 'Absicht', 'Rechtswidrigkeit', 'Schuld'],
@@ -344,6 +382,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1mc4',
+    topic: 'paragraphen',
     type: 'multiple',
     question: 'Welche Merkmale können § 224 StGB (gefährliche Körperverletzung) erfüllen? (Mehrere möglich)',
     options: ['Mittels einer Waffe', 'Durch Gift oder Stoffe', 'Gemeinschaftlich mit anderen', 'Nur bei Verlust eines Körperteils'],
@@ -352,6 +391,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1mc5',
+    topic: 'stellungen',
     type: 'multiple',
     question: 'Was verändert sich in der Contact Ready Position gegenüber der Ready Position? (Mehrere möglich)',
     options: ['Tieferer Körperschwerpunkt', 'Hände höher und kampfbereiter', 'Füße klar versetzt', 'Entspanntere Körperhaltung'],
@@ -360,6 +400,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1mc6',
+    topic: 'eingaenge',
     type: 'multiple',
     question: 'Welche Auslagenwechsel gibt es im M.I. System? (Mehrere möglich)',
     options: ['Vorderer Wechsel', 'Hinterer Wechsel', 'Switch', 'Schritt'],
@@ -368,6 +409,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1mc7',
+    topic: 'verhaltensrichtlinien',
     type: 'multiple',
     question: 'Was fordert Verhaltensrichtlinie 7 nach einem Konflikt? (Mehrere möglich)',
     options: ['Körper aktiv abtasten', 'Auf Blut achten', 'Sofort davon ausgehen, dass alles okay ist', 'Stop the Bleed anwenden wenn nötig'],
@@ -376,6 +418,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1mc8',
+    topic: 'distanz',
     type: 'multiple',
     question: 'Welche der folgenden sind Schrittkombinationen im Distanzmanagement? (Mehrere möglich)',
     options: ['Step & Slide', 'Slide-Step', 'Push', 'Switch'],
@@ -384,6 +427,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1mc9',
+    topic: 'angriffe',
     type: 'multiple',
     question: 'Welche Grundtechniken gehören zu den Hand-/Armtechniken? (Mehrere möglich)',
     options: ['Jab', 'Stoppkick vorne', 'Ellenbogen', 'Uppercut'],
@@ -392,6 +436,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1mc10',
+    topic: 'paragraphen',
     type: 'multiple',
     question: 'Welche Folgen können zu § 226 StGB (schwere Körperverletzung) führen? (Mehrere möglich)',
     options: ['Verlust des Sehvermögens', 'Verlust des Gehörs', 'Dauerhafte Entstellung', 'Kleine Schnittwunde ohne Dauerfolge'],
@@ -403,6 +448,7 @@ export const mod1Questions: QuizQuestion[] = [
 
   {
     id: 'm1ma1',
+    topic: 'paragraphen',
     type: 'matching',
     question: 'Ordne die Paragraphen ihren Themen zu:',
     pairs: [
@@ -415,6 +461,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1ma2',
+    topic: 'stellungen',
     type: 'matching',
     question: 'Ordne die Positionen ihrer Bedeutung zu:',
     pairs: [
@@ -427,6 +474,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1ma3',
+    topic: 'verhaltensrichtlinien',
     type: 'matching',
     question: 'Ordne Verhaltensrichtlinien 1–4 ihrem Kern zu:',
     pairs: [
@@ -439,6 +487,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1ma4',
+    topic: 'verhaltensrichtlinien',
     type: 'matching',
     question: 'Ordne Verhaltensrichtlinien 5–7 und Putativnotwehr zu:',
     pairs: [
@@ -451,6 +500,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1ma5',
+    topic: 'eingaenge',
     type: 'matching',
     question: 'Ordne die Auslagenwechsel ihrer Beschreibung zu:',
     pairs: [
@@ -463,6 +513,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1ma6',
+    topic: 'distanz',
     type: 'matching',
     question: 'Ordne die Grundbewegungen ihrer Eigenschaft zu:',
     pairs: [
@@ -475,6 +526,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1ma7',
+    topic: 'paragraphen',
     type: 'matching',
     question: 'Ordne Paragraphen ihrem Strafmaß zu:',
     pairs: [
@@ -487,6 +539,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1ma8',
+    topic: 'verhaltensrichtlinien',
     type: 'matching',
     question: 'Ordne die Vorbereitungsebenen ihrem Inhalt zu:',
     pairs: [
@@ -502,6 +555,7 @@ export const mod1Questions: QuizQuestion[] = [
 
   {
     id: 'm1fb1',
+    topic: 'paragraphen',
     type: 'fillblank',
     question: '§ 32 StGB Notwehr gilt nur gegen ___ Angriffe.',
     options: ['menschliche', 'tierische', 'zufällige', 'staatliche'],
@@ -510,6 +564,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1fb2',
+    topic: 'paragraphen',
     type: 'fillblank',
     question: '§ 33 StGB schützt die Notwehrüberschreitung aus Verwirrung, Furcht oder ___.',
     options: ['Schrecken', 'Wut', 'Absicht', 'Irrtum'],
@@ -518,6 +573,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1fb3',
+    topic: 'verhaltensrichtlinien',
     type: 'fillblank',
     question: '"Einsatzbereit" bedeutet ___ Bewegung bis zum Einsatz der Waffe.',
     options: ['eine', 'zwei', 'drei', 'keine'],
@@ -526,6 +582,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1fb4',
+    topic: 'verhaltensrichtlinien',
     type: 'fillblank',
     question: 'Wer die Distanz kontrolliert, kontrolliert das ___.',
     options: ['Geschehen', 'Ergebnis', 'Training', 'Gegenüber'],
@@ -534,6 +591,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1fb5',
+    topic: 'verhaltensrichtlinien',
     type: 'fillblank',
     question: 'Der beste Kampf ist der, der nicht ___.',
     options: ['stattfindet', 'gewonnen wird', 'verloren wird', 'endet'],
@@ -542,6 +600,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1fb6',
+    topic: 'distanz',
     type: 'fillblank',
     question: 'Beim Slide-Step kommt die ___ -Bewegung immer zuerst, dann der Schritt.',
     options: ['Gleit', 'Tritt', 'Sprung', 'Stopp'],
@@ -550,6 +609,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1fb7',
+    topic: 'verhaltensrichtlinien',
     type: 'fillblank',
     question: '"Griffbereit" bedeutet ___ bis drei Bewegungen bis zum effektiven Einsatz.',
     options: ['zwei', 'eine', 'vier', 'keine'],
@@ -558,6 +618,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1fb8',
+    topic: 'paragraphen',
     type: 'fillblank',
     question: '§ 226 Abs. 2 StGB: Bei Absicht gilt eine Mindeststrafe von ___ Jahren.',
     options: ['drei', 'einem', 'fünf', 'zehn'],
@@ -566,6 +627,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1fb9',
+    topic: 'verhaltensrichtlinien',
     type: 'fillblank',
     question: 'Die Handlung beginnt ___ dem Konflikt — nicht im Konflikt.',
     options: ['vor', 'nach', 'während', 'trotz'],
@@ -574,6 +636,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1fb10',
+    topic: 'paragraphen',
     type: 'fillblank',
     question: '§ 228 BGB gilt für Angriffe von ___ oder ausgehende Gefahren von Sachen.',
     options: ['Tieren', 'Gruppen', 'Minderjährigen', 'Werkzeugen'],
@@ -582,6 +645,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1fb11',
+    topic: 'distanz',
     type: 'fillblank',
     question: 'Mirror Drill ___ trainiert das Halten der Distanz zum Partner.',
     options: ['2', '1', '3', '4'],
@@ -590,6 +654,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1fb12',
+    topic: 'stellungen',
     type: 'fillblank',
     question: 'Strong-Side-Forward: Die ___ Seite ist vorne.',
     options: ['starke', 'schwache', 'linke', 'rechte'],
@@ -603,6 +668,7 @@ export const mod1Questions: QuizQuestion[] = [
 
   {
     id: 'm1tf16',
+    topic: 'angriffe',
     type: 'truefalse',
     question: 'Der Fingerstich zielt primär auf das Auge, um den Gegner zu schocken und zu stoppen.',
     options: ['Richtig', 'Falsch'],
@@ -611,6 +677,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf17',
+    topic: 'angriffe',
     type: 'truefalse',
     question: 'Der Nackenzug dient hauptsächlich dazu, dem Gegner Schmerz zuzufügen.',
     options: ['Richtig', 'Falsch'],
@@ -619,6 +686,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf18',
+    topic: 'angriffe',
     type: 'truefalse',
     question: 'Knie und Ellbogen sind auf engstem Raum besonders effektiv, weil sie kurze Wege haben.',
     options: ['Richtig', 'Falsch'],
@@ -626,15 +694,8 @@ export const mod1Questions: QuizQuestion[] = [
     explanation: 'Richtig. Im Infight haben Knie und Ellbogen kurze Hebelwege — sie entfalten auf engstem Raum maximale Wirkung ohne Ausholbewegung.'
   },
   {
-    id: 'm1tf19',
-    type: 'truefalse',
-    question: 'Die Kettenfaust ist eine Einzeltechnik, die mit voller Kraft eingesetzt wird.',
-    options: ['Richtig', 'Falsch'],
-    correctIndex: 1,
-    explanation: 'Falsch. Die Kettenfaust ist eine Infight-Technik mit hoher Schlagfrequenz — viele schnelle Schläge in Serie, nicht ein einzelner Kraftschlag.'
-  },
-  {
     id: 'm1tf20',
+    topic: 'angriffe',
     type: 'truefalse',
     question: 'Der Stoppkick setzt Bewegung des Gegners voraus — er stoppt den eingehenden Angriff.',
     options: ['Richtig', 'Falsch'],
@@ -643,6 +704,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf21',
+    topic: 'angriffe',
     type: 'truefalse',
     question: 'Der Fingerstich kann ohne Nahkampferfahrung aus größerer Entfernung präzise auf das Auge treffen.',
     options: ['Richtig', 'Falsch'],
@@ -651,6 +713,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf22',
+    topic: 'angriffe',
     type: 'truefalse',
     question: 'Der Nackenzug kann den Kopf des Gegners nach unten ziehen, um Knie- oder Ellbogentechniken vorzubereiten.',
     options: ['Richtig', 'Falsch'],
@@ -659,6 +722,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1tf23',
+    topic: 'angriffe',
     type: 'truefalse',
     question: 'Beim Stoppkick ist das Timing unwichtig — er wirkt auch, wenn der Gegner stillsteht.',
     options: ['Richtig', 'Falsch'],
@@ -670,6 +734,7 @@ export const mod1Questions: QuizQuestion[] = [
 
   {
     id: 'm1sc21',
+    topic: 'angriffe',
     type: 'single',
     question: 'Warum ist der Fingerstich als erster Angriff besonders wertvoll?',
     options: [
@@ -683,6 +748,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc22',
+    topic: 'angriffe',
     type: 'single',
     question: 'Welche Körperregion wird beim Nackenzug kontrolliert?',
     options: ['Schulter', 'Nacken und Hinterkopf', 'Hüfte', 'Handgelenk'],
@@ -691,6 +757,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc23',
+    topic: 'angriffe',
     type: 'single',
     question: 'Wann sind Knie und Ellbogen als Waffe besonders sinnvoll?',
     options: [
@@ -703,20 +770,8 @@ export const mod1Questions: QuizQuestion[] = [
     explanation: 'Im Clinch und auf engem Raum können Fäuste und Tritte nicht mehr voll entfaltet werden — hier sind Knie und Ellbogen mit kurzen Wegen ideal.'
   },
   {
-    id: 'm1sc24',
-    type: 'single',
-    question: 'Was charakterisiert die Kettenfaust im Infight?',
-    options: [
-      'Ein einzelner, maximal kraftvoller Schlag',
-      'Hohe Schlagfrequenz mit vielen schnellen Schlägen',
-      'Schläge mit gestrecktem Arm auf weite Distanz',
-      'Defensive Abwehrtechnik'
-    ],
-    correctIndex: 1,
-    explanation: 'Kettenfaust = hohe Frequenz. Nicht ein starker Schlag, sondern eine Serie schneller Schläge — der Gegner kann nicht reagieren, weil die Schläge sich kettenartig aneinanderreihen.'
-  },
-  {
     id: 'm1sc25',
+    topic: 'angriffe',
     type: 'single',
     question: 'In welchem Moment ist der Stoppkick am wirksamsten?',
     options: [
@@ -730,6 +785,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc26',
+    topic: 'angriffe',
     type: 'single',
     question: 'Was ist die primäre Wirkung des Fingerstichs auf den Gegner?',
     options: [
@@ -743,6 +799,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc27',
+    topic: 'angriffe',
     type: 'single',
     question: 'Welche Kombination ist mit dem Nackenzug besonders effektiv?',
     options: [
@@ -756,6 +813,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc28',
+    topic: 'angriffe',
     type: 'single',
     question: 'Warum ist der Ellbogen dem Faustschlag im Infight oft überlegen?',
     options: [
@@ -768,20 +826,8 @@ export const mod1Questions: QuizQuestion[] = [
     explanation: 'Ellbogen haben kürzere Wege als Fäuste — auf engstem Raum kann kein Punch vollständig ausgeführt werden. Der Ellbogen trifft auch ohne Ausholbewegung mit voller Wirkung.'
   },
   {
-    id: 'm1sc29',
-    type: 'single',
-    question: 'Was unterscheidet die Kettenfaust von einem klassischen Schlagabtausch?',
-    options: [
-      'Sie ist langsamer und präziser',
-      'Sie setzt auf Einzelschläge mit maximaler Kraft',
-      'Sie überwältigt durch hohe Frequenz, nicht durch Einzelkraft',
-      'Sie ist nur für Fortgeschrittene geeignet'
-    ],
-    correctIndex: 2,
-    explanation: 'Kettenfaust = Mentalität der Überwältigung durch Masse und Tempo, nicht durch einen einzelnen Knockout-Schlag. Der Gegner wird von der Frequenz überrollt.'
-  },
-  {
     id: 'm1sc30',
+    topic: 'angriffe',
     type: 'single',
     question: 'Auf welcher Distanz funktioniert der Fingerstich am besten?',
     options: [
@@ -795,6 +841,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc31',
+    topic: 'angriffe',
     type: 'single',
     question: 'Welcher Begriff beschreibt am besten die Funktion des Nackenzugs?',
     options: [
@@ -808,6 +855,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1sc32',
+    topic: 'angriffe',
     type: 'single',
     question: 'Was macht den Stoppkick zur defensiven Angriffstechnik?',
     options: [
@@ -824,6 +872,7 @@ export const mod1Questions: QuizQuestion[] = [
 
   {
     id: 'm1mc11',
+    topic: 'angriffe',
     type: 'multiple',
     question: 'Welche Aussagen zum Fingerstich sind korrekt? (Mehrere möglich)',
     options: [
@@ -838,6 +887,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1mc12',
+    topic: 'angriffe',
     type: 'multiple',
     question: 'Was trifft auf Knie und Ellbogen als Techniken zu? (Mehrere möglich)',
     options: [
@@ -851,21 +901,8 @@ export const mod1Questions: QuizQuestion[] = [
     explanation: 'Knie und Ellbogen sind harte Körperstellen mit kurzen Wegen — ideal auf engem Raum und im Clinch. Auf langer Distanz können sie ihre Kraft nicht entfalten.'
   },
   {
-    id: 'm1mc13',
-    type: 'multiple',
-    question: 'Welche Eigenschaften beschreiben die Kettenfaust? (Mehrere möglich)',
-    options: [
-      'Hohe Schlagfrequenz',
-      'Ein einziger maximaler Schlag',
-      'Infight-Technik auf engem Raum',
-      'Überwältigt durch Masse und Tempo',
-      'Erfordert viel Ausholraum'
-    ],
-    correctIndices: [0, 2, 3],
-    explanation: 'Kettenfaust: hohe Frequenz, Infight-Technik, Überwältigung durch viele schnelle Schläge — kein einzelner Kraftschlag, kein langer Ausholweg.'
-  },
-  {
     id: 'm1mc14',
+    topic: 'angriffe',
     type: 'multiple',
     question: 'Was sind Funktionen des Nackenzugs? (Mehrere möglich)',
     options: [
@@ -880,6 +917,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1mc15',
+    topic: 'angriffe',
     type: 'multiple',
     question: 'Welche Bedingungen machen den Stoppkick wirkungsvoller? (Mehrere möglich)',
     options: [
@@ -896,19 +934,8 @@ export const mod1Questions: QuizQuestion[] = [
   // ── MATCHING — Techniken (4 neu) ─────────────────────────────────────────
 
   {
-    id: 'm1ma9',
-    type: 'matching',
-    question: 'Ordne die Techniken ihrer Hauptwirkung zu:',
-    pairs: [
-      { left: 'Fingerstich', right: 'Schockreaktion / Auge' },
-      { left: 'Nackenzug', right: 'Kontrolle & Steuerung' },
-      { left: 'Kettenfaust', right: 'Hohe Frequenz / Infight' },
-      { left: 'Stoppkick', right: 'Eingehenden Angriff stoppen' },
-    ],
-    explanation: 'Jede Technik hat ein klares Primärziel: Fingerstich → Schock, Nackenzug → Kontrolle, Kettenfaust → Frequenz, Stoppkick → Momentum stoppen.'
-  },
-  {
     id: 'm1ma10',
+    topic: 'angriffe',
     type: 'matching',
     question: 'Ordne die Technik der optimalen Distanz/Situation zu:',
     pairs: [
@@ -921,6 +948,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1ma11',
+    topic: 'distanz',
     type: 'matching',
     question: 'Ordne Grundbewegungstyp seiner Haupteigenschaft zu:',
     pairs: [
@@ -933,6 +961,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1ma12',
+    topic: 'stellungen',
     type: 'matching',
     question: 'Ordne die Stellung ihrer Beschreibung zu:',
     pairs: [
@@ -948,6 +977,7 @@ export const mod1Questions: QuizQuestion[] = [
 
   {
     id: 'm1fb13',
+    topic: 'angriffe',
     type: 'fillblank',
     question: 'Der Fingerstich zielt primär auf das ___ des Gegners.',
     options: ['Auge', 'Kinn', 'Ohr', 'Hals'],
@@ -956,6 +986,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1fb14',
+    topic: 'angriffe',
     type: 'fillblank',
     question: 'Der Nackenzug dient primär der ___ des Gegners.',
     options: ['Kontrolle', 'Verletzung', 'Fixierung', 'Distanzierung'],
@@ -963,15 +994,8 @@ export const mod1Questions: QuizQuestion[] = [
     explanation: 'Kontrolle ist das Ziel des Nackenzugs — durch Kontrolle des Kopfes wird der gesamte Körper steuerbar. Verletzung ist ein Nebeneffekt, kein Ziel.'
   },
   {
-    id: 'm1fb15',
-    type: 'fillblank',
-    question: 'Die Kettenfaust überwältigt nicht durch Kraft, sondern durch ___.',
-    options: ['Frequenz', 'Reichweite', 'Gewicht', 'Geschwindigkeit des Einzelschlags'],
-    correctIndex: 0,
-    explanation: 'Frequenz ist der Schlüssel der Kettenfaust — viele schnelle Schläge überlasten die Verteidigung des Gegners. Nicht ein harter Schlag, sondern ein Hagel.'
-  },
-  {
     id: 'm1fb16',
+    topic: 'angriffe',
     type: 'fillblank',
     question: 'Der Stoppkick ist dann am stärksten, wenn der Gegner sich ___ bewegt.',
     options: ['vorwärts', 'rückwärts', 'seitwärts', 'nicht'],
@@ -980,6 +1004,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1fb17',
+    topic: 'angriffe',
     type: 'fillblank',
     question: 'Knie und Ellbogen sind besonders effektiv auf ___ Raum.',
     options: ['engem', 'weitem', 'mittlerem', 'offenem'],
@@ -988,6 +1013,7 @@ export const mod1Questions: QuizQuestion[] = [
   },
   {
     id: 'm1fb18',
+    topic: 'verhaltensrichtlinien',
     type: 'fillblank',
     question: 'Verhaltensrichtlinie 1 lautet: Vermeidet ___ Situationen.',
     options: ['Konfliktsituationen', 'alle sozialen', 'Trainings-', 'Reaktions-'],

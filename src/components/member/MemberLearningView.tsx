@@ -10,6 +10,7 @@ import { useApp, BLOCKS } from '../../context/AppContext';
 import { QuizEngine } from '../shared/QuizEngine';
 import { ProgressBar } from '../shared/ProgressBar';
 import { Module, Block, TechniqueProgress } from '../../types';
+import { ModuleTopic, getTopicsForModule } from '../../data/moduleTopics';
 
 // ============================================
 // PRAXIS STATUS HELPER
@@ -178,8 +179,11 @@ export const MemberLearningView: React.FC = () => {
     answeredQuestions, recordQuizAnswer,
     quizExamState, canTakeExam, completeQuizExam,
     flaggedQuestions, flagSystemEnabled, flagQuestion, unflagQuestion,
+    topicOverrides,
   } = useApp();
   const [activeModule, setActiveModule] = useState<Module | null>(null);
+  const [activeTopic, setActiveTopic] = useState<ModuleTopic | null>(null);
+  const [showTopicQuiz, setShowTopicQuiz] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
   const [showExam, setShowExam] = useState(false);
   const [learningTab, setLearningTab] = useState<'theorie' | 'praxis' | 'anfragen'>('theorie');
@@ -271,6 +275,105 @@ export const MemberLearningView: React.FC = () => {
     );
   }
 
+  // ── Topic Quiz Screen ──────────────────────────────────────────────────────
+  if (showTopicQuiz && activeTopic && activeModule) {
+    const allQ = getQuizQuestionsForModule(activeModule.id);
+    const topicQ = allQ.filter(q => q.topic === activeTopic.id);
+    const flaggedIds = getFlaggedIds(activeModule.id);
+    return (
+      <div className="flex flex-col h-screen bg-gray-950">
+        <QuizEngine
+          title={`${activeTopic.icon} ${activeTopic.title}`}
+          questions={topicQ}
+          questionsPerSession={Math.min(topicQ.length, 10)}
+          mode="practice"
+          accentColor="bg-red-600"
+          starredIds={starredQuestions}
+          onStar={starQuestion}
+          onUnstar={unstarQuestion}
+          flagEnabled={flagSystemEnabled}
+          flaggedIds={flaggedIds}
+          onFlag={(qId, comment) => flagQuestion(qId, activeModule.id, comment)}
+          onUnflag={unflagQuestion}
+          onAnswer={recordQuizAnswer}
+          onComplete={(score, xpEarned) => {
+            completeModuleQuiz(activeModule.id, score, xpEarned);
+            setShowTopicQuiz(false);
+          }}
+          onBack={() => setShowTopicQuiz(false)}
+        />
+      </div>
+    );
+  }
+
+  // ── Topic Detail Screen ────────────────────────────────────────────────────
+  if (activeTopic && activeModule) {
+    const allQ = getQuizQuestionsForModule(activeModule.id);
+    const topicQ = allQ.filter(q => q.topic === activeTopic.id);
+    const theoryText = topicOverrides[`${activeModule.id}:${activeTopic.id}`] ?? activeTopic.theoryText;
+
+    // Einfaches Markdown-ähnliches Rendering (### Überschriften, ** bold, --- Trennlinie, Bullet-Listen)
+    const renderTheory = (text: string) => {
+      return text.split('\n').map((line, i) => {
+        if (line.startsWith('### ')) return <h3 key={i} className="text-white font-bold text-base mt-5 mb-1">{line.slice(4)}</h3>;
+        if (line.startsWith('## ')) return <h2 key={i} className="text-white font-bold text-lg mt-6 mb-2 border-b border-gray-700/50 pb-1">{line.slice(3)}</h2>;
+        if (line.startsWith('---')) return <hr key={i} className="border-gray-700/40 my-3" />;
+        if (line.startsWith('- ') || line.startsWith('* ')) return <p key={i} className="text-gray-300 text-sm leading-relaxed pl-3 before:content-['•'] before:mr-2 before:text-red-500">{line.slice(2)}</p>;
+        if (line.startsWith('**') && line.endsWith('**')) return <p key={i} className="text-white font-semibold text-sm mt-2">{line.slice(2, -2)}</p>;
+        if (line.trim() === '') return <div key={i} className="h-2" />;
+        // Handle inline bold
+        const parts = line.split(/(\*\*[^*]+\*\*)/g);
+        if (parts.length > 1) {
+          return (
+            <p key={i} className="text-gray-300 text-sm leading-relaxed">
+              {parts.map((part, j) =>
+                part.startsWith('**') && part.endsWith('**')
+                  ? <strong key={j} className="text-white font-semibold">{part.slice(2, -2)}</strong>
+                  : part
+              )}
+            </p>
+          );
+        }
+        return <p key={i} className="text-gray-300 text-sm leading-relaxed">{line}</p>;
+      });
+    };
+
+    return (
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-700/50 flex-shrink-0">
+          <button onClick={() => setActiveTopic(null)} className="text-gray-400 hover:text-white">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <span className="text-lg">{activeTopic.icon}</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-white font-semibold text-sm">{activeTopic.title}</div>
+            <div className="text-gray-500 text-xs">{activeModule.name}</div>
+          </div>
+          <span className="text-xs text-gray-600 bg-gray-800 px-2 py-0.5 rounded-full">{topicQ.length} Fragen</span>
+        </div>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
+          {renderTheory(theoryText)}
+        </div>
+
+        {/* CTA */}
+        {topicQ.length > 0 && (
+          <div className="px-4 pb-4 pt-3 border-t border-gray-700/50 flex-shrink-0">
+            <button
+              onClick={() => setShowTopicQuiz(true)}
+              className="w-full bg-red-600 hover:bg-red-500 text-white py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2"
+            >
+              <Zap className="w-5 h-5" />
+              Quiz zu diesem Thema — {Math.min(topicQ.length, 10)} Fragen
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // Module detail
   if (activeModule) {
     const q = getQuizQuestionsForModule(activeModule.id);
@@ -328,11 +431,44 @@ export const MemberLearningView: React.FC = () => {
             </div>
           )}
 
+          {/* Topic-Navigation (falls vorhanden) */}
+          {(() => {
+            const topics = getTopicsForModule(activeModule.id);
+            if (topics.length === 0) return null;
+            return (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <BookOpen className="w-4 h-4 text-red-400" />
+                  <span className="text-white font-semibold text-sm">Theorie-Abschnitte</span>
+                </div>
+                <div className="space-y-2">
+                  {topics.map(topic => {
+                    const topicQ = q.filter(qq => qq.topic === topic.id);
+                    return (
+                      <button
+                        key={topic.id}
+                        onClick={() => setActiveTopic(topic)}
+                        className="w-full text-left bg-gray-800/50 border border-gray-700 hover:border-gray-500 rounded-xl p-3 transition-all active:scale-95 flex items-center gap-3"
+                      >
+                        <span className="text-xl flex-shrink-0">{topic.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-white font-medium text-sm">{topic.title}</div>
+                          <div className="text-gray-500 text-xs">{topicQ.length} Fragen</div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Quiz info */}
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
             <div className="flex items-center gap-2 text-blue-400 font-semibold text-sm mb-2">
               <BookOpen className="w-4 h-4" />
-              Quiz-Details
+              Gesamt-Quiz
             </div>
             <ul className="space-y-1 text-sm text-gray-300">
               <li>• {q.length} Fragen im Pool — {quizCount} werden zufällig gewählt</li>
