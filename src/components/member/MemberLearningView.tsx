@@ -3,7 +3,7 @@
 // Wissen aus den 10 Modulen als Quiz-basiertes Lernsystem
 // ============================================
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CertificateView } from './CertificateView';
 import { ChevronLeft, Star, Zap, BookOpen, Trophy, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import { useApp, BLOCKS } from '../../context/AppContext';
@@ -190,6 +190,15 @@ export const MemberLearningView: React.FC = () => {
   const [showCertificate, setShowCertificate] = useState(false);
   const [showTheoryFlagModal, setShowTheoryFlagModal] = useState(false);
   const [theoryFlagComment, setTheoryFlagComment] = useState('');
+
+  useEffect(() => {
+    if (showTheoryFlagModal) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    } else {
+      document.body.style.overflow = '';
+    }
+  }, [showTheoryFlagModal]);
 
   const getFlaggedIds = (moduleId: string) =>
     flaggedQuestions.filter(f => f.moduleId === moduleId).map(f => f.questionId);
@@ -419,7 +428,7 @@ export const MemberLearningView: React.FC = () => {
             <div className="text-white font-semibold text-sm">{activeTopic.title}</div>
             <div className="text-gray-500 text-xs">{activeModule.name}</div>
           </div>
-          <button onClick={() => setShowTheoryFlagModal(true)} className="text-gray-600 hover:text-orange-400 transition-colors p-1" title="Theorie melden">🏳</button>
+          <button onClick={() => setShowTheoryFlagModal(true)} className="text-gray-500 hover:text-orange-400 active:scale-90 transition-all p-2 -mr-1" title="Theorie melden">🚩</button>
           <span className="text-xs text-gray-600 bg-gray-800 px-2 py-0.5 rounded-full">{topicQ.length} Fragen</span>
         </div>
 

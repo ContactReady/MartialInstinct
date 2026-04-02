@@ -183,14 +183,13 @@ export const InstructorView: React.FC = () => {
   const [dndSaveState, setDndSaveState] = useState<'idle' | 'dirty' | 'saved'>('idle');
   const [dndPendingClose, setDndPendingClose] = useState(false);
 
-  // Theorie-Meldungen (von Membern gemeldete Fehler in Theorie-Texten)
-  const [theoryFlags, setTheoryFlags] = useState<{id:string;moduleId:string;topicId:string;topicTitle:string;comment:string;memberName:string;timestamp:string}[]>(() => {
-    try { return JSON.parse(localStorage.getItem('mi-theory-flags') || '[]'); } catch { return []; }
-  });
+  // Theorie-Meldungen — immer frisch aus localStorage lesen
+  const [theoryFlagsVersion, setTheoryFlagsVersion] = useState(0);
+  const getTheoryFlags = () => { try { return JSON.parse(localStorage.getItem('mi-theory-flags') || '[]') as {id:string;moduleId:string;topicId:string;topicTitle:string;comment:string;memberName:string;timestamp:string}[]; } catch { return []; } };
   const dismissTheoryFlag = (id: string) => {
-    const next = theoryFlags.filter(f => f.id !== id);
-    setTheoryFlags(next);
+    const next = getTheoryFlags().filter(f => f.id !== id);
     localStorage.setItem('mi-theory-flags', JSON.stringify(next));
+    setTheoryFlagsVersion(v => v + 1);
   };
 
   // Content Editor State (Rules of Hooks: alle auf Top-Level)
@@ -2939,11 +2938,28 @@ export const InstructorView: React.FC = () => {
 
                           {/* Aktionen */}
                           <div className="flex gap-2">
+                            {q && (
+                              <button
+                                onClick={() => {
+                                  setContentModuleId(flag.moduleId);
+                                  setContentSubTab('quiz');
+                                  setEditingQuestionId(flag.questionId);
+                                  setQEditQuestion(q.question);
+                                  setQEditOptions([...(q.options ?? ['', '', '', '']), '', '', '', ''].slice(0, 4));
+                                  setQEditCorrectIndex(q.correctIndex ?? 0);
+                                  setQEditExplanation(q.explanation ?? '');
+                                  setPlattformOpen(prev => ({ ...prev, training_inhalt: true }));
+                                }}
+                                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg font-semibold transition-all"
+                              >
+                                ✏️ Frage bearbeiten
+                              </button>
+                            )}
                             <button
                               onClick={() => releaseFlaggedQuestion(flag.questionId)}
                               className="flex-1 bg-green-600/80 hover:bg-green-600 text-white text-xs py-2 rounded-lg font-semibold transition-all"
                             >
-                              ✓ Freigeben (Meldung schließen)
+                              ✓ Schließen
                             </button>
                           </div>
                         </div>
@@ -3184,7 +3200,7 @@ export const InstructorView: React.FC = () => {
                           const overrideKey = `${contentModuleId}:${topic.id}`;
                           const currentText = topicOverrides[overrideKey] ?? topic.theoryText;
                           const isEditing = editingQuestionId === overrideKey;
-                          const topicFlags = theoryFlags.filter(f => f.moduleId === contentModuleId && f.topicId === topic.id);
+                          const topicFlags = getTheoryFlags().filter(f => f.moduleId === contentModuleId && f.topicId === topic.id);
                           return (
                             <div key={topic.id} className="bg-gray-900/50 rounded-lg border border-gray-700/50 overflow-hidden">
                               <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-700/50">
