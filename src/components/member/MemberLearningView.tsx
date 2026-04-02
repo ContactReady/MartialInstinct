@@ -217,7 +217,7 @@ export const MemberLearningView: React.FC = () => {
     const questions = getQuizQuestionsForModule(activeModule.id);
     const flaggedIds = getFlaggedIds(activeModule.id);
     return (
-      <div className="flex flex-col h-[calc(100vh-69px)] bg-gray-950">
+      <div className="flex flex-col h-full bg-gray-950">
         <QuizEngine
           title={`${activeModule.icon} ${activeModule.name}`}
           questions={questions}
@@ -248,7 +248,7 @@ export const MemberLearningView: React.FC = () => {
     const quizCount = getQuizCountForModule(activeModule.id);
     const flaggedIds = getFlaggedIds(activeModule.id);
     return (
-      <div className="flex flex-col h-[calc(100vh-69px)] bg-gray-950">
+      <div className="flex flex-col h-full bg-gray-950">
         <QuizEngine
           title={`${activeModule.icon} ${activeModule.name}`}
           questions={questions}
@@ -279,7 +279,7 @@ export const MemberLearningView: React.FC = () => {
     const topicQ = allQ.filter(q => q.topic === activeTopic.id);
     const flaggedIds = getFlaggedIds(activeModule.id);
     return (
-      <div className="flex flex-col h-[calc(100vh-69px)] bg-gray-950">
+      <div className="flex flex-col h-full bg-gray-950">
         <QuizEngine
           title={`${activeTopic.icon} ${activeTopic.title}`}
           questions={topicQ}

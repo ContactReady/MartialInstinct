@@ -5,7 +5,7 @@
 // Exam: 30 Fragen, 90% zum Bestehen
 // ============================================
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ProgressBar } from './ProgressBar';
 import { QuizQuestion } from '../../types';
 export type { QuizQuestion };
@@ -498,6 +498,17 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   const [flagComment, setFlagComment] = useState('');
   const flagTextareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Scroll-Lock + Focus wenn Flag-Modal öffnet/schließt
+  useEffect(() => {
+    if (showFlagModal) {
+      document.body.style.overflow = 'hidden';
+      const t = setTimeout(() => flagTextareaRef.current?.focus(), 50);
+      return () => { clearTimeout(t); document.body.style.overflow = ''; };
+    } else {
+      document.body.style.overflow = '';
+    }
+  }, [showFlagModal]);
+
   const q = session[index];
   const qType = q?.type ?? 'single';
 
@@ -644,7 +655,11 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
     <div className="flex flex-col h-full">
       {/* Flag-Modal */}
       {showFlagModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
+          onPointerDown={e => e.stopPropagation()}
+          onTouchStart={e => e.stopPropagation()}
+        >
           <div className="w-full max-w-lg bg-gray-900 border border-gray-700 rounded-t-2xl p-5 space-y-4">
             <div className="flex items-center justify-between">
               <span className="font-bold text-white">🚩 Frage melden</span>
@@ -658,7 +673,6 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
               placeholder="Beschreibe das Problem kurz…"
               rows={3}
               className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white text-sm resize-none focus:outline-none focus:border-red-500"
-              autoFocus
             />
             <div className="flex gap-3">
               <button onClick={() => { setShowFlagModal(false); setFlagComment(''); }} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-semibold text-sm">
@@ -813,7 +827,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
 
       {/* Weiter-Button */}
       {answered && (
-        <div className="px-4 pb-24 pt-2 flex-shrink-0">
+        <div className="px-4 pb-6 pt-2 flex-shrink-0">
           <button
             onClick={handleNext}
             className={`w-full text-white py-3.5 rounded-xl font-bold text-base transition-all ${accentColor} hover:opacity-90`}
