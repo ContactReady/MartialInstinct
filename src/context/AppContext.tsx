@@ -288,7 +288,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       id: q.id, moduleId, question: q.question,
       type: q.type, options: q.options, correctIndex: q.correctIndex,
       correctIndices: q.correctIndices, pairs: q.pairs,
-      explanation: q.explanation ?? '', position: i,
+      explanation: q.explanation ?? '', position: i, topic: q.topic,
     })));
     return questions;
   });
@@ -399,7 +399,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Beim Start: Lerninhalte (Techniken + Quiz) aus Supabase laden
   // Mit localStorage-Cache für Offline-Betrieb, Fallback auf hardcoded Daten
   useEffect(() => {
-    const CACHE_KEY = 'mi_content_v4'; // v4: guard gegen leere Cache-Daten
+    const CACHE_KEY = 'mi_content_v5'; // v5: topic-Feld auf Fragen
 
     const mapTech = (r: { id: string; module_id: string; name: string; description: string; is_required: boolean; position: number }): ContentTechnique => ({
       id: r.id, moduleId: r.module_id, name: r.name, description: r.description ?? '', isRequired: r.is_required, position: r.position
@@ -429,7 +429,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         correctIndices: q.correctIndices,
         pairs: q.pairs,
         explanation: q.explanation ?? '',
-        position: i,
+        position: i, topic: q.topic,
       })));
       return { techniques, questions };
     };
