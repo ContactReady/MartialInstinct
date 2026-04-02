@@ -312,9 +312,29 @@ export const MemberLearningView: React.FC = () => {
 
     // Einfaches Markdown-ähnliches Rendering (### Überschriften, ** bold, --- Trennlinie, Bullet-Listen)
     const renderTheory = (text: string) => {
+      let firstH2Seen = false;
       return text.split('\n').map((line, i) => {
         if (line.startsWith('### ')) return <h3 key={i} className="text-white font-bold text-base mt-5 mb-1">{line.slice(4)}</h3>;
-        if (line.startsWith('## ')) return <h2 key={i} className="text-white font-bold text-lg mt-6 mb-2 border-b border-gray-700/50 pb-1">{line.slice(3)}</h2>;
+        if (line.startsWith('## ')) {
+          const isFirst = !firstH2Seen;
+          firstH2Seen = true;
+          if (isFirst && topicQ.length > 0) {
+            return (
+              <div key={i} className="flex items-center justify-between gap-2 border-b border-gray-700/50 pb-1 mt-6 mb-2">
+                <h2 className="text-white font-bold text-lg">{line.slice(3)}</h2>
+                <button
+                  onClick={() => setShowTopicQuiz(true)}
+                  className="flex-shrink-0 flex items-center gap-1.5 bg-red-600 hover:bg-red-500 active:scale-95 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+                >
+                  <Zap className="w-3 h-3" />
+                  Quiz
+                </button>
+              </div>
+            );
+          }
+          return <h2 key={i} className="text-white font-bold text-lg mt-6 mb-2 border-b border-gray-700/50 pb-1">{line.slice(3)}</h2>;
+        }
+        if (line.startsWith('~')) return <p key={i} className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mt-2 mb-0.5">{line.slice(1)}</p>;
         if (line.startsWith('---')) return <hr key={i} className="border-gray-700/40 my-3" />;
         if (line.startsWith('- ') || line.startsWith('* ')) return <p key={i} className="text-gray-300 text-sm leading-relaxed pl-3 before:content-['•'] before:mr-2 before:text-red-500">{line.slice(2)}</p>;
         if (line.startsWith('**') && line.endsWith('**')) return <p key={i} className="text-white font-semibold text-sm mt-2">{line.slice(2, -2)}</p>;
@@ -351,17 +371,8 @@ export const MemberLearningView: React.FC = () => {
           <span className="text-xs text-gray-600 bg-gray-800 px-2 py-0.5 rounded-full">{topicQ.length} Fragen</span>
         </div>
 
-        {/* Scrollable content — Quiz-Button oben, dann Theorie-Text */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-          {topicQ.length > 0 && (
-            <button
-              onClick={() => setShowTopicQuiz(true)}
-              className="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-95"
-            >
-              <Zap className="w-4 h-4" />
-              Quiz starten — {Math.min(topicQ.length, 10)} Fragen
-            </button>
-          )}
+        {/* Scrollable content — Theorie-Text (Quiz-Button inline neben erster ## Überschrift) */}
+        <div className="flex-1 overflow-y-auto px-4 py-4">
           <div className="space-y-1">
             {renderTheory(theoryText)}
           </div>

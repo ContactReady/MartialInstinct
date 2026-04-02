@@ -743,7 +743,7 @@ export const MemberView: React.FC = () => {
     <div className="min-h-screen bg-gray-950 text-white">
 
       {/* Content */}
-      <main className={`max-w-4xl mx-auto ${activeTab === 'training' ? 'h-[calc(100vh-4rem)] flex flex-col' : 'pb-24'}`}>
+      <main className={`max-w-4xl mx-auto ${activeTab === 'training' ? 'h-[calc(100vh-133px)] flex flex-col' : 'pb-24'}`}>
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'training' && <MemberLearningView />}
         {activeTab === 'community' && <div className="p-4 pb-24">{renderCommunity()}</div>}

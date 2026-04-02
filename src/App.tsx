@@ -930,7 +930,7 @@ const AppContent: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="pt-10">
+      <div className="pt-[69px]">
         {actualViewMode === 'member' ? <MemberView /> : <InstructorView />}
       </div>
 

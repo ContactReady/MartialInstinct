@@ -25,6 +25,7 @@ export const MOD1_TOPICS: ModuleTopic[] = [
     order: 1,
     theoryText: `## Gesetzliche Grundlagen der Selbstverteidigung
 
+~DISCLAIMER
 Die in diesem Modul vermittelten rechtlichen Inhalte dienen ausschließlich der allgemeinen Orientierung und dem grundlegenden Verständnis von Selbstverteidigungs- und Notwehrsituationen, damit du nicht nur Gefahren, sondern auch rechtliche Folgen besser einschätzen kannst.
 
 Sie stellen keine Rechtsberatung dar und ersetzen keine individuelle juristische Beratung durch einen qualifizierten Rechtsanwalt.
