@@ -38,12 +38,11 @@ interface ModuleCardProps {
   bestScore: number | null;
   sessions: number;
   questionCount: number;
-  tacticsDone: boolean;
-  combatDone: boolean;
+  answeredCount: number;
   onStart: () => void;
 }
 
-const ModuleCard: React.FC<ModuleCardProps> = ({ module, bestScore, sessions, questionCount, tacticsDone, combatDone, onStart }) => {
+const ModuleCard: React.FC<ModuleCardProps> = ({ module, bestScore, sessions, questionCount, answeredCount, onStart }) => {
   const hasQuestions = questionCount > 0;
   const passed = (bestScore ?? 0) >= 70;
   const pct = bestScore ?? 0;
@@ -79,15 +78,16 @@ const ModuleCard: React.FC<ModuleCardProps> = ({ module, bestScore, sessions, qu
           </div>
         </div>
 
-        {/* T/C badges */}
-        <div className="flex flex-col items-end gap-1 mt-0.5">
-          <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${
-            tacticsDone ? 'bg-gray-600/40 border-gray-400 text-white' : 'bg-gray-800 border-gray-700 text-gray-600'
-          }`}>T</span>
-          <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${
-            combatDone ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'bg-gray-800 border-gray-700 text-gray-600'
-          }`}>C</span>
-        </div>
+        {/* Antwort-Fortschritt */}
+        {hasQuestions && (
+          <div className="flex flex-col items-end mt-0.5">
+            <span className="text-[11px] font-bold text-gray-400">
+              <span className={answeredCount >= questionCount ? 'text-green-400' : 'text-gray-300'}>{answeredCount}</span>
+              <span className="text-gray-600">/{questionCount}</span>
+            </span>
+            <span className="text-[9px] text-gray-600 mt-0.5">beantwortet</span>
+          </div>
+        )}
       </div>
 
       {/* Name + Status */}
@@ -119,12 +119,11 @@ interface BlockSectionProps {
   modules: Module[];
   quizProgress: Record<string, { lastScore: number; bestScore: number; totalSessions: number }>;
   getQuestionCount: (moduleId: string) => number;
-  getTacticsDone: (moduleId: string) => boolean;
-  getCombatDone: (moduleId: string) => boolean;
+  getAnsweredCount: (moduleId: string) => number;
   onSelectModule: (module: Module) => void;
 }
 
-const BlockSection: React.FC<BlockSectionProps> = ({ block, modules, quizProgress, getQuestionCount, getTacticsDone, getCombatDone, onSelectModule }) => {
+const BlockSection: React.FC<BlockSectionProps> = ({ block, modules, quizProgress, getQuestionCount, getAnsweredCount, onSelectModule }) => {
   const blockModules = modules.filter(m => block.moduleIds.includes(m.id));
   const masteredCount = blockModules.filter(m => (quizProgress[m.id]?.bestScore ?? 0) >= 70).length;
 
@@ -156,8 +155,7 @@ const BlockSection: React.FC<BlockSectionProps> = ({ block, modules, quizProgres
               bestScore={quizProgress[module.id]?.bestScore ?? null}
               sessions={quizProgress[module.id]?.totalSessions ?? 0}
               questionCount={getQuestionCount(module.id)}
-              tacticsDone={getTacticsDone(module.id)}
-              combatDone={getCombatDone(module.id)}
+              answeredCount={getAnsweredCount(module.id)}
               onStart={() => onSelectModule(module)}
             />
           ))}
@@ -339,7 +337,7 @@ export const MemberLearningView: React.FC = () => {
     };
 
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-700/50 flex-shrink-0">
           <button onClick={() => setActiveTopic(null)} className="text-gray-400 hover:text-white">
@@ -353,23 +351,21 @@ export const MemberLearningView: React.FC = () => {
           <span className="text-xs text-gray-600 bg-gray-800 px-2 py-0.5 rounded-full">{topicQ.length} Fragen</span>
         </div>
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
-          {renderTheory(theoryText)}
-        </div>
-
-        {/* CTA */}
-        {topicQ.length > 0 && (
-          <div className="px-4 pb-4 pt-3 border-t border-gray-700/50 flex-shrink-0">
+        {/* Scrollable content — Quiz-Button oben, dann Theorie-Text */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          {topicQ.length > 0 && (
             <button
               onClick={() => setShowTopicQuiz(true)}
-              className="w-full bg-red-600 hover:bg-red-500 text-white py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2"
+              className="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-95"
             >
-              <Zap className="w-5 h-5" />
-              Quiz zu diesem Thema — {Math.min(topicQ.length, 10)} Fragen
+              <Zap className="w-4 h-4" />
+              Quiz starten — {Math.min(topicQ.length, 10)} Fragen
             </button>
+          )}
+          <div className="space-y-1">
+            {renderTheory(theoryText)}
           </div>
-        )}
+        </div>
       </div>
     );
   }
@@ -380,8 +376,8 @@ export const MemberLearningView: React.FC = () => {
     const quizCount = getQuizCountForModule(activeModule.id);
     const progress = quizProgress[activeModule.id];
     return (
-      <div className="flex flex-col h-full">
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-700/50">
+      <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-700/50 flex-shrink-0">
           <button onClick={() => setActiveModule(null)} className="text-gray-400 hover:text-white">
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -393,11 +389,6 @@ export const MemberLearningView: React.FC = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-          {/* Module info */}
-          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-            <p className="text-gray-300 text-sm leading-relaxed">{activeModule.description}</p>
-          </div>
-
           {/* Stats */}
           {progress && (
             <div className="grid grid-cols-3 gap-3">
@@ -664,8 +655,10 @@ export const MemberLearningView: React.FC = () => {
                 modules={orderedModules}
                 quizProgress={quizProgress}
                 getQuestionCount={(id) => getQuizQuestionsForModule(id).length}
-                getTacticsDone={(id) => isModuleTacticsDone(id)}
-                getCombatDone={(id) => isModuleCombatDone(id)}
+                getAnsweredCount={(id) => {
+                  const qs = getQuizQuestionsForModule(id);
+                  return qs.filter(q => answeredQuestions.includes(q.id)).length;
+                }}
                 onSelectModule={setActiveModule}
               />
             ))}

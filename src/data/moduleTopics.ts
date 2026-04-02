@@ -25,7 +25,13 @@ export const MOD1_TOPICS: ModuleTopic[] = [
     order: 1,
     theoryText: `## Gesetzliche Grundlagen der Selbstverteidigung
 
-Bevor du kämpfst, musst du wissen, wann du kämpfen DARFST. Die folgenden Paragraphen sind die rechtliche Basis jeder Selbstverteidigung.
+Die in diesem Modul vermittelten rechtlichen Inhalte dienen ausschließlich der allgemeinen Orientierung und dem grundlegenden Verständnis von Selbstverteidigungs- und Notwehrsituationen, damit du nicht nur Gefahren, sondern auch rechtliche Folgen besser einschätzen kannst.
+
+Sie stellen keine Rechtsberatung dar und ersetzen keine individuelle juristische Beratung durch einen qualifizierten Rechtsanwalt.
+
+Es wird keine Gewähr für Vollständigkeit, Aktualität oder rechtliche Verbindlichkeit übernommen, da sich Gesetze jederzeit ändern können. Die Anwendung erfolgt auf eigene Verantwortung.
+
+**Im Einzelfall gilt: Konsultiere einen Rechtsanwalt.**
 
 ---
 
