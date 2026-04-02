@@ -2862,230 +2862,6 @@ export const InstructorView: React.FC = () => {
             )}
             </div>
 
-            {/* ── Quiz-Fragen: Flag-System ── */}
-            <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
-              <TrainingAccordionHeader id="training_flags" title="🚩 Gemeldete Fragen" subtitle={`${flaggedQuestions.length} Meldung${flaggedQuestions.length !== 1 ? 'en' : ''} offen · Flag-System verwalten`} />
-              {plattformOpen['training_flags'] && (
-              <div className="border-t border-gray-700/50 p-3 space-y-4">
-
-                {/* Flag-System Toggle */}
-                <div className="flex items-center justify-between bg-gray-800/50 rounded-xl p-3 border border-gray-700">
-                  <div>
-                    <div className="text-white font-semibold text-sm">Flag-System</div>
-                    <div className="text-gray-500 text-xs">Mitglieder können Fragen als fehlerhaft melden</div>
-                  </div>
-                  <button
-                    onClick={() => toggleFlagSystem(!flagSystemEnabled)}
-                    className={`relative w-12 h-6 rounded-full transition-all ${flagSystemEnabled ? 'bg-red-600' : 'bg-gray-600'}`}
-                  >
-                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${flagSystemEnabled ? 'left-6' : 'left-0.5'}`} />
-                  </button>
-                </div>
-
-                {/* Gemeldete Fragen */}
-                {flaggedQuestions.length === 0 ? (
-                  <div className="text-center text-gray-600 text-sm py-4">Keine offenen Meldungen</div>
-                ) : (
-                  <div className="space-y-3">
-                    {flaggedQuestions.map(flag => {
-                      const moduleQuestions = getQuizQuestionsForModule(flag.moduleId);
-                      const q = moduleQuestions.find(qq => qq.id === flag.questionId);
-                      const override = questionOverrides[flag.questionId] ?? {};
-                      const module = MODULES.find(m => m.id === flag.moduleId);
-                      return (
-                        <div key={`${flag.questionId}-${flag.flaggedBy}`} className="bg-gray-900/60 rounded-xl border border-red-500/30 p-4 space-y-3">
-                          {/* Flag-Header */}
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="text-[10px] text-red-400 font-bold uppercase tracking-widest mb-1">
-                                {module?.icon} {module?.name} · {flag.flaggedByName} · {new Date(flag.flaggedAt).toLocaleDateString('de-DE')}
-                              </div>
-                              <div className="text-white text-sm font-medium leading-snug">
-                                {q?.question ?? <span className="text-gray-500 italic">Frage nicht gefunden</span>}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Kommentar */}
-                          <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-sm text-red-300 leading-snug">
-                            💬 "{flag.comment}"
-                          </div>
-
-                          {/* Aktuelle Antwort */}
-                          {q && (
-                            <div className="text-xs text-gray-500 space-y-1">
-                              {q.type === 'matching' ? (
-                                q.pairs?.map((p, i) => (
-                                  <div key={i} className="flex gap-2"><span className="text-gray-400">{p.left}</span><span>→</span><span className="text-gray-400">{p.right}</span></div>
-                                ))
-                              ) : q.type === 'multiple' ? (
-                                <div>Korrekt: {q.correctIndices?.map(i => q.options?.[i]).filter(Boolean).join(', ')}</div>
-                              ) : (
-                                <div>Korrekte Antwort: <span className="text-gray-300">{q.options?.[q.correctIndex ?? 0] ?? '–'}</span></div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Quick-Edit: Erklärung */}
-                          {q && (
-                            <div className="space-y-2">
-                              <div className="text-xs text-gray-500 font-medium">Erklärung (Override):</div>
-                              <textarea
-                                defaultValue={override.explanation ?? q.explanation ?? ''}
-                                onBlur={e => {
-                                  const val = e.target.value.trim();
-                                  if (val !== (q.explanation ?? '')) editQuestionOverride(flag.questionId, { explanation: val });
-                                }}
-                                rows={2}
-                                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-white resize-none focus:outline-none focus:border-yellow-500"
-                              />
-                            </div>
-                          )}
-
-                          {/* Inline-Edit: Frage + Antworten + Erklärung */}
-                          {editingFlagId === flag.questionId && q && (
-                            <div className="space-y-2 pt-1 border-t border-gray-700/50">
-                              <textarea
-                                value={flagEditQuestion}
-                                onChange={e => setFlagEditQuestion(e.target.value)}
-                                placeholder="Frage"
-                                rows={2}
-                                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-white resize-none focus:outline-none focus:border-red-500"
-                              />
-                              {q.type !== 'truefalse' && q.type !== 'matching' && (
-                                <div className="space-y-1">
-                                  {flagEditOptions.map((opt, oi) => (
-                                    <div key={oi} className="flex items-center gap-2">
-                                      <input
-                                        type="radio"
-                                        checked={flagEditCorrectIndex === oi}
-                                        onChange={() => setFlagEditCorrectIndex(oi)}
-                                        className="accent-red-500 flex-shrink-0"
-                                      />
-                                      <input
-                                        value={opt}
-                                        onChange={e => { const o = [...flagEditOptions]; o[oi] = e.target.value; setFlagEditOptions(o); }}
-                                        placeholder={`Antwort ${oi + 1}`}
-                                        className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-red-500"
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              <textarea
-                                value={flagEditExplanation}
-                                onChange={e => setFlagEditExplanation(e.target.value)}
-                                placeholder="Erklärung"
-                                rows={2}
-                                className="w-full bg-gray-800 border border-yellow-600/40 rounded-lg px-3 py-2 text-xs text-white resize-none focus:outline-none focus:border-yellow-500"
-                              />
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={async () => {
-                                    await saveQuizQuestion({ id: flag.questionId, moduleId: flag.moduleId, question: flagEditQuestion.trim(), options: q.type !== 'truefalse' && q.type !== 'matching' ? flagEditOptions.map(o => o.trim()) : q.options, correctIndex: q.type !== 'truefalse' && q.type !== 'matching' ? flagEditCorrectIndex : q.correctIndex, correctIndices: q.correctIndices, pairs: q.pairs, explanation: flagEditExplanation.trim(), position: q.position ?? 0, type: q.type });
-                                    setEditingFlagId(null);
-                                  }}
-                                  className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs py-2 rounded-lg font-semibold transition-all"
-                                >
-                                  💾 Speichern
-                                </button>
-                                <button onClick={() => setEditingFlagId(null)} className="px-3 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg transition-all">Abbrechen</button>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Aktionen */}
-                          <div className="flex gap-2">
-                            {q && editingFlagId !== flag.questionId && (
-                              <button
-                                onClick={() => {
-                                  setEditingFlagId(flag.questionId);
-                                  setFlagEditQuestion(q.question);
-                                  setFlagEditOptions([...(q.options ?? ['', '', '', '']), '', '', '', ''].slice(0, 4));
-                                  setFlagEditCorrectIndex(q.correctIndex ?? 0);
-                                  setFlagEditExplanation(q.explanation ?? '');
-                                }}
-                                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg font-semibold transition-all"
-                              >
-                                ✏️ Bearbeiten
-                              </button>
-                            )}
-                            <button
-                              onClick={() => releaseFlaggedQuestion(flag.questionId)}
-                              className="flex-1 bg-green-600/80 hover:bg-green-600 text-white text-xs py-2 rounded-lg font-semibold transition-all"
-                            >
-                              ✓ Schließen
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                {/* ── Gemeldete Theorie-Texte ── */}
-                {(() => {
-                  const tFlags = getTheoryFlags();
-                  if (tFlags.length === 0) return null;
-                  return (
-                    <div className="mt-4 space-y-3">
-                      <div className="text-xs font-bold uppercase tracking-widest text-orange-400 mt-2">Gemeldete Theorie-Texte</div>
-                      {tFlags.map(flag => {
-                        const topic = getTopicsForModule(flag.moduleId).find(t => t.id === flag.topicId);
-                        const currentText = topicOverrides[`${flag.moduleId}:${flag.topicId}`] ?? topic?.theoryText ?? '';
-                        const isEditingThis = editingFlagId === `theory:${flag.id}`;
-                        return (
-                          <div key={flag.id} className="bg-gray-900/60 rounded-xl border border-orange-500/30 p-4 space-y-3">
-                            <div className="text-[10px] text-orange-400 font-bold uppercase tracking-widest">
-                              {flag.topicTitle} · {flag.memberName} · {new Date(flag.timestamp).toLocaleDateString('de-DE')}
-                            </div>
-                            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2 text-sm text-orange-300 leading-snug">
-                              💬 "{flag.comment}"
-                            </div>
-                            {isEditingThis && (
-                              <div className="space-y-2 border-t border-gray-700/50 pt-2">
-                                <textarea
-                                  value={flagEditTheoryText}
-                                  onChange={e => setFlagEditTheoryText(e.target.value)}
-                                  rows={8}
-                                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-gray-200 resize-y font-mono focus:outline-none focus:border-orange-500"
-                                />
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => { updateTopicText(`${flag.moduleId}:${flag.topicId}`, flagEditTheoryText); dismissTheoryFlag(flag.id); setEditingFlagId(null); }}
-                                    className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs py-2 rounded-lg font-semibold"
-                                  >
-                                    💾 Speichern & Schließen
-                                  </button>
-                                  <button onClick={() => setEditingFlagId(null)} className="px-3 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg">Abbrechen</button>
-                                </div>
-                              </div>
-                            )}
-                            {!isEditingThis && (
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => { setEditingFlagId(`theory:${flag.id}`); setFlagEditTheoryText(currentText); }}
-                                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg font-semibold"
-                                >
-                                  ✏️ Text bearbeiten
-                                </button>
-                                <button
-                                  onClick={() => dismissTheoryFlag(flag.id)}
-                                  className="flex-1 bg-green-600/80 hover:bg-green-600 text-white text-xs py-2 rounded-lg font-semibold"
-                                >
-                                  ✓ Schließen
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-              </div>
-              )}
-            </div>
-
             {/* ── Modul-Inhalt bearbeiten ── */}
             <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
               <TrainingAccordionHeader id="training_inhalt" title="Modul-Inhalt bearbeiten" subtitle="Techniken und Quiz-Fragen pro Modul pflegen." />
@@ -3383,6 +3159,230 @@ export const InstructorView: React.FC = () => {
               {!selectedModule && (
                 <div className="text-gray-600 text-xs text-center py-6 border border-dashed border-gray-700/40 rounded-lg">Wähle ein Modul oben aus, um Inhalte zu bearbeiten.</div>
               )}
+              </div>
+              )}
+            </div>
+
+            {/* ── Quiz-Fragen: Flag-System ── */}
+            <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
+              <TrainingAccordionHeader id="training_flags" title="🚩 Gemeldete Fragen" subtitle={`${flaggedQuestions.length + getTheoryFlags().length} Meldung${(flaggedQuestions.length + getTheoryFlags().length) !== 1 ? 'en' : ''} offen · Flag-System verwalten`} />
+              {plattformOpen['training_flags'] && (
+              <div className="border-t border-gray-700/50 p-3 space-y-4">
+
+                {/* Flag-System Toggle */}
+                <div className="flex items-center justify-between bg-gray-800/50 rounded-xl p-3 border border-gray-700">
+                  <div>
+                    <div className="text-white font-semibold text-sm">Flag-System</div>
+                    <div className="text-gray-500 text-xs">Mitglieder können Fragen als fehlerhaft melden</div>
+                  </div>
+                  <button
+                    onClick={() => toggleFlagSystem(!flagSystemEnabled)}
+                    className={`relative w-12 h-6 rounded-full transition-all ${flagSystemEnabled ? 'bg-red-600' : 'bg-gray-600'}`}
+                  >
+                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${flagSystemEnabled ? 'left-6' : 'left-0.5'}`} />
+                  </button>
+                </div>
+
+                {/* Gemeldete Fragen */}
+                {flaggedQuestions.length === 0 ? (
+                  <div className="text-center text-gray-600 text-sm py-4">Keine offenen Meldungen</div>
+                ) : (
+                  <div className="space-y-3">
+                    {flaggedQuestions.map(flag => {
+                      const moduleQuestions = getQuizQuestionsForModule(flag.moduleId);
+                      const q = moduleQuestions.find(qq => qq.id === flag.questionId);
+                      const override = questionOverrides[flag.questionId] ?? {};
+                      const module = MODULES.find(m => m.id === flag.moduleId);
+                      return (
+                        <div key={`${flag.questionId}-${flag.flaggedBy}`} className="bg-gray-900/60 rounded-xl border border-red-500/30 p-4 space-y-3">
+                          {/* Flag-Header */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[10px] text-red-400 font-bold uppercase tracking-widest mb-1">
+                                {module?.icon} {module?.name} · {flag.flaggedByName} · {new Date(flag.flaggedAt).toLocaleDateString('de-DE')}
+                              </div>
+                              <div className="text-white text-sm font-medium leading-snug">
+                                {q?.question ?? <span className="text-gray-500 italic">Frage nicht gefunden</span>}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Kommentar */}
+                          <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-sm text-red-300 leading-snug">
+                            💬 "{flag.comment}"
+                          </div>
+
+                          {/* Aktuelle Antwort */}
+                          {q && (
+                            <div className="text-xs text-gray-500 space-y-1">
+                              {q.type === 'matching' ? (
+                                q.pairs?.map((p, i) => (
+                                  <div key={i} className="flex gap-2"><span className="text-gray-400">{p.left}</span><span>→</span><span className="text-gray-400">{p.right}</span></div>
+                                ))
+                              ) : q.type === 'multiple' ? (
+                                <div>Korrekt: {q.correctIndices?.map(i => q.options?.[i]).filter(Boolean).join(', ')}</div>
+                              ) : (
+                                <div>Korrekte Antwort: <span className="text-gray-300">{q.options?.[q.correctIndex ?? 0] ?? '–'}</span></div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Quick-Edit: Erklärung */}
+                          {q && (
+                            <div className="space-y-2">
+                              <div className="text-xs text-gray-500 font-medium">Erklärung (Override):</div>
+                              <textarea
+                                defaultValue={override.explanation ?? q.explanation ?? ''}
+                                onBlur={e => {
+                                  const val = e.target.value.trim();
+                                  if (val !== (q.explanation ?? '')) editQuestionOverride(flag.questionId, { explanation: val });
+                                }}
+                                rows={2}
+                                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-white resize-none focus:outline-none focus:border-yellow-500"
+                              />
+                            </div>
+                          )}
+
+                          {/* Inline-Edit: Frage + Antworten + Erklärung */}
+                          {editingFlagId === flag.questionId && q && (
+                            <div className="space-y-2 pt-1 border-t border-gray-700/50">
+                              <textarea
+                                value={flagEditQuestion}
+                                onChange={e => setFlagEditQuestion(e.target.value)}
+                                placeholder="Frage"
+                                rows={2}
+                                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-white resize-none focus:outline-none focus:border-red-500"
+                              />
+                              {q.type !== 'truefalse' && q.type !== 'matching' && (
+                                <div className="space-y-1">
+                                  {flagEditOptions.map((opt, oi) => (
+                                    <div key={oi} className="flex items-center gap-2">
+                                      <input
+                                        type="radio"
+                                        checked={flagEditCorrectIndex === oi}
+                                        onChange={() => setFlagEditCorrectIndex(oi)}
+                                        className="accent-red-500 flex-shrink-0"
+                                      />
+                                      <input
+                                        value={opt}
+                                        onChange={e => { const o = [...flagEditOptions]; o[oi] = e.target.value; setFlagEditOptions(o); }}
+                                        placeholder={`Antwort ${oi + 1}`}
+                                        className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-red-500"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <textarea
+                                value={flagEditExplanation}
+                                onChange={e => setFlagEditExplanation(e.target.value)}
+                                placeholder="Erklärung"
+                                rows={2}
+                                className="w-full bg-gray-800 border border-yellow-600/40 rounded-lg px-3 py-2 text-xs text-white resize-none focus:outline-none focus:border-yellow-500"
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={async () => {
+                                    await saveQuizQuestion({ id: flag.questionId, moduleId: flag.moduleId, question: flagEditQuestion.trim(), options: q.type !== 'truefalse' && q.type !== 'matching' ? flagEditOptions.map(o => o.trim()) : q.options, correctIndex: q.type !== 'truefalse' && q.type !== 'matching' ? flagEditCorrectIndex : q.correctIndex, correctIndices: q.correctIndices, pairs: q.pairs, explanation: flagEditExplanation.trim(), position: q.position ?? 0, type: q.type });
+                                    setEditingFlagId(null);
+                                  }}
+                                  className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs py-2 rounded-lg font-semibold transition-all"
+                                >
+                                  💾 Speichern
+                                </button>
+                                <button onClick={() => setEditingFlagId(null)} className="px-3 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg transition-all">Abbrechen</button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Aktionen */}
+                          <div className="flex gap-2">
+                            {q && editingFlagId !== flag.questionId && (
+                              <button
+                                onClick={() => {
+                                  setEditingFlagId(flag.questionId);
+                                  setFlagEditQuestion(q.question);
+                                  setFlagEditOptions([...(q.options ?? ['', '', '', '']), '', '', '', ''].slice(0, 4));
+                                  setFlagEditCorrectIndex(q.correctIndex ?? 0);
+                                  setFlagEditExplanation(q.explanation ?? '');
+                                }}
+                                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg font-semibold transition-all"
+                              >
+                                ✏️ Bearbeiten
+                              </button>
+                            )}
+                            <button
+                              onClick={() => releaseFlaggedQuestion(flag.questionId)}
+                              className="flex-1 bg-green-600/80 hover:bg-green-600 text-white text-xs py-2 rounded-lg font-semibold transition-all"
+                            >
+                              ✓ Schließen
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {/* ── Gemeldete Theorie-Texte ── */}
+                {(() => {
+                  const tFlags = getTheoryFlags();
+                  if (tFlags.length === 0) return null;
+                  return (
+                    <div className="mt-4 space-y-3">
+                      <div className="text-xs font-bold uppercase tracking-widest text-orange-400 mt-2">Gemeldete Theorie-Texte</div>
+                      {tFlags.map(flag => {
+                        const topic = getTopicsForModule(flag.moduleId).find(t => t.id === flag.topicId);
+                        const currentText = topicOverrides[`${flag.moduleId}:${flag.topicId}`] ?? topic?.theoryText ?? '';
+                        const isEditingThis = editingFlagId === `theory:${flag.id}`;
+                        return (
+                          <div key={flag.id} className="bg-gray-900/60 rounded-xl border border-orange-500/30 p-4 space-y-3">
+                            <div className="text-[10px] text-orange-400 font-bold uppercase tracking-widest">
+                              {flag.topicTitle} · {flag.memberName} · {new Date(flag.timestamp).toLocaleDateString('de-DE')}
+                            </div>
+                            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2 text-sm text-orange-300 leading-snug">
+                              💬 "{flag.comment}"
+                            </div>
+                            {isEditingThis && (
+                              <div className="space-y-2 border-t border-gray-700/50 pt-2">
+                                <textarea
+                                  value={flagEditTheoryText}
+                                  onChange={e => setFlagEditTheoryText(e.target.value)}
+                                  rows={8}
+                                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-gray-200 resize-y font-mono focus:outline-none focus:border-orange-500"
+                                />
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => { updateTopicText(`${flag.moduleId}:${flag.topicId}`, flagEditTheoryText); dismissTheoryFlag(flag.id); setEditingFlagId(null); }}
+                                    className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs py-2 rounded-lg font-semibold"
+                                  >
+                                    💾 Speichern & Schließen
+                                  </button>
+                                  <button onClick={() => setEditingFlagId(null)} className="px-3 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg">Abbrechen</button>
+                                </div>
+                              </div>
+                            )}
+                            {!isEditingThis && (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => { setEditingFlagId(`theory:${flag.id}`); setFlagEditTheoryText(currentText); }}
+                                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg font-semibold"
+                                >
+                                  ✏️ Text bearbeiten
+                                </button>
+                                <button
+                                  onClick={() => dismissTheoryFlag(flag.id)}
+                                  className="flex-1 bg-green-600/80 hover:bg-green-600 text-white text-xs py-2 rounded-lg font-semibold"
+                                >
+                                  ✓ Schließen
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
               )}
             </div>
