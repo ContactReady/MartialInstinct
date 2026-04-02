@@ -217,7 +217,7 @@ export const MemberLearningView: React.FC = () => {
     const questions = getQuizQuestionsForModule(activeModule.id);
     const flaggedIds = getFlaggedIds(activeModule.id);
     return (
-      <div className="flex flex-col h-screen bg-gray-950">
+      <div className="flex flex-col h-[calc(100vh-69px)] bg-gray-950">
         <QuizEngine
           title={`${activeModule.icon} ${activeModule.name}`}
           questions={questions}
@@ -248,7 +248,7 @@ export const MemberLearningView: React.FC = () => {
     const quizCount = getQuizCountForModule(activeModule.id);
     const flaggedIds = getFlaggedIds(activeModule.id);
     return (
-      <div className="flex flex-col h-screen bg-gray-950">
+      <div className="flex flex-col h-[calc(100vh-69px)] bg-gray-950">
         <QuizEngine
           title={`${activeModule.icon} ${activeModule.name}`}
           questions={questions}
@@ -279,7 +279,7 @@ export const MemberLearningView: React.FC = () => {
     const topicQ = allQ.filter(q => q.topic === activeTopic.id);
     const flaggedIds = getFlaggedIds(activeModule.id);
     return (
-      <div className="flex flex-col h-screen bg-gray-950">
+      <div className="flex flex-col h-[calc(100vh-69px)] bg-gray-950">
         <QuizEngine
           title={`${activeTopic.icon} ${activeTopic.title}`}
           questions={topicQ}
@@ -324,10 +324,10 @@ export const MemberLearningView: React.FC = () => {
                 <h2 className="text-white font-bold text-lg">{line.slice(3)}</h2>
                 <button
                   onClick={() => setShowTopicQuiz(true)}
-                  className="flex-shrink-0 flex items-center gap-1.5 bg-red-600 hover:bg-red-500 active:scale-95 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+                  className="flex-shrink-0 flex items-center gap-2 bg-red-600 hover:bg-red-500 active:scale-95 text-white text-sm font-bold px-4 py-2 rounded-xl transition-all"
                 >
-                  <Zap className="w-3 h-3" />
-                  Quiz
+                  <Zap className="w-4 h-4" />
+                  Quiz starten
                 </button>
               </div>
             );
