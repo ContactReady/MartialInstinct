@@ -472,7 +472,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                   }
                 }}
                 placeholder="Z.B. A3F7B2E9"
-                className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600 focus:border-gray-500 focus:outline-none font-mono tracking-widest text-sm uppercase placeholder-gray-600"
+                className="w-full bg-gray-900/60 text-white rounded-xl px-4 py-2.5 border border-gray-700 focus:border-gray-500 focus:outline-none font-mono tracking-widest text-sm uppercase placeholder-gray-600"
               />
 
               {/* Verbinden Button */}
@@ -560,7 +560,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
   // Contact Application Modal
   const renderContactApplicationModal = () => (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-800 rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-gray-900 border border-gray-700/60 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold text-white mb-4">☠️ CONTACT READY Bewerbung</h2>
         <p className="text-gray-400 mb-6">
           Contact Ready (Operator) ist nur auf Bewerbung und Freigabe durch den Owner möglich.
@@ -568,62 +568,62 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
         
         <div className="space-y-4">
           <div>
-            <label className="block text-white mb-2">Motivation *</label>
+            <label className="block text-gray-300 text-sm font-medium mb-1.5">Motivation *</label>
             <textarea
               value={contactAnswers.motivation}
               onChange={(e) => setContactAnswers(prev => ({ ...prev, motivation: e.target.value }))}
               placeholder="Warum möchtest du Operator werden?"
-              className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600"
+              className="w-full bg-gray-900/60 text-white rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-gray-500 resize-none"
               rows={3}
             />
           </div>
           <div>
-            <label className="block text-white mb-2">Erfahrung *</label>
+            <label className="block text-gray-300 text-sm font-medium mb-1.5">Erfahrung *</label>
             <textarea
               value={contactAnswers.experience}
               onChange={(e) => setContactAnswers(prev => ({ ...prev, experience: e.target.value }))}
               placeholder="Beschreibe deinen Kampfsport-Hintergrund"
-              className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600"
+              className="w-full bg-gray-900/60 text-white rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-gray-500 resize-none"
               rows={3}
             />
           </div>
           <div>
-            <label className="block text-white mb-2">Teamfähigkeit *</label>
+            <label className="block text-gray-300 text-sm font-medium mb-1.5">Teamfähigkeit *</label>
             <textarea
               value={contactAnswers.teamwork}
               onChange={(e) => setContactAnswers(prev => ({ ...prev, teamwork: e.target.value }))}
               placeholder="Wie arbeitest du im Team?"
-              className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600"
+              className="w-full bg-gray-900/60 text-white rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-gray-500 resize-none"
               rows={2}
             />
           </div>
           <div>
-            <label className="block text-white mb-2">Stressbewältigung *</label>
+            <label className="block text-gray-300 text-sm font-medium mb-1.5">Stressbewältigung *</label>
             <textarea
               value={contactAnswers.stressHandling}
               onChange={(e) => setContactAnswers(prev => ({ ...prev, stressHandling: e.target.value }))}
               placeholder="Wie gehst du mit Hochstress-Situationen um?"
-              className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600"
+              className="w-full bg-gray-900/60 text-white rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-gray-500 resize-none"
               rows={2}
             />
           </div>
           <div>
-            <label className="block text-white mb-2">Schutz Dritter *</label>
+            <label className="block text-gray-300 text-sm font-medium mb-1.5">Schutz Dritter *</label>
             <textarea
               value={contactAnswers.protectionOfOthers}
               onChange={(e) => setContactAnswers(prev => ({ ...prev, protectionOfOthers: e.target.value }))}
               placeholder="Wie würdest du andere schützen?"
-              className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600"
+              className="w-full bg-gray-900/60 text-white rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-gray-500 resize-none"
               rows={2}
             />
           </div>
           <div>
-            <label className="block text-white mb-2">Verfügbarkeit</label>
+            <label className="block text-gray-300 text-sm font-medium mb-1.5">Verfügbarkeit</label>
             <textarea
               value={contactAnswers.availability}
               onChange={(e) => setContactAnswers(prev => ({ ...prev, availability: e.target.value }))}
               placeholder="Wann bist du verfügbar?"
-              className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600"
+              className="w-full bg-gray-900/60 text-white rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-gray-500 resize-none"
               rows={2}
             />
           </div>
@@ -651,7 +651,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
   // Assistant Instructor Application Modal
   const renderInstructorApplicationModal = () => (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-800 rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-gray-900 border border-gray-700/60 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold text-white mb-4">🎓 ASSISTANT INSTRUCTOR Bewerbung</h2>
         <p className="text-gray-400 mb-6">
           Du möchtest Instructor werden und andere unterrichten? Beantworte uns ein paar Fragen.
@@ -659,62 +659,62 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
         
         <div className="space-y-4">
           <div>
-            <label className="block text-white mb-2">Motivation *</label>
+            <label className="block text-gray-300 text-sm font-medium mb-1.5">Motivation *</label>
             <textarea
               value={instructorAnswers.motivation}
               onChange={(e) => setInstructorAnswers(prev => ({ ...prev, motivation: e.target.value }))}
               placeholder="Warum möchtest du Instructor werden?"
-              className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600"
+              className="w-full bg-gray-900/60 text-white rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-gray-500 resize-none"
               rows={3}
             />
           </div>
           <div>
-            <label className="block text-white mb-2">Unterrichtserfahrung *</label>
+            <label className="block text-gray-300 text-sm font-medium mb-1.5">Unterrichtserfahrung *</label>
             <textarea
               value={instructorAnswers.teachingExperience}
               onChange={(e) => setInstructorAnswers(prev => ({ ...prev, teachingExperience: e.target.value }))}
               placeholder="Hast du bereits Unterrichtserfahrung? (Sport, Arbeit, etc.)"
-              className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600"
+              className="w-full bg-gray-900/60 text-white rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-gray-500 resize-none"
               rows={3}
             />
           </div>
           <div>
-            <label className="block text-white mb-2">Stärken & Schwächen *</label>
+            <label className="block text-gray-300 text-sm font-medium mb-1.5">Stärken & Schwächen *</label>
             <textarea
               value={instructorAnswers.strengthsWeaknesses}
               onChange={(e) => setInstructorAnswers(prev => ({ ...prev, strengthsWeaknesses: e.target.value }))}
               placeholder="Was sind deine Stärken und Schwächen?"
-              className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600"
+              className="w-full bg-gray-900/60 text-white rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-gray-500 resize-none"
               rows={2}
             />
           </div>
           <div>
-            <label className="block text-white mb-2">Verfügbarkeit *</label>
+            <label className="block text-gray-300 text-sm font-medium mb-1.5">Verfügbarkeit *</label>
             <textarea
               value={instructorAnswers.availability}
               onChange={(e) => setInstructorAnswers(prev => ({ ...prev, availability: e.target.value }))}
               placeholder="Wann könntest du unterrichten? (Tage, Uhrzeiten)"
-              className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600"
+              className="w-full bg-gray-900/60 text-white rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-gray-500 resize-none"
               rows={2}
             />
           </div>
           <div>
-            <label className="block text-white mb-2">Ziele *</label>
+            <label className="block text-gray-300 text-sm font-medium mb-1.5">Ziele *</label>
             <textarea
               value={instructorAnswers.goals}
               onChange={(e) => setInstructorAnswers(prev => ({ ...prev, goals: e.target.value }))}
               placeholder="Was sind deine Ziele als Instructor?"
-              className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600"
+              className="w-full bg-gray-900/60 text-white rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-gray-500 resize-none"
               rows={2}
             />
           </div>
           <div>
-            <label className="block text-white mb-2">Dein Vorbild</label>
+            <label className="block text-gray-300 text-sm font-medium mb-1.5">Dein Vorbild</label>
             <textarea
               value={instructorAnswers.roleModel}
               onChange={(e) => setInstructorAnswers(prev => ({ ...prev, roleModel: e.target.value }))}
               placeholder="Was macht für dich einen guten Instructor aus?"
-              className="w-full bg-gray-700 text-white rounded-lg p-3 border border-gray-600"
+              className="w-full bg-gray-900/60 text-white rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-gray-500 resize-none"
               rows={2}
             />
           </div>

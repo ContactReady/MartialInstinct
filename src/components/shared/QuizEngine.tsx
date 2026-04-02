@@ -18,6 +18,8 @@ interface QuizEngineProps {
   accentColor?: string;
   questionsPerSession?: number;
   mode?: 'practice' | 'exam';
+  // Fortschritt speichern (nur Practice/Topic, nicht Exam)
+  progressKey?: string;
   // Stern-System
   starredIds?: string[];
   onStar?: (questionId: string) => void;
@@ -456,6 +458,21 @@ const MatchingRenderer: React.FC<MatchingProps> = ({ q, onAnswer }) => {
   );
 };
 
+// ── Progress-Speicherung (localStorage) ──────────────────────────────────────
+
+interface SavedProgress { sessionIds: string[]; index: number; correct: number; }
+
+function loadProgress(key: string): SavedProgress | null {
+  try { const raw = localStorage.getItem(`mi-quiz-progress-${key}`); return raw ? JSON.parse(raw) : null; }
+  catch { return null; }
+}
+function saveProgress(key: string, data: SavedProgress) {
+  try { localStorage.setItem(`mi-quiz-progress-${key}`, JSON.stringify(data)); } catch {}
+}
+function clearProgress(key: string) {
+  try { localStorage.removeItem(`mi-quiz-progress-${key}`); } catch {}
+}
+
 // ── Haupt-QuizEngine ──────────────────────────────────────────────────────────
 
 export const QuizEngine: React.FC<QuizEngineProps> = ({
@@ -466,6 +483,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   accentColor = 'bg-green-600',
   questionsPerSession,
   mode = 'practice',
+  progressKey,
   starredIds,
   onStar,
   onUnstar,
@@ -477,15 +495,28 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
 }) => {
   const isExam = mode === 'exam';
   const sessionCount = isExam ? Math.min(EXAM_QUESTIONS, questions.length) : (questionsPerSession ?? DEFAULT_QUESTIONS_PER_SESSION);
-  const session = useMemo(
-    () => isExam ? buildExamSession(questions) : buildSession(questions, sessionCount, starredIds),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [questions.length, sessionCount, isExam]
+
+  // Gespeicherter Fortschritt (einmalig beim Mount laden)
+  const savedRef = useRef<SavedProgress | null>(
+    progressKey && !isExam ? loadProgress(progressKey) : null
   );
 
-  const [index, setIndex] = useState(0);
-  const [correct, setCorrect] = useState(0);
+  const [session] = useState<QuizQuestion[]>(() => {
+    const saved = savedRef.current;
+    if (saved?.sessionIds?.length) {
+      const qMap = new Map(questions.map(q => [q.id, q]));
+      const restored = saved.sessionIds.map(id => qMap.get(id)).filter((q): q is QuizQuestion => !!q);
+      if (restored.length === saved.sessionIds.length) return restored;
+    }
+    return isExam ? buildExamSession(questions) : buildSession(questions, sessionCount, starredIds);
+  });
+
+  const [index, setIndex] = useState(() => savedRef.current?.index ?? 0);
+  const [correct, setCorrect] = useState(() => savedRef.current?.correct ?? 0);
   const [done, setDone] = useState(false);
+
+  // Exam-Abbruch Warnung
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // Per-Frage State
   const [answered, setAnswered] = useState(false);
@@ -573,15 +604,24 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   };
 
   const handleNext = () => {
-    if (index + 1 >= sessionCount) {
+    const nextIndex = index + 1;
+    if (nextIndex >= sessionCount) {
       setDone(true);
+      if (progressKey && !isExam) clearProgress(progressKey);
     } else {
-      setIndex(i => i + 1);
+      if (progressKey && !isExam) {
+        saveProgress(progressKey, { sessionIds: session.map(q => q.id), index: nextIndex, correct });
+      }
+      setIndex(nextIndex);
       setAnswered(false);
       setIsCorrect(false);
       setSelected(null);
       setSelectedMultiple(new Set());
     }
+  };
+
+  const handleBack = () => {
+    if (isExam && !done) { setShowExitConfirm(true); } else { onBack(); }
   };
 
   // ── Ergebnis-Screen ────────────────────────────────────────────────────────
@@ -653,6 +693,27 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
 
   return (
     <div className="flex flex-col h-full">
+      {/* Exam-Abbruch Bestätigung */}
+      {showExitConfirm && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-lg bg-gray-900 border border-gray-700 rounded-t-2xl p-5 space-y-4">
+            <div className="text-center space-y-2">
+              <div className="text-3xl">⚠️</div>
+              <div className="font-bold text-white text-lg">Prüfung abbrechen?</div>
+              <p className="text-gray-400 text-sm">Dein Fortschritt geht verloren. Du musst die Prüfung erneut von vorne starten.</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowExitConfirm(false)} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-semibold text-sm">
+                Weiter machen
+              </button>
+              <button onClick={onBack} className="flex-1 bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-semibold text-sm">
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Flag-Modal */}
       {showFlagModal && (
         <div
@@ -692,7 +753,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
 
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-700/50 flex-shrink-0">
-        <button onClick={onBack} className="text-gray-400 hover:text-white text-2xl leading-none flex-shrink-0">←</button>
+        <button onClick={handleBack} className="text-gray-400 hover:text-white text-2xl leading-none flex-shrink-0">←</button>
         <div className="flex-1 min-w-0">
           <div className="text-white font-semibold text-sm truncate">{title}</div>
           {isExam && <div className="text-[10px] text-red-400 font-bold uppercase tracking-widest">Prüfungsmodus</div>}

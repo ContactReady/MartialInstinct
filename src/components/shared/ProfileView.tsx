@@ -161,7 +161,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
         )}
 
         {/* Hero — horizontal: Bild links, Info rechts */}
-        <div className="bg-gradient-to-b from-gray-800 to-gray-900 px-5 pt-8 pb-5">
+        <div className="bg-gray-800 border-b border-gray-700/40 px-5 pt-8 pb-5">
           {!imgDraft ? (
             <div className="flex items-center gap-4">
               {/* Avatar */}
@@ -258,19 +258,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
 
           {/* Stats — direkt unter dem Hero, kein eigener Block */}
           <div className="grid grid-cols-4 gap-2 mt-4">
-            <div className="bg-black/30 rounded-xl p-2.5 border border-gray-700/60 text-center">
+            <div className="bg-gray-800/60 rounded-xl p-2.5 border border-gray-700/50 text-center">
               <div className="text-lg font-black text-orange-400">{member.streak.longestStreak} W</div>
               <div className="text-[10px] text-gray-500 mt-0.5">🏅 Rekord</div>
             </div>
-            <div className="bg-black/30 rounded-xl p-2.5 border border-gray-700/60 text-center">
+            <div className="bg-gray-800/60 rounded-xl p-2.5 border border-gray-700/50 text-center">
               <div className="text-lg font-black text-yellow-400">{member.xp ?? 0}</div>
               <div className="text-[10px] text-gray-500 mt-0.5">XP</div>
             </div>
-            <div className="bg-black/30 rounded-xl p-2.5 border border-gray-700/60 text-center">
+            <div className="bg-gray-800/60 rounded-xl p-2.5 border border-gray-700/50 text-center">
               <div className="text-lg font-black text-blue-400">{techPassedCount}</div>
               <div className="text-[10px] text-gray-500 mt-0.5">◐ Tech.</div>
             </div>
-            <div className="bg-black/30 rounded-xl p-2.5 border border-gray-700/60 text-center">
+            <div className="bg-gray-800/60 rounded-xl p-2.5 border border-gray-700/50 text-center">
               <div className="text-lg font-black text-green-400">{tacPassedCount}</div>
               <div className="text-[10px] text-gray-500 mt-0.5">● Vollst.</div>
             </div>

@@ -265,6 +265,7 @@ export const MemberLearningView: React.FC = () => {
           questions={questions}
           questionsPerSession={quizCount}
           mode="practice"
+          progressKey={`practice-${activeModule.id}`}
           accentColor="bg-red-600"
           starredIds={starredQuestions}
           onStar={starQuestion}
@@ -295,6 +296,7 @@ export const MemberLearningView: React.FC = () => {
           title={`${activeTopic.icon} ${activeTopic.title}`}
           questions={topicQ}
           questionsPerSession={Math.min(topicQ.length, 10)}
+          progressKey={`topic-${activeModule.id}-${activeTopic.id}`}
           mode="practice"
           accentColor="bg-red-600"
           starredIds={starredQuestions}
