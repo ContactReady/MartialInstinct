@@ -931,7 +931,7 @@ const AppContent: React.FC = () => {
 
       {/* Main Content */}
       <div className="pt-[69px]">
-        {actualViewMode === 'member' ? <MemberView /> : <InstructorView />}
+        {actualViewMode === 'member' ? <MemberView onSwitchToAdmin={isInstructor ? () => setViewMode('instructor') : undefined} /> : <InstructorView />}
       </div>
 
       </>)}

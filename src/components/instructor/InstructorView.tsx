@@ -197,6 +197,12 @@ export const InstructorView: React.FC = () => {
   const [contentSubTab, setContentSubTab] = useState<'techniques' | 'quiz' | 'theorie'>('techniques');
   const [editingTechniqueId, setEditingTechniqueId] = useState<string | null>(null);
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const [editingFlagId, setEditingFlagId] = useState<string | null>(null);
+  const [flagEditQuestion, setFlagEditQuestion] = useState('');
+  const [flagEditOptions, setFlagEditOptions] = useState(['', '', '', '']);
+  const [flagEditCorrectIndex, setFlagEditCorrectIndex] = useState(0);
+  const [flagEditExplanation, setFlagEditExplanation] = useState('');
+  const [flagEditTheoryText, setFlagEditTheoryText] = useState('');
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [bulkImportText, setBulkImportText] = useState('');
   const [showQuizBulkImport, setShowQuizBulkImport] = useState(false);
@@ -2936,23 +2942,72 @@ export const InstructorView: React.FC = () => {
                             </div>
                           )}
 
+                          {/* Inline-Edit: Frage + Antworten + Erklärung */}
+                          {editingFlagId === flag.questionId && q && (
+                            <div className="space-y-2 pt-1 border-t border-gray-700/50">
+                              <textarea
+                                value={flagEditQuestion}
+                                onChange={e => setFlagEditQuestion(e.target.value)}
+                                placeholder="Frage"
+                                rows={2}
+                                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-white resize-none focus:outline-none focus:border-red-500"
+                              />
+                              {q.type !== 'truefalse' && q.type !== 'matching' && (
+                                <div className="space-y-1">
+                                  {flagEditOptions.map((opt, oi) => (
+                                    <div key={oi} className="flex items-center gap-2">
+                                      <input
+                                        type="radio"
+                                        checked={flagEditCorrectIndex === oi}
+                                        onChange={() => setFlagEditCorrectIndex(oi)}
+                                        className="accent-red-500 flex-shrink-0"
+                                      />
+                                      <input
+                                        value={opt}
+                                        onChange={e => { const o = [...flagEditOptions]; o[oi] = e.target.value; setFlagEditOptions(o); }}
+                                        placeholder={`Antwort ${oi + 1}`}
+                                        className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-red-500"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <textarea
+                                value={flagEditExplanation}
+                                onChange={e => setFlagEditExplanation(e.target.value)}
+                                placeholder="Erklärung"
+                                rows={2}
+                                className="w-full bg-gray-800 border border-yellow-600/40 rounded-lg px-3 py-2 text-xs text-white resize-none focus:outline-none focus:border-yellow-500"
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={async () => {
+                                    await saveQuizQuestion({ id: flag.questionId, moduleId: flag.moduleId, question: flagEditQuestion.trim(), options: q.type !== 'truefalse' && q.type !== 'matching' ? flagEditOptions.map(o => o.trim()) : q.options, correctIndex: q.type !== 'truefalse' && q.type !== 'matching' ? flagEditCorrectIndex : q.correctIndex, correctIndices: q.correctIndices, pairs: q.pairs, explanation: flagEditExplanation.trim(), position: q.position ?? 0, type: q.type });
+                                    setEditingFlagId(null);
+                                  }}
+                                  className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs py-2 rounded-lg font-semibold transition-all"
+                                >
+                                  💾 Speichern
+                                </button>
+                                <button onClick={() => setEditingFlagId(null)} className="px-3 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg transition-all">Abbrechen</button>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Aktionen */}
                           <div className="flex gap-2">
-                            {q && (
+                            {q && editingFlagId !== flag.questionId && (
                               <button
                                 onClick={() => {
-                                  setContentModuleId(flag.moduleId);
-                                  setContentSubTab('quiz');
-                                  setEditingQuestionId(flag.questionId);
-                                  setQEditQuestion(q.question);
-                                  setQEditOptions([...(q.options ?? ['', '', '', '']), '', '', '', ''].slice(0, 4));
-                                  setQEditCorrectIndex(q.correctIndex ?? 0);
-                                  setQEditExplanation(q.explanation ?? '');
-                                  setPlattformOpen(prev => ({ ...prev, training_inhalt: true }));
+                                  setEditingFlagId(flag.questionId);
+                                  setFlagEditQuestion(q.question);
+                                  setFlagEditOptions([...(q.options ?? ['', '', '', '']), '', '', '', ''].slice(0, 4));
+                                  setFlagEditCorrectIndex(q.correctIndex ?? 0);
+                                  setFlagEditExplanation(q.explanation ?? '');
                                 }}
                                 className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg font-semibold transition-all"
                               >
-                                ✏️ Frage bearbeiten
+                                ✏️ Bearbeiten
                               </button>
                             )}
                             <button
@@ -2967,6 +3022,66 @@ export const InstructorView: React.FC = () => {
                     })}
                   </div>
                 )}
+                {/* ── Gemeldete Theorie-Texte ── */}
+                {(() => {
+                  const tFlags = getTheoryFlags();
+                  if (tFlags.length === 0) return null;
+                  return (
+                    <div className="mt-4 space-y-3">
+                      <div className="text-xs font-bold uppercase tracking-widest text-orange-400 mt-2">Gemeldete Theorie-Texte</div>
+                      {tFlags.map(flag => {
+                        const topic = getTopicsForModule(flag.moduleId).find(t => t.id === flag.topicId);
+                        const currentText = topicOverrides[`${flag.moduleId}:${flag.topicId}`] ?? topic?.theoryText ?? '';
+                        const isEditingThis = editingFlagId === `theory:${flag.id}`;
+                        return (
+                          <div key={flag.id} className="bg-gray-900/60 rounded-xl border border-orange-500/30 p-4 space-y-3">
+                            <div className="text-[10px] text-orange-400 font-bold uppercase tracking-widest">
+                              {flag.topicTitle} · {flag.memberName} · {new Date(flag.timestamp).toLocaleDateString('de-DE')}
+                            </div>
+                            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2 text-sm text-orange-300 leading-snug">
+                              💬 "{flag.comment}"
+                            </div>
+                            {isEditingThis && (
+                              <div className="space-y-2 border-t border-gray-700/50 pt-2">
+                                <textarea
+                                  value={flagEditTheoryText}
+                                  onChange={e => setFlagEditTheoryText(e.target.value)}
+                                  rows={8}
+                                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-gray-200 resize-y font-mono focus:outline-none focus:border-orange-500"
+                                />
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => { updateTopicText(`${flag.moduleId}:${flag.topicId}`, flagEditTheoryText); dismissTheoryFlag(flag.id); setEditingFlagId(null); }}
+                                    className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs py-2 rounded-lg font-semibold"
+                                  >
+                                    💾 Speichern & Schließen
+                                  </button>
+                                  <button onClick={() => setEditingFlagId(null)} className="px-3 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg">Abbrechen</button>
+                                </div>
+                              </div>
+                            )}
+                            {!isEditingThis && (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => { setEditingFlagId(`theory:${flag.id}`); setFlagEditTheoryText(currentText); }}
+                                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg font-semibold"
+                                >
+                                  ✏️ Text bearbeiten
+                                </button>
+                                <button
+                                  onClick={() => dismissTheoryFlag(flag.id)}
+                                  className="flex-1 bg-green-600/80 hover:bg-green-600 text-white text-xs py-2 rounded-lg font-semibold"
+                                >
+                                  ✓ Schließen
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
               )}
             </div>

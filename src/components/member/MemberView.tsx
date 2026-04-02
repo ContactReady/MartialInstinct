@@ -15,7 +15,7 @@ import { RankingList } from '../shared/RankingList';
 type Tab = 'dashboard' | 'training' | 'community' | 'profil';
 type ApplicationType = 'contact' | 'assistant_instructor' | null;
 
-export const MemberView: React.FC = () => {
+export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitchToAdmin }) => {
   const {
     currentUser,
     members,
@@ -777,6 +777,15 @@ export const MemberView: React.FC = () => {
               </button>
             );
           })}
+          {onSwitchToAdmin && (
+            <button
+              onClick={onSwitchToAdmin}
+              className="flex-1 py-3 flex flex-col items-center gap-0.5 transition-all text-gray-500 hover:text-gray-300"
+            >
+              <span className="text-xl">🔒</span>
+              <span className="text-[11px] font-semibold">Admin</span>
+            </button>
+          )}
         </div>
       </nav>
 
