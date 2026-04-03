@@ -782,7 +782,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
               onClick={onSwitchToAdmin}
               className="flex-1 py-3 flex flex-col items-center gap-0.5 transition-all text-gray-500 hover:text-gray-300"
             >
-              <span className="text-xl">🔒</span>
+              <span className="text-xl">🔐</span>
               <span className="text-[11px] font-semibold">Admin</span>
             </button>
           )}
