@@ -39,10 +39,11 @@ interface ModuleCardProps {
   sessions: number;
   questionCount: number;
   answeredCount: number;
+  displayName?: string;
   onStart: () => void;
 }
 
-const ModuleCard: React.FC<ModuleCardProps> = ({ module, bestScore, sessions, questionCount, answeredCount, onStart }) => {
+const ModuleCard: React.FC<ModuleCardProps> = ({ module, bestScore, sessions, questionCount, answeredCount, displayName, onStart }) => {
   const hasQuestions = questionCount > 0;
   const passed = (bestScore ?? 0) >= 70;
   const pct = bestScore ?? 0;
@@ -92,7 +93,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({ module, bestScore, sessions, qu
 
       {/* Name + Status */}
       <div>
-        <div className="text-white font-semibold text-sm leading-snug">{module.name}</div>
+        <div className="text-white font-semibold text-sm leading-snug">{displayName ?? module.name}</div>
         <div className="text-gray-500 text-[11px] mt-0.5">
           {!hasQuestions ? 'Kein Quiz' : sessions === 0 ? 'Noch nicht gestartet' : `${sessions}× · Best: ${pct}%`}
         </div>
@@ -120,10 +121,11 @@ interface BlockSectionProps {
   quizProgress: Record<string, { lastScore: number; bestScore: number; totalSessions: number }>;
   getQuestionCount: (moduleId: string) => number;
   getAnsweredCount: (moduleId: string) => number;
+  getModuleName: (moduleId: string) => string;
   onSelectModule: (module: Module) => void;
 }
 
-const BlockSection: React.FC<BlockSectionProps> = ({ block, modules, quizProgress, getQuestionCount, getAnsweredCount, onSelectModule }) => {
+const BlockSection: React.FC<BlockSectionProps> = ({ block, modules, quizProgress, getQuestionCount, getAnsweredCount, getModuleName, onSelectModule }) => {
   const blockModules = modules.filter(m => block.moduleIds.includes(m.id));
   const masteredCount = blockModules.filter(m => (quizProgress[m.id]?.bestScore ?? 0) >= 70).length;
 
@@ -156,6 +158,7 @@ const BlockSection: React.FC<BlockSectionProps> = ({ block, modules, quizProgres
               sessions={quizProgress[module.id]?.totalSessions ?? 0}
               questionCount={getQuestionCount(module.id)}
               answeredCount={getAnsweredCount(module.id)}
+              displayName={getModuleName(module.id)}
               onStart={() => onSelectModule(module)}
             />
           ))}
@@ -177,7 +180,7 @@ export const MemberLearningView: React.FC = () => {
     answeredQuestions, recordQuizAnswer,
     quizExamState, canTakeExam, completeQuizExam,
     flaggedQuestions, flagSystemEnabled, flagQuestion, unflagQuestion,
-    topicOverrides, platformConfig,
+    topicOverrides, platformConfig, getModuleName,
   } = useApp();
   const [activeModule, setActiveModule] = useState<Module | null>(null);
   const [activeTopic, setActiveTopic] = useState<ModuleTopic | null>(null);
@@ -233,7 +236,7 @@ export const MemberLearningView: React.FC = () => {
     return (
       <div className="flex flex-col h-full bg-gray-950">
         <QuizEngine
-          title={`${activeModule.icon} ${activeModule.name}`}
+          title={`${activeModule.icon} ${getModuleName(activeModule.id)}`}
           questions={questions}
           mode="exam"
           accentColor="bg-red-600"
@@ -266,7 +269,7 @@ export const MemberLearningView: React.FC = () => {
     return (
       <div className="flex flex-col h-full bg-gray-950">
         <QuizEngine
-          title={`${activeModule.icon} ${activeModule.name}`}
+          title={`${activeModule.icon} ${getModuleName(activeModule.id)}`}
           questions={questions}
           questionsPerSession={quizCount}
           mode="practice"
@@ -437,7 +440,7 @@ export const MemberLearningView: React.FC = () => {
           <span className="text-lg">{activeTopic.icon}</span>
           <div className="flex-1 min-w-0">
             <div className="text-white font-semibold text-sm">{activeTopic.title}</div>
-            <div className="text-gray-500 text-xs">{activeModule.name}</div>
+            <div className="text-gray-500 text-xs">{getModuleName(activeModule.id)}</div>
           </div>
           <button onClick={() => setShowTheoryFlagModal(true)} className="text-gray-500 hover:text-orange-400 active:scale-90 transition-all p-2 -mr-1" title="Theorie melden">🚩</button>
           <span className="text-xs text-gray-600 bg-gray-800 px-2 py-0.5 rounded-full">{topicQ.length} Fragen</span>
@@ -466,7 +469,7 @@ export const MemberLearningView: React.FC = () => {
           </button>
           <span className="text-lg">{activeModule.icon}</span>
           <div>
-            <div className="text-white font-semibold">{activeModule.name}</div>
+            <div className="text-white font-semibold">{getModuleName(activeModule.id)}</div>
             <div className="text-gray-500 text-xs">{activeModule.subtitle}</div>
           </div>
         </div>
@@ -747,6 +750,7 @@ export const MemberLearningView: React.FC = () => {
                   const qs = getQuizQuestionsForModule(id);
                   return qs.filter(q => answeredQuestions.includes(q.id)).length;
                 }}
+                getModuleName={getModuleName}
                 onSelectModule={setActiveModule}
               />
             ))}
@@ -830,7 +834,7 @@ export const MemberLearningView: React.FC = () => {
                   <span className="text-xl flex-shrink-0">{module.icon}</span>
                   <div className="flex-1 min-w-0 text-left">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-white font-semibold text-sm">{module.name}</span>
+                      <span className="text-white font-semibold text-sm">{getModuleName(module.id)}</span>
                     </div>
                     <div className="bg-gray-900/50 rounded-full h-1.5 w-full">
                       <div className="h-1.5 rounded-full transition-all bg-red-500" style={{ width: `${pct}%` }} />

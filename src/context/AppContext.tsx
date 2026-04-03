@@ -247,6 +247,9 @@ interface AppContextType {
   // Theorie-Texte (Admin-editierbar, nicht flaggbar durch Member)
   topicOverrides: Record<string, string>;
   updateTopicText: (topicId: string, text: string) => void;
+  moduleNameOverrides: Record<string, string>;
+  saveModuleName: (moduleId: string, name: string) => void;
+  getModuleName: (moduleId: string) => string;
 
   // Plattform-Konfiguration
   platformConfig: PlatformConfig;
@@ -1962,6 +1965,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   }, []);
 
+  const [moduleNameOverrides, setModuleNameOverrides] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem('mi-module-name-overrides');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  const saveModuleName = useCallback((moduleId: string, name: string) => {
+    setModuleNameOverrides(prev => {
+      const next = { ...prev, [moduleId]: name };
+      localStorage.setItem('mi-module-name-overrides', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const getModuleName = useCallback((moduleId: string): string => {
+    if (moduleNameOverrides[moduleId]) return moduleNameOverrides[moduleId];
+    const mod = MODULES.find(m => m.id === moduleId);
+    return mod?.name ?? moduleId;
+  }, [moduleNameOverrides]);
+
   const updatePlatformConfig = useCallback((config: PlatformConfig) => {
     localStorage.setItem('mi-platform-config', JSON.stringify(config));
     setPlatformConfig(config);
@@ -2549,6 +2573,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Theorie-Texte
     topicOverrides,
     updateTopicText,
+    // Modulnamen-Overrides
+    moduleNameOverrides,
+    saveModuleName,
+    getModuleName,
     // Plattform-Konfiguration
     platformConfig,
     updatePlatformConfig,

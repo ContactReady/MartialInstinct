@@ -120,6 +120,9 @@ export const InstructorView: React.FC = () => {
     questionOverrides,
     topicOverrides,
     updateTopicText,
+    moduleNameOverrides,
+    saveModuleName,
+    getModuleName,
     platformConfig,
     updatePlatformConfig,
   } = useApp();
@@ -697,7 +700,7 @@ export const InstructorView: React.FC = () => {
                             className="ml-auto bg-gray-700 text-gray-300 text-xs rounded-lg px-2 py-1 border border-gray-600 outline-none"
                           >
                             <option value="all">Alle Module</option>
-                            {MODULES.map(m => <option key={m.id} value={m.id}>{m.icon} {m.name}</option>)}
+                            {MODULES.map(m => <option key={m.id} value={m.id}>{m.icon} {getModuleName(m.id)}</option>)}
                           </select>
                         )}
                       </div>
@@ -977,7 +980,7 @@ export const InstructorView: React.FC = () => {
                     >
                       <div className="flex items-center gap-3">
                         <span>{module.icon}</span>
-                        <span className="text-white">{module.name}</span>
+                        <span className="text-white">{getModuleName(module.id)}</span>
                       </div>
                       <span className="text-gray-400">→</span>
                     </button>
@@ -1006,7 +1009,7 @@ export const InstructorView: React.FC = () => {
           <div className="flex items-center gap-3">
             <span className="text-2xl">{module.icon}</span>
             <div>
-              <div className="font-bold text-white">{module.name}</div>
+              <div className="font-bold text-white">{getModuleName(module.id)}</div>
               <div className="text-gray-400 text-sm">{selectedMember.name}</div>
             </div>
           </div>
@@ -2292,7 +2295,7 @@ export const InstructorView: React.FC = () => {
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs text-gray-400">
                             <span className="text-gray-600 font-mono mr-1.5">{romanNums[idx]}</span>
-                            {mod.name}
+                            {getModuleName(mod.id)}
                           </span>
                           <div className="flex gap-3 text-[10px] text-gray-500">
                             <span>T: <span className="text-gray-300 font-semibold">{tDone}/{allM.length}</span></span>
@@ -2839,7 +2842,7 @@ export const InstructorView: React.FC = () => {
                         >
                           <span className="text-gray-500 select-none">⠿</span>
                           <span className="text-base flex-shrink-0">{module.icon}</span>
-                          <span className="text-gray-200 text-sm flex-1 truncate">{module.name}</span>
+                          <span className="text-gray-200 text-sm flex-1 truncate">{getModuleName(module.id)}</span>
                           <select
                             value={block.level}
                             onChange={e => handleBlockChange(module.id, e.target.value)}
@@ -2881,7 +2884,7 @@ export const InstructorView: React.FC = () => {
                       contentModuleId === m.id ? 'bg-gray-600 border-gray-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
                     }`}
                   >
-                    {m.icon} {m.name}
+                    {m.icon} {getModuleName(m.id)}
                   </button>
                 ))}
               </div>
@@ -2889,6 +2892,25 @@ export const InstructorView: React.FC = () => {
               {/* Editor Panel */}
               {selectedModule && (
                 <div className="space-y-3">
+                  {/* Modulname bearbeiten */}
+                  <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 flex items-center gap-2">
+                    <span className="text-lg flex-shrink-0">{selectedModule.icon}</span>
+                    <input
+                      type="text"
+                      value={moduleNameOverrides[selectedModule.id] ?? selectedModule.name}
+                      onChange={e => saveModuleName(selectedModule.id, e.target.value)}
+                      placeholder={selectedModule.name}
+                      className="flex-1 bg-gray-800 text-white text-sm font-semibold rounded-lg px-3 py-1.5 border border-gray-700 focus:outline-none focus:border-gray-500"
+                    />
+                    {moduleNameOverrides[selectedModule.id] && moduleNameOverrides[selectedModule.id] !== selectedModule.name && (
+                      <button
+                        onClick={() => saveModuleName(selectedModule.id, selectedModule.name)}
+                        className="text-xs text-gray-500 hover:text-gray-300 flex-shrink-0"
+                        title="Zurücksetzen"
+                      >↩</button>
+                    )}
+                  </div>
+
                   {/* Sub-Tab */}
                   <div className="flex bg-gray-900/50 rounded-lg p-0.5 gap-0.5">
                     {(['techniques', 'quiz', 'theorie'] as const).map(tab => (
@@ -2947,7 +2969,7 @@ export const InstructorView: React.FC = () => {
                               <div className="text-gray-200 text-sm">{t.name}</div>
                               {t.description && <div className="text-gray-500 text-xs mt-0.5 leading-relaxed">{t.description}</div>}
                             </div>
-                            <button onClick={() => openEditTechnique(t.id, t.name, t.description)} className="text-gray-500 hover:text-white text-xs flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">✏️</button>
+                            <button onClick={() => openEditTechnique(t.id, t.name, t.description)} className="text-gray-500 hover:text-white text-xs flex-shrink-0 mt-0.5 transition-colors">✏️</button>
                           </div>
                         )
                       ))}
@@ -3312,6 +3334,18 @@ export const InstructorView: React.FC = () => {
                                 className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg font-semibold transition-all"
                               >
                                 ✏️ Bearbeiten
+                              </button>
+                            )}
+                            {q && editingFlagId !== flag.questionId && (
+                              <button
+                                onClick={async () => {
+                                  if (!window.confirm('Frage wirklich löschen? Das kann nicht rückgängig gemacht werden.')) return;
+                                  await deleteQuizQuestion(flag.questionId);
+                                  releaseFlaggedQuestion(flag.questionId);
+                                }}
+                                className="bg-red-900/60 hover:bg-red-800 text-red-400 hover:text-red-300 text-xs py-2 px-3 rounded-lg font-semibold transition-all"
+                              >
+                                🗑
                               </button>
                             )}
                             <button
