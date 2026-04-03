@@ -250,6 +250,9 @@ interface AppContextType {
   moduleNameOverrides: Record<string, string>;
   saveModuleName: (moduleId: string, name: string) => void;
   getModuleName: (moduleId: string) => string;
+  moduleSubtitleOverrides: Record<string, string>;
+  saveModuleSubtitle: (moduleId: string, subtitle: string) => void;
+  getModuleSubtitle: (moduleId: string) => string;
 
   // Plattform-Konfiguration
   platformConfig: PlatformConfig;
@@ -1986,6 +1989,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return mod?.name ?? moduleId;
   }, [moduleNameOverrides]);
 
+  const [moduleSubtitleOverrides, setModuleSubtitleOverrides] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem('mi-module-subtitle-overrides');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  const saveModuleSubtitle = useCallback((moduleId: string, subtitle: string) => {
+    setModuleSubtitleOverrides(prev => {
+      const next = { ...prev, [moduleId]: subtitle };
+      localStorage.setItem('mi-module-subtitle-overrides', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const getModuleSubtitle = useCallback((moduleId: string): string => {
+    if (moduleSubtitleOverrides[moduleId] !== undefined) return moduleSubtitleOverrides[moduleId];
+    const mod = MODULES.find(m => m.id === moduleId);
+    return mod?.subtitle ?? '';
+  }, [moduleSubtitleOverrides]);
+
   const updatePlatformConfig = useCallback((config: PlatformConfig) => {
     localStorage.setItem('mi-platform-config', JSON.stringify(config));
     setPlatformConfig(config);
@@ -2573,10 +2597,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Theorie-Texte
     topicOverrides,
     updateTopicText,
-    // Modulnamen-Overrides
+    // Modulnamen- & Subtitle-Overrides
     moduleNameOverrides,
     saveModuleName,
     getModuleName,
+    moduleSubtitleOverrides,
+    saveModuleSubtitle,
+    getModuleSubtitle,
     // Plattform-Konfiguration
     platformConfig,
     updatePlatformConfig,

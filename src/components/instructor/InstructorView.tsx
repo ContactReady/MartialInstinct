@@ -123,6 +123,8 @@ export const InstructorView: React.FC = () => {
     moduleNameOverrides,
     saveModuleName,
     getModuleName,
+    moduleSubtitleOverrides,
+    saveModuleSubtitle,
     platformConfig,
     updatePlatformConfig,
   } = useApp();
@@ -2871,23 +2873,44 @@ export const InstructorView: React.FC = () => {
               {/* Editor Panel */}
               {selectedModule && (
                 <div className="space-y-3">
-                  {/* Modulname bearbeiten */}
-                  <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 flex items-center gap-2">
-                    <span className="text-lg flex-shrink-0">{selectedModule.icon}</span>
-                    <input
-                      type="text"
-                      value={moduleNameOverrides[selectedModule.id] ?? selectedModule.name}
-                      onChange={e => saveModuleName(selectedModule.id, e.target.value)}
-                      placeholder={selectedModule.name}
-                      className="flex-1 bg-gray-800 text-white text-sm font-semibold rounded-lg px-3 py-1.5 border border-gray-700 focus:outline-none focus:border-gray-500"
-                    />
-                    {moduleNameOverrides[selectedModule.id] && moduleNameOverrides[selectedModule.id] !== selectedModule.name && (
-                      <button
-                        onClick={() => saveModuleName(selectedModule.id, selectedModule.name)}
-                        className="text-xs text-gray-500 hover:text-gray-300 flex-shrink-0"
-                        title="Zurücksetzen"
-                      >↩</button>
-                    )}
+                  {/* Modulname & Subtitle bearbeiten */}
+                  <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 space-y-2">
+                    {/* Name */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg flex-shrink-0">{selectedModule.icon}</span>
+                      <input
+                        type="text"
+                        value={moduleNameOverrides[selectedModule.id] ?? selectedModule.name}
+                        onChange={e => saveModuleName(selectedModule.id, e.target.value)}
+                        placeholder={selectedModule.name}
+                        className="flex-1 bg-gray-800 text-white text-sm font-semibold rounded-lg px-3 py-1.5 border border-gray-700 focus:outline-none focus:border-gray-500"
+                      />
+                      {moduleNameOverrides[selectedModule.id] && moduleNameOverrides[selectedModule.id] !== selectedModule.name && (
+                        <button
+                          onClick={() => saveModuleName(selectedModule.id, selectedModule.name)}
+                          className="text-xs text-gray-500 hover:text-gray-300 flex-shrink-0"
+                          title="Zurücksetzen"
+                        >↩</button>
+                      )}
+                    </div>
+                    {/* Subtitle */}
+                    <div className="flex items-center gap-2 pl-7">
+                      <span className="text-[10px] text-gray-500 uppercase tracking-widest flex-shrink-0 w-12">Unter­titel</span>
+                      <input
+                        type="text"
+                        value={moduleSubtitleOverrides[selectedModule.id] ?? selectedModule.subtitle ?? ''}
+                        onChange={e => saveModuleSubtitle(selectedModule.id, e.target.value)}
+                        placeholder={selectedModule.subtitle ?? 'Untertitel…'}
+                        className="flex-1 bg-gray-800 text-gray-300 text-xs rounded-lg px-3 py-1.5 border border-gray-700 focus:outline-none focus:border-gray-500"
+                      />
+                      {moduleSubtitleOverrides[selectedModule.id] !== undefined && moduleSubtitleOverrides[selectedModule.id] !== (selectedModule.subtitle ?? '') && (
+                        <button
+                          onClick={() => saveModuleSubtitle(selectedModule.id, selectedModule.subtitle ?? '')}
+                          className="text-xs text-gray-500 hover:text-gray-300 flex-shrink-0"
+                          title="Zurücksetzen"
+                        >↩</button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Sub-Tab */}
@@ -3874,10 +3897,10 @@ export const InstructorView: React.FC = () => {
                 }`}
               >
                 {tabEnabled && activeTab === tab.id && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-7 h-0.5 bg-red-500 rounded-full" />
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-red-500 rounded-full" />
                 )}
-                <span className={`text-lg leading-tight transition-transform ${activeTab === tab.id ? 'scale-110' : ''}`}>{tab.icon}</span>
-                <span className={`text-[10px] leading-tight whitespace-nowrap ${activeTab === tab.id ? 'font-semibold' : ''}`}>{tab.label}</span>
+                <span className={`text-xl leading-tight transition-transform ${activeTab === tab.id ? 'scale-110' : ''}`}>{tab.icon}</span>
+                <span className={`text-[11px] leading-tight whitespace-nowrap ${activeTab === tab.id ? 'font-semibold' : ''}`}>{tab.label}</span>
                 {tabEnabled && tab.badge && tab.badge > 0 ? (
                   <span className="absolute top-1.5 right-1/2 translate-x-3 bg-red-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-bold">
                     {tab.badge > 9 ? '9+' : tab.badge}

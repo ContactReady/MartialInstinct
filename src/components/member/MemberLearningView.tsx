@@ -180,7 +180,7 @@ export const MemberLearningView: React.FC = () => {
     answeredQuestions, recordQuizAnswer,
     quizExamState, canTakeExam, completeQuizExam,
     flaggedQuestions, flagSystemEnabled, flagQuestion, unflagQuestion,
-    topicOverrides, platformConfig, getModuleName,
+    topicOverrides, platformConfig, getModuleName, getModuleSubtitle,
   } = useApp();
   const [activeModule, setActiveModule] = useState<Module | null>(null);
   const [activeTopic, setActiveTopic] = useState<ModuleTopic | null>(null);
@@ -470,7 +470,7 @@ export const MemberLearningView: React.FC = () => {
           <span className="text-lg">{activeModule.icon}</span>
           <div>
             <div className="text-white font-semibold">{getModuleName(activeModule.id)}</div>
-            <div className="text-gray-500 text-xs">{activeModule.subtitle}</div>
+            <div className="text-gray-500 text-xs">{getModuleSubtitle(activeModule.id)}</div>
           </div>
         </div>
 
