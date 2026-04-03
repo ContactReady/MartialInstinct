@@ -181,10 +181,8 @@ export const InstructorView: React.FC = () => {
   const [coreBirthDate, setCoreBirthDate] = useState('');
   const [coreMemberId, setCoreMemberId] = useState('');
 
-  // Modul-Verwaltung DnD State
+  // Modul-Verwaltung State
   const [localModuleOrder, setLocalModuleOrder] = useState<ModuleOrder[]>([]);
-  const [dndDragId, setDndDragId] = useState<string | null>(null);
-  const [dndIndicator, setDndIndicator] = useState<{ moduleId: string; insertBefore: boolean } | null>(null);
   const [dndSaveState, setDndSaveState] = useState<'idle' | 'dirty' | 'saved'>('idle');
   const [dndPendingClose, setDndPendingClose] = useState(false);
 
@@ -363,7 +361,7 @@ export const InstructorView: React.FC = () => {
         )}
 
         {/* Sub-Tab Switcher — sticky */}
-        <div className="sticky top-[49px] z-30 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
+        <div className="sticky top-[var(--mi-header-h)] z-30 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
         <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
           {([
             { id: 'online' as CommunitySubTab, label: 'Online', badge: onlineMembers.length, dot: true },
@@ -1047,7 +1045,7 @@ export const InstructorView: React.FC = () => {
     return (
       <div className="space-y-4">
         {/* Sub-Tab Switcher — sticky */}
-        <div className="sticky top-[49px] z-30 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
+        <div className="sticky top-[var(--mi-header-h)] z-30 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
           <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
             {subTabs.map(st => (
               <button
@@ -1231,7 +1229,7 @@ export const InstructorView: React.FC = () => {
       <>
       <div className="space-y-4">
         {/* Sub-Sub-Tab Switcher — sticky unter der Dashboard-Leiste */}
-        <div className="sticky top-[97px] z-20 bg-gray-950 -mx-4 px-4 pb-2">
+        <div className="sticky top-[calc(var(--mi-header-h)+var(--mi-subtab-h))] z-20 bg-gray-950 -mx-4 px-4 pb-2">
         <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
           {subTabItems.map(item => (
             <button
@@ -1950,63 +1948,40 @@ export const InstructorView: React.FC = () => {
         .map(o => MODULES.find(m => m.id === o.moduleId))
         .filter(Boolean) as typeof MODULES;
 
-    const handleDragStart = (moduleId: string) => {
-      setDndDragId(moduleId);
-      setDndIndicator(null);
-    };
-
-    const handleDragOverModule = (e: React.DragEvent<HTMLDivElement>, moduleId: string) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const rect = e.currentTarget.getBoundingClientRect();
-      const insertBefore = e.clientY < rect.top + rect.height / 2;
-      setDndIndicator({ moduleId, insertBefore });
-    };
-
-    const handleDragOverBlock = (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      // wenn man über den leeren Teil des Blocks zieht → ans Ende
-    };
-
-    const handleDrop = (e: React.DragEvent, targetBlockLevel: string) => {
-      e.preventDefault();
-      if (!dndDragId) { setDndIndicator(null); return; }
-
+    const handleMoveUp = (moduleId: string, blockLevel: string) => {
       const current = getWorkingOrder();
-      const draggedEntry = current.find(o => o.moduleId === dndDragId);
-      if (!draggedEntry) { setDndIndicator(null); return; }
-
-      const ind = dndIndicator;
-      const targetEntry = ind ? current.find(o => o.moduleId === ind.moduleId) : null;
-      const newBlockLevel = targetEntry ? targetEntry.blockLevel : targetBlockLevel;
-
       const blockItems = current
-        .filter(o => o.blockLevel === newBlockLevel && o.moduleId !== dndDragId)
+        .filter(o => o.blockLevel === blockLevel)
         .sort((a, b) => a.position - b.position);
-
-      let insertIdx = blockItems.length;
-      if (targetEntry && targetEntry.blockLevel === newBlockLevel) {
-        const targetIdx = blockItems.findIndex(o => o.moduleId === ind!.moduleId);
-        if (targetIdx >= 0) insertIdx = ind!.insertBefore ? targetIdx : targetIdx + 1;
-      }
-
-      const newBlockItems = [...blockItems];
-      newBlockItems.splice(insertIdx, 0, { ...draggedEntry, blockLevel: newBlockLevel });
-
-      const newOrder: ModuleOrder[] = BLOCKS.flatMap(block => {
-        if (block.level === newBlockLevel) {
-          return newBlockItems.map((o, i) => ({ ...o, position: i }));
-        }
-        return current
-          .filter(o => o.blockLevel === block.level && o.moduleId !== dndDragId)
-          .sort((a, b) => a.position - b.position)
-          .map((o, i) => ({ ...o, position: i }));
-      });
-
+      const idx = blockItems.findIndex(o => o.moduleId === moduleId);
+      if (idx <= 0) return;
+      const reordered = [...blockItems];
+      [reordered[idx - 1], reordered[idx]] = [reordered[idx], reordered[idx - 1]];
+      const newOrder: ModuleOrder[] = BLOCKS.flatMap(block =>
+        block.level === blockLevel
+          ? reordered.map((o, i) => ({ ...o, position: i }))
+          : current.filter(o => o.blockLevel === block.level).sort((a, b) => a.position - b.position).map((o, i) => ({ ...o, position: i }))
+      );
       setLocalModuleOrder(newOrder);
       setDndSaveState('dirty');
-      setDndDragId(null);
-      setDndIndicator(null);
+    };
+
+    const handleMoveDown = (moduleId: string, blockLevel: string) => {
+      const current = getWorkingOrder();
+      const blockItems = current
+        .filter(o => o.blockLevel === blockLevel)
+        .sort((a, b) => a.position - b.position);
+      const idx = blockItems.findIndex(o => o.moduleId === moduleId);
+      if (idx < 0 || idx >= blockItems.length - 1) return;
+      const reordered = [...blockItems];
+      [reordered[idx], reordered[idx + 1]] = [reordered[idx + 1], reordered[idx]];
+      const newOrder: ModuleOrder[] = BLOCKS.flatMap(block =>
+        block.level === blockLevel
+          ? reordered.map((o, i) => ({ ...o, position: i }))
+          : current.filter(o => o.blockLevel === block.level).sort((a, b) => a.position - b.position).map((o, i) => ({ ...o, position: i }))
+      );
+      setLocalModuleOrder(newOrder);
+      setDndSaveState('dirty');
     };
 
     const handleBlockChange = (moduleId: string, newBlockLevel: string) => {
@@ -2043,7 +2018,7 @@ export const InstructorView: React.FC = () => {
     return (
       <div className="space-y-4">
         {/* Sub-Tab Switcher — sticky */}
-        <div className="sticky top-[49px] z-30 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
+        <div className="sticky top-[var(--mi-header-h)] z-30 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
         <div className="flex bg-gray-800/50 rounded-xl p-1 gap-1 border border-gray-700/50 overflow-x-auto">
           {([
             ['analytics', '📊 Analytics'],
@@ -2790,7 +2765,7 @@ export const InstructorView: React.FC = () => {
           <div className="space-y-3">
             {/* ── Modul-Reihenfolge ── */}
             <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
-              <TrainingAccordionHeader id="training_reihenfolge" title="Modul-Reihenfolge" subtitle="Drag & Drop — Reihenfolge und Block-Zuordnung ändern."
+              <TrainingAccordionHeader id="training_reihenfolge" title="Modul-Reihenfolge" subtitle="▲▼ Reihenfolge ändern · Block-Zuordnung via Dropdown."
                 onBeforeClose={() => {
                   if (dndSaveState === 'dirty') { setDndPendingClose(true); return false; }
                   setDndSaveState('idle'); setDndPendingClose(false); return true;
@@ -2799,7 +2774,7 @@ export const InstructorView: React.FC = () => {
               {plattformOpen['training_reihenfolge'] && (
               <div className="border-t border-gray-700/50 p-3">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-gray-500 text-xs">Ziehe Module per Drag & Drop innerhalb oder zwischen Blöcken.</span>
+                <span className="text-gray-500 text-xs">▲▼ Reihenfolge innerhalb eines Blocks · Block via Dropdown ändern.</span>
                 <button
                   disabled={dndSaveState !== 'dirty'}
                   onClick={handleSave}
@@ -2817,53 +2792,57 @@ export const InstructorView: React.FC = () => {
                 onDiscard={() => { setDndPendingClose(false); setDndSaveState('idle'); togglePlattform('training_reihenfolge'); }}
                 onSave={() => { handleSave(); togglePlattform('training_reihenfolge'); }}
               />}
-              {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level' && (!b.adminOnly || currentUser?.role === 'admin')).map(block => (
+              {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level' && (!b.adminOnly || currentUser?.role === 'admin')).map(block => {
+                const blockModules = getModulesForBlock(block.level);
+                return (
                 <div
                   key={block.id}
                   className={`rounded-xl border ${block.borderColor} ${block.bgColor} p-3 mb-2`}
-                  onDragOver={handleDragOverBlock}
-                  onDrop={e => handleDrop(e, block.level)}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <span>{block.icon}</span>
                     <span className={`font-bold text-sm ${block.color}`}>{block.name}</span>
-                    <span className="text-gray-500 text-xs">({getModulesForBlock(block.level).length})</span>
+                    <span className="text-gray-500 text-xs">({blockModules.length})</span>
                   </div>
-                  <div className={`space-y-0 transition-all ${dndDragId && dndIndicator === null ? 'min-h-[40px]' : ''}`}>
-                    {getModulesForBlock(block.level).map(module => (
-                      <div key={module.id} className="relative">
-                        {dndIndicator?.moduleId === module.id && dndIndicator.insertBefore && <div className="h-0.5 bg-red-500 rounded-full mx-1 mb-0.5" />}
-                        <div
-                          draggable
-                          onDragStart={() => handleDragStart(module.id)}
-                          onDragOver={e => handleDragOverModule(e, module.id)}
-                          onDrop={e => handleDrop(e, block.level)}
-                          className={`flex items-center gap-3 bg-gray-900/60 rounded-lg px-3 py-2 cursor-grab active:cursor-grabbing border my-0.5 transition-all select-none ${dndDragId === module.id ? 'border-red-500/50 opacity-40 scale-95' : 'border-gray-700/40 hover:border-gray-500/60'}`}
-                        >
-                          <span className="text-gray-500 select-none">⠿</span>
-                          <span className="text-base flex-shrink-0">{module.icon}</span>
-                          <span className="text-gray-200 text-sm flex-1 truncate">{getModuleName(module.id)}</span>
-                          <select
-                            value={block.level}
-                            onChange={e => handleBlockChange(module.id, e.target.value)}
-                            onClick={e => e.stopPropagation()}
-                            onMouseDown={e => e.stopPropagation()}
-                            className="bg-gray-700 border border-gray-600 text-gray-300 text-xs rounded px-1.5 py-1 focus:outline-none"
-                          >
-                            {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level' && (!b.adminOnly || currentUser?.role === 'admin')).map(b => (
-                              <option key={b.level} value={b.level}>{b.name}</option>
-                            ))}
-                          </select>
+                  <div className="space-y-0.5">
+                    {blockModules.map((module, moduleIdx) => (
+                      <div
+                        key={module.id}
+                        className="flex items-center gap-2 bg-gray-900/60 rounded-lg px-2 py-1.5 border border-gray-700/40"
+                      >
+                        {/* ▲▼ Reihenfolge */}
+                        <div className="flex flex-col gap-0">
+                          <button
+                            onClick={() => handleMoveUp(module.id, block.level)}
+                            disabled={moduleIdx === 0}
+                            className="text-gray-500 hover:text-gray-200 disabled:opacity-20 disabled:cursor-not-allowed text-[10px] leading-none px-1 py-0.5 transition-colors"
+                          >▲</button>
+                          <button
+                            onClick={() => handleMoveDown(module.id, block.level)}
+                            disabled={moduleIdx === blockModules.length - 1}
+                            className="text-gray-500 hover:text-gray-200 disabled:opacity-20 disabled:cursor-not-allowed text-[10px] leading-none px-1 py-0.5 transition-colors"
+                          >▼</button>
                         </div>
-                        {dndIndicator?.moduleId === module.id && !dndIndicator.insertBefore && <div className="h-0.5 bg-red-500 rounded-full mx-1 mt-0.5" />}
+                        <span className="text-base flex-shrink-0">{module.icon}</span>
+                        <span className="text-gray-200 text-sm flex-1 truncate">{getModuleName(module.id)}</span>
+                        <select
+                          value={block.level}
+                          onChange={e => handleBlockChange(module.id, e.target.value)}
+                          className="bg-gray-700 border border-gray-600 text-gray-300 text-xs rounded px-1.5 py-1 focus:outline-none"
+                        >
+                          {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level' && (!b.adminOnly || currentUser?.role === 'admin')).map(b => (
+                            <option key={b.level} value={b.level}>{b.name}</option>
+                          ))}
+                        </select>
                       </div>
                     ))}
-                    {getModulesForBlock(block.level).length === 0 && (
-                      <div className="text-center text-gray-600 text-xs py-4 border border-dashed border-gray-700/40 rounded-lg" onDragOver={e => { e.preventDefault(); setDndIndicator(null); }} onDrop={e => handleDrop(e, block.level)}>Hierher ziehen</div>
+                    {blockModules.length === 0 && (
+                      <div className="text-center text-gray-600 text-xs py-4 border border-dashed border-gray-700/40 rounded-lg">Leer — Block via Dropdown zuweisen</div>
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             )}
             </div>

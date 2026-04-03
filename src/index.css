@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* ── Layout-Konstanten — einzige Quelle der Wahrheit für alle sticky/fixed-Abstände ──
+   Sticky-Elemente und Padding referenzieren diese Variablen, damit eine Änderung
+   am Header automatisch überall greift.
+   ──────────────────────────────────────────────────────────────────────────────────── */
+:root {
+  --mi-header-h: 69px;   /* fixed Header: logo h-[53px] + py-2 (8+8) = 69px   */
+  --mi-subtab-h: 48px;   /* erste sticky Sub-Tab-Leiste                         */
+}
+
 /* ── Dark Mode Theme — neutrales Schwarz/Weiß ohne Blaustich ─────────────────
    Tailwinds Standard-Grays haben OKLCH-Chroma ~0.028 bei Blau-Hue 261°.
    Hier werden alle Grau-Töne auf reines Neutralgrau (Chroma = 0) gesetzt.
