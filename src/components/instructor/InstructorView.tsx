@@ -154,8 +154,8 @@ export const InstructorView: React.FC = () => {
   const [adminSubTab, setAdminSubTab] = useState<AdminSubTab>('analytics');
   const [verwaltungSubTab, setVerwaltungSubTab] = useState<VerwaltungSubTab>('plattform');
 
-  // Streak Restore State
-  const [streakRestoreOpen, setStreakRestoreOpen] = useState<string | null>(null);
+  // Member Settings (Streak + Kerndaten — kombiniert)
+  const [memberSettingsOpen, setMemberSettingsOpen] = useState<string | null>(null);
   const [streakRestoreValue, setStreakRestoreValue] = useState(1);
   const [streakRestoreReason, setStreakRestoreReason] = useState('');
 
@@ -175,8 +175,6 @@ export const InstructorView: React.FC = () => {
   const [streakSaveState, setStreakSaveState] = useState<'idle' | 'dirty' | 'saved'>('idle');
   const [streakPendingClose, setStreakPendingClose] = useState(false);
 
-  // Kerndaten-Editing State (Admin)
-  const [coreDataOpen, setCoreDataOpen] = useState<string | null>(null);
   const [coreName, setCoreName] = useState('');
   const [coreFirstName, setCoreFirstName] = useState('');
   const [coreLastName, setCoreLastName] = useState('');
@@ -2322,8 +2320,7 @@ export const InstructorView: React.FC = () => {
               const memberHasAdmin = hasAdminAccess(m);
               const canToggleAdmin = isOwnerOrAdmin && m.role === 'head_instructor' && m.id !== currentUser.id;
               const adminFixed = m.role === 'admin';
-              const isStreakOpen = streakRestoreOpen === m.id;
-              const isCoreDataOpen = coreDataOpen === m.id;
+              const isSettingsOpen = memberSettingsOpen === m.id;
 
               return (
                 <div key={m.id} className="overflow-hidden">
@@ -2376,32 +2373,34 @@ export const InstructorView: React.FC = () => {
                       {isOwnerOrAdmin && (
                         <button
                           onClick={() => {
-                            if (isStreakOpen) { setStreakRestoreOpen(null); }
-                            else { setStreakRestoreOpen(m.id); setStreakRestoreValue(m.streak.currentStreak); setStreakRestoreReason(''); setCoreDataOpen(null); setStreakSaveState('idle'); setStreakPendingClose(false); }
+                            if (isSettingsOpen) {
+                              setMemberSettingsOpen(null);
+                            } else {
+                              setMemberSettingsOpen(m.id);
+                              setCoreName(m.name);
+                              setCoreFirstName(m.firstName ?? '');
+                              setCoreLastName(m.lastName ?? '');
+                              setCoreBirthDate(m.birthDate ?? '');
+                              setCoreMemberId(m.memberId ?? '');
+                              setStreakRestoreValue(m.streak.currentStreak);
+                              setStreakRestoreReason('');
+                              setCoreDataSaveState('idle');
+                              setCoreDataPendingClose(false);
+                              setStreakSaveState('idle');
+                              setStreakPendingClose(false);
+                            }
                           }}
-                          className="text-xs px-2 py-1.5 rounded-lg bg-orange-900/30 text-orange-400 hover:bg-orange-900/50 transition-all"
-                          title="Streak wiederherstellen"
+                          className={`text-xs px-2 py-1.5 rounded-lg transition-all ${isSettingsOpen ? 'bg-gray-600 text-white' : 'bg-gray-700/60 text-gray-400 hover:text-white hover:bg-gray-600'}`}
+                          title="Einstellungen"
                         >
-                          🔥
-                        </button>
-                      )}
-                      {isOwnerOrAdmin && (
-                        <button
-                          onClick={() => {
-                            if (isCoreDataOpen) { setCoreDataOpen(null); }
-                            else { setCoreDataOpen(m.id); setCoreName(m.name); setCoreFirstName(m.firstName ?? ''); setCoreLastName(m.lastName ?? ''); setCoreBirthDate(m.birthDate ?? ''); setCoreMemberId(m.memberId ?? ''); setStreakRestoreOpen(null); setCoreDataSaveState('idle'); setCoreDataPendingClose(false); }
-                          }}
-                          className="text-xs px-2 py-1.5 rounded-lg bg-blue-900/30 text-blue-400 hover:bg-blue-900/50 transition-all"
-                          title="Persönliche Daten bearbeiten"
-                        >
-                          🪪
+                          ⚙️
                         </button>
                       )}
                     </div>
                   </div>
-                  {/* Kerndaten-Edit Form */}
-                  {isCoreDataOpen && (
-                    <div className="border-t border-gray-700/50 px-4 py-3 bg-gray-800/30 space-y-3">
+                  {/* ⚙️ Kombiniertes Settings-Panel */}
+                  {isSettingsOpen && (
+                    <div className="border-t border-gray-700/50 px-4 py-3 bg-gray-800/30 space-y-4">
                       <p className="text-xs text-gray-400 font-medium">Persönliche Daten · {m.name}</p>
                       <div className="space-y-2">
                         <div>
@@ -2431,39 +2430,26 @@ export const InstructorView: React.FC = () => {
                         <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-3 py-2.5 flex items-center justify-between gap-3">
                           <span className="text-xs text-yellow-400">⚠ Nicht gespeicherte Änderungen</span>
                           <div className="flex gap-2 flex-shrink-0">
-                            <button onClick={() => { setCoreDataPendingClose(false); setCoreDataSaveState('idle'); setCoreDataOpen(null); }} className="text-xs px-2.5 py-1 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all">Verwerfen</button>
+                            <button onClick={() => { setCoreDataPendingClose(false); setCoreDataSaveState('idle'); }} className="text-xs px-2.5 py-1 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all">Verwerfen</button>
                             <button onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined }); setCoreDataPendingClose(false); setCoreDataSaveState('saved'); }} className="text-xs px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-all">Speichern</button>
                           </div>
                         </div>
                       )}
-                      <div className="flex gap-2">
-                        <button
-                          disabled={coreDataSaveState !== 'dirty'}
-                          onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined }); setCoreDataSaveState('saved'); }}
-                          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                            coreDataSaveState === 'saved' ? 'bg-green-600 text-white cursor-default' :
-                            coreDataSaveState === 'dirty' ? 'bg-blue-600 hover:bg-blue-500 text-white' :
-                            'bg-gray-700 text-gray-500 cursor-not-allowed'
-                          }`}
-                        >
-                          {coreDataSaveState === 'saved' ? '✓ Gespeichert' : 'Speichern'}
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (coreDataSaveState === 'dirty') { setCoreDataPendingClose(true); }
-                            else { setCoreDataOpen(null); setCoreDataSaveState('idle'); setCoreDataPendingClose(false); }
-                          }}
-                          className="px-4 bg-gray-700 text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-600 transition-all"
-                        >
-                          Abbrechen
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {/* Streak Restore Form */}
-                  {isStreakOpen && (
-                    <div className="border-t border-gray-700/50 px-4 py-3 bg-gray-800/30 space-y-3">
-                      <p className="text-xs text-gray-400 font-medium">Streak wiederherstellen für {m.name}</p>
+                      <button
+                        disabled={coreDataSaveState !== 'dirty'}
+                        onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined }); setCoreDataSaveState('saved'); }}
+                        className={`w-full py-2 rounded-lg text-sm font-medium transition-all ${
+                          coreDataSaveState === 'saved' ? 'bg-green-600 text-white cursor-default' :
+                          coreDataSaveState === 'dirty' ? 'bg-gray-600 hover:bg-gray-500 text-white' :
+                          'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        {coreDataSaveState === 'saved' ? '✓ Gespeichert' : 'Daten speichern'}
+                      </button>
+
+                      {/* ── Streak ── */}
+                      <div className="border-t border-gray-700/50 pt-3 space-y-2">
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-widest">🔥 Streak</p>
                       <div className="flex gap-2">
                         <div className="flex-1">
                           <label className="text-xs text-gray-500 block mb-1">Wochen</label>
@@ -2491,8 +2477,8 @@ export const InstructorView: React.FC = () => {
                         <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-3 py-2.5 flex items-center justify-between gap-3">
                           <span className="text-xs text-yellow-400">⚠ Nicht gespeicherte Änderungen</span>
                           <div className="flex gap-2 flex-shrink-0">
-                            <button onClick={() => { setStreakPendingClose(false); setStreakSaveState('idle'); setStreakRestoreOpen(null); }} className="text-xs px-2.5 py-1 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all">Verwerfen</button>
-                            <button onClick={() => { if (!streakRestoreReason.trim()) return; restoreStreak(m.id, streakRestoreValue, streakRestoreReason); setStreakPendingClose(false); setStreakSaveState('saved'); setStreakRestoreOpen(null); }} className="text-xs px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-all">Speichern</button>
+                            <button onClick={() => { setStreakPendingClose(false); setStreakSaveState('idle'); }} className="text-xs px-2.5 py-1 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all">Verwerfen</button>
+                            <button onClick={() => { if (!streakRestoreReason.trim()) return; restoreStreak(m.id, streakRestoreValue, streakRestoreReason); setStreakPendingClose(false); setStreakSaveState('saved'); }} className="text-xs px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-all">Speichern</button>
                           </div>
                         </div>
                       )}
@@ -2512,16 +2498,16 @@ export const InstructorView: React.FC = () => {
                         >
                           {streakSaveState === 'saved' ? '✓ Gespeichert' : `Streak auf ${streakRestoreValue}W setzen`}
                         </button>
-                        <button
-                          onClick={() => {
-                            if (streakSaveState === 'dirty') { setStreakPendingClose(true); }
-                            else { setStreakRestoreOpen(null); setStreakSaveState('idle'); setStreakPendingClose(false); }
-                          }}
-                          className="px-4 bg-gray-700 text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-600 transition-all"
-                        >
-                          Abbrechen
-                        </button>
                       </div>
+                      </div>
+
+                      {/* Schließen */}
+                      <button
+                        onClick={() => { setMemberSettingsOpen(null); setCoreDataSaveState('idle'); setStreakSaveState('idle'); setStreakPendingClose(false); setCoreDataPendingClose(false); }}
+                        className="w-full py-2 rounded-lg text-xs text-gray-500 hover:text-gray-300 bg-gray-800 hover:bg-gray-700 transition-all"
+                      >
+                        Schließen
+                      </button>
                     </div>
                   )}
                 </div>
