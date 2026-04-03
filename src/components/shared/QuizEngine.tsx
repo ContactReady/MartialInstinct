@@ -20,6 +20,11 @@ interface QuizEngineProps {
   mode?: 'practice' | 'exam';
   // Fortschritt speichern (nur Practice/Topic, nicht Exam)
   progressKey?: string;
+  // XP-Config (aus PlatformConfig)
+  xpPerCorrect?: number;
+  xpBonusAllCorrect?: number;
+  examPassXP?: number;
+  examPassRate?: number;
   // Stern-System
   starredIds?: string[];
   onStar?: (questionId: string) => void;
@@ -484,6 +489,10 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   questionsPerSession,
   mode = 'practice',
   progressKey,
+  xpPerCorrect = XP_PER_CORRECT,
+  xpBonusAllCorrect = XP_BONUS_ALL_CORRECT,
+  examPassXP = 120,
+  examPassRate = EXAM_PASS_RATE,
   starredIds,
   onStar,
   onUnstar,
@@ -544,8 +553,8 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   const qType = q?.type ?? 'single';
 
   const score = done ? Math.round((correct / sessionCount) * 100) : 0;
-  const xpEarned = isExam ? 0 : correct * XP_PER_CORRECT + (correct === sessionCount ? XP_BONUS_ALL_CORRECT : 0);
-  const examPassed = isExam && score >= Math.round(EXAM_PASS_RATE * 100);
+  const xpEarned = isExam ? 0 : correct * xpPerCorrect + (correct === sessionCount ? xpBonusAllCorrect : 0);
+  const examPassed = isExam && score >= Math.round(examPassRate * 100);
 
   const currentStarred = q ? (starredIds?.includes(q.id) ?? false) : false;
   const currentFlagged = q ? (flaggedIds?.includes(q.id) ?? false) : false;
@@ -639,7 +648,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
           <div className={`text-4xl font-black ${passed ? 'text-green-400' : 'text-orange-400'}`}>{score}%</div>
           <div className="text-gray-400 mt-1">{correct} von {sessionCount} richtig</div>
           {isExam && (
-            <div className="text-xs text-gray-500 mt-1">Bestehensgrenze: {Math.round(EXAM_PASS_RATE * 100)}%</div>
+            <div className="text-xs text-gray-500 mt-1">Bestehensgrenze: {Math.round(examPassRate * 100)}%</div>
           )}
         </div>
 
@@ -647,14 +656,14 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
           <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-xl px-6 py-3">
             <div className="text-yellow-400 font-bold text-xl">+{xpEarned} XP</div>
             <div className="text-yellow-500/80 text-sm">
-              {correct * XP_PER_CORRECT} Basis{correct === sessionCount ? ` + ${XP_BONUS_ALL_CORRECT} Bonus (alle richtig!)` : ''}
+              {correct * xpPerCorrect} Basis{correct === sessionCount ? ` + ${xpBonusAllCorrect} Bonus (alle richtig!)` : ''}
             </div>
           </div>
         )}
 
         {isExam && passed && (
           <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-xl px-6 py-3">
-            <div className="text-yellow-400 font-bold text-xl">+80 XP</div>
+            <div className="text-yellow-400 font-bold text-xl">+{examPassXP} XP</div>
             <div className="text-yellow-500/80 text-sm">Prüfung bestanden!</div>
           </div>
         )}
@@ -798,7 +807,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
         <ProgressBar progress={(index / sessionCount) * 100} color={isExam ? 'bg-red-500' : 'bg-yellow-500'} height="h-2" />
         <div className="flex justify-between text-xs text-gray-500">
           {!isExam
-            ? <span>⚡ {correct * XP_PER_CORRECT} XP bisher</span>
+            ? <span>⚡ {correct * xpPerCorrect} XP bisher</span>
             : <span className="text-red-400/70 font-medium">Prüfung · {Math.round(EXAM_PASS_RATE * 100)}% zum Bestehen</span>
           }
           <span>✓ {correct} richtig</span>

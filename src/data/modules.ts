@@ -30,7 +30,7 @@ const createTechnique = (
 const module1: Module = {
   id: 'mod-1',
   number: 1,
-  name: 'Mission Begins',
+  name: 'M.I.ssion begins!',
   subtitle: 'Grundlagen',
   level: 'conflict',
   description: 'Richtige Stellung, Ready-Position, Grundbewegungen, Distanzgefühl, Fitness, Mobility',
@@ -49,8 +49,8 @@ const module1: Module = {
 const module2: Module = {
   id: 'mod-2',
   number: 2,
-  name: 'Mindset & Readiness',
-  subtitle: 'Mentale Stabilität',
+  name: 'Be ready!',
+  subtitle: 'Mindset & Prävention',
   level: 'conflict',
   description: 'Trainingsroutine, Durchhalten, Mentale Stabilität, Druckannahme, Entscheidungsfähigkeit',
   icon: '🧠',
@@ -337,7 +337,7 @@ export const BLOCKS: Block[] = [
   },
   {
     id: 'tactical',
-    name: 'TACTICAL READY',
+    name: 'CONTACT READY I',
     subtitle: 'Specialist',
     level: 'tactical',
     color: 'text-red-500',
@@ -349,7 +349,7 @@ export const BLOCKS: Block[] = [
   },
   {
     id: 'contact',
-    name: 'CONTACT READY',
+    name: 'CONTACT READY II',
     subtitle: 'Operator',
     level: 'contact',
     color: 'text-red-400',
@@ -357,7 +357,8 @@ export const BLOCKS: Block[] = [
     borderColor: 'border-red-600',
     icon: '☠️',
     moduleIds: ['mod-11', 'mod-12', 'mod-13'],
-    requiresApplication: true
+    requiresApplication: true,
+    adminOnly: true,
   },
   {
     id: 'assistant_instructor',

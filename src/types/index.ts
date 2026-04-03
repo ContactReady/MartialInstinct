@@ -100,6 +100,7 @@ export interface Block {
   icon: string;
   moduleIds: string[];
   requiresApplication: boolean;
+  adminOnly?: boolean;  // Block nur für Admins sichtbar
 }
 
 // Technik-Fortschritt eines Mitglieds (zwei Prüfebenen)
@@ -749,6 +750,94 @@ export const DEFAULT_TAB_CONFIG: PlatformTabConfig = {
   memberTabs:     { dashboard: true, training: true, community: true, profil: true },
   instructorTabs: { dashboard: true, training: true, community: true, profil: true, admin: true },
 };
+
+// ── Plattform-Konfiguration ───────────────────────────────────────────────────
+
+export interface PlatformConfig {
+  // XP-Vergabe
+  xp: {
+    checkIn: number;            // Training Check-In bestätigt
+    techniqueSession: number;   // Technik in Session eingetragen (pro Stück)
+    quizCorrect: number;        // Quiz-Frage richtig (Practice)
+    quizBonusAllCorrect: number;// Bonus wenn alle Fragen richtig
+    examPass: number;           // Prüfungsquiz bestanden
+    techPassed: number;         // Technik technisch bestanden (tech_passed)
+    tacPassed: number;          // Technik taktisch bestanden (tac_passed)
+    moduleBlock: number[];      // Modul abgeschlossen: XP je Block-Position [0]=Block1 usw.
+    stopTheBleed: number;       // Stop The Bleed® zertifiziert
+    streakWeeks: number;        // XP alle 10 Streak-Wochen
+    streakInterval: number;     // Intervall in Wochen (Standard: 10)
+  };
+  // Level-System
+  levels: {
+    xpPerTier: number[];        // XP je Tier à 10 Level: [500, 600, 700, …]
+  };
+  // Quiz
+  quiz: {
+    practiceQuestionsPerSession: number;
+    examQuestions: number;
+    examPassRate: number;       // 0–1, z.B. 0.9 = 90%
+  };
+}
+
+export const DEFAULT_PLATFORM_CONFIG: PlatformConfig = {
+  xp: {
+    checkIn: 100,
+    techniqueSession: 10,
+    quizCorrect: 2,
+    quizBonusAllCorrect: 10,
+    examPass: 120,
+    techPassed: 50,
+    tacPassed: 200,
+    moduleBlock: [800, 1000, 1200, 1400],
+    stopTheBleed: 400,
+    streakWeeks: 200,
+    streakInterval: 10,
+  },
+  levels: {
+    xpPerTier: [500, 600, 700, 800, 900, 1000],
+  },
+  quiz: {
+    practiceQuestionsPerSession: 10,
+    examQuestions: 30,
+    examPassRate: 0.9,
+  },
+};
+
+/** XP-Schwelle für ein bestimmtes Level (1-basiert) */
+export function xpForLevel(level: number, config: PlatformConfig): number {
+  const tiers = config.levels.xpPerTier;
+  let total = 0;
+  for (let l = 1; l < level; l++) {
+    const tierIdx = Math.floor((l - 1) / 10);
+    const xpPerLevel = tiers[Math.min(tierIdx, tiers.length - 1)];
+    total += xpPerLevel;
+  }
+  return total;
+}
+
+/** Aktuelles Level aus XP berechnen */
+export function levelFromXp(xp: number, config: PlatformConfig): number {
+  let level = 1;
+  let remaining = xp;
+  while (true) {
+    const tierIdx = Math.floor((level - 1) / 10);
+    const xpNeeded = config.levels.xpPerTier[Math.min(tierIdx, config.levels.xpPerTier.length - 1)];
+    if (remaining < xpNeeded) break;
+    remaining -= xpNeeded;
+    level++;
+  }
+  return level;
+}
+
+/** XP innerhalb des aktuellen Levels + XP für nächstes Level */
+export function xpProgress(xp: number, config: PlatformConfig): { current: number; needed: number; level: number } {
+  const level = levelFromXp(xp, config);
+  const tierIdx = Math.floor((level - 1) / 10);
+  const needed = config.levels.xpPerTier[Math.min(tierIdx, config.levels.xpPerTier.length - 1)];
+  const threshold = xpForLevel(level, config);
+  return { current: xp - threshold, needed, level };
+}
 
 export const ROLE_DISPLAY: Record<InstructorRole, { label: string; color: string; bgColor: string }> = {
   member: { label: 'Member', color: 'text-gray-400', bgColor: 'bg-gray-700' },

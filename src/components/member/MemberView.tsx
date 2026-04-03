@@ -221,7 +221,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
         <div>
           <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Dein Fortschritt</h3>
           <div className="grid grid-cols-1 gap-2">
-            {BLOCKS.map(block => {
+            {BLOCKS.filter(b => !b.adminOnly || currentUser.role === 'admin').map(block => {
               const progress = getBlockProgress(currentUser.id, block.level);
               const unlocked = isBlockUnlocked(currentUser.id, block.level);
               return (

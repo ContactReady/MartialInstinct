@@ -39,6 +39,8 @@ import {
   BuddyRequest,
   FlaggedQuestion,
   QuizExamAttempt,
+  PlatformConfig,
+  DEFAULT_PLATFORM_CONFIG,
 } from '../types';
 import { MODULE_QUIZ_DATA } from '../data/memberQuizData';
 import { supabase } from '../lib/supabase';
@@ -245,6 +247,10 @@ interface AppContextType {
   // Theorie-Texte (Admin-editierbar, nicht flaggbar durch Member)
   topicOverrides: Record<string, string>;
   updateTopicText: (topicId: string, text: string) => void;
+
+  // Plattform-Konfiguration
+  platformConfig: PlatformConfig;
+  updatePlatformConfig: (config: PlatformConfig) => void;
 }
 
 // ============================================
@@ -304,6 +310,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const saved = localStorage.getItem('mi-tab-config');
       return saved ? JSON.parse(saved) : DEFAULT_TAB_CONFIG;
     } catch { return DEFAULT_TAB_CONFIG; }
+  });
+  const [platformConfig, setPlatformConfig] = useState<PlatformConfig>(() => {
+    try {
+      const saved = localStorage.getItem('mi-platform-config');
+      if (!saved) return DEFAULT_PLATFORM_CONFIG;
+      const parsed = JSON.parse(saved);
+      // Deep merge mit Defaults damit neue Felder immer vorhanden sind
+      return {
+        xp: { ...DEFAULT_PLATFORM_CONFIG.xp, ...parsed.xp },
+        levels: { ...DEFAULT_PLATFORM_CONFIG.levels, ...parsed.levels },
+        quiz: { ...DEFAULT_PLATFORM_CONFIG.quiz, ...parsed.quiz },
+      };
+    } catch { return DEFAULT_PLATFORM_CONFIG; }
   });
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>(() => {
     try {
@@ -628,19 +647,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // Member-State + currentUser-State aktualisieren
       const updateMember = (m: import('../types').Member) =>
         m.id === checkIn.memberId
-          ? {
-              ...m,
-              isCheckedIn: true,
-              checkedInAt: approvedAt,
-              lastSeenAt: approvedAt,
-              xp: (m.xp ?? 0) + 100,
-              streak: {
-                ...m.streak,
-                lastTrainingDate: approvedAt,
-                currentStreak: m.streak.currentStreak + 1,
-                longestStreak: Math.max(m.streak.longestStreak, m.streak.currentStreak + 1)
-              }
-            }
+          ? (() => {
+              const newStreak = m.streak.currentStreak + 1;
+              const interval = platformConfig.xp.streakInterval;
+              const streakXP = newStreak > 0 && newStreak % interval === 0 ? platformConfig.xp.streakWeeks : 0;
+              return {
+                ...m,
+                isCheckedIn: true,
+                checkedInAt: approvedAt,
+                lastSeenAt: approvedAt,
+                xp: (m.xp ?? 0) + platformConfig.xp.checkIn + streakXP,
+                streak: {
+                  ...m.streak,
+                  lastTrainingDate: approvedAt,
+                  currentStreak: newStreak,
+                  longestStreak: Math.max(m.streak.longestStreak, newStreak)
+                }
+              };
+            })()
           : m;
 
       setMembers(prev => prev.map(updateMember));
@@ -769,8 +793,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       techniqueProgress: { ...m.techniqueProgress, [request.techniqueId]: updatedProgress },
     });
 
-    setMembers(prev => prev.map(m => m.id === memberId ? applyApprove(m) : m));
-    if (currentUser.id === memberId) setCurrentUser(prev => prev ? applyApprove(prev) : null);
+    // XP vergeben: tech_passed = 50 XP, tac_passed = 200 XP (aus Config)
+    const examXP = isTechnical ? platformConfig.xp.techPassed : platformConfig.xp.tacPassed;
+    const applyApproveWithXP = (m: Member): Member => {
+      const base = applyApprove(m);
+      // Modul-Abschluss prüfen (nur bei tac_passed): alle required techniques tac_passed?
+      let bonusXP = 0;
+      if (!isTechnical) {
+        const module = MODULES.find(mod => mod.techniques.some(t => t.id === request.techniqueId));
+        if (module) {
+          const block = BLOCKS.find(b => b.level === module.blockLevel);
+          const blockPos = block ? BLOCKS.indexOf(block) : -1;
+          const allRequired = module.techniques.filter(t => t.isRequired);
+          const updatedProgressMap = { ...base.techniqueProgress };
+          const allTacPassed = allRequired.every(t => updatedProgressMap[t.id]?.status === 'tac_passed');
+          if (allTacPassed && blockPos >= 0) {
+            bonusXP = platformConfig.xp.moduleBlock[Math.min(blockPos, platformConfig.xp.moduleBlock.length - 1)];
+          }
+        }
+      }
+      return { ...base, xp: (base.xp ?? 0) + examXP + bonusXP };
+    };
+
+    setMembers(prev => prev.map(m => m.id === memberId ? applyApproveWithXP(m) : m));
+    if (currentUser.id === memberId) setCurrentUser(prev => prev ? applyApproveWithXP(prev) : null);
 
     const levelLabel = isTechnical ? 'Technisch' : 'Taktisch';
     setNotifications(prev => [...prev, {
@@ -1348,7 +1394,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // TRAININGSREPORT
   // ============================================
 
-  const XP_PER_TRAINED_TECHNIQUE = 10;
+  const XP_PER_TRAINED_TECHNIQUE = platformConfig.xp.techniqueSession;
 
   const completeTrainingSession = useCallback((
     attendeeIds: string[],
@@ -1503,7 +1549,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const computeBadges = useCallback((member: Member): Badge[] => {
     const badges: Badge[] = [];
     const tp = member.techniqueProgress;
-    const streak = member.streak;
 
     const techPassedCount = Object.values(tp).filter(p => p.status === 'tech_passed' || p.status === 'tac_passed' || p.status === 'tac_pending').length;
     const tacPassedCount = Object.values(tp).filter(p => p.status === 'tac_passed').length;
@@ -1514,18 +1559,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (tacPassedCount >= 1) {
       badges.push({ id: 'first_tac', label: 'Taktik-Meister', icon: '⚔️', description: 'Erste taktische Prüfung bestanden', earnedAt: new Date() });
     }
-    if (streak.currentStreak >= 4) {
-      badges.push({ id: 'streak_4', label: '4-Wochen Streak', icon: '🔥', description: '4 Wochen am Stück trainiert', earnedAt: new Date() });
-    }
-    if (streak.currentStreak >= 10) {
-      badges.push({ id: 'streak_10', label: '10-Wochen Krieger', icon: '💪', description: '10 Wochen am Stück trainiert', earnedAt: new Date() });
-    }
-    if (streak.longestStreak >= 20) {
-      badges.push({ id: 'streak_20', label: 'Eiserner Wille', icon: '🏆', description: '20 Wochen Streak erreicht', earnedAt: new Date() });
-    }
-    if ((member.xp ?? 0) >= 500) {
-      badges.push({ id: 'xp_500', label: 'XP-Veteran', icon: '⚡', description: '500 XP gesammelt', earnedAt: new Date() });
-    }
+
+    // Ebenen-Badges: Badge wenn alle Module einer Ebene abgeschlossen (alle required tac_passed)
+    BLOCKS.forEach((block, idx) => {
+      const blockModules = MODULES.filter(m => m.blockLevel === block.level);
+      if (blockModules.length === 0) return;
+      const allDone = blockModules.every(mod =>
+        mod.techniques.filter(t => t.isRequired).every(t => tp[t.id]?.status === 'tac_passed')
+      );
+      if (allDone) {
+        badges.push({ id: `block_${idx}`, label: block.name, icon: block.icon, description: `${block.name} abgeschlossen`, earnedAt: new Date() });
+      }
+    });
+
     if (member.certificates.length >= 1) {
       badges.push({ id: 'certified', label: 'Zertifiziert', icon: '📜', description: 'Erstes Zertifikat erhalten', earnedAt: new Date() });
     }
@@ -1830,9 +1876,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return updated;
     });
 
-    // XP bei Bestehen: 80 XP
+    // XP bei Bestehen (aus Config)
     if (passed) {
-      const update = (m: Member): Member => ({ ...m, xp: (m.xp ?? 0) + 80 });
+      const update = (m: Member): Member => ({ ...m, xp: (m.xp ?? 0) + platformConfig.xp.examPass });
       setMembers(prev => prev.map(m => m.id === uid ? update(m) : m));
       setCurrentUser(prev => prev ? update(prev) : null);
     }
@@ -1914,6 +1960,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       localStorage.setItem('mi-topic-overrides', JSON.stringify(next));
       return next;
     });
+  }, []);
+
+  const updatePlatformConfig = useCallback((config: PlatformConfig) => {
+    localStorage.setItem('mi-platform-config', JSON.stringify(config));
+    setPlatformConfig(config);
   }, []);
 
   // ============================================
@@ -2137,11 +2188,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, []);
 
   const updateStopTheBleed = useCallback((memberId: string, certified: boolean) => {
-    setMembers(prev => prev.map(m => m.id === memberId ? { ...m, stopTheBleedCertified: certified } : m));
+    const xpBonus = certified ? platformConfig.xp.stopTheBleed : 0;
+    setMembers(prev => prev.map(m => m.id === memberId ? {
+      ...m, stopTheBleedCertified: certified,
+      xp: certified ? (m.xp ?? 0) + xpBonus : m.xp,
+    } : m));
     if (memberId === currentUser?.id) {
-      setCurrentUser(prev => prev ? { ...prev, stopTheBleedCertified: certified } : null);
+      setCurrentUser(prev => prev ? {
+        ...prev, stopTheBleedCertified: certified,
+        xp: certified ? (prev.xp ?? 0) + xpBonus : prev.xp,
+      } : null);
     }
-  }, [currentUser]);
+  }, [currentUser, platformConfig]);
 
   const updateCustomBadge = useCallback((badge: string) => {
     if (!currentUser) return;
@@ -2491,6 +2549,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Theorie-Texte
     topicOverrides,
     updateTopicText,
+    // Plattform-Konfiguration
+    platformConfig,
+    updatePlatformConfig,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -120,6 +120,8 @@ export const InstructorView: React.FC = () => {
     questionOverrides,
     topicOverrides,
     updateTopicText,
+    platformConfig,
+    updatePlatformConfig,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>(() => (localStorage.getItem('mi_active_tab_instructor') as Tab) || 'dashboard');
@@ -951,6 +953,7 @@ export const InstructorView: React.FC = () => {
           <h3 className="text-lg font-bold text-white">Modul auswählen</h3>
           
           {BLOCKS.map(block => {
+            if (block.adminOnly && currentUser?.role !== 'admin') return null;
             if (!canExamineLevel(block.level)) return null;
             
             const blockModules = MODULES.filter(m => block.moduleIds.includes(m.id));
@@ -2811,7 +2814,7 @@ export const InstructorView: React.FC = () => {
                 onDiscard={() => { setDndPendingClose(false); setDndSaveState('idle'); togglePlattform('training_reihenfolge'); }}
                 onSave={() => { handleSave(); togglePlattform('training_reihenfolge'); }}
               />}
-              {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level').map(block => (
+              {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level' && (!b.adminOnly || currentUser?.role === 'admin')).map(block => (
                 <div
                   key={block.id}
                   className={`rounded-xl border ${block.borderColor} ${block.bgColor} p-3 mb-2`}
@@ -2844,7 +2847,7 @@ export const InstructorView: React.FC = () => {
                             onMouseDown={e => e.stopPropagation()}
                             className="bg-gray-700 border border-gray-600 text-gray-300 text-xs rounded px-1.5 py-1 focus:outline-none"
                           >
-                            {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level').map(b => (
+                            {BLOCKS.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level' && (!b.adminOnly || currentUser?.role === 'admin')).map(b => (
                               <option key={b.level} value={b.level}>{b.name}</option>
                             ))}
                           </select>
@@ -3653,6 +3656,153 @@ export const InstructorView: React.FC = () => {
                 </div>
                 )}
               </div>
+
+              {/* E: XP & Level-Konfiguration */}
+              <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
+                <AccordionHeader id="xp_config" title="XP & Level-Konfiguration" subtitle="Alle XP-Werte, Level-Schwellen und Quiz-Einstellungen der Plattform." />
+                {plattformOpen['xp_config'] && (
+                <div className="border-t border-gray-700/50 divide-y divide-gray-700/30">
+
+                  {/* XP-Vergabe */}
+                  <div className="px-4 py-3">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-3">XP-Vergabe</div>
+                    <div className="space-y-2">
+                      {([
+                        { key: 'checkIn',            label: 'Check-In bestätigt',               unit: 'XP' },
+                        { key: 'techniqueSession',   label: 'Technik trainiert (pro Session)',   unit: 'XP' },
+                        { key: 'quizCorrect',        label: 'Quiz: richtige Antwort',            unit: 'XP' },
+                        { key: 'quizBonusAllCorrect',label: 'Quiz: Bonus bei 100%',              unit: 'XP' },
+                        { key: 'examPass',           label: 'Prüfungsquiz bestanden',            unit: 'XP' },
+                        { key: 'techPassed',         label: 'Technik bestanden (tech_passed)',   unit: 'XP' },
+                        { key: 'tacPassed',          label: 'Technik bestanden (tac_passed)',    unit: 'XP' },
+                        { key: 'stopTheBleed',       label: 'Stop the Bleed Zertifizierung',    unit: 'XP' },
+                        { key: 'streakWeeks',        label: 'Streak-Bonus (alle N Wochen)',      unit: 'XP' },
+                        { key: 'streakInterval',     label: 'Streak-Intervall',                  unit: 'Wochen' },
+                      ] as { key: keyof typeof platformConfig.xp; label: string; unit: string }[]).map(({ key, label, unit }) => (
+                        <div key={key} className="flex items-center justify-between gap-3">
+                          <span className="text-sm text-gray-300 flex-1">{label}</span>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min={0}
+                              value={platformConfig.xp[key]}
+                              onChange={e => {
+                                const val = parseInt(e.target.value) || 0;
+                                updatePlatformConfig({ ...platformConfig, xp: { ...platformConfig.xp, [key]: val } });
+                              }}
+                              className="w-20 bg-gray-900 border border-gray-700 text-white text-sm text-right rounded-lg px-2 py-1 focus:outline-none focus:border-gray-500"
+                            />
+                            <span className="text-xs text-gray-500 w-10">{unit}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Modul-Abschluss XP pro Block */}
+                  <div className="px-4 py-3">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-3">Modul-Abschluss XP (pro Block)</div>
+                    <div className="space-y-2">
+                      {platformConfig.xp.moduleBlock.map((val, idx) => (
+                        <div key={idx} className="flex items-center justify-between gap-3">
+                          <span className="text-sm text-gray-300 flex-1">Block {idx + 1}</span>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min={0}
+                              value={val}
+                              onChange={e => {
+                                const newArr = [...platformConfig.xp.moduleBlock];
+                                newArr[idx] = parseInt(e.target.value) || 0;
+                                updatePlatformConfig({ ...platformConfig, xp: { ...platformConfig.xp, moduleBlock: newArr } });
+                              }}
+                              className="w-20 bg-gray-900 border border-gray-700 text-white text-sm text-right rounded-lg px-2 py-1 focus:outline-none focus:border-gray-500"
+                            />
+                            <span className="text-xs text-gray-500 w-10">XP</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Level-System */}
+                  <div className="px-4 py-3">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-3">XP pro Level (Tierstufen, je 10 Level)</div>
+                    <div className="space-y-2">
+                      {platformConfig.levels.xpPerTier.map((val, idx) => (
+                        <div key={idx} className="flex items-center justify-between gap-3">
+                          <span className="text-sm text-gray-300 flex-1">Level {idx * 10 + 1}–{(idx + 1) * 10}</span>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min={100}
+                              step={50}
+                              value={val}
+                              onChange={e => {
+                                const newArr = [...platformConfig.levels.xpPerTier];
+                                newArr[idx] = parseInt(e.target.value) || 500;
+                                updatePlatformConfig({ ...platformConfig, levels: { ...platformConfig.levels, xpPerTier: newArr } });
+                              }}
+                              className="w-20 bg-gray-900 border border-gray-700 text-white text-sm text-right rounded-lg px-2 py-1 focus:outline-none focus:border-gray-500"
+                            />
+                            <span className="text-xs text-gray-500 w-10">XP</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Quiz-Einstellungen */}
+                  <div className="px-4 py-3">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-3">Quiz-Einstellungen</div>
+                    <div className="space-y-2">
+                      {([
+                        { key: 'practiceQuestionsPerSession', label: 'Übungsquiz: Fragen pro Session' },
+                        { key: 'examQuestions',               label: 'Prüfungsquiz: Gesamtfragen' },
+                      ] as { key: keyof typeof platformConfig.quiz; label: string }[]).map(({ key, label }) => (
+                        <div key={key} className="flex items-center justify-between gap-3">
+                          <span className="text-sm text-gray-300 flex-1">{label}</span>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min={1}
+                              value={platformConfig.quiz[key] as number}
+                              onChange={e => {
+                                const val = parseInt(e.target.value) || 10;
+                                updatePlatformConfig({ ...platformConfig, quiz: { ...platformConfig.quiz, [key]: val } });
+                              }}
+                              className="w-20 bg-gray-900 border border-gray-700 text-white text-sm text-right rounded-lg px-2 py-1 focus:outline-none focus:border-gray-500"
+                            />
+                            <span className="text-xs text-gray-500 w-10">Stk.</span>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm text-gray-300 flex-1">Bestehensquote Prüfung</span>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            min={50}
+                            max={100}
+                            step={5}
+                            value={Math.round(platformConfig.quiz.examPassRate * 100)}
+                            onChange={e => {
+                              const pct = Math.min(100, Math.max(50, parseInt(e.target.value) || 90));
+                              updatePlatformConfig({ ...platformConfig, quiz: { ...platformConfig.quiz, examPassRate: pct / 100 } });
+                            }}
+                            className="w-20 bg-gray-900 border border-gray-700 text-white text-sm text-right rounded-lg px-2 py-1 focus:outline-none focus:border-gray-500"
+                          />
+                          <span className="text-xs text-gray-500 w-10">%</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-gray-600 mt-3">Änderungen werden sofort gespeichert und sind plattformweit aktiv.</p>
+                  </div>
+
+                </div>
+                )}
+              </div>
+
             </div>
           );
         })()}

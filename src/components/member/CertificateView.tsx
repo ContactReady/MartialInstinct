@@ -24,7 +24,7 @@ function toRoman(n: number): string {
 
 // ── Ersten 10 Curriculum-Module ──────────────────────────────────────────────
 const CURRICULUM_MODULES = BLOCKS
-  .filter(b => b.id !== 'assistant_instructor')
+  .filter(b => b.id !== 'assistant_instructor' && !b.adminOnly)
   .flatMap(b => b.moduleIds.map(id => MODULES.find(m => m.id === id)!))
   .filter(Boolean)
   .slice(0, 10);

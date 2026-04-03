@@ -9,7 +9,7 @@ import { ChevronLeft, Star, Zap, BookOpen, Trophy, ChevronDown, ChevronRight, Lo
 import { useApp, BLOCKS } from '../../context/AppContext';
 import { QuizEngine } from '../shared/QuizEngine';
 import { ProgressBar } from '../shared/ProgressBar';
-import { Module, Block, TechniqueProgress } from '../../types';
+import { Module, Block, TechniqueProgress, levelFromXp, xpProgress } from '../../types';
 import { ModuleTopic, getTopicsForModule } from '../../data/moduleTopics';
 
 // ============================================
@@ -177,7 +177,7 @@ export const MemberLearningView: React.FC = () => {
     answeredQuestions, recordQuizAnswer,
     quizExamState, canTakeExam, completeQuizExam,
     flaggedQuestions, flagSystemEnabled, flagQuestion, unflagQuestion,
-    topicOverrides,
+    topicOverrides, platformConfig,
   } = useApp();
   const [activeModule, setActiveModule] = useState<Module | null>(null);
   const [activeTopic, setActiveTopic] = useState<ModuleTopic | null>(null);
@@ -205,7 +205,10 @@ export const MemberLearningView: React.FC = () => {
 
   if (!currentUser) return null;
 
-  const orderedModules = getOrderedModules();
+  const isAdmin = currentUser?.role === 'admin';
+  const visibleBlocks = BLOCKS.filter(b => !b.adminOnly || isAdmin);
+  const visibleBlockLevels = new Set(visibleBlocks.map(b => b.level));
+  const orderedModules = getOrderedModules().filter(m => visibleBlockLevels.has(m.blockLevel));
   const quizProgress = currentUser.quizProgress ?? {};
   const totalXP = currentUser.xp ?? 0;
 
@@ -234,6 +237,8 @@ export const MemberLearningView: React.FC = () => {
           questions={questions}
           mode="exam"
           accentColor="bg-red-600"
+          examPassXP={platformConfig.xp.examPass}
+          examPassRate={platformConfig.quiz.examPassRate}
           starredIds={starredQuestions}
           onStar={starQuestion}
           onUnstar={unstarQuestion}
@@ -275,6 +280,8 @@ export const MemberLearningView: React.FC = () => {
           onFlag={(qId, comment) => flagQuestion(qId, activeModule.id, comment)}
           onUnflag={unflagQuestion}
           onAnswer={recordQuizAnswer}
+          xpPerCorrect={platformConfig.xp.quizCorrect}
+          xpBonusAllCorrect={platformConfig.xp.quizBonusAllCorrect}
           onComplete={(score, xpEarned) => {
             completeModuleQuiz(activeModule.id, score, xpEarned);
             setShowQuiz(false);
@@ -307,6 +314,8 @@ export const MemberLearningView: React.FC = () => {
           onFlag={(qId, comment) => flagQuestion(qId, activeModule.id, comment)}
           onUnflag={unflagQuestion}
           onAnswer={recordQuizAnswer}
+          xpPerCorrect={platformConfig.xp.quizCorrect}
+          xpBonusAllCorrect={platformConfig.xp.quizBonusAllCorrect}
           onComplete={(score, xpEarned) => {
             completeModuleQuiz(activeModule.id, score, xpEarned);
             setShowTopicQuiz(false);
@@ -711,18 +720,23 @@ export const MemberLearningView: React.FC = () => {
                 <div className="text-xs text-gray-500">Sessions</div>
               </div>
             </div>
-            <div className="mt-3">
-              <div className="flex justify-between text-xs text-gray-500 mb-1">
-                <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400" /> Level {Math.floor(totalXP / 500) + 1}</span>
-                <span>{totalXP % 500} / 500 XP</span>
-              </div>
-              <ProgressBar progress={(totalXP % 500) / 5} color="bg-yellow-500" height="h-1.5" />
-            </div>
+            {(() => {
+              const lvlInfo = xpProgress(totalXP, platformConfig);
+              return (
+                <div className="mt-3">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400" /> Level {lvlInfo.level}</span>
+                    <span>{lvlInfo.current} / {lvlInfo.needed} XP</span>
+                  </div>
+                  <ProgressBar progress={lvlInfo.needed > 0 ? (lvlInfo.current / lvlInfo.needed) * 100 : 100} color="bg-yellow-500" height="h-1.5" />
+                </div>
+              );
+            })()}
           </div>
 
           {/* Module list by block */}
           <div className="px-4 py-4 space-y-6">
-            {BLOCKS.map(block => (
+            {visibleBlocks.map(block => (
               <BlockSection
                 key={block.id}
                 block={block}
