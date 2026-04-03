@@ -9,7 +9,7 @@ import { ChevronLeft, Star, Zap, BookOpen, Trophy, ChevronDown, ChevronRight, Lo
 import { useApp, BLOCKS } from '../../context/AppContext';
 import { QuizEngine } from '../shared/QuizEngine';
 import { ProgressBar } from '../shared/ProgressBar';
-import { Module, Block, TechniqueProgress, levelFromXp, xpProgress } from '../../types';
+import { Module, Block, TechniqueProgress, xpProgress } from '../../types';
 import { ModuleTopic, getTopicsForModule } from '../../data/moduleTopics';
 
 // ============================================
@@ -211,7 +211,7 @@ export const MemberLearningView: React.FC = () => {
   const isAdmin = currentUser?.role === 'admin';
   const visibleBlocks = BLOCKS.filter(b => !b.adminOnly || isAdmin);
   const visibleBlockLevels = new Set(visibleBlocks.map(b => b.level));
-  const orderedModules = getOrderedModules().filter(m => visibleBlockLevels.has(m.blockLevel));
+  const orderedModules = getOrderedModules().filter(m => visibleBlockLevels.has(m.level));
   const quizProgress = currentUser.quizProgress ?? {};
   const totalXP = currentUser.xp ?? 0;
 

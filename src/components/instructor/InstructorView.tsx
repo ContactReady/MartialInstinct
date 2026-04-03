@@ -3719,7 +3719,7 @@ export const InstructorView: React.FC = () => {
                             <input
                               type="number"
                               min={0}
-                              value={platformConfig.xp[key]}
+                              value={platformConfig.xp[key] as number}
                               onChange={e => {
                                 const val = parseInt(e.target.value) || 0;
                                 updatePlatformConfig({ ...platformConfig, xp: { ...platformConfig.xp, [key]: val } });

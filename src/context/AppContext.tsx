@@ -805,7 +805,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (!isTechnical) {
         const module = MODULES.find(mod => mod.techniques.some(t => t.id === request.techniqueId));
         if (module) {
-          const block = BLOCKS.find(b => b.level === module.blockLevel);
+          const block = BLOCKS.find(b => b.level === module.level);
           const blockPos = block ? BLOCKS.indexOf(block) : -1;
           const allRequired = module.techniques.filter(t => t.isRequired);
           const updatedProgressMap = { ...base.techniqueProgress };
@@ -1565,7 +1565,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Ebenen-Badges: Badge wenn alle Module einer Ebene abgeschlossen (alle required tac_passed)
     BLOCKS.forEach((block, idx) => {
-      const blockModules = MODULES.filter(m => m.blockLevel === block.level);
+      const blockModules = MODULES.filter(m => m.level === block.level);
       if (blockModules.length === 0) return;
       const allDone = blockModules.every(mod =>
         mod.techniques.filter(t => t.isRequired).every(t => tp[t.id]?.status === 'tac_passed')
