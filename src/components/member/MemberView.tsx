@@ -36,6 +36,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     boardMessages,
     markBoardMessageRead,
     addBoardReply,
+    boardRepliesGloballyEnabled,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>(() => (localStorage.getItem('mi_active_tab_member') as Tab) || 'dashboard');
@@ -294,14 +295,20 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                       >
                         {hasRead ? '✓ Gelesen' : 'Als gelesen markieren'}
                       </button>
-                      <button
-                        onClick={() => { setBoardReplyOpenId(replyOpen ? null : msg.id); setBoardReplyText(''); }}
-                        className={`text-xs px-3 py-1 rounded-lg border transition-all ml-auto ${
-                          replyOpen ? 'bg-gray-700 border-gray-500 text-white' : 'text-gray-500 border-gray-700 hover:text-gray-300'
-                        }`}
-                      >
-                        💬 {(msg.replies?.length ?? 0) > 0 ? `${msg.replies!.length} Antwort${msg.replies!.length !== 1 ? 'en' : ''}` : 'Antworten'}
-                      </button>
+                      {boardRepliesGloballyEnabled && msg.repliesEnabled !== false ? (
+                        <button
+                          onClick={() => { setBoardReplyOpenId(replyOpen ? null : msg.id); setBoardReplyText(''); }}
+                          className={`text-xs px-3 py-1 rounded-lg border transition-all ml-auto ${
+                            replyOpen ? 'bg-gray-700 border-gray-500 text-white' : 'text-gray-500 border-gray-700 hover:text-gray-300'
+                          }`}
+                        >
+                          💬 {(msg.replies?.length ?? 0) > 0 ? `${msg.replies!.length} Antwort${msg.replies!.length !== 1 ? 'en' : ''}` : 'Antworten'}
+                        </button>
+                      ) : (msg.replies?.length ?? 0) > 0 ? (
+                        <span className="text-xs text-gray-600 ml-auto">
+                          💬 {msg.replies!.length} Antwort{msg.replies!.length !== 1 ? 'en' : ''}
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                   {/* Replies */}
@@ -331,7 +338,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                     </div>
                   )}
                   {/* Reply-Eingabe */}
-                  {replyOpen && (
+                  {replyOpen && boardRepliesGloballyEnabled && msg.repliesEnabled !== false && (
                     <div className="border-t border-gray-700/50 p-3 flex gap-2">
                       <input
                         value={boardReplyText}

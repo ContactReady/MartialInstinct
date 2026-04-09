@@ -81,6 +81,9 @@ export const InstructorView: React.FC = () => {
     addBoardReply,
     markBoardMessageRead,
     sendReadReminder,
+    boardRepliesGloballyEnabled,
+    setBoardRepliesGloballyEnabled,
+    setBoardMessageRepliesEnabled,
     hasPermission,
     permissionsConfig,
     updatePermissionsConfig,
@@ -140,6 +143,7 @@ export const InstructorView: React.FC = () => {
   const [boardTargetRoles, setBoardTargetRoles] = useState<InstructorRole[]>([]);
   const [boardTargetMemberIds, setBoardTargetMemberIds] = useState<string[]>([]);
   const [boardMemberSearch, setBoardMemberSearch] = useState('');
+  const [boardNewRepliesEnabled, setBoardNewRepliesEnabled] = useState(true);
   // Board Thread / Lesebestätigung State
   const [boardReplyOpenId, setBoardReplyOpenId] = useState<string | null>(null);
   const [boardReplyText, setBoardReplyText] = useState('');
@@ -1653,6 +1657,7 @@ export const InstructorView: React.FC = () => {
         boardTargetType,
         boardTargetType === 'roles' ? boardTargetRoles : undefined,
         boardTargetType === 'members' ? boardTargetMemberIds : undefined,
+        boardNewRepliesEnabled,
       );
       setBoardMessageText('');
       setBoardVisibility('public');
@@ -1660,6 +1665,7 @@ export const InstructorView: React.FC = () => {
       setBoardTargetRoles([]);
       setBoardTargetMemberIds([]);
       setBoardMemberSearch('');
+      setBoardNewRepliesEnabled(true);
     };
 
     const handleSendReply = (msgId: string) => {
@@ -1671,6 +1677,25 @@ export const InstructorView: React.FC = () => {
 
     return (
       <div className="space-y-4">
+
+        {/* ── Globale Einstellungen (nur Admin) ── */}
+        {currentUser!.role === 'admin' && (
+          <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 px-4 py-3 flex items-center justify-between">
+            <div>
+              <div className="text-xs font-semibold text-gray-300">Antworten global</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">
+                {boardRepliesGloballyEnabled ? 'Mitglieder können antworten' : 'Antworten für alle gesperrt'}
+              </div>
+            </div>
+            <button
+              onClick={() => setBoardRepliesGloballyEnabled(!boardRepliesGloballyEnabled)}
+              className={`relative w-10 h-5 rounded-full transition-all ${boardRepliesGloballyEnabled ? 'bg-red-600' : 'bg-gray-700'}`}
+            >
+              <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${boardRepliesGloballyEnabled ? 'left-[22px]' : 'left-0.5'}`} />
+            </button>
+          </div>
+        )}
+
         {/* ── Verfassen ──────────────────────────────────────────────────── */}
         <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
           <div className="p-4 space-y-3">
@@ -1757,6 +1782,17 @@ export const InstructorView: React.FC = () => {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Antworten erlauben Toggle */}
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest">Antworten</span>
+              <button
+                onClick={() => setBoardNewRepliesEnabled(v => !v)}
+                className={`relative w-10 h-5 rounded-full transition-all ${boardNewRepliesEnabled ? 'bg-red-600' : 'bg-gray-700'}`}
+              >
+                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${boardNewRepliesEnabled ? 'left-[22px]' : 'left-0.5'}`} />
+              </button>
             </div>
 
             {/* Zusammenfassung + Senden */}
@@ -1849,6 +1885,19 @@ export const InstructorView: React.FC = () => {
                       </button>
                     )}
 
+                    {/* Pro-Post Antworten-Toggle (nur Admin) */}
+                    {isAdmin && (
+                      <button
+                        onClick={() => setBoardMessageRepliesEnabled(msg.id, !(msg.repliesEnabled !== false))}
+                        title={msg.repliesEnabled !== false ? 'Antworten sperren' : 'Antworten freigeben'}
+                        className={`text-xs px-2 py-1 rounded-lg border transition-all ${
+                          msg.repliesEnabled !== false ? 'text-gray-500 border-gray-700 hover:text-yellow-400 hover:border-yellow-700' : 'text-yellow-500 border-yellow-700/50 bg-yellow-900/20'
+                        }`}
+                      >
+                        {msg.repliesEnabled !== false ? '💬' : '🔇'}
+                      </button>
+                    )}
+
                     {/* Antworten-Button */}
                     <button
                       onClick={() => { setBoardReplyOpenId(replyOpen ? null : msg.id); setBoardReplyText(''); }}
@@ -1857,6 +1906,7 @@ export const InstructorView: React.FC = () => {
                       }`}
                     >
                       💬 {(msg.replies?.length ?? 0) > 0 ? `${msg.replies!.length} Antwort${msg.replies!.length !== 1 ? 'en' : ''}` : 'Antworten'}
+                      {msg.repliesEnabled === false && <span className="ml-1 text-yellow-500/70">· gesperrt</span>}
                     </button>
                   </div>
                 </div>

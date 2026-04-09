@@ -532,6 +532,7 @@ export interface BoardMessage {
   replies?: BoardReply[];
   readBy?: string[];          // Member-IDs die gelesen haben (inkl. Autor + Antwortende)
   requiredReaders?: string[]; // IDs die lesen müssen (bei restricted)
+  repliesEnabled?: boolean;   // false = Antworten gesperrt (default: true)
 }
 
 // Classroom Video

@@ -105,11 +105,15 @@ interface AppContextType {
     visibility: 'public' | 'restricted',
     targetType: 'none' | 'roles' | 'members',
     targetRoles?: InstructorRole[],
-    targetMemberIds?: string[]
+    targetMemberIds?: string[],
+    repliesEnabled?: boolean
   ) => void;
   addBoardReply: (messageId: string, content: string) => void;
   markBoardMessageRead: (messageId: string) => void;
   sendReadReminder: (messageId: string, memberId: string) => void;
+  boardRepliesGloballyEnabled: boolean;
+  setBoardRepliesGloballyEnabled: (enabled: boolean) => void;
+  setBoardMessageRepliesEnabled: (msgId: string, enabled: boolean) => void;
   updateNotificationPrefs: (prefs: { sound: boolean; email: boolean }) => void;
 
   // Rechte-Matrix
@@ -281,6 +285,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
   const [checkIns, setCheckIns] = useState<CheckIn[]>(CHECK_INS);
   const [boardMessages, setBoardMessages] = useState<BoardMessage[]>(BOARD_MESSAGES);
+  const [boardRepliesGloballyEnabled, setBoardRepliesGloballyEnabledState] = useState<boolean>(() => {
+    try { const saved = localStorage.getItem('mi-board-replies-enabled'); return saved === null ? true : saved === 'true'; } catch { return true; }
+  });
+  const setBoardRepliesGloballyEnabled = useCallback((enabled: boolean) => {
+    setBoardRepliesGloballyEnabledState(enabled);
+    localStorage.setItem('mi-board-replies-enabled', String(enabled));
+  }, []);
+  const setBoardMessageRepliesEnabled = useCallback((msgId: string, enabled: boolean) => {
+    setBoardMessages(prev => prev.map(m => m.id === msgId ? { ...m, repliesEnabled: enabled } : m));
+  }, []);
   const [notifications, setNotifications] = useState<Notification[]>(NOTIFICATIONS);
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('mi-theme');
@@ -1232,7 +1246,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     visibility: 'public' | 'restricted',
     targetType: 'none' | 'roles' | 'members',
     targetRoles?: InstructorRole[],
-    targetMemberIds?: string[]
+    targetMemberIds?: string[],
+    repliesEnabled: boolean = true
   ) => {
     if (!currentUser) return;
 
@@ -1250,6 +1265,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ...(targetMemberIds && targetMemberIds.length > 0 ? { targetMemberIds } : {}),
       readBy: [currentUser.id], // Autor hat es "gelesen"
       replies: [],
+      repliesEnabled,
     };
 
     setBoardMessages(prev => [...prev, newMessage]);
@@ -2498,6 +2514,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addBoardReply,
     markBoardMessageRead,
     sendReadReminder,
+    boardRepliesGloballyEnabled,
+    setBoardRepliesGloballyEnabled,
+    setBoardMessageRepliesEnabled,
     updateNotificationPrefs,
     permissionsConfig,
     updatePermissionsConfig,
