@@ -525,9 +525,10 @@ export interface BoardMessage {
   locationId?: string;
   // Sichtbarkeit & Targeting
   visibility: 'public' | 'restricted'; // public = alle sehen, restricted = nur Ausgewählte
-  targetType: 'none' | 'roles' | 'members'; // Benachrichtigungs-Zielgruppe
+  targetType: 'none' | 'roles' | 'members' | 'all' | 'activity'; // Empfänger-Zielgruppe
   targetRoles?: InstructorRole[];
   targetMemberIds?: string[];
+  targetActivityMonths?: number; // bei targetType='activity': letzte N Monate
   // Thread & Lesebestätigung
   replies?: BoardReply[];
   readBy?: string[];          // Member-IDs die gelesen haben (inkl. Autor + Antwortende)

@@ -103,10 +103,11 @@ interface AppContextType {
   sendBoardMessage: (
     content: string,
     visibility: 'public' | 'restricted',
-    targetType: 'none' | 'roles' | 'members',
+    targetType: 'none' | 'roles' | 'members' | 'all' | 'activity',
     targetRoles?: InstructorRole[],
     targetMemberIds?: string[],
-    repliesEnabled?: boolean
+    repliesEnabled?: boolean,
+    targetActivityMonths?: number
   ) => void;
   addBoardReply: (messageId: string, content: string) => void;
   markBoardMessageRead: (messageId: string) => void;
@@ -1244,10 +1245,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const sendBoardMessage = useCallback((
     content: string,
     visibility: 'public' | 'restricted',
-    targetType: 'none' | 'roles' | 'members',
+    targetType: 'none' | 'roles' | 'members' | 'all' | 'activity',
     targetRoles?: InstructorRole[],
     targetMemberIds?: string[],
-    repliesEnabled: boolean = true
+    repliesEnabled: boolean = true,
+    targetActivityMonths?: number
   ) => {
     if (!currentUser) return;
 
@@ -1263,29 +1265,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       targetType,
       ...(targetRoles && targetRoles.length > 0 ? { targetRoles } : {}),
       ...(targetMemberIds && targetMemberIds.length > 0 ? { targetMemberIds } : {}),
-      readBy: [currentUser.id], // Autor hat es "gelesen"
+      ...(targetActivityMonths ? { targetActivityMonths } : {}),
+      readBy: [currentUser.id],
       replies: [],
       repliesEnabled,
     };
 
     setBoardMessages(prev => [...prev, newMessage]);
 
-    // Benachrichtigungen: Admins IMMER + explizite Targets
-    const instructorRoles: InstructorRole[] = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'admin'];
-    const allInstructors = members.filter(m => instructorRoles.includes(m.role) && m.id !== currentUser.id);
+    // Empfänger für Benachrichtigungen bestimmen
+    const allOtherMembers = members.filter(m => m.id !== currentUser.id);
 
-    // Basis-Empfänger: alle Admins (immer)
-    const adminRecipients = allInstructors.filter(m => m.role === 'admin');
-    // Explizite Targets (wenn vorhanden)
-    let targetRecipients: typeof allInstructors = [];
-    if (targetType === 'roles' && targetRoles && targetRoles.length > 0) {
-      targetRecipients = allInstructors.filter(m => targetRoles.includes(m.role) && m.role !== 'admin');
+    let recipients: typeof allOtherMembers = [];
+
+    if (targetType === 'all') {
+      recipients = allOtherMembers;
+    } else if (targetType === 'activity' && targetActivityMonths) {
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - targetActivityMonths);
+      const activeIds = new Set(
+        trainingSessions
+          .filter(s => s.status === 'completed' && new Date(s.date) >= cutoff)
+          .flatMap(s => s.attendeeIds)
+      );
+      recipients = allOtherMembers.filter(m => activeIds.has(m.id));
+    } else if (targetType === 'roles' && targetRoles && targetRoles.length > 0) {
+      recipients = allOtherMembers.filter(m => targetRoles.includes(m.role));
     } else if (targetType === 'members' && targetMemberIds && targetMemberIds.length > 0) {
-      targetRecipients = allInstructors.filter(m => targetMemberIds.includes(m.id) && m.role !== 'admin');
+      recipients = allOtherMembers.filter(m => targetMemberIds.includes(m.id));
+    } else {
+      // none: nur Admins benachrichtigen
+      const instructorRoles: InstructorRole[] = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'admin'];
+      recipients = allOtherMembers.filter(m => instructorRoles.includes(m.role) && m.role === 'admin');
     }
-    // Union (ohne Duplikate)
-    const recipientIds = new Set([...adminRecipients.map(m => m.id), ...targetRecipients.map(m => m.id)]);
-    const recipients = allInstructors.filter(m => recipientIds.has(m.id));
 
     if (recipients.length > 0) {
       const newNotifs = recipients.map(m => ({
@@ -1300,7 +1312,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }));
       setNotifications(prev => [...prev, ...newNotifs]);
     }
-  }, [currentUser, members]);
+  }, [currentUser, members, trainingSessions]);
 
   const addBoardReply = useCallback((messageId: string, content: string) => {
     if (!currentUser) return;

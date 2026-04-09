@@ -130,6 +130,7 @@ export const InstructorView: React.FC = () => {
     saveModuleSubtitle,
     platformConfig,
     updatePlatformConfig,
+    trainingSessions,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>(() => (localStorage.getItem('mi_active_tab_instructor') as Tab) || 'dashboard');
@@ -139,11 +140,12 @@ export const InstructorView: React.FC = () => {
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
   const [boardMessageText, setBoardMessageText] = useState('');
   const [boardVisibility, setBoardVisibility] = useState<'public' | 'restricted'>('public');
-  const [boardTargetType, setBoardTargetType] = useState<'none' | 'roles' | 'members'>('none');
+  const [boardTargetType, setBoardTargetType] = useState<'none' | 'roles' | 'members' | 'all' | 'activity'>('none');
   const [boardTargetRoles, setBoardTargetRoles] = useState<InstructorRole[]>([]);
   const [boardTargetMemberIds, setBoardTargetMemberIds] = useState<string[]>([]);
   const [boardMemberSearch, setBoardMemberSearch] = useState('');
   const [boardNewRepliesEnabled, setBoardNewRepliesEnabled] = useState(true);
+  const [boardActivityMonths, setBoardActivityMonths] = useState<number>(3);
   // Board Thread / Lesebestätigung State
   const [boardReplyOpenId, setBoardReplyOpenId] = useState<string | null>(null);
   const [boardReplyText, setBoardReplyText] = useState('');
@@ -1616,11 +1618,30 @@ export const InstructorView: React.FC = () => {
     const toggleMember = (id: string) =>
       setBoardTargetMemberIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
-    const hasTargets = boardTargetType === 'roles' ? boardTargetRoles.length > 0
+    const hasTargets = boardTargetType === 'all' || boardTargetType === 'activity'
+      ? true
+      : boardTargetType === 'roles' ? boardTargetRoles.length > 0
       : boardTargetType === 'members' ? boardTargetMemberIds.length > 0 : false;
 
+    // Aktive Members nach Trainingsteilnahme
+    const getActivityMembers = (months: number) => {
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - months);
+      const activeIds = new Set(
+        trainingSessions
+          .filter(s => s.status === 'completed' && new Date(s.date) >= cutoff)
+          .flatMap(s => s.attendeeIds)
+      );
+      return members.filter(m => activeIds.has(m.id) && m.id !== currentUser!.id);
+    };
+
     const targetSummary = (): string => {
-      if (boardTargetType === 'none') return 'Alle Instructors';
+      if (boardTargetType === 'none') return 'Keine';
+      if (boardTargetType === 'all') return `Alle (${members.filter(m => m.id !== currentUser!.id).length} Personen)`;
+      if (boardTargetType === 'activity') {
+        const count = getActivityMembers(boardActivityMonths).length;
+        return `${count} aktive Mitglieder (letzte ${boardActivityMonths} Monate)`;
+      }
       if (boardTargetType === 'roles') {
         if (boardTargetRoles.length === 0) return 'Keine Rollen gewählt';
         return boardTargetRoles.map(r => ROLE_GROUPS.find(g => g.id === r)?.label ?? r).join(', ');
@@ -1629,8 +1650,10 @@ export const InstructorView: React.FC = () => {
       return boardTargetMemberIds.map(id => members.find(m => m.id === id)?.name ?? id).join(', ');
     };
 
-    const notifCount = boardTargetType === 'roles'
-      ? allInstructors.filter(m => boardTargetRoles.includes(m.role)).length
+    const notifCount = boardTargetType === 'all'
+      ? members.filter(m => m.id !== currentUser!.id).length
+      : boardTargetType === 'activity' ? getActivityMembers(boardActivityMonths).length
+      : boardTargetType === 'roles' ? allInstructors.filter(m => boardTargetRoles.includes(m.role)).length
       : boardTargetType === 'members' ? boardTargetMemberIds.length : 0;
 
     // Admin sieht IMMER alles; restricted = nur Targets/Autor
@@ -1638,6 +1661,8 @@ export const InstructorView: React.FC = () => {
       if (currentUser!.role === 'admin') return true;
       if (msg.visibility === 'restricted') {
         if (msg.authorId === currentUser!.id) return true;
+        if (msg.targetType === 'all') return true;
+        if (msg.targetType === 'activity') return msg.targetMemberIds ? msg.targetMemberIds.includes(currentUser!.id) : true;
         if (msg.targetType === 'roles' && msg.targetRoles) return msg.targetRoles.includes(currentUser!.role);
         if (msg.targetType === 'members' && msg.targetMemberIds) return msg.targetMemberIds.includes(currentUser!.id);
         return false;
@@ -1658,6 +1683,7 @@ export const InstructorView: React.FC = () => {
         boardTargetType === 'roles' ? boardTargetRoles : undefined,
         boardTargetType === 'members' ? boardTargetMemberIds : undefined,
         boardNewRepliesEnabled,
+        boardTargetType === 'activity' ? boardActivityMonths : undefined,
       );
       setBoardMessageText('');
       setBoardVisibility('public');
@@ -1731,23 +1757,49 @@ export const InstructorView: React.FC = () => {
               </div>
             </div>
 
-            {/* Benachrichtigung */}
+            {/* Empfänger */}
             <div>
-              <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-1.5">Benachrichtigung</div>
-              <div className="flex gap-2 mb-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest">
+                  Empfänger {boardVisibility === 'restricted' && <span className="text-yellow-600/80 normal-case tracking-normal font-normal">(bestimmt auch wer lesen kann)</span>}
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5 mb-2">
                 {([
-                  { id: 'none', label: 'Keine' },
-                  { id: 'roles', label: 'Nach Rang' },
-                  { id: 'members', label: 'Nach Name' },
+                  { id: 'none',     label: 'Keine' },
+                  { id: 'all',      label: 'Alle' },
+                  { id: 'activity', label: 'Aktiv' },
+                  { id: 'roles',    label: 'Nach Rang' },
+                  { id: 'members',  label: 'Nach Name' },
                 ] as { id: typeof boardTargetType; label: string }[]).map(t => (
                   <button key={t.id}
                     onClick={() => { setBoardTargetType(t.id); setBoardTargetRoles([]); setBoardTargetMemberIds([]); }}
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                    className={`py-1.5 rounded-lg text-xs font-medium border transition-all ${
                       boardTargetType === t.id ? 'bg-gray-700 border-gray-500 text-white' : 'bg-gray-800/50 border-gray-700 text-gray-500 hover:text-gray-300'
                     }`}
                   >{t.label}</button>
                 ))}
               </div>
+
+              {/* Aktivitäts-Filter: Monats-Auswahl */}
+              {boardTargetType === 'activity' && (
+                <div className="mb-2">
+                  <div className="text-[10px] text-gray-500 mb-1.5">Trainiert in den letzten…</div>
+                  <div className="flex gap-1.5">
+                    {[1, 2, 3, 6].map(m => (
+                      <button key={m} onClick={() => setBoardActivityMonths(m)}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                          boardActivityMonths === m ? 'bg-red-600 border-red-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'
+                        }`}
+                      >{m} Mon.</button>
+                    ))}
+                  </div>
+                  <div className="text-[10px] text-gray-500 mt-1.5">
+                    → {getActivityMembers(boardActivityMonths).length} Mitglieder qualifiziert
+                  </div>
+                </div>
+              )}
+
               {boardTargetType === 'roles' && (
                 <div className="flex flex-wrap gap-1.5">
                   {ROLE_GROUPS.map(g => (
@@ -1799,11 +1851,11 @@ export const InstructorView: React.FC = () => {
             <div className="flex items-center justify-between pt-1 border-t border-gray-700/50">
               <div className="text-xs text-gray-600 leading-tight">
                 <div>{boardVisibility === 'public' ? '🌐 Alle sehen' : '🔒 Nur Ausgewählte'}</div>
-                {boardTargetType !== 'none' && hasTargets && (
+                {boardTargetType !== 'none' && (notifCount > 0) && (
                   <div className="text-gray-500">🔔 {notifCount} Benachrichtigung{notifCount !== 1 ? 'en' : ''} → {targetSummary()}</div>
                 )}
-                {boardTargetType !== 'none' && !hasTargets && (
-                  <div className="text-gray-600">🔔 Niemand ausgewählt</div>
+                {boardTargetType !== 'none' && notifCount === 0 && (
+                  <div className="text-gray-600">🔔 Niemand qualifiziert / ausgewählt</div>
                 )}
               </div>
               <button onClick={handleSend} disabled={!boardMessageText.trim()}
@@ -1821,7 +1873,9 @@ export const InstructorView: React.FC = () => {
             </div>
           ) : visibleMessages.map(msg => {
             const isRestricted = msg.visibility === 'restricted';
-            const targetInfo = msg.targetType === 'roles' && msg.targetRoles?.length
+            const targetInfo = msg.targetType === 'all' ? 'Alle'
+              : msg.targetType === 'activity' ? `Aktiv (letzte ${msg.targetActivityMonths ?? '?'} Monate)`
+              : msg.targetType === 'roles' && msg.targetRoles?.length
               ? msg.targetRoles.map(r => ROLE_GROUPS.find(g => g.id === r)?.label ?? r).join(', ')
               : msg.targetType === 'members' && msg.targetMemberIds?.length
               ? msg.targetMemberIds.map(id => members.find(m => m.id === id)?.name ?? id).join(', ')

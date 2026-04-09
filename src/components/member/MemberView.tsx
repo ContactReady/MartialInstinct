@@ -197,6 +197,8 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     const visibleBoardMessages = boardMessages.filter(msg => {
       if (msg.visibility === 'restricted') {
         if (msg.authorId === currentUser.id) return true;
+        if (msg.targetType === 'all') return true;
+        if (msg.targetType === 'activity') return msg.targetMemberIds ? msg.targetMemberIds.includes(currentUser.id) : true;
         if (msg.targetType === 'roles' && msg.targetRoles) return msg.targetRoles.includes(currentUser.role);
         if (msg.targetType === 'members' && msg.targetMemberIds) return msg.targetMemberIds.includes(currentUser.id);
         return false;
