@@ -33,10 +33,16 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     getPendingBuddyRequests,
     platformConfig,
     getModuleName,
+    boardMessages,
+    markBoardMessageRead,
+    addBoardReply,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>(() => (localStorage.getItem('mi_active_tab_member') as Tab) || 'dashboard');
   const setActiveTabPersisted = (tab: Tab) => { setActiveTab(tab); localStorage.setItem('mi_active_tab_member', tab); };
+  const [dashboardSubTab, setDashboardSubTab] = useState<'fortschritt' | 'board'>('fortschritt');
+  const [boardReplyOpenId, setBoardReplyOpenId] = useState<string | null>(null);
+  const [boardReplyText, setBoardReplyText] = useState('');
   const [showApplicationModal, setShowApplicationModal] = useState<ApplicationType>(null);
   const [communitySubTab, setCommunitySubTab] = useState<'online' | 'training' | 'mitglieder' | 'rangliste'>('online');
   const communityTabs = ['online', 'training', 'mitglieder', 'rangliste'] as const;
@@ -186,6 +192,18 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     // ── Offene Prüfungsanfragen ──
     const pendingExams = currentUser.examRequests.filter(r => r.status === 'pending');
 
+    // ── Board: Nachrichten die für dieses Member sichtbar sind ──
+    const visibleBoardMessages = boardMessages.filter(msg => {
+      if (msg.visibility === 'restricted') {
+        if (msg.authorId === currentUser.id) return true;
+        if (msg.targetType === 'roles' && msg.targetRoles) return msg.targetRoles.includes(currentUser.role);
+        if (msg.targetType === 'members' && msg.targetMemberIds) return msg.targetMemberIds.includes(currentUser.id);
+        return false;
+      }
+      return true;
+    }).slice().reverse();
+    const unreadBoardCount = visibleBoardMessages.filter(m => !(m.readBy ?? []).includes(currentUser.id)).length;
+
     return (
       <div className="space-y-3 p-4 pb-24">
 
@@ -215,6 +233,127 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
           )}
         </div>
         </div>
+
+        {/* ── Sub-Tab Switcher ── */}
+        <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
+          {([
+            { id: 'fortschritt' as const, label: '📊 Fortschritt' },
+            { id: 'board' as const, label: '💬 Board', badge: unreadBoardCount },
+          ]).map(tab => (
+            <button key={tab.id} onClick={() => setDashboardSubTab(tab.id)}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                dashboardSubTab === tab.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              {tab.label}
+              {tab.badge !== undefined && tab.badge > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold min-w-[18px] text-center ${
+                  dashboardSubTab === tab.id ? 'bg-red-500 text-white' : 'bg-gray-600 text-gray-300'
+                }`}>{tab.badge > 9 ? '9+' : tab.badge}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {dashboardSubTab === 'board' && (
+          <div className="space-y-3">
+            {visibleBoardMessages.length === 0 ? (
+              <div className="bg-gray-800/30 rounded-xl p-6 text-center text-gray-500 text-sm border border-gray-700/30">
+                Keine Nachrichten
+              </div>
+            ) : visibleBoardMessages.map(msg => {
+              const readBy = msg.readBy ?? [];
+              const hasRead = readBy.includes(currentUser.id);
+              const replyOpen = boardReplyOpenId === msg.id;
+              return (
+                <div key={msg.id} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-2 gap-2">
+                      <span className="text-white font-medium text-sm">{msg.authorName}</span>
+                      <span className="text-gray-500 text-xs flex-shrink-0">
+                        {(() => {
+                          const diff = Date.now() - new Date(msg.createdAt).getTime();
+                          const min = Math.floor(diff / 60000);
+                          if (min < 1) return 'Gerade eben';
+                          if (min < 60) return `vor ${min} Min`;
+                          const h = Math.floor(diff / 3600000);
+                          if (h < 24) return `vor ${h} Std`;
+                          return `vor ${Math.floor(diff / 86400000)} Tagen`;
+                        })()}
+                      </span>
+                    </div>
+                    <p className="text-gray-300 text-sm leading-relaxed">{msg.content}</p>
+                    <div className="flex items-center gap-3 mt-3 pt-2.5 border-t border-gray-700/40">
+                      <button
+                        onClick={() => !hasRead && markBoardMessageRead(msg.id)}
+                        disabled={hasRead}
+                        className={`text-xs px-3 py-1 rounded-lg border transition-all ${
+                          hasRead ? 'text-gray-600 border-gray-700/50 cursor-default'
+                          : 'text-gray-300 border-gray-600 hover:border-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {hasRead ? '✓ Gelesen' : 'Als gelesen markieren'}
+                      </button>
+                      <button
+                        onClick={() => { setBoardReplyOpenId(replyOpen ? null : msg.id); setBoardReplyText(''); }}
+                        className={`text-xs px-3 py-1 rounded-lg border transition-all ml-auto ${
+                          replyOpen ? 'bg-gray-700 border-gray-500 text-white' : 'text-gray-500 border-gray-700 hover:text-gray-300'
+                        }`}
+                      >
+                        💬 {(msg.replies?.length ?? 0) > 0 ? `${msg.replies!.length} Antwort${msg.replies!.length !== 1 ? 'en' : ''}` : 'Antworten'}
+                      </button>
+                    </div>
+                  </div>
+                  {/* Replies */}
+                  {(msg.replies?.length ?? 0) > 0 && (
+                    <div className="border-t border-gray-700/30 divide-y divide-gray-700/20">
+                      {msg.replies!.map(reply => (
+                        <div key={reply.id} className="flex gap-3 px-4 py-2.5">
+                          <div className="w-0.5 bg-gray-700/60 rounded-full flex-shrink-0 mt-0.5 self-stretch" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[10px] text-gray-300">{reply.authorName}</span>
+                              <span className="text-gray-600 text-[10px]">
+                                {(() => {
+                                  const diff = Date.now() - new Date(reply.createdAt).getTime();
+                                  const min = Math.floor(diff / 60000);
+                                  if (min < 1) return 'Gerade eben';
+                                  if (min < 60) return `vor ${min} Min`;
+                                  const h = Math.floor(diff / 3600000);
+                                  return h < 24 ? `vor ${h} Std` : `vor ${Math.floor(diff / 86400000)} Tagen`;
+                                })()}
+                              </span>
+                            </div>
+                            <p className="text-gray-400 text-xs leading-relaxed">{reply.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Reply-Eingabe */}
+                  {replyOpen && (
+                    <div className="border-t border-gray-700/50 p-3 flex gap-2">
+                      <input
+                        value={boardReplyText}
+                        onChange={e => setBoardReplyText(e.target.value)}
+                        placeholder="Antwort schreiben…"
+                        className="flex-1 bg-gray-700 border border-gray-600 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-gray-500"
+                        onKeyDown={e => { if (e.key === 'Enter' && boardReplyText.trim()) { addBoardReply(msg.id, boardReplyText); setBoardReplyText(''); setBoardReplyOpenId(null); } }}
+                      />
+                      <button
+                        onClick={() => { if (boardReplyText.trim()) { addBoardReply(msg.id, boardReplyText); setBoardReplyText(''); setBoardReplyOpenId(null); } }}
+                        disabled={!boardReplyText.trim()}
+                        className="bg-gray-600 hover:bg-gray-500 disabled:bg-gray-800 disabled:text-gray-600 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-all"
+                      >Senden</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {dashboardSubTab === 'fortschritt' && <>
 
         {/* ── Level-Banner ── */}
         <div className={`${levelInfo.bgColor} rounded-xl border border-gray-700 p-4`}>
@@ -499,6 +638,8 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
             </div>
           </div>
         )}
+
+      </>}
 
       </div>
     );
