@@ -327,77 +327,105 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
           </div>
         </div>
 
-        {/* ── Block-Fortschritt (mit T/C-Balken) ── */}
-        <div>
-          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Block-Fortschritt</h3>
-          <div className="grid grid-cols-1 gap-2">
-            {BLOCKS.filter(b => !b.adminOnly || currentUser.role === 'admin').map(block => {
-              const unlocked = isBlockUnlocked(currentUser.id, block.level);
+        {/* ── Block-Fortschritt — gleiche Struktur wie Instructor Fortschritt-Tab ── */}
+        <div className="space-y-3">
+          {BLOCKS.filter(b => !b.adminOnly || currentUser.role === 'admin').map(block => {
+            const unlocked = isBlockUnlocked(currentUser.id, block.level);
+            const blockModules = MODULES.filter(m => m.level === block.level);
+            const required = blockModules.flatMap(m => m.techniques.filter(t => t.isRequired));
+            const tacticsPassed = required.filter(t => {
+              const s = currentUser.techniqueProgress[t.id]?.status;
+              return s === 'tech_passed' || s === 'tac_passed';
+            }).length;
+            const combatPassed = required.filter(t =>
+              currentUser.techniqueProgress[t.id]?.status === 'tac_passed'
+            ).length;
+            const total = required.length;
+            const pct = total > 0 ? Math.round((tacticsPassed / total) * 100) : 0;
+            const isComplete = total > 0 && tacticsPassed === total && combatPassed === total;
 
-              // Techniken dieses Blocks
-              const blockModules = MODULES.filter(m => m.level === block.level);
-              const required = blockModules.flatMap(m => m.techniques.filter(t => t.isRequired));
-              const blockTacticsPassed = required.filter(t => {
-                const s = currentUser.techniqueProgress[t.id]?.status;
-                return s === 'tech_passed' || s === 'tac_passed';
-              }).length;
-              const blockCombatPassed = required.filter(t =>
-                currentUser.techniqueProgress[t.id]?.status === 'tac_passed'
-              ).length;
-              const blockTotal = required.length;
-              const tacticsPercent = blockTotal > 0 ? Math.round((blockTacticsPassed / blockTotal) * 100) : 0;
-              const combatPercent  = blockTotal > 0 ? Math.round((blockCombatPassed  / blockTotal) * 100) : 0;
+            return (
+              <div key={block.id} className={`bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden ${!unlocked ? 'opacity-40' : ''}`}>
 
-              return (
-                <div
-                  key={block.id}
-                  className={`${block.bgColor} rounded-xl px-4 py-3 border ${block.borderColor} ${!unlocked ? 'opacity-40' : ''}`}
-                >
-                  {/* Header */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-base leading-none flex-shrink-0">{block.icon}</span>
-                    <span className={`text-sm font-bold flex-1 min-w-0 truncate ${block.color}`}>{block.name}</span>
-                    {!unlocked ? (
-                      <span className="text-xs text-gray-600">🔒</span>
-                    ) : (
-                      <span className="text-xs text-gray-500">{tacticsPercent}%</span>
+                {/* Block-Header (= Track-Header beim Instructor) */}
+                <div className="px-4 py-3 border-b border-gray-700/50 flex items-center gap-3">
+                  <span className="text-xl flex-shrink-0">{block.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-sm font-semibold truncate ${block.color}`}>{block.name}</span>
+                      {!unlocked
+                        ? <span className="text-gray-600 text-xs flex-shrink-0">🔒</span>
+                        : isComplete
+                          ? <span className="text-green-400 text-xs font-bold flex-shrink-0">✓ Abgeschlossen</span>
+                          : null
+                      }
+                    </div>
+                    {unlocked && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${isComplete ? 'bg-green-500' : 'bg-red-600'}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="text-gray-500 text-xs flex-shrink-0">{tacticsPassed}/{total}</span>
+                      </div>
                     )}
                   </div>
-
-                  {unlocked && blockTotal > 0 && (
-                    <div className="space-y-1.5">
-                      {/* Tactics-Zeile */}
-                      <div className="flex items-center gap-2">
-                        <span className="w-4 text-[10px] font-black text-gray-400 flex-shrink-0">T</span>
-                        <div className="flex-1 bg-gray-900/60 rounded-full h-1">
-                          <div
-                            className="bg-gray-400 h-1 rounded-full transition-all"
-                            style={{ width: `${tacticsPercent}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] text-gray-500 flex-shrink-0 w-10 text-right">
-                          {blockTacticsPassed}/{blockTotal}
-                        </span>
-                      </div>
-                      {/* Combat-Zeile */}
-                      <div className="flex items-center gap-2">
-                        <span className="w-4 text-[10px] font-black text-red-500 flex-shrink-0">C</span>
-                        <div className="flex-1 bg-gray-900/60 rounded-full h-1">
-                          <div
-                            className="bg-red-600 h-1 rounded-full transition-all"
-                            style={{ width: `${combatPercent}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] text-gray-500 flex-shrink-0 w-10 text-right">
-                          {blockCombatPassed}/{blockTotal}
-                        </span>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Modul-Liste (= Lektionen-Liste beim Instructor) */}
+                {unlocked && (
+                  <div className="divide-y divide-gray-700/30">
+                    {blockModules.map((mod, idx) => {
+                      const modRequired = mod.techniques.filter(t => t.isRequired);
+                      const modTactics = modRequired.filter(t => {
+                        const s = currentUser.techniqueProgress[t.id]?.status;
+                        return s === 'tech_passed' || s === 'tac_passed';
+                      }).length;
+                      const modCombat = modRequired.filter(t =>
+                        currentUser.techniqueProgress[t.id]?.status === 'tac_passed'
+                      ).length;
+                      const modTotal = modRequired.length;
+                      const tacDone = modTotal > 0 && modTactics === modTotal;
+                      const combatDone = modTotal > 0 && modCombat === modTotal;
+                      const fullyDone = tacDone && combatDone;
+
+                      return (
+                        <div key={mod.id} className="px-4 py-2.5 flex items-center gap-3">
+                          {/* Status-Kreis (wie beim Instructor) */}
+                          <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                            fullyDone ? 'bg-green-500/20 text-green-400'
+                            : tacDone  ? 'bg-gray-600/40 text-gray-300'
+                            : 'bg-gray-700 text-gray-500'
+                          }`}>
+                            {fullyDone ? '✓' : idx + 1}
+                          </div>
+
+                          {/* Modul-Name */}
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm truncate ${fullyDone ? 'text-white' : tacDone ? 'text-gray-300' : 'text-gray-500'}`}>
+                              {mod.icon} {getModuleName(mod.id)}
+                            </p>
+                          </div>
+
+                          {/* T / C Badges */}
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border ${
+                              tacDone ? 'bg-gray-600 text-white border-gray-500' : 'text-gray-700 border-gray-700/40'
+                            }`}>T</span>
+                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border ${
+                              combatDone ? 'bg-red-900/60 text-red-400 border-red-700/50' : 'text-gray-700 border-gray-700/40'
+                            }`}>C</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* ── Offene Prüfungsanfragen ── */}
