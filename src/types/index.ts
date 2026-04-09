@@ -280,6 +280,9 @@ export interface Member {
   // Anzeige-Badge (offiziell verdient — Auswahl folgt)
   customBadge?: string;
 
+  // Verdiente Badges
+  badges?: Badge[];
+
   // Sichtbarkeit: wer sieht Online- und Trainingsstatus
   visibilityPreference?: 'all' | 'buddies'; // default: 'all'
 

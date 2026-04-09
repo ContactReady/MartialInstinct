@@ -6,8 +6,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { MemberTabId } from '../../types';
-import { BLOCKS } from '../../data/modules';
+import { MemberTabId, Badge } from '../../types';
+import { BLOCKS, MODULES } from '../../data/modules';
+import { xpProgress, LEVEL_DISPLAY } from '../../types';
 import { MemberLearningView } from './MemberLearningView';
 import { ProfileView } from '../shared/ProfileView';
 import { RankingList } from '../shared/RankingList';
@@ -21,7 +22,6 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     members,
     requestCheckIn,
     checkIns,
-    getBlockProgress,
     isBlockUnlocked,
     submitContactApplication,
     submitInstructorApplication,
@@ -31,6 +31,8 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     sendBuddyRequest,
     acceptBuddyRequest,
     getPendingBuddyRequests,
+    platformConfig,
+    getModuleName,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>(() => (localStorage.getItem('mi_active_tab_member') as Tab) || 'dashboard');
@@ -162,10 +164,32 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 3);
 
+    // ── XP-Fortschritt ──
+    const xpProg = xpProgress(currentUser.xp ?? 0, platformConfig);
+    const xpPercent = Math.min(100, Math.round((xpProg.current / xpProg.needed) * 100));
+    const levelInfo = LEVEL_DISPLAY[currentUser.currentLevel];
+
+    // ── Stats-Berechnungen ──
+    const allProgress = Object.values(currentUser.techniqueProgress);
+    const tacticsPassed = allProgress.filter(p => p.status === 'tech_passed' || p.status === 'tac_passed').length;
+    const combatPassed  = allProgress.filter(p => p.status === 'tac_passed').length;
+
+    // ── Gesamtfortschritt ──
+    const allRequired = MODULES.flatMap(m => m.techniques.filter(t => t.isRequired));
+    const totalRequired = allRequired.length;
+    const totalPassedRequired = allRequired.filter(t => {
+      const s = currentUser.techniqueProgress[t.id]?.status;
+      return s === 'tech_passed' || s === 'tac_passed';
+    }).length;
+    const totalPercent = totalRequired > 0 ? Math.round((totalPassedRequired / totalRequired) * 100) : 0;
+
+    // ── Offene Prüfungsanfragen ──
+    const pendingExams = currentUser.examRequests.filter(r => r.status === 'pending');
+
     return (
       <div className="space-y-3 p-4 pb-24">
 
-        {/* ── Check-In ── */}
+        {/* ── Check-In (UNVERÄNDERT) ── */}
         <div className="sticky top-[var(--mi-header-h)] z-20 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
         <div className={`rounded-xl px-4 py-3 border flex items-center justify-between gap-3 transition-all ${
           checkInStatus === 'approved' ? 'bg-green-900/20 border-green-600/40'
@@ -192,62 +216,217 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
         </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-2">
-          <div className="bg-gradient-to-b from-orange-900/40 to-orange-900/20 rounded-xl p-3 border border-orange-800/40 text-center">
-            <div className="text-2xl font-black text-orange-400 leading-none">{currentUser.streak.currentStreak}</div>
-            <div className="text-[10px] text-orange-300/60 mt-1 leading-tight">🔥 Streak</div>
-          </div>
-          <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 text-center">
-            <div className="text-2xl font-black text-yellow-400 leading-none">{currentUser.xp ?? 0}</div>
-            <div className="text-[10px] text-yellow-500/60 mt-1 leading-tight">⭐ XP</div>
-          </div>
-          <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 text-center">
-            <div className="text-2xl font-black text-white leading-none">
-              {Object.values(currentUser.techniqueProgress).filter(p => p.status === 'tech_passed' || p.status === 'tac_passed').length}
+        {/* ── Level-Banner ── */}
+        <div className={`${levelInfo.bgColor} rounded-xl border border-gray-700 p-4`}>
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-3xl leading-none">{levelInfo.icon}</span>
+            <div className="flex-1 min-w-0">
+              <div className={`text-sm font-black tracking-wider ${levelInfo.color}`}>{levelInfo.name}</div>
+              <div className="text-xs text-gray-500">{levelInfo.subtitle}</div>
             </div>
-            <div className="text-[10px] text-gray-500 mt-1 leading-tight">✅ Techniken</div>
-          </div>
-          <div className={`rounded-xl p-3 border text-center ${currentUser.streak.bandaids > 0 ? 'bg-green-900/20 border-green-800/40' : 'bg-gray-800/50 border-gray-700/80'}`}>
-            <div className={`font-black leading-none flex items-baseline justify-center gap-0.5 ${currentUser.streak.bandaids > 0 ? 'text-green-400' : 'text-gray-500'}`}>
-              <span className="text-2xl">{currentUser.streak.bandaids}</span>
-              <span className="text-sm font-medium opacity-50">/{currentUser.streak.maxBandaids}</span>
+            <div className="text-right flex-shrink-0">
+              <div className="text-xs text-gray-500">Level</div>
+              <div className="text-xl font-black text-white leading-none">{xpProg.level}</div>
             </div>
-            <div className={`text-[10px] mt-1 leading-tight ${currentUser.streak.bandaids > 0 ? 'text-green-500/70' : 'text-gray-600'}`}>🩹 Pflaster</div>
+          </div>
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] text-gray-500 uppercase tracking-wider">XP bis Level {xpProg.level + 1}</span>
+              <span className="text-[10px] text-gray-400">{xpProg.current} / {xpProg.needed} XP</span>
+            </div>
+            <div className="bg-gray-900/60 rounded-full h-1.5">
+              <div
+                className="bg-red-600 h-1.5 rounded-full transition-all"
+                style={{ width: `${xpPercent}%` }}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Block-Fortschritt */}
+        {/* ── Stats-Kacheln ── */}
+        <div className="grid grid-cols-2 gap-2">
+          {/* Streak */}
+          <div className="bg-gradient-to-b from-orange-900/40 to-orange-900/20 rounded-xl p-3 border border-orange-800/40 flex items-center gap-3">
+            <div className="text-2xl leading-none">🔥</div>
+            <div>
+              <div className="text-2xl font-black text-orange-400 leading-none">{currentUser.streak.currentStreak}</div>
+              <div className="text-[10px] text-orange-300/60 mt-0.5">Streak Wochen</div>
+            </div>
+          </div>
+          {/* XP Total */}
+          <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 flex items-center gap-3">
+            <div className="text-2xl leading-none">⭐</div>
+            <div>
+              <div className="text-2xl font-black text-yellow-400 leading-none">{(currentUser.xp ?? 0).toLocaleString('de-DE')}</div>
+              <div className="text-[10px] text-yellow-500/60 mt-0.5">XP Gesamt</div>
+            </div>
+          </div>
+          {/* Tactics bestanden */}
+          <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 flex items-center gap-3">
+            <div className="w-7 h-7 rounded-lg bg-gray-700 flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-black text-gray-300">T</span>
+            </div>
+            <div>
+              <div className="text-2xl font-black text-white leading-none">{tacticsPassed}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">Tactics bestanden</div>
+            </div>
+          </div>
+          {/* Combat bestanden */}
+          <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 flex items-center gap-3">
+            <div className="w-7 h-7 rounded-lg bg-red-900/40 flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-black text-red-400">C</span>
+            </div>
+            <div>
+              <div className="text-2xl font-black text-white leading-none">{combatPassed}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">Combat bestanden</div>
+            </div>
+          </div>
+          {/* Bandaids — volle Breite */}
+          <div className={`col-span-2 rounded-xl p-3 border flex items-center gap-3 ${
+            currentUser.streak.bandaids > 0 ? 'bg-green-900/20 border-green-800/40' : 'bg-gray-800/50 border-gray-700/80'
+          }`}>
+            <div className="text-2xl leading-none">🩹</div>
+            <div className="flex-1">
+              <div className={`text-lg font-black leading-none flex items-baseline gap-1 ${
+                currentUser.streak.bandaids > 0 ? 'text-green-400' : 'text-gray-500'
+              }`}>
+                {currentUser.streak.bandaids}
+                <span className="text-sm font-medium opacity-50">/ {currentUser.streak.maxBandaids}</span>
+              </div>
+              <div className={`text-[10px] mt-0.5 ${currentUser.streak.bandaids > 0 ? 'text-green-500/70' : 'text-gray-600'}`}>
+                Bandaids verfügbar
+              </div>
+            </div>
+            {/* mini Balken */}
+            <div className="w-20 flex-shrink-0">
+              <div className="bg-gray-900/60 rounded-full h-1">
+                <div
+                  className="bg-green-500 h-1 rounded-full transition-all"
+                  style={{ width: `${currentUser.streak.maxBandaids > 0 ? Math.round((currentUser.streak.bandaids / currentUser.streak.maxBandaids) * 100) : 0}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Gesamtfortschritt ── */}
+        <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Gesamtfortschritt</h3>
+            <span className="text-xs text-gray-400">{totalPassedRequired} / {totalRequired}</span>
+          </div>
+          <div className="bg-gray-900/60 rounded-full h-2 mb-1.5">
+            <div
+              className="bg-red-600 h-2 rounded-full transition-all"
+              style={{ width: `${totalPercent}%` }}
+            />
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-gray-600">Pflichtechniken bestanden</span>
+            <span className="text-xs font-bold text-gray-300">{totalPercent}%</span>
+          </div>
+        </div>
+
+        {/* ── Block-Fortschritt (mit T/C-Balken) ── */}
         <div>
-          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Dein Fortschritt</h3>
+          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Block-Fortschritt</h3>
           <div className="grid grid-cols-1 gap-2">
             {BLOCKS.filter(b => !b.adminOnly || currentUser.role === 'admin').map(block => {
-              const progress = getBlockProgress(currentUser.id, block.level);
               const unlocked = isBlockUnlocked(currentUser.id, block.level);
+
+              // Techniken dieses Blocks
+              const blockModules = MODULES.filter(m => m.level === block.level);
+              const required = blockModules.flatMap(m => m.techniques.filter(t => t.isRequired));
+              const blockTacticsPassed = required.filter(t => {
+                const s = currentUser.techniqueProgress[t.id]?.status;
+                return s === 'tech_passed' || s === 'tac_passed';
+              }).length;
+              const blockCombatPassed = required.filter(t =>
+                currentUser.techniqueProgress[t.id]?.status === 'tac_passed'
+              ).length;
+              const blockTotal = required.length;
+              const tacticsPercent = blockTotal > 0 ? Math.round((blockTacticsPassed / blockTotal) * 100) : 0;
+              const combatPercent  = blockTotal > 0 ? Math.round((blockCombatPassed  / blockTotal) * 100) : 0;
+
               return (
-                <div key={block.id} className={`${block.bgColor} rounded-xl px-4 py-3 border ${block.borderColor} flex items-center gap-3 ${!unlocked ? 'opacity-40' : ''}`}>
-                  <span className="text-lg flex-shrink-0">{block.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`text-sm font-bold ${block.color}`}>{block.name}</span>
-                      <span className="text-xs text-gray-400">{unlocked ? `${progress.completed}/${progress.total}` : '🔒'}</span>
-                    </div>
-                    {unlocked && (
-                      <div className="bg-gray-900/50 rounded-full h-1">
-                        <div className="bg-red-500 h-1 rounded-full transition-all" style={{ width: `${progress.percentage}%` }} />
-                      </div>
+                <div
+                  key={block.id}
+                  className={`${block.bgColor} rounded-xl px-4 py-3 border ${block.borderColor} ${!unlocked ? 'opacity-40' : ''}`}
+                >
+                  {/* Header */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-base leading-none flex-shrink-0">{block.icon}</span>
+                    <span className={`text-sm font-bold flex-1 min-w-0 truncate ${block.color}`}>{block.name}</span>
+                    {!unlocked ? (
+                      <span className="text-xs text-gray-600">🔒</span>
+                    ) : (
+                      <span className="text-xs text-gray-500">{tacticsPercent}%</span>
                     )}
                   </div>
+
+                  {unlocked && blockTotal > 0 && (
+                    <div className="space-y-1.5">
+                      {/* Tactics-Zeile */}
+                      <div className="flex items-center gap-2">
+                        <span className="w-4 text-[10px] font-black text-gray-400 flex-shrink-0">T</span>
+                        <div className="flex-1 bg-gray-900/60 rounded-full h-1">
+                          <div
+                            className="bg-gray-400 h-1 rounded-full transition-all"
+                            style={{ width: `${tacticsPercent}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-gray-500 flex-shrink-0 w-10 text-right">
+                          {blockTacticsPassed}/{blockTotal}
+                        </span>
+                      </div>
+                      {/* Combat-Zeile */}
+                      <div className="flex items-center gap-2">
+                        <span className="w-4 text-[10px] font-black text-red-500 flex-shrink-0">C</span>
+                        <div className="flex-1 bg-gray-900/60 rounded-full h-1">
+                          <div
+                            className="bg-red-600 h-1 rounded-full transition-all"
+                            style={{ width: `${combatPercent}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-gray-500 flex-shrink-0 w-10 text-right">
+                          {blockCombatPassed}/{blockTotal}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* Letzte Trainings */}
+        {/* ── Offene Prüfungsanfragen ── */}
+        {pendingExams.length > 0 && (
+          <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Offene Prüfungsanfragen</h3>
+            <div className="space-y-2">
+              {pendingExams.map(req => (
+                <div key={req.id} className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-lg bg-gray-700 flex items-center justify-center flex-shrink-0 text-xs">
+                    {req.examLevel === 'technical' ? 'T' : 'C'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-gray-200 truncate">{req.techniqueName}</div>
+                    <div className="text-[10px] text-gray-500">{getModuleName(req.moduleId)}</div>
+                  </div>
+                  <span className="text-[10px] bg-yellow-900/40 text-yellow-400 border border-yellow-700/40 px-2 py-0.5 rounded-full flex-shrink-0">
+                    Ausstehend
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Letzte Trainings ── */}
         {mySessions.length > 0 && (
           <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">🥋 Letzte Trainings</h3>
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Letzte Trainings</h3>
             <div className="space-y-2.5">
               {mySessions.map(session => {
                 const myGroup = session.groups.find((g: { memberIds: string[] }) => g.memberIds.includes(currentUser.id));
@@ -266,6 +445,33 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
             </div>
           </div>
         )}
+
+        {/* ── Badges ── */}
+        {(currentUser.badges?.length ?? 0) > 0 && (
+          <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Badges</h3>
+            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+              {currentUser.badges!.map((badge: Badge) => (
+                <div key={badge.id} className="flex-shrink-0 flex flex-col items-center gap-1 w-14">
+                  {badge.imageUrl ? (
+                    <img
+                      src={badge.imageUrl}
+                      alt={badge.label}
+                      className="w-10 h-10 rounded-lg object-cover"
+                      style={{ transform: badge.scale ? `scale(${badge.scale})` : undefined }}
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-gray-700 flex items-center justify-center text-xl">
+                      {badge.icon}
+                    </div>
+                  )}
+                  <span className="text-[9px] text-gray-500 text-center leading-tight line-clamp-2">{badge.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
     );
   };
