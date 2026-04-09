@@ -290,7 +290,7 @@ export interface Member {
   memberId?: string;
 
   // Geschlecht
-  gender?: 'male' | 'female' | 'other';
+  gender?: 'male' | 'female';
 
   // Verbundene Mitglieder (in-person Connect via Code)
   connections?: string[];  // Array von Member-IDs
@@ -531,7 +531,7 @@ export interface BoardMessage {
   targetType: 'all' | 'roles' | 'members' | 'gender' | 'activity'; // 'all' = kein Filter = alle
   targetRoles?: InstructorRole[];
   targetMemberIds?: string[];
-  targetGenders?: ('male' | 'female' | 'other')[];
+  targetGenders?: ('male' | 'female')[];
   targetActivityValue?: number;                          // Anzahl
   targetActivityUnit?: 'days' | 'weeks' | 'months';     // Einheit
   // Thread & Lesebestätigung

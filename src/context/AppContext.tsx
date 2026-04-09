@@ -107,7 +107,7 @@ interface AppContextType {
     targetRoles?: InstructorRole[],
     targetMemberIds?: string[],
     repliesEnabled?: boolean,
-    targetGenders?: ('male' | 'female' | 'other')[],
+    targetGenders?: ('male' | 'female')[],
     targetActivityValue?: number,
     targetActivityUnit?: 'days' | 'weeks' | 'months'
   ) => void;
@@ -1251,7 +1251,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     targetRoles?: InstructorRole[],
     targetMemberIds?: string[],
     repliesEnabled: boolean = true,
-    targetGenders?: ('male' | 'female' | 'other')[],
+    targetGenders?: ('male' | 'female')[],
     targetActivityValue?: number,
     targetActivityUnit?: 'days' | 'weeks' | 'months'
   ) => {

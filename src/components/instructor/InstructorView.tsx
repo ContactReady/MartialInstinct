@@ -145,7 +145,7 @@ export const InstructorView: React.FC = () => {
   const [boardTargetMemberIds, setBoardTargetMemberIds] = useState<string[]>([]);
   const [boardMemberSearch, setBoardMemberSearch] = useState('');
   const [boardNewRepliesEnabled, setBoardNewRepliesEnabled] = useState(true);
-  const [boardTargetGenders, setBoardTargetGenders] = useState<('male' | 'female' | 'other')[]>([]);
+  const [boardTargetGenders, setBoardTargetGenders] = useState<('male' | 'female')[]>([]);
   const [boardActivityValue, setBoardActivityValue] = useState<number>(2);
   const [boardActivityUnit, setBoardActivityUnit] = useState<'days' | 'weeks' | 'months'>('weeks');
   // Board Thread / Lesebestätigung State
@@ -1626,7 +1626,7 @@ export const InstructorView: React.FC = () => {
       : boardTargetType === 'gender' ? boardTargetGenders.length > 0
       : true; // 'all' und 'activity' immer gültig
 
-    const GENDER_LABELS: Record<string, string> = { male: 'Männlich', female: 'Weiblich', other: 'Divers' };
+    const GENDER_LABELS: Record<string, string> = { male: 'Männlich', female: 'Weiblich' };
 
     const getActivityMembers = () => {
       const cutoff = new Date();
@@ -1843,7 +1843,7 @@ export const InstructorView: React.FC = () => {
               {/* Geschlecht-Auswahl */}
               {boardTargetType === 'gender' && (
                 <div className="flex gap-1.5 mb-2">
-                  {(['male', 'female', 'other'] as const).map(g => (
+                  {(['male', 'female'] as const).map(g => (
                     <button key={g}
                       onClick={() => setBoardTargetGenders(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
                       className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
