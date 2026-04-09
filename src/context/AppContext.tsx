@@ -103,11 +103,13 @@ interface AppContextType {
   sendBoardMessage: (
     content: string,
     visibility: 'public' | 'restricted',
-    targetType: 'none' | 'roles' | 'members' | 'all' | 'activity',
+    targetType: 'all' | 'roles' | 'members' | 'gender' | 'activity',
     targetRoles?: InstructorRole[],
     targetMemberIds?: string[],
     repliesEnabled?: boolean,
-    targetActivityMonths?: number
+    targetGenders?: ('male' | 'female' | 'other')[],
+    targetActivityValue?: number,
+    targetActivityUnit?: 'days' | 'weeks' | 'months'
   ) => void;
   addBoardReply: (messageId: string, content: string) => void;
   markBoardMessageRead: (messageId: string) => void;
@@ -1245,11 +1247,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const sendBoardMessage = useCallback((
     content: string,
     visibility: 'public' | 'restricted',
-    targetType: 'none' | 'roles' | 'members' | 'all' | 'activity',
+    targetType: 'all' | 'roles' | 'members' | 'gender' | 'activity',
     targetRoles?: InstructorRole[],
     targetMemberIds?: string[],
     repliesEnabled: boolean = true,
-    targetActivityMonths?: number
+    targetGenders?: ('male' | 'female' | 'other')[],
+    targetActivityValue?: number,
+    targetActivityUnit?: 'days' | 'weeks' | 'months'
   ) => {
     if (!currentUser) return;
 
@@ -1263,9 +1267,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       locationId: currentUser.locationId,
       visibility,
       targetType,
-      ...(targetRoles && targetRoles.length > 0 ? { targetRoles } : {}),
-      ...(targetMemberIds && targetMemberIds.length > 0 ? { targetMemberIds } : {}),
-      ...(targetActivityMonths ? { targetActivityMonths } : {}),
+      ...(targetRoles?.length ? { targetRoles } : {}),
+      ...(targetMemberIds?.length ? { targetMemberIds } : {}),
+      ...(targetGenders?.length ? { targetGenders } : {}),
+      ...(targetActivityValue ? { targetActivityValue, targetActivityUnit: targetActivityUnit ?? 'days' } : {}),
       readBy: [currentUser.id],
       replies: [],
       repliesEnabled,
@@ -1273,30 +1278,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     setBoardMessages(prev => [...prev, newMessage]);
 
-    // Empfänger für Benachrichtigungen bestimmen
     const allOtherMembers = members.filter(m => m.id !== currentUser.id);
+    let recipients: typeof allOtherMembers;
 
-    let recipients: typeof allOtherMembers = [];
-
-    if (targetType === 'all') {
-      recipients = allOtherMembers;
-    } else if (targetType === 'activity' && targetActivityMonths) {
+    if (targetType === 'roles' && targetRoles?.length) {
+      recipients = allOtherMembers.filter(m => targetRoles.includes(m.role));
+    } else if (targetType === 'members' && targetMemberIds?.length) {
+      recipients = allOtherMembers.filter(m => targetMemberIds.includes(m.id));
+    } else if (targetType === 'gender' && targetGenders?.length) {
+      recipients = allOtherMembers.filter(m => m.gender && targetGenders.includes(m.gender));
+    } else if (targetType === 'activity' && targetActivityValue) {
       const cutoff = new Date();
-      cutoff.setMonth(cutoff.getMonth() - targetActivityMonths);
+      const unit = targetActivityUnit ?? 'days';
+      if (unit === 'days') cutoff.setDate(cutoff.getDate() - targetActivityValue);
+      else if (unit === 'weeks') cutoff.setDate(cutoff.getDate() - targetActivityValue * 7);
+      else cutoff.setMonth(cutoff.getMonth() - targetActivityValue);
       const activeIds = new Set(
         trainingSessions
           .filter(s => s.status === 'completed' && new Date(s.date) >= cutoff)
           .flatMap(s => s.attendeeIds)
       );
       recipients = allOtherMembers.filter(m => activeIds.has(m.id));
-    } else if (targetType === 'roles' && targetRoles && targetRoles.length > 0) {
-      recipients = allOtherMembers.filter(m => targetRoles.includes(m.role));
-    } else if (targetType === 'members' && targetMemberIds && targetMemberIds.length > 0) {
-      recipients = allOtherMembers.filter(m => targetMemberIds.includes(m.id));
     } else {
-      // none: nur Admins benachrichtigen
-      const instructorRoles: InstructorRole[] = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'admin'];
-      recipients = allOtherMembers.filter(m => instructorRoles.includes(m.role) && m.role === 'admin');
+      // 'all' oder kein Filter → alle
+      recipients = allOtherMembers;
     }
 
     if (recipients.length > 0) {

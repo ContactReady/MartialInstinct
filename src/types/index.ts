@@ -289,6 +289,9 @@ export interface Member {
   // MI-Mitgliedsnummer (z.B. MI-0042)
   memberId?: string;
 
+  // Geschlecht
+  gender?: 'male' | 'female' | 'other';
+
   // Verbundene Mitglieder (in-person Connect via Code)
   connections?: string[];  // Array von Member-IDs
 
@@ -525,10 +528,12 @@ export interface BoardMessage {
   locationId?: string;
   // Sichtbarkeit & Targeting
   visibility: 'public' | 'restricted'; // public = alle sehen, restricted = nur Ausgewählte
-  targetType: 'none' | 'roles' | 'members' | 'all' | 'activity'; // Empfänger-Zielgruppe
+  targetType: 'all' | 'roles' | 'members' | 'gender' | 'activity'; // 'all' = kein Filter = alle
   targetRoles?: InstructorRole[];
   targetMemberIds?: string[];
-  targetActivityMonths?: number; // bei targetType='activity': letzte N Monate
+  targetGenders?: ('male' | 'female' | 'other')[];
+  targetActivityValue?: number;                          // Anzahl
+  targetActivityUnit?: 'days' | 'weeks' | 'months';     // Einheit
   // Thread & Lesebestätigung
   replies?: BoardReply[];
   readBy?: string[];          // Member-IDs die gelesen haben (inkl. Autor + Antwortende)
