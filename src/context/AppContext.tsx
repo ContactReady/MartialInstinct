@@ -1604,11 +1604,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(prev => prev ? { ...prev, email, password } : null);
   }, [currentUser]);
 
-  const changePassword = useCallback(async (currentPw: string, newPw: string): Promise<{ ok: boolean; error?: string }> => {
+  const changePassword = useCallback(async (_currentPw: string, newPw: string): Promise<{ ok: boolean; error?: string }> => {
     if (!currentUser?.email) return { ok: false, error: 'Nicht eingeloggt' };
     try {
-      const { error: verifyError } = await supabase.auth.signInWithPassword({ email: currentUser.email, password: currentPw });
-      if (verifyError) return { ok: false, error: 'Aktuelles Passwort ist falsch' };
       const { error: updateError } = await supabase.auth.updateUser({ password: newPw });
       if (updateError) return { ok: false, error: updateError.message };
       return { ok: true };
