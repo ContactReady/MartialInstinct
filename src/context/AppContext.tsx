@@ -149,7 +149,6 @@ interface AppContextType {
 
   // Profile
   updateProfile: (email: string, password: string) => void;
-  changePassword: (currentPw: string, newPw: string) => Promise<{ ok: boolean; error?: string }>;
   updateProfileImage: (base64: string) => void;
   computeBadges: (member: Member) => Badge[];
 
@@ -281,33 +280,39 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [members, setMembers] = useState<Member[]>(MEMBERS);
   const [currentUser, setCurrentUser] = useState<Member | null>(null);
-  const [authLoading, setAuthLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  // Supabase Auth Session — blockiert NIE das Laden der App
+  // Supabase Auth Session
   useEffect(() => {
     const loadMemberByEmail = async (email: string) => {
-      try {
-        const { data } = await supabase.from('members').select('*').eq('email', email).single();
-        const memberData = data ?? MEMBERS.find(m => m.email === email) ?? null;
-        if (memberData) {
-          const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
-          const member = imgs[memberData.id] ? { ...memberData, profileImageUrl: imgs[memberData.id] } : memberData;
-          setCurrentUser(member);
-          setMembers(prev => prev.some(m => m.id === memberData.id) ? prev.map(m => m.id === memberData.id ? member : m) : [...prev, member]);
-        }
-      } catch { /* Supabase nicht erreichbar — Login-Screen bleibt */ }
+      const { data } = await supabase.from('members').select('*').eq('email', email).single();
+      const memberData = data ?? MEMBERS.find(m => m.email === email) ?? null;
+      if (memberData) {
+        const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
+        const member = imgs[memberData.id] ? { ...memberData, profileImageUrl: imgs[memberData.id] } : memberData;
+        setCurrentUser(member);
+        setMembers(prev => prev.some(m => m.id === memberData.id) ? prev.map(m => m.id === memberData.id ? member : m) : [...prev, member]);
+      }
     };
 
+    // Sicherheitsnetz: nach 5s authLoading immer beenden
+    const timeout = setTimeout(() => setAuthLoading(false), 5000);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user?.email) loadMemberByEmail(session.user.email);
-    }).catch(() => {});
+      if (session?.user?.email) {
+        loadMemberByEmail(session.user.email).finally(() => { clearTimeout(timeout); setAuthLoading(false); });
+      } else {
+        clearTimeout(timeout);
+        setAuthLoading(false);
+      }
+    }).catch(() => { clearTimeout(timeout); setAuthLoading(false); });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user?.email) await loadMemberByEmail(session.user.email);
       else setCurrentUser(null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => { subscription.unsubscribe(); clearTimeout(timeout); };
   }, []);
   const [checkIns, setCheckIns] = useState<CheckIn[]>(CHECK_INS);
   const [boardMessages, setBoardMessages] = useState<BoardMessage[]>(BOARD_MESSAGES);
@@ -1598,19 +1603,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(prev => prev ? { ...prev, email, password } : null);
   }, [currentUser]);
 
-  const changePassword = useCallback(async (_currentPw: string, newPw: string): Promise<{ ok: boolean; error?: string }> => {
-    if (!currentUser?.email) return { ok: false, error: 'Nicht eingeloggt' };
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) return { ok: false, error: 'Keine aktive Session — bitte neu einloggen' };
-      const { error: updateError } = await supabase.auth.updateUser({ password: newPw });
-      if (updateError) return { ok: false, error: `Supabase: ${updateError.message}` };
-      return { ok: true };
-    } catch (e: unknown) {
-      return { ok: false, error: `Fehler: ${e instanceof Error ? e.message : String(e)}` };
-    }
-  }, [currentUser]);
-
   const PROFILE_IMG_URL_KEY = 'mi_profile_img_url';
   const updateProfileImage = useCallback((base64: string) => {
     if (!currentUser) return;
@@ -2588,7 +2580,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     completeModuleQuiz,
     toggleDarkMode,
     updateProfile,
-    changePassword,
     updateProfileImage,
     computeBadges,
     trainingSessions,

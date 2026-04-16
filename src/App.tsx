@@ -175,7 +175,7 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => Promise<bo
 
 // ── Settings Modal ─────────────────────────────────────────────────────────────
 export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { currentUser, updateProfile, changePassword, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference } = useApp();
+  const { currentUser, updateProfile, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference } = useApp();
   const [email, setEmail] = useState(currentUser?.email ?? '');
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
@@ -190,19 +190,18 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
 
   const visibility = currentUser?.visibilityPreference ?? 'all';
 
-  const handleSave = async () => {
+  const handleSave = () => {
     setError('');
     if (!email.trim()) { setError('E-Mail darf nicht leer sein.'); return; }
     const changingPassword = newPw.length > 0;
     if (changingPassword) {
+      if (currentPw !== (currentUser?.password ?? '')) { setError('Aktuelles Passwort ist falsch.'); return; }
       if (newPw.length < 8) { setError('Neues Passwort muss mindestens 8 Zeichen haben.'); return; }
       if (!/\d/.test(newPw)) { setError('Neues Passwort muss mindestens eine Zahl enthalten.'); return; }
       if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(newPw)) { setError('Neues Passwort muss mindestens ein Sonderzeichen enthalten.'); return; }
       if (newPw !== confirmPw) { setError('Neue Passwörter stimmen nicht überein.'); return; }
-      const result = await changePassword(currentPw, newPw);
-      if (!result.ok) { setError(result.error ?? 'Fehler beim Ändern des Passworts'); return; }
     }
-    updateProfile(email.trim(), currentUser?.password ?? '');
+    updateProfile(email.trim(), changingPassword ? newPw : (currentUser?.password ?? ''));
     setSaved(true);
     setCurrentPw(''); setNewPw(''); setConfirmPw('');
     setTimeout(() => setSaved(false), 2000);
@@ -355,6 +354,7 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                     </button>
                   </div>
                   <div className="space-y-2">
+                    <input type={showPw ? 'text' : 'password'} value={currentPw} onChange={e => setCurrentPw(e.target.value)} placeholder="Aktuelles Passwort…" className={inputCls} />
                     <input type={showPw ? 'text' : 'password'} value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Neues Passwort (min. 8 Zeichen)…" className={inputCls} />
                     <input type={showPw ? 'text' : 'password'} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Neues Passwort wiederholen…" className={inputCls} />
                   </div>
@@ -834,7 +834,7 @@ function playNotificationSound() {
 }
 
 const AppContent: React.FC = () => {
-  const { currentUser, login, darkMode, notifications, getProfileImgSettings } = useApp();
+  const { currentUser, authLoading, login, darkMode, notifications, getProfileImgSettings } = useApp();
   const [viewMode, setViewMode] = useState<'member' | 'instructor'>('member');
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -862,6 +862,14 @@ const AppContent: React.FC = () => {
     prevUnreadRef.current = unreadCount;
   }, [unreadCount, currentUser]);
 
+  if (authLoading) return (
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+        <span className="text-gray-500 text-sm">Laden…</span>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-950 text-white" data-theme={darkMode ? 'dark' : 'light'}>
