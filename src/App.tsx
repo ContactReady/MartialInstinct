@@ -175,7 +175,7 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => Promise<bo
 
 // ── Settings Modal ─────────────────────────────────────────────────────────────
 export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { currentUser, updateProfile, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference } = useApp();
+  const { currentUser, updateProfile, changePassword, toggleDarkMode, darkMode, updateNotificationPrefs, updateVisibilityPreference } = useApp();
   const [email, setEmail] = useState(currentUser?.email ?? '');
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
@@ -190,18 +190,19 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
 
   const visibility = currentUser?.visibilityPreference ?? 'all';
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setError('');
     if (!email.trim()) { setError('E-Mail darf nicht leer sein.'); return; }
     const changingPassword = newPw.length > 0;
     if (changingPassword) {
-      if (currentPw !== (currentUser?.password ?? '')) { setError('Aktuelles Passwort ist falsch.'); return; }
       if (newPw.length < 8) { setError('Neues Passwort muss mindestens 8 Zeichen haben.'); return; }
       if (!/\d/.test(newPw)) { setError('Neues Passwort muss mindestens eine Zahl enthalten.'); return; }
       if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(newPw)) { setError('Neues Passwort muss mindestens ein Sonderzeichen enthalten.'); return; }
       if (newPw !== confirmPw) { setError('Neue Passwörter stimmen nicht überein.'); return; }
+      const result = await changePassword(currentPw, newPw);
+      if (!result.ok) { setError(result.error ?? 'Fehler beim Ändern des Passworts'); return; }
     }
-    updateProfile(email.trim(), changingPassword ? newPw : (currentUser?.password ?? ''));
+    updateProfile(email.trim(), currentUser?.password ?? '');
     setSaved(true);
     setCurrentPw(''); setNewPw(''); setConfirmPw('');
     setTimeout(() => setSaved(false), 2000);

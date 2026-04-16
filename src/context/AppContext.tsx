@@ -149,6 +149,7 @@ interface AppContextType {
 
   // Profile
   updateProfile: (email: string, password: string) => void;
+  changePassword: (currentPw: string, newPw: string) => Promise<{ ok: boolean; error?: string }>;
   updateProfileImage: (base64: string) => void;
   computeBadges: (member: Member) => Badge[];
 
@@ -1603,6 +1604,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(prev => prev ? { ...prev, email, password } : null);
   }, [currentUser]);
 
+  const changePassword = useCallback(async (currentPw: string, newPw: string): Promise<{ ok: boolean; error?: string }> => {
+    if (!currentUser?.email) return { ok: false, error: 'Nicht eingeloggt' };
+    try {
+      const { error: verifyError } = await supabase.auth.signInWithPassword({ email: currentUser.email, password: currentPw });
+      if (verifyError) return { ok: false, error: 'Aktuelles Passwort ist falsch' };
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPw });
+      if (updateError) return { ok: false, error: updateError.message };
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'Verbindungsfehler' };
+    }
+  }, [currentUser]);
+
   const PROFILE_IMG_URL_KEY = 'mi_profile_img_url';
   const updateProfileImage = useCallback((base64: string) => {
     if (!currentUser) return;
@@ -2580,6 +2594,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     completeModuleQuiz,
     toggleDarkMode,
     updateProfile,
+    changePassword,
     updateProfileImage,
     computeBadges,
     trainingSessions,
