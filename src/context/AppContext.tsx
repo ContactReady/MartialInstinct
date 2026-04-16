@@ -292,31 +292,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
   const [authLoading] = useState(false);
 
-  // Supabase Session im Hintergrund prüfen — blockiert NIE das Laden
+  // Supabase Session einmalig prüfen — kein Listener, keine offene Verbindung
   useEffect(() => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
-
-    Promise.race([
-      supabase.auth.getSession(),
-      new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error('timeout'))))
-    ]).then((result) => {
-      const { data: { session } } = result as Awaited<ReturnType<typeof supabase.auth.getSession>>;
-      if (!session) {
-        localStorage.removeItem('mi_current_user');
-        setCurrentUser(null);
-      }
-    }).catch(() => { /* Timeout oder Fehler — gespeicherten User behalten */ })
-      .finally(() => clearTimeout(timeout));
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        localStorage.removeItem('mi_current_user');
-        setCurrentUser(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    const timer = setTimeout(() => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) {
+          localStorage.removeItem('mi_current_user');
+          setCurrentUser(null);
+        }
+      }).catch(() => {});
+    }, 1000);
+    return () => clearTimeout(timer);
   }, []);
   const [checkIns, setCheckIns] = useState<CheckIn[]>(CHECK_INS);
   const [boardMessages, setBoardMessages] = useState<BoardMessage[]>(BOARD_MESSAGES);
