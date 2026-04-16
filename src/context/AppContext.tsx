@@ -281,39 +281,33 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [members, setMembers] = useState<Member[]>(MEMBERS);
   const [currentUser, setCurrentUser] = useState<Member | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
 
-  // Supabase Auth Session
+  // Supabase Auth Session — blockiert NIE das Laden der App
   useEffect(() => {
     const loadMemberByEmail = async (email: string) => {
-      const { data } = await supabase.from('members').select('*').eq('email', email).single();
-      const memberData = data ?? MEMBERS.find(m => m.email === email) ?? null;
-      if (memberData) {
-        const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
-        const member = imgs[memberData.id] ? { ...memberData, profileImageUrl: imgs[memberData.id] } : memberData;
-        setCurrentUser(member);
-        setMembers(prev => prev.some(m => m.id === memberData.id) ? prev.map(m => m.id === memberData.id ? member : m) : [...prev, member]);
-      }
+      try {
+        const { data } = await supabase.from('members').select('*').eq('email', email).single();
+        const memberData = data ?? MEMBERS.find(m => m.email === email) ?? null;
+        if (memberData) {
+          const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
+          const member = imgs[memberData.id] ? { ...memberData, profileImageUrl: imgs[memberData.id] } : memberData;
+          setCurrentUser(member);
+          setMembers(prev => prev.some(m => m.id === memberData.id) ? prev.map(m => m.id === memberData.id ? member : m) : [...prev, member]);
+        }
+      } catch { /* Supabase nicht erreichbar — Login-Screen bleibt */ }
     };
 
-    // Sicherheitsnetz: nach 5s authLoading immer beenden
-    const timeout = setTimeout(() => setAuthLoading(false), 5000);
-
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user?.email) {
-        loadMemberByEmail(session.user.email).finally(() => { clearTimeout(timeout); setAuthLoading(false); });
-      } else {
-        clearTimeout(timeout);
-        setAuthLoading(false);
-      }
-    }).catch(() => { clearTimeout(timeout); setAuthLoading(false); });
+      if (session?.user?.email) loadMemberByEmail(session.user.email);
+    }).catch(() => {});
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user?.email) await loadMemberByEmail(session.user.email);
       else setCurrentUser(null);
     });
 
-    return () => { subscription.unsubscribe(); clearTimeout(timeout); };
+    return () => subscription.unsubscribe();
   }, []);
   const [checkIns, setCheckIns] = useState<CheckIn[]>(CHECK_INS);
   const [boardMessages, setBoardMessages] = useState<BoardMessage[]>(BOARD_MESSAGES);

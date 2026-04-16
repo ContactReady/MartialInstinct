@@ -834,7 +834,7 @@ function playNotificationSound() {
 }
 
 const AppContent: React.FC = () => {
-  const { currentUser, authLoading, login, darkMode, notifications, getProfileImgSettings } = useApp();
+  const { currentUser, login, darkMode, notifications, getProfileImgSettings } = useApp();
   const [viewMode, setViewMode] = useState<'member' | 'instructor'>('member');
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -862,14 +862,6 @@ const AppContent: React.FC = () => {
     prevUnreadRef.current = unreadCount;
   }, [unreadCount, currentUser]);
 
-  if (authLoading) return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-        <span className="text-gray-500 text-sm">Laden…</span>
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gray-950 text-white" data-theme={darkMode ? 'dark' : 'light'}>
