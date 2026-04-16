@@ -954,11 +954,34 @@ const AppContent: React.FC = () => {
   );
 };
 
+// ── Error Boundary ─────────────────────────────────────────────────────────────
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: string | null }> {
+  state = { error: null };
+  static getDerivedStateFromError(e: Error) { return { error: e.message }; }
+  render() {
+    if (this.state.error) return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+        <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-red-800">
+          <div className="text-red-400 font-bold mb-2">App-Fehler</div>
+          <div className="text-gray-300 text-sm font-mono break-all">{this.state.error}</div>
+          <button onClick={() => { localStorage.removeItem('mi_current_user'); window.location.reload(); }}
+            className="mt-4 w-full bg-red-600 text-white py-2 rounded-lg text-sm">
+            Cache löschen & neu laden
+          </button>
+        </div>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
 // ── App Wrapper ────────────────────────────────────────────────────────────────
 const App: React.FC = () => (
-  <AppProvider>
-    <AppContent />
-  </AppProvider>
+  <ErrorBoundary>
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
+  </ErrorBoundary>
 );
 
 export default App;
