@@ -286,25 +286,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     const loadMemberByEmail = async (email: string) => {
       const { data } = await supabase.from('members').select('*').eq('email', email).single();
-      if (data) {
+      const memberData = data ?? MEMBERS.find(m => m.email === email) ?? null;
+      if (memberData) {
         const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
-        const member = imgs[data.id] ? { ...data, profileImageUrl: imgs[data.id] } : data;
+        const member = imgs[memberData.id] ? { ...memberData, profileImageUrl: imgs[memberData.id] } : memberData;
         setCurrentUser(member);
-        setMembers(prev => prev.some(m => m.id === data.id) ? prev.map(m => m.id === data.id ? member : m) : [...prev, member]);
+        setMembers(prev => prev.some(m => m.id === memberData.id) ? prev.map(m => m.id === memberData.id ? member : m) : [...prev, member]);
       }
     };
 
+    // Sicherheitsnetz: nach 5s authLoading immer beenden
+    const timeout = setTimeout(() => setAuthLoading(false), 5000);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user?.email) loadMemberByEmail(session.user.email).finally(() => setAuthLoading(false));
-      else setAuthLoading(false);
-    });
+      if (session?.user?.email) {
+        loadMemberByEmail(session.user.email).finally(() => { clearTimeout(timeout); setAuthLoading(false); });
+      } else {
+        clearTimeout(timeout);
+        setAuthLoading(false);
+      }
+    }).catch(() => { clearTimeout(timeout); setAuthLoading(false); });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user?.email) await loadMemberByEmail(session.user.email);
       else setCurrentUser(null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => { subscription.unsubscribe(); clearTimeout(timeout); };
   }, []);
   const [checkIns, setCheckIns] = useState<CheckIn[]>(CHECK_INS);
   const [boardMessages, setBoardMessages] = useState<BoardMessage[]>(BOARD_MESSAGES);
@@ -578,16 +586,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error || !data.user) return false;
     const { data: memberData } = await supabase.from('members').select('*').eq('email', email).single();
-    if (memberData) {
+    const member = memberData ?? members.find(m => m.email === email) ?? null;
+    if (member) {
       const now = new Date();
       const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
-      const online = { ...memberData, onlineSince: now, lastSeenAt: now, ...(imgs[memberData.id] ? { profileImageUrl: imgs[memberData.id] } : {}) };
+      const online = { ...member, onlineSince: now, lastSeenAt: now, ...(imgs[member.id] ? { profileImageUrl: imgs[member.id] } : {}) };
       setCurrentUser(online);
-      setMembers(prev => prev.some(m => m.id === memberData.id) ? prev.map(m => m.id === memberData.id ? online : m) : [...prev, online]);
+      setMembers(prev => prev.some(m => m.id === member.id) ? prev.map(m => m.id === member.id ? online : m) : [...prev, online]);
       return true;
     }
     return false;
-  }, []);
+  }, [members]);
 
   const logout = useCallback(() => {
     if (currentUser) {
