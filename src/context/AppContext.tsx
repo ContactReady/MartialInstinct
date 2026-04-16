@@ -583,19 +583,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // ============================================
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.user) return false;
-    const { data: memberData } = await supabase.from('members').select('*').eq('email', email).single();
-    const member = memberData ?? members.find(m => m.email === email) ?? null;
-    if (member) {
-      const now = new Date();
-      const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
-      const online = { ...member, onlineSince: now, lastSeenAt: now, ...(imgs[member.id] ? { profileImageUrl: imgs[member.id] } : {}) };
-      setCurrentUser(online);
-      setMembers(prev => prev.some(m => m.id === member.id) ? prev.map(m => m.id === member.id ? online : m) : [...prev, online]);
-      return true;
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error || !data.user) return false;
+      const { data: memberData } = await supabase.from('members').select('*').eq('email', email).single();
+      const member = memberData ?? members.find(m => m.email === email) ?? null;
+      if (member) {
+        const now = new Date();
+        const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
+        const online = { ...member, onlineSince: now, lastSeenAt: now, ...(imgs[member.id] ? { profileImageUrl: imgs[member.id] } : {}) };
+        setCurrentUser(online);
+        setMembers(prev => prev.some(m => m.id === member.id) ? prev.map(m => m.id === member.id ? online : m) : [...prev, online]);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
-    return false;
   }, [members]);
 
   const logout = useCallback(() => {

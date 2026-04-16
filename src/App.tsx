@@ -107,8 +107,13 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => Promise<bo
     e.preventDefault();
     setLoading(true);
     setError('');
-    const success = await onLogin(email, password);
-    if (!success) { setError('Ungültige Anmeldedaten'); setLoading(false); }
+    try {
+      const success = await onLogin(email, password);
+      if (!success) { setError('E-Mail oder Passwort falsch'); setLoading(false); }
+    } catch {
+      setError('Verbindungsfehler – bitte nochmal versuchen');
+      setLoading(false);
+    }
   };
 
   return (
