@@ -564,8 +564,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error || !data.user) return false;
-      const { data: memberData } = await supabase.from('members').select('*').eq('email', email).single();
-      const member = memberData ?? members.find(m => m.email === email) ?? null;
+      // Immer lokale Daten verwenden — Supabase members-Tabelle hat keine techniqueProgress etc.
+      const member = members.find(m => m.email === email) ?? null;
       if (member) {
         const now = new Date();
         const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
