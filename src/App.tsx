@@ -477,18 +477,17 @@ const [sichtbarkeitOpen, setSichtbarkeitOpen] = useState(false);
 
   const visibility = currentUser?.visibilityPreference ?? 'all';
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setPwError('');
     if (!email.trim()) { setPwError('E-Mail darf nicht leer sein.'); return; }
     const changingPassword = newPw.length > 0;
     if (changingPassword) {
-      if (currentPw !== (currentUser?.password ?? '')) { setPwError('Aktuelles Passwort ist falsch.'); return; }
       if (newPw.length < 8) { setPwError('Neues Passwort muss mindestens 8 Zeichen haben.'); return; }
-      if (!/\d/.test(newPw)) { setPwError('Neues Passwort muss mindestens eine Zahl enthalten.'); return; }
-      if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(newPw)) { setPwError('Neues Passwort muss mindestens ein Sonderzeichen enthalten.'); return; }
-      if (newPw !== confirmPw) { setPwError('Neue Passwörter stimmen nicht überein.'); return; }
+      if (newPw !== confirmPw) { setPwError('Passwörter stimmen nicht überein.'); return; }
+      const { error: pwErr } = await supabase.auth.updateUser({ password: newPw });
+      if (pwErr) { setPwError(pwErr.message); return; }
     }
-    updateProfile(email.trim(), changingPassword ? newPw : (currentUser?.password ?? ''));
+    updateProfile(email.trim(), currentUser?.password ?? '');
     setSaved(true);
     setCurrentPw(''); setNewPw(''); setConfirmPw('');
     setTimeout(() => setSaved(false), 2000);
@@ -786,7 +785,6 @@ const [sichtbarkeitOpen, setSichtbarkeitOpen] = useState(false);
                 <button type="button" onClick={() => setShowPw(v => !v)} className="text-gray-500 hover:text-gray-300 text-xs">{showPw ? '🙈 verbergen' : '👁️ anzeigen'}</button>
               </div>
               <div className="space-y-2">
-                <input type={showPw ? 'text' : 'password'} value={currentPw} onChange={e => setCurrentPw(e.target.value)} placeholder="Aktuelles Passwort…" className={inputCls} />
                 <input type={showPw ? 'text' : 'password'} value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Neues Passwort (min. 8 Zeichen)…" className={inputCls} />
                 <input type={showPw ? 'text' : 'password'} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Neues Passwort wiederholen…" className={inputCls} />
               </div>
