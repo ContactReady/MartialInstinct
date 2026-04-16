@@ -1607,11 +1607,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const changePassword = useCallback(async (_currentPw: string, newPw: string): Promise<{ ok: boolean; error?: string }> => {
     if (!currentUser?.email) return { ok: false, error: 'Nicht eingeloggt' };
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) return { ok: false, error: 'Keine aktive Session — bitte neu einloggen' };
       const { error: updateError } = await supabase.auth.updateUser({ password: newPw });
-      if (updateError) return { ok: false, error: updateError.message };
+      if (updateError) return { ok: false, error: `Supabase: ${updateError.message}` };
       return { ok: true };
-    } catch {
-      return { ok: false, error: 'Verbindungsfehler' };
+    } catch (e: unknown) {
+      return { ok: false, error: `Fehler: ${e instanceof Error ? e.message : String(e)}` };
     }
   }, [currentUser]);
 
