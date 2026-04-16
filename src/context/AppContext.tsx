@@ -292,18 +292,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
   const [authLoading] = useState(false);
 
-  // Supabase Session einmalig prüfen — kein Listener, keine offene Verbindung
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (!session) {
-          localStorage.removeItem('mi_current_user');
-          setCurrentUser(null);
-        }
-      }).catch(() => {});
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
   const [checkIns, setCheckIns] = useState<CheckIn[]>(CHECK_INS);
   const [boardMessages, setBoardMessages] = useState<BoardMessage[]>(BOARD_MESSAGES);
   const [boardRepliesGloballyEnabled, setBoardRepliesGloballyEnabledState] = useState<boolean>(() => {
