@@ -54,6 +54,7 @@ import { MODULES, BLOCKS, getAllTechniques, getModuleById } from '../data/module
 interface AppContextType {
   // State
   currentUser: Member | null;
+  authLoading: boolean;
   members: Member[];
   checkIns: CheckIn[];
   boardMessages: BoardMessage[];
@@ -61,7 +62,7 @@ interface AppContextType {
   darkMode: boolean;
   
   // Auth
-  login: (email: string, password: string) => boolean;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   switchUser: (userId: string) => void;
   
@@ -278,14 +279,33 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [members, setMembers] = useState<Member[]>(MEMBERS);
-  const [currentUser, setCurrentUser] = useState<Member | null>(() => {
-    const savedId = localStorage.getItem('mi_session_user');
-    if (!savedId) return null;
-    const member = MEMBERS.find(m => m.id === savedId);
-    if (!member) return null;
-    const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
-    return imgs[member.id] ? { ...member, profileImageUrl: imgs[member.id] } : member;
-  });
+  const [currentUser, setCurrentUser] = useState<Member | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Supabase Auth Session
+  useEffect(() => {
+    const loadMemberByEmail = async (email: string) => {
+      const { data } = await supabase.from('members').select('*').eq('email', email).single();
+      if (data) {
+        const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
+        const member = imgs[data.id] ? { ...data, profileImageUrl: imgs[data.id] } : data;
+        setCurrentUser(member);
+        setMembers(prev => prev.some(m => m.id === data.id) ? prev.map(m => m.id === data.id ? member : m) : [...prev, member]);
+      }
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.email) loadMemberByEmail(session.user.email).finally(() => setAuthLoading(false));
+      else setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user?.email) await loadMemberByEmail(session.user.email);
+      else setCurrentUser(null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
   const [checkIns, setCheckIns] = useState<CheckIn[]>(CHECK_INS);
   const [boardMessages, setBoardMessages] = useState<BoardMessage[]>(BOARD_MESSAGES);
   const [boardRepliesGloballyEnabled, setBoardRepliesGloballyEnabledState] = useState<boolean>(() => {
@@ -554,30 +574,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // AUTH
   // ============================================
 
-  const login = useCallback((email: string, password: string): boolean => {
-    const member = members.find(m => m.email === email && m.password === password);
-    if (member) {
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) return false;
+    const { data: memberData } = await supabase.from('members').select('*').eq('email', email).single();
+    if (memberData) {
       const now = new Date();
-      const stored: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
-      const savedImg = stored[member.id];
-      const online = { ...member, onlineSince: now, lastSeenAt: now, ...(savedImg ? { profileImageUrl: savedImg } : {}) };
-      setMembers(prev => prev.map(m => m.id === member.id ? online : m));
+      const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
+      const online = { ...memberData, onlineSince: now, lastSeenAt: now, ...(imgs[memberData.id] ? { profileImageUrl: imgs[memberData.id] } : {}) };
       setCurrentUser(online);
-      localStorage.setItem('mi_session_user', member.id);
+      setMembers(prev => prev.some(m => m.id === memberData.id) ? prev.map(m => m.id === memberData.id ? online : m) : [...prev, online]);
       return true;
     }
     return false;
-  }, [members]);
+  }, []);
 
   const logout = useCallback(() => {
     if (currentUser) {
-      // Online-Status löschen beim Logout
-      setMembers(prev => prev.map(m =>
-        m.id === currentUser.id ? { ...m, onlineSince: undefined } : m
-      ));
+      setMembers(prev => prev.map(m => m.id === currentUser.id ? { ...m, onlineSince: undefined } : m));
     }
+    supabase.auth.signOut();
     setCurrentUser(null);
-    localStorage.removeItem('mi_session_user');
   }, [currentUser]);
 
   const switchUser = useCallback((userId: string) => {
@@ -2499,6 +2516,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const value: AppContextType = {
     currentUser,
+    authLoading,
     members,
     checkIns,
     boardMessages,

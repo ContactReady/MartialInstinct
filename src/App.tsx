@@ -96,16 +96,19 @@ const JoinRequestForm: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 };
 
 // ── Login ─────────────────────────────────────────────────────────────────────
-const Login: React.FC<{ onLogin: (email: string, password: string) => boolean; darkMode: boolean; onShowJoinForm: () => void }> = ({ onLogin, darkMode, onShowJoinForm }) => {
+const Login: React.FC<{ onLogin: (email: string, password: string) => Promise<boolean>; darkMode: boolean; onShowJoinForm: () => void }> = ({ onLogin, darkMode, onShowJoinForm }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = onLogin(email, password);
-    if (!success) setError('Ungültige Anmeldedaten');
+    setLoading(true);
+    setError('');
+    const success = await onLogin(email, password);
+    if (!success) { setError('Ungültige Anmeldedaten'); setLoading(false); }
   };
 
   return (
@@ -146,9 +149,10 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => boolean; d
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             type="submit"
-            className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold transition-colors"
+            disabled={loading}
+            className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:text-gray-500 text-white py-3 rounded-lg font-bold transition-colors"
           >
-            Anmelden
+            {loading ? 'Anmelden…' : 'Anmelden'}
           </button>
           <button
             type="button"
@@ -825,7 +829,7 @@ function playNotificationSound() {
 }
 
 const AppContent: React.FC = () => {
-  const { currentUser, login, darkMode, notifications, getProfileImgSettings } = useApp();
+  const { currentUser, authLoading, login, darkMode, notifications, getProfileImgSettings } = useApp();
   const [viewMode, setViewMode] = useState<'member' | 'instructor'>('member');
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -852,6 +856,15 @@ const AppContent: React.FC = () => {
     }
     prevUnreadRef.current = unreadCount;
   }, [unreadCount, currentUser]);
+
+  if (authLoading) return (
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+        <span className="text-gray-500 text-sm">Laden…</span>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-950 text-white" data-theme={darkMode ? 'dark' : 'light'}>
