@@ -279,40 +279,37 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [members, setMembers] = useState<Member[]>(MEMBERS);
-  const [currentUser, setCurrentUser] = useState<Member | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  // Eingeloggten User aus localStorage laden — sofort, kein Netzwerk nötig
+  const [currentUser, setCurrentUser] = useState<Member | null>(() => {
+    try {
+      const saved = localStorage.getItem('mi_current_user');
+      if (!saved) return null;
+      const parsed = JSON.parse(saved) as Member;
+      // Profilbild aus separatem Speicher laden
+      const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
+      return imgs[parsed.id] ? { ...parsed, profileImageUrl: imgs[parsed.id] } : parsed;
+    } catch { return null; }
+  });
+  const [authLoading] = useState(false);
 
-  // Supabase Auth Session
+  // Supabase Session im Hintergrund prüfen — blockiert NIE das Laden
   useEffect(() => {
-    const loadMemberByEmail = async (email: string) => {
-      const { data } = await supabase.from('members').select('*').eq('email', email).single();
-      const memberData = data ?? MEMBERS.find(m => m.email === email) ?? null;
-      if (memberData) {
-        const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
-        const member = imgs[memberData.id] ? { ...memberData, profileImageUrl: imgs[memberData.id] } : memberData;
-        setCurrentUser(member);
-        setMembers(prev => prev.some(m => m.id === memberData.id) ? prev.map(m => m.id === memberData.id ? member : m) : [...prev, member]);
-      }
-    };
-
-    // Sicherheitsnetz: nach 5s authLoading immer beenden
-    const timeout = setTimeout(() => setAuthLoading(false), 5000);
-
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user?.email) {
-        loadMemberByEmail(session.user.email).finally(() => { clearTimeout(timeout); setAuthLoading(false); });
-      } else {
-        clearTimeout(timeout);
-        setAuthLoading(false);
+      if (!session) {
+        // Keine gültige Session mehr — ausloggen
+        localStorage.removeItem('mi_current_user');
+        setCurrentUser(null);
       }
-    }).catch(() => { clearTimeout(timeout); setAuthLoading(false); });
+    }).catch(() => { /* Supabase nicht erreichbar — gespeicherten User behalten */ });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user?.email) await loadMemberByEmail(session.user.email);
-      else setCurrentUser(null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        localStorage.removeItem('mi_current_user');
+        setCurrentUser(null);
+      }
     });
 
-    return () => { subscription.unsubscribe(); clearTimeout(timeout); };
+    return () => subscription.unsubscribe();
   }, []);
   const [checkIns, setCheckIns] = useState<CheckIn[]>(CHECK_INS);
   const [boardMessages, setBoardMessages] = useState<BoardMessage[]>(BOARD_MESSAGES);
@@ -592,6 +589,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const now = new Date();
         const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
         const online = { ...member, onlineSince: now, lastSeenAt: now, ...(imgs[member.id] ? { profileImageUrl: imgs[member.id] } : {}) };
+        localStorage.setItem('mi_current_user', JSON.stringify(online));
         setCurrentUser(online);
         setMembers(prev => prev.some(m => m.id === member.id) ? prev.map(m => m.id === member.id ? online : m) : [...prev, online]);
         return true;
@@ -606,6 +604,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (currentUser) {
       setMembers(prev => prev.map(m => m.id === currentUser.id ? { ...m, onlineSince: undefined } : m));
     }
+    localStorage.removeItem('mi_current_user');
     supabase.auth.signOut();
     setCurrentUser(null);
   }, [currentUser]);
