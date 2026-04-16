@@ -294,13 +294,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Supabase Session im Hintergrund prüfen — blockiert NIE das Laden
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+
+    Promise.race([
+      supabase.auth.getSession(),
+      new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error('timeout'))))
+    ]).then((result) => {
+      const { data: { session } } = result as Awaited<ReturnType<typeof supabase.auth.getSession>>;
       if (!session) {
-        // Keine gültige Session mehr — ausloggen
         localStorage.removeItem('mi_current_user');
         setCurrentUser(null);
       }
-    }).catch(() => { /* Supabase nicht erreichbar — gespeicherten User behalten */ });
+    }).catch(() => { /* Timeout oder Fehler — gespeicherten User behalten */ })
+      .finally(() => clearTimeout(timeout));
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
