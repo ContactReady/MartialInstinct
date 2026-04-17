@@ -803,17 +803,23 @@ export const InstructorView: React.FC = () => {
             if (isYesterday) return `Gestern, ${time}`;
             return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) + `, ${time}`;
           };
-          // Modul-Abschluss (erste 10 Curriculum-Module)
-          const listCurrMods = BLOCKS.filter(b => b.id !== 'assistant_instructor')
-            .flatMap(b => b.moduleIds.map(id => MODULES.find(m => m.id === id)!))
-            .filter(Boolean).slice(0, 10);
+          // Modul-Abschluss (Module 1–10, dedupliziert nach Nummer)
+          const listCurrMods = MODULES.filter(m => m.number <= 10);
+          const currModNums = [...new Set(listCurrMods.map(m => m.number))]; // [1..10]
           const getMemberModsDone = (member: Member) => {
             let tactics = 0, combat = 0;
-            listCurrMods.forEach(mod => {
-              const req = mod.techniques.filter(t => t.isRequired);
-              if (!req.length) return;
-              if (req.every(t => { const s = member.techniqueProgress[t.id]?.status; return s === 'tech_passed' || s === 'tac_passed'; })) tactics++;
-              if (req.every(t => member.techniqueProgress[t.id]?.status === 'tac_passed')) combat++;
+            currModNums.forEach(num => {
+              const variants = listCurrMods.filter(m => m.number === num);
+              const tacDone = variants.some(mod => {
+                const req = mod.techniques.filter(t => t.isRequired);
+                return req.length > 0 && req.every(t => { const s = member.techniqueProgress[t.id]?.status; return s === 'tech_passed' || s === 'tac_passed'; });
+              });
+              const cmbtDone = variants.some(mod => {
+                const req = mod.techniques.filter(t => t.isRequired);
+                return req.length > 0 && req.every(t => member.techniqueProgress[t.id]?.status === 'tac_passed');
+              });
+              if (tacDone) tactics++;
+              if (cmbtDone) combat++;
             });
             return { tactics, combat };
           };
@@ -2265,10 +2271,9 @@ export const InstructorView: React.FC = () => {
           const levelCounts: Record<string, number> = {};
           allM.forEach(m => { levelCounts[m.currentLevel] = (levelCounts[m.currentLevel] ?? 0) + 1; });
 
-          // Modul-Abschluss (erste 10 Curriculum-Module)
-          const currMods = BLOCKS.filter(b => b.id !== 'assistant_instructor')
-            .flatMap(b => b.moduleIds.map(id => MODULES.find(m => m.id === id)!))
-            .filter(Boolean).slice(0, 10);
+          // Modul-Abschluss (Module 1–10, dedupliziert nach Nummer)
+          const currMods = MODULES.filter(m => m.number <= 10);
+          const currModNumsA = [...new Set(currMods.map(m => m.number))];
 
           const getModDone = (member: Member, modId: string) => {
             const mod = MODULES.find(m => m.id === modId);
@@ -2425,18 +2430,20 @@ export const InstructorView: React.FC = () => {
                   <div className="text-[10px] text-gray-500 mt-0.5">Anteil der Mitglieder die Tactics / Combat je Modul bestanden haben</div>
                 </div>
                 <div className="px-4 py-3 space-y-3">
-                  {currMods.map((mod, idx) => {
-                    const tDone = allM.filter(m => getModDone(m, mod.id).t).length;
-                    const cDone = allM.filter(m => getModDone(m, mod.id).c).length;
+                  {currModNumsA.map((num, idx) => {
+                    const variants = currMods.filter(m => m.number === num);
+                    const tDone = allM.filter(member => variants.some(mod => getModDone(member, mod.id).t)).length;
+                    const cDone = allM.filter(member => variants.some(mod => getModDone(member, mod.id).c)).length;
                     const tPct = allM.length ? (tDone / allM.length) * 100 : 0;
                     const cPct = allM.length ? (cDone / allM.length) * 100 : 0;
                     const romanNums = ['I','II','III','IV','V','VI','VII','VIII','IX','X'];
+                    const displayName = variants.map(v => getModuleName(v.id)).join(' / ');
                     return (
-                      <div key={mod.id}>
+                      <div key={num}>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs text-gray-400">
                             <span className="text-gray-600 font-mono mr-1.5">{romanNums[idx]}</span>
-                            {getModuleName(mod.id)}
+                            {displayName}
                           </span>
                           <div className="flex gap-3 text-[10px] text-gray-500">
                             <span>T: <span className="text-gray-300 font-semibold">{tDone}/{allM.length}</span></span>
@@ -2557,7 +2564,7 @@ export const InstructorView: React.FC = () => {
                               // Init module progress from member's techniqueProgress
                               (() => {
                                 const allTechs = getAllTechniques();
-                                const currMods = MODULES.slice(0, 10);
+                                const currMods = MODULES.filter(m => m.number <= 10);
                                 const initProgress: Record<number, { tactics: boolean; combat: boolean }> = {};
                                 currMods.forEach((mod, idx) => {
                                   const reqTechs = allTechs.filter(t => t.moduleId === mod.id && t.isRequired);
@@ -2689,7 +2696,7 @@ export const InstructorView: React.FC = () => {
                           <span className="text-xs text-gray-600">Modul</span>
                           <span className="text-xs text-gray-600 text-center">T</span>
                           <span className="text-xs text-gray-600 text-center">C</span>
-                          {MODULES.slice(0, 10).map((mod, idx) => {
+                          {MODULES.filter(m => m.number <= 10).map((mod, idx) => {
                             const num = idx + 1;
                             const prog = moduleProgressEdit[num] ?? { tactics: false, combat: false };
                             return (
