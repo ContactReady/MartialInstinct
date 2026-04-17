@@ -799,6 +799,21 @@ export const InstructorView: React.FC = () => {
             if (isYesterday) return `Gestern, ${time}`;
             return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) + `, ${time}`;
           };
+          // Modul-Abschluss (erste 10 Curriculum-Module)
+          const listCurrMods = BLOCKS.filter(b => b.id !== 'assistant_instructor')
+            .flatMap(b => b.moduleIds.map(id => MODULES.find(m => m.id === id)!))
+            .filter(Boolean).slice(0, 10);
+          const getMemberModsDone = (member: Member) => {
+            let tactics = 0, combat = 0;
+            listCurrMods.forEach(mod => {
+              const req = mod.techniques.filter(t => t.isRequired);
+              if (!req.length) return;
+              if (req.every(t => { const s = member.techniqueProgress[t.id]?.status; return s === 'tech_passed' || s === 'tac_passed'; })) tactics++;
+              if (req.every(t => member.techniqueProgress[t.id]?.status === 'tac_passed')) combat++;
+            });
+            return { tactics, combat };
+          };
+
           const filtered = allMembers.filter(m =>
             m.name.toLowerCase().includes(memberSearch.toLowerCase())
           );
@@ -863,7 +878,7 @@ export const InstructorView: React.FC = () => {
                 <div className="space-y-2">
                   {sorted.map(member => {
                     const status = getMemberStatus(member);
-                    const progress = getBlockProgress(member.id, member.currentLevel);
+                    const mods = getMemberModsDone(member);
                     return (
                       <div key={member.id} className={`bg-gray-800/50 rounded-xl border transition-all ${status === 'training' ? 'border-orange-500/30' : status === 'online' ? 'border-green-500/20' : 'border-gray-700'}`}>
                         <div className="px-4 py-3 flex items-center gap-3">
@@ -873,7 +888,8 @@ export const InstructorView: React.FC = () => {
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-white font-semibold text-sm">{member.name}</span>
                               <span className={`text-xs ${LEVEL_DISPLAY[member.currentLevel].color}`}>{LEVEL_DISPLAY[member.currentLevel].icon} {LEVEL_DISPLAY[member.currentLevel].subtitle}</span>
-                              <span className="text-gray-600 text-xs">{progress.completed} Techniken</span>
+                              <span className="text-gray-600 text-xs">T: {mods.tactics} · C: {mods.combat} Module</span>
+                              {member.stopTheBleedCertified && <span className="text-red-400 text-xs">🩸 STB</span>}
                             </div>
                             <div className="mt-0.5">{statusLabel(status)}</div>
                           </div>

@@ -566,11 +566,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error || !data.user) return false;
-      // Immer lokale Daten verwenden — Supabase members-Tabelle hat keine techniqueProgress etc.
+
+      // Alle Members aus Supabase laden (Session ist jetzt aktiv)
+      const supabaseMembers = await loadMembers();
+      const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
+
+      if (supabaseMembers.length > 0) {
+        const merged = supabaseMembers.map(m => imgs[m.id] ? { ...m, profileImageUrl: imgs[m.id] } : m);
+        setMembers(merged);
+        const member = merged.find(m => m.email === email) ?? null;
+        if (member) {
+          const now = new Date();
+          const online = { ...member, onlineSince: now, lastSeenAt: now };
+          localStorage.setItem('mi_current_user', JSON.stringify(online));
+          setCurrentUser(online);
+          setMembers(prev => prev.map(m => m.id === member.id ? online : m));
+          return true;
+        }
+      }
+
+      // Fallback: lokale Daten (mockData)
       const member = members.find(m => m.email === email) ?? null;
       if (member) {
         const now = new Date();
-        const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
         const online = { ...member, onlineSince: now, lastSeenAt: now, ...(imgs[member.id] ? { profileImageUrl: imgs[member.id] } : {}) };
         localStorage.setItem('mi_current_user', JSON.stringify(online));
         setCurrentUser(online);
