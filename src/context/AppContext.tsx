@@ -703,6 +703,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           setFlagSystemEnabled(settings.flag_system_enabled as boolean);
           localStorage.setItem('mi-quiz-flag-enabled', String(settings.flag_system_enabled));
         }
+        if (settings.badge_display_settings) {
+          localStorage.setItem('mi_badge_display', JSON.stringify(settings.badge_display_settings));
+        }
 
         // Modul-Reihenfolge anwenden
         if (!orderRes.error && orderRes.data && orderRes.data.length > 0) {
@@ -2642,6 +2645,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const scales: Record<string, number> = JSON.parse(localStorage.getItem(BADGE_SCALES_KEY) || '{}');
     scales[badgeId] = settings.scale;
     localStorage.setItem(BADGE_SCALES_KEY, JSON.stringify(scales));
+    // In Supabase speichern → alle Geräte sehen dieselben Badge-Settings
+    saveSetting('badge_display_settings', all);
   };
 
   const updateAdminAccess = useCallback((memberId: string, hasAccess: boolean) => {
