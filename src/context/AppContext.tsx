@@ -647,18 +647,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Join Requests (nur für Admin relevant)
     supabase.from('join_requests').select('*').order('submitted_at', { ascending: false }).then(({ data }) => {
       if (!data || data.length === 0) return;
+      // Lokalen Status bevorzugen wenn nicht pending (RLS-UPDATE kann scheitern)
+      const localRaw = localStorage.getItem('mi-join-requests');
+      const localMap: Record<string, JoinRequest['status']> = {};
+      if (localRaw) {
+        try {
+          const parsed: JoinRequest[] = JSON.parse(localRaw);
+          parsed.forEach(r => { if (r.status !== 'pending') localMap[r.id] = r.status; });
+        } catch { /* ignore */ }
+      }
       const loaded: JoinRequest[] = data.map(r => ({
         id: r.id as string,
         name: r.name as string,
         email: r.email as string,
         memberIdHint: r.member_id_hint as string | undefined,
         course: r.course as string | undefined,
-        status: r.status as JoinRequest['status'],
+        status: (localMap[r.id as string] ?? r.status) as JoinRequest['status'],
         submittedAt: new Date(r.submitted_at as string),
         processedAt: r.processed_at ? new Date(r.processed_at as string) : undefined,
       }));
       setJoinRequests(loaded);
       localStorage.setItem('mi-join-requests', JSON.stringify(loaded));
+    });
+    // Check-ins: nur heutige pending/approved laden
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    supabase.from('check_ins').select('*').gte('requested_at', todayStart.toISOString()).then(({ data }) => {
+      if (!data || data.length === 0) return;
+      const loaded: CheckIn[] = data.map(r => ({
+        id: r.id as string,
+        memberId: r.member_id as string,
+        memberName: r.member_name as string,
+        locationId: r.location_id as string | undefined,
+        status: r.status as CheckIn['status'],
+        requestedAt: new Date(r.requested_at as string),
+        approvedById: r.approved_by_id as string | undefined,
+        approvedByName: r.approved_by_name as string | undefined,
+        approvedAt: r.approved_at ? new Date(r.approved_at as string) : undefined,
+      }));
+      setCheckIns(loaded);
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -782,6 +808,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       };
       setNotifications(n => [...n, instructorNotification]);
 
+      // In Supabase speichern
+      supabase.from('check_ins').insert({
+        id: newCheckIn.id,
+        member_id: newCheckIn.memberId,
+        member_name: newCheckIn.memberName,
+        location_id: newCheckIn.locationId ?? null,
+        status: 'pending',
+        requested_at: newCheckIn.requestedAt.toISOString(),
+      });
+
       return [...prev, newCheckIn];
     });
   }, [currentUser]);
@@ -840,25 +876,38 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       };
       setNotifications(n => [...n, memberNotification]);
 
+      // In Supabase aktualisieren
+      supabase.from('check_ins').update({
+        status: 'approved',
+        approved_by_id: currentUser.id,
+        approved_by_name: currentUser.name,
+        approved_at: approvedAt.toISOString(),
+      }).eq('id', checkInId);
+
       return updatedCheckIns;
     });
   }, [currentUser]);
 
   const rejectCheckIn = useCallback((checkInId: string) => {
-    setCheckIns(prev => prev.map(c => 
-      c.id === checkInId 
+    setCheckIns(prev => prev.map(c =>
+      c.id === checkInId
         ? { ...c, status: 'rejected' as const }
         : c
     ));
+    supabase.from('check_ins').update({ status: 'rejected' }).eq('id', checkInId);
   }, []);
 
   const checkOut = useCallback((memberId: string) => {
-    setMembers(prev => prev.map(m => 
+    setMembers(prev => prev.map(m =>
       m.id === memberId
         ? { ...m, isCheckedIn: false, checkedInAt: undefined }
         : m
     ));
-    setCheckIns(prev => prev.filter(c => c.memberId !== memberId || c.status !== 'approved'));
+    setCheckIns(prev => {
+      const toCheckOut = prev.filter(c => c.memberId === memberId && c.status === 'approved');
+      toCheckOut.forEach(c => supabase.from('check_ins').delete().eq('id', c.id));
+      return prev.filter(c => c.memberId !== memberId || c.status !== 'approved');
+    });
   }, []);
 
   // ============================================

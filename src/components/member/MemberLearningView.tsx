@@ -94,7 +94,10 @@ const ModuleCard: React.FC<ModuleCardProps> = ({ module, bestScore, sessions, qu
       {/* Name + Status */}
       <div>
         <div className="text-white font-semibold text-sm leading-snug">{displayName ?? module.name}</div>
-        <div className="text-gray-500 text-[11px] mt-0.5">
+        {module.subtitle && (
+          <div className="text-gray-500 text-[10px] leading-snug mt-0.5">{module.subtitle}</div>
+        )}
+        <div className="text-gray-600 text-[11px] mt-0.5">
           {!hasQuestions ? 'Kein Quiz' : sessions === 0 ? 'Noch nicht gestartet' : `${sessions}× · Best: ${pct}%`}
         </div>
       </div>

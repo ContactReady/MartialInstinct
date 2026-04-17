@@ -2701,7 +2701,10 @@ export const InstructorView: React.FC = () => {
                             const prog = moduleProgressEdit[num] ?? { tactics: false, combat: false };
                             return (
                               <React.Fragment key={mod.id}>
-                                <span className="text-xs text-gray-300 truncate">{num}. {mod.name}</span>
+                                <span className="text-xs text-gray-300 truncate leading-tight">
+                                  {num}. {mod.name}
+                                  {mod.subtitle && <span className="block text-[10px] text-gray-500 font-normal">{mod.subtitle}</span>}
+                                </span>
                                 <input
                                   type="checkbox"
                                   checked={prog.tactics}
