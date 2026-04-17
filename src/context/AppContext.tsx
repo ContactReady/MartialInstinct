@@ -202,6 +202,7 @@ interface AppContextType {
   updateAnzeigename: (name: string) => { ok: boolean; error?: string };
   updateDataVisibility: (prefs: NonNullable<Member['dataVisibility']>) => void;
   updateMemberCoreData: (memberId: string, data: { name?: string; firstName?: string; lastName?: string; birthDate?: string; memberId?: string }) => void;
+  updateMemberModuleProgress: (memberId: string, moduleProgress: Record<number, { tactics: boolean; combat: boolean }>) => void;
   connectWithCode: (code: string) => { success: boolean; memberName?: string };
 
   // Buddy System
@@ -704,7 +705,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           localStorage.setItem('mi-quiz-flag-enabled', String(settings.flag_system_enabled));
         }
         if (settings.badge_display_settings) {
-          localStorage.setItem('mi_badge_display', JSON.stringify(settings.badge_display_settings));
+          const bds = settings.badge_display_settings as Record<string, { scale: number; posX: number; posY: number }>;
+          setBadgeDisplayState(bds);
+          localStorage.setItem('mi_badge_display', JSON.stringify(bds));
         }
 
         // Modul-Reihenfolge anwenden
@@ -2497,6 +2500,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   }, []);
 
+  const updateMemberModuleProgress = useCallback((memberId: string, moduleProgress: Record<number, { tactics: boolean; combat: boolean }>) => {
+    const allTechs = getAllTechniques();
+    const curriculum = MODULES.slice(0, 10);
+    setMembers(prev => {
+      const next = prev.map(m => {
+        if (m.id !== memberId) return m;
+        const tp = { ...m.techniqueProgress };
+        curriculum.forEach((mod, idx) => {
+          const progress = moduleProgress[idx + 1];
+          const techs = allTechs.filter(t => t.moduleId === mod.id && t.isRequired);
+          techs.forEach(t => {
+            if (progress?.combat) {
+              tp[t.id] = { techniqueId: t.id, status: 'tac_passed', tacPassedAt: new Date(), techPassedAt: new Date(), lastPracticedAt: new Date() };
+            } else if (progress?.tactics) {
+              tp[t.id] = { techniqueId: t.id, status: 'tech_passed', techPassedAt: new Date(), lastPracticedAt: new Date() };
+            } else {
+              delete tp[t.id];
+            }
+          });
+        });
+        return { ...m, techniqueProgress: tp };
+      });
+      const updated = next.find(m => m.id === memberId);
+      if (updated) saveMember(updated);
+      return next;
+    });
+  }, []);
+
   const connectWithCode = (code: string): { success: boolean; memberName?: string } => {
     if (!currentUser) return { success: false };
     const normalizedCode = code.trim().toUpperCase();
@@ -2617,6 +2648,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const BADGE_SCALES_KEY = 'mi_badge_scales';
   const BADGE_DISPLAY_KEY = 'mi_badge_display';
   const PROFILE_IMG_KEY = 'mi_profile_img_display';
+
+  // Badge-Display-Settings als React State → Re-render wenn Supabase-Daten ankommen
+  const [badgeDisplayState, setBadgeDisplayState] = useState<Record<string, { scale: number; posX: number; posY: number }>>(() => {
+    try { return JSON.parse(localStorage.getItem(BADGE_DISPLAY_KEY) || '{}'); } catch { return {}; }
+  });
   const getProfileImgSettings = (memberId: string): { scale: number; posX: number; posY: number } => {
     const all: Record<string, { scale: number; posX: number; posY: number }> = JSON.parse(localStorage.getItem(PROFILE_IMG_KEY) || '{}');
     return all[memberId] ?? { scale: 150, posX: 150, posY: 150 };
@@ -2634,12 +2670,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setBadgeDisplaySettings(badgeId, { ...s, scale: Math.round(scale * 100) / 100 });
   };
   const getBadgeDisplaySettings = (badgeId: string): { scale: number; posX: number; posY: number } => {
-    const all: Record<string, { scale: number; posX: number; posY: number }> = JSON.parse(localStorage.getItem(BADGE_DISPLAY_KEY) || '{}');
-    return all[badgeId] ?? { scale: 1.15, posX: 50, posY: 50 };
+    return badgeDisplayState[badgeId] ?? { scale: 1.15, posX: 50, posY: 50 };
   };
   const setBadgeDisplaySettings = (badgeId: string, settings: { scale: number; posX: number; posY: number }): void => {
-    const all: Record<string, { scale: number; posX: number; posY: number }> = JSON.parse(localStorage.getItem(BADGE_DISPLAY_KEY) || '{}');
-    all[badgeId] = settings;
+    const all = { ...badgeDisplayState, [badgeId]: settings };
+    setBadgeDisplayState(all);
     localStorage.setItem(BADGE_DISPLAY_KEY, JSON.stringify(all));
     // Legacy key sync
     const scales: Record<string, number> = JSON.parse(localStorage.getItem(BADGE_SCALES_KEY) || '{}');
@@ -2734,6 +2769,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     updateAnzeigename,
     updateDataVisibility,
     updateMemberCoreData,
+    updateMemberModuleProgress,
     connectWithCode,
     generateBuddyCode,
     sendBuddyRequest,

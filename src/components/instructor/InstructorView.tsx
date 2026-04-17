@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'react-qr-code';
 import { useApp, MODULES, BLOCKS, COURSES } from '../../context/AppContext';
+import { getAllTechniques } from '../../data/modules';
 import { INSTRUCTOR_TRACKS } from '../../data/instructorCurriculum';
 import { getTopicsForModule } from '../../data/moduleTopics';
 import { ModuleOrder, RolePermissions, InstructorTabId, MemberTabId, JoinRequest, CreateMemberData } from '../../types';
@@ -112,6 +113,7 @@ export const InstructorView: React.FC = () => {
     createMemberFromRequest,
     rejectJoinRequest,
     updateMemberCoreData,
+    updateMemberModuleProgress,
     getBadgeDisplaySettings,
     setBadgeDisplaySettings,
     computeBadges,
@@ -182,6 +184,8 @@ export const InstructorView: React.FC = () => {
   const [coreDataPendingClose, setCoreDataPendingClose] = useState(false);
   const [streakSaveState, setStreakSaveState] = useState<'idle' | 'dirty' | 'saved'>('idle');
   const [streakPendingClose, setStreakPendingClose] = useState(false);
+  const [moduleProgressEdit, setModuleProgressEdit] = useState<Record<number, { tactics: boolean; combat: boolean }>>({});
+  const [moduleSaveState, setModuleSaveState] = useState<'idle' | 'dirty' | 'saved'>('idle');
 
   const [coreName, setCoreName] = useState('');
   const [coreFirstName, setCoreFirstName] = useState('');
@@ -2550,6 +2554,21 @@ export const InstructorView: React.FC = () => {
                               setCoreDataPendingClose(false);
                               setStreakSaveState('idle');
                               setStreakPendingClose(false);
+                              // Init module progress from member's techniqueProgress
+                              (() => {
+                                const allTechs = getAllTechniques();
+                                const currMods = MODULES.slice(0, 10);
+                                const initProgress: Record<number, { tactics: boolean; combat: boolean }> = {};
+                                currMods.forEach((mod, idx) => {
+                                  const reqTechs = allTechs.filter(t => t.moduleId === mod.id && t.isRequired);
+                                  if (!reqTechs.length) { initProgress[idx + 1] = { tactics: false, combat: false }; return; }
+                                  const tactics = reqTechs.every(t => { const s = m.techniqueProgress[t.id]?.status; return s === 'tech_passed' || s === 'tac_passed'; });
+                                  const combat = reqTechs.every(t => m.techniqueProgress[t.id]?.status === 'tac_passed');
+                                  initProgress[idx + 1] = { tactics, combat };
+                                });
+                                setModuleProgressEdit(initProgress);
+                              })();
+                              setModuleSaveState('idle');
                             }
                           }}
                           className={`text-xs px-2 py-1.5 rounded-lg transition-all ${isSettingsOpen ? 'bg-gray-600 text-white' : 'bg-gray-700/60 text-gray-400 hover:text-white hover:bg-gray-600'}`}
@@ -2663,9 +2682,64 @@ export const InstructorView: React.FC = () => {
                       </div>
                       </div>
 
+                      {/* ── Module Progress ── */}
+                      <div className="border-t border-gray-700/50 pt-3 space-y-2">
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-widest">📋 Module</p>
+                        <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 gap-y-1.5 items-center">
+                          <span className="text-xs text-gray-600">Modul</span>
+                          <span className="text-xs text-gray-600 text-center">T</span>
+                          <span className="text-xs text-gray-600 text-center">C</span>
+                          {MODULES.slice(0, 10).map((mod, idx) => {
+                            const num = idx + 1;
+                            const prog = moduleProgressEdit[num] ?? { tactics: false, combat: false };
+                            return (
+                              <React.Fragment key={mod.id}>
+                                <span className="text-xs text-gray-300 truncate">{num}. {mod.name}</span>
+                                <input
+                                  type="checkbox"
+                                  checked={prog.tactics}
+                                  onChange={e => {
+                                    const t = e.target.checked;
+                                    setModuleProgressEdit(prev => ({ ...prev, [num]: { tactics: t, combat: t ? prev[num]?.combat ?? false : false } }));
+                                    setModuleSaveState('dirty');
+                                  }}
+                                  className="w-4 h-4 accent-blue-500 cursor-pointer mx-auto"
+                                />
+                                <input
+                                  type="checkbox"
+                                  checked={prog.combat}
+                                  disabled={!prog.tactics}
+                                  onChange={e => {
+                                    const c = e.target.checked;
+                                    setModuleProgressEdit(prev => ({ ...prev, [num]: { tactics: true, combat: c } }));
+                                    setModuleSaveState('dirty');
+                                  }}
+                                  className="w-4 h-4 accent-red-500 cursor-pointer mx-auto disabled:opacity-30"
+                                />
+                              </React.Fragment>
+                            );
+                          })}
+                        </div>
+                        <p className="text-xs text-gray-600">T = Taktik bestanden · C = Combat bestanden</p>
+                        <button
+                          disabled={moduleSaveState !== 'dirty'}
+                          onClick={() => {
+                            updateMemberModuleProgress(m.id, moduleProgressEdit);
+                            setModuleSaveState('saved');
+                          }}
+                          className={`w-full py-2 rounded-lg text-sm font-medium transition-all ${
+                            moduleSaveState === 'saved' ? 'bg-green-600 text-white cursor-default' :
+                            moduleSaveState === 'dirty' ? 'bg-blue-600 hover:bg-blue-500 text-white' :
+                            'bg-gray-700 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          {moduleSaveState === 'saved' ? '✓ Gespeichert' : 'Module speichern'}
+                        </button>
+                      </div>
+
                       {/* Schließen */}
                       <button
-                        onClick={() => { setMemberSettingsOpen(null); setCoreDataSaveState('idle'); setStreakSaveState('idle'); setStreakPendingClose(false); setCoreDataPendingClose(false); }}
+                        onClick={() => { setMemberSettingsOpen(null); setCoreDataSaveState('idle'); setStreakSaveState('idle'); setStreakPendingClose(false); setCoreDataPendingClose(false); setModuleSaveState('idle'); }}
                         className="w-full py-2 rounded-lg text-xs text-gray-500 hover:text-gray-300 bg-gray-800 hover:bg-gray-700 transition-all"
                       >
                         Schließen
