@@ -44,6 +44,8 @@ import {
 } from '../types';
 import { MODULE_QUIZ_DATA } from '../data/memberQuizData';
 import { supabase } from '../lib/supabase';
+import { loadMembers, saveMember, createMemberInSupabase } from '../lib/memberService';
+import { loadAllSettings, saveSetting } from '../lib/settingsService';
 import { MEMBERS, CHECK_INS, BOARD_MESSAGES, NOTIFICATIONS, LOCATIONS, VIDEOS, COURSES } from '../data/mockData';
 import { MODULES, BLOCKS, getAllTechniques, getModuleById } from '../data/modules';
 
@@ -605,6 +607,105 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setCurrentUser(online);
     }
   }, [members, currentUser]);
+
+  // Supabase: Members + Join Requests beim Start laden (im Hintergrund — blockiert nicht)
+  useEffect(() => {
+    // Members
+    loadMembers().then(supabaseMembers => {
+      if (supabaseMembers.length === 0) return;
+      const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
+      const merged = supabaseMembers.map(m => imgs[m.id] ? { ...m, profileImageUrl: imgs[m.id] } : m);
+      setMembers(merged);
+      setCurrentUser(prev => {
+        if (!prev) return prev;
+        const fresh = merged.find(m => m.id === prev.id);
+        if (!fresh) return prev;
+        const updated = { ...fresh, onlineSince: prev.onlineSince, lastSeenAt: prev.lastSeenAt, profileImageUrl: prev.profileImageUrl || fresh.profileImageUrl };
+        localStorage.setItem('mi_current_user', JSON.stringify(updated));
+        return updated;
+      });
+    });
+    // Join Requests (nur für Admin relevant)
+    supabase.from('join_requests').select('*').order('submitted_at', { ascending: false }).then(({ data }) => {
+      if (!data || data.length === 0) return;
+      const loaded: JoinRequest[] = data.map(r => ({
+        id: r.id as string,
+        name: r.name as string,
+        email: r.email as string,
+        memberIdHint: r.member_id_hint as string | undefined,
+        course: r.course as string | undefined,
+        status: r.status as JoinRequest['status'],
+        submittedAt: new Date(r.submitted_at as string),
+        processedAt: r.processed_at ? new Date(r.processed_at as string) : undefined,
+      }));
+      setJoinRequests(loaded);
+      localStorage.setItem('mi-join-requests', JSON.stringify(loaded));
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Supabase: App-Einstellungen + Modul-Reihenfolge beim Start laden
+  useEffect(() => {
+    (async () => {
+      try {
+        const [settings, orderRes] = await Promise.all([
+          loadAllSettings(),
+          supabase.from('module_order').select('*'),
+        ]);
+
+        // App-Settings anwenden (Supabase überschreibt localStorage)
+        if (settings.permissions_config) {
+          setPermissionsConfig(settings.permissions_config as typeof permissionsConfig);
+          localStorage.setItem('mi-permissions-config', JSON.stringify(settings.permissions_config));
+        }
+        if (settings.tab_config) {
+          setTabConfig(settings.tab_config as typeof tabConfig);
+          localStorage.setItem('mi-tab-config', JSON.stringify(settings.tab_config));
+        }
+        if (settings.platform_config) {
+          setPlatformConfig(prev => ({ ...prev, ...(settings.platform_config as typeof platformConfig) }));
+          localStorage.setItem('mi-platform-config', JSON.stringify(settings.platform_config));
+        }
+        if (settings.topic_overrides) {
+          setTopicOverrides(settings.topic_overrides as Record<string, string>);
+          localStorage.setItem('mi-topic-overrides', JSON.stringify(settings.topic_overrides));
+        }
+        if (settings.module_name_overrides) {
+          setModuleNameOverrides(settings.module_name_overrides as Record<string, string>);
+          localStorage.setItem('mi-module-name-overrides', JSON.stringify(settings.module_name_overrides));
+        }
+        if (settings.module_subtitle_overrides) {
+          setModuleSubtitleOverrides(settings.module_subtitle_overrides as Record<string, string>);
+          localStorage.setItem('mi-module-subtitle-overrides', JSON.stringify(settings.module_subtitle_overrides));
+        }
+        if (settings.question_overrides) {
+          setQuestionOverrides(settings.question_overrides as Record<string, Partial<QuizQuestion>>);
+          localStorage.setItem('mi-quiz-overrides', JSON.stringify(settings.question_overrides));
+        }
+        if (settings.flag_system_enabled !== undefined) {
+          setFlagSystemEnabled(settings.flag_system_enabled as boolean);
+          localStorage.setItem('mi-quiz-flag-enabled', String(settings.flag_system_enabled));
+        }
+
+        // Modul-Reihenfolge anwenden
+        if (!orderRes.error && orderRes.data && orderRes.data.length > 0) {
+          setModuleOrder(orderRes.data.map((r: { module_id: string; block_level: string; position: number }) => ({
+            moduleId: r.module_id,
+            blockLevel: r.block_level as ModuleLevel,
+            position: r.position,
+          })));
+        }
+      } catch { /* silent — localStorage-Fallback ist aktiv */ }
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Supabase: currentUser-Änderungen automatisch speichern (2s Debounce)
+  useEffect(() => {
+    if (!currentUser) return;
+    const timer = setTimeout(() => {
+      saveMember(currentUser);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [currentUser]);
 
   // Heartbeat: lastSeenAt alle 60s aktualisieren (→ "online" = < 3 Min)
   useEffect(() => {
@@ -1387,11 +1488,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updatePermissionsConfig = useCallback((config: PermissionsConfig) => {
     setPermissionsConfig(config);
     localStorage.setItem('mi-permissions-config', JSON.stringify(config));
+    saveSetting('permissions_config', config);
   }, []);
 
   const updateTabConfig = useCallback((config: PlatformTabConfig) => {
     setTabConfig(config);
     localStorage.setItem('mi-tab-config', JSON.stringify(config));
+    saveSetting('tab_config', config);
   }, []);
 
   const updateNotificationPrefs = useCallback((prefs: { sound: boolean; email: boolean }) => {
@@ -1978,6 +2081,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const toggleFlagSystem = useCallback((enabled: boolean) => {
     setFlagSystemEnabled(enabled);
     localStorage.setItem('mi-quiz-flag-enabled', String(enabled));
+    saveSetting('flag_system_enabled', enabled);
   }, []);
 
   // ============================================
@@ -1988,6 +2092,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setQuestionOverrides(prev => {
       const next = { ...prev, [questionId]: { ...(prev[questionId] ?? {}), ...overrides } };
       localStorage.setItem('mi-quiz-overrides', JSON.stringify(next));
+      saveSetting('question_overrides', next);
       return next;
     });
   }, []);
@@ -2007,6 +2112,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setTopicOverrides(prev => {
       const next = { ...prev, [topicId]: text };
       localStorage.setItem('mi-topic-overrides', JSON.stringify(next));
+      saveSetting('topic_overrides', next);
       return next;
     });
   }, []);
@@ -2022,6 +2128,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setModuleNameOverrides(prev => {
       const next = { ...prev, [moduleId]: name };
       localStorage.setItem('mi-module-name-overrides', JSON.stringify(next));
+      saveSetting('module_name_overrides', next);
       return next;
     });
   }, []);
@@ -2043,6 +2150,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setModuleSubtitleOverrides(prev => {
       const next = { ...prev, [moduleId]: subtitle };
       localStorage.setItem('mi-module-subtitle-overrides', JSON.stringify(next));
+      saveSetting('module_subtitle_overrides', next);
       return next;
     });
   }, []);
@@ -2056,6 +2164,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updatePlatformConfig = useCallback((config: PlatformConfig) => {
     localStorage.setItem('mi-platform-config', JSON.stringify(config));
     setPlatformConfig(config);
+    saveSetting('platform_config', config);
   }, []);
 
   // ============================================
@@ -2217,6 +2326,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       localStorage.setItem('mi-join-requests', JSON.stringify(updated));
       return updated;
     });
+    // In Supabase speichern (anon policy erlaubt Insert)
+    supabase.from('join_requests').insert({
+      id: req.id,
+      name: req.name,
+      email: req.email,
+      member_id_hint: req.memberIdHint || null,
+      course: req.course || null,
+      status: 'pending',
+      submitted_at: req.submittedAt.toISOString(),
+    }).then(({ error }) => {
+      if (error) console.warn('Join Request Supabase-Fehler:', error.message);
+    });
   }, []);
 
   const createMemberFromRequest = useCallback((data: CreateMemberData) => {
@@ -2260,22 +2381,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     setMembers(prev => [...prev, newMember]);
 
+    // In Supabase speichern (Auth + DB)
+    createMemberInSupabase(data.email, data.password, newMember).then(result => {
+      if (!result.ok) {
+        console.warn('Supabase-Speicherung fehlgeschlagen:', result.error);
+      }
+    });
+
     // Join Request als approved markieren
     if (data.joinRequestId) {
+      const now = new Date();
       setJoinRequests(prev => {
-        const updated = prev.map(r => r.id === data.joinRequestId ? { ...r, status: 'approved' as const, processedAt: new Date() } : r);
+        const updated = prev.map(r => r.id === data.joinRequestId ? { ...r, status: 'approved' as const, processedAt: now } : r);
         localStorage.setItem('mi-join-requests', JSON.stringify(updated));
         return updated;
       });
+      supabase.from('join_requests').update({ status: 'approved', processed_at: now.toISOString() }).eq('id', data.joinRequestId);
     }
   }, []);
 
   const rejectJoinRequest = useCallback((id: string) => {
+    const now = new Date();
     setJoinRequests(prev => {
-      const updated = prev.map(r => r.id === id ? { ...r, status: 'rejected' as const, processedAt: new Date() } : r);
+      const updated = prev.map(r => r.id === id ? { ...r, status: 'rejected' as const, processedAt: now } : r);
       localStorage.setItem('mi-join-requests', JSON.stringify(updated));
       return updated;
     });
+    supabase.from('join_requests').update({ status: 'rejected', processed_at: now.toISOString() }).eq('id', id);
   }, []);
 
   const updateStopTheBleed = useCallback((memberId: string, certified: boolean) => {
