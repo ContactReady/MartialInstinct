@@ -2299,9 +2299,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // ============================================
 
   const updateMemberRole = useCallback((memberId: string, role: InstructorRole) => {
-    setMembers(prev => prev.map(m =>
-      m.id === memberId ? { ...m, role } : m
-    ));
+    setMembers(prev => {
+      const next = prev.map(m => m.id === memberId ? { ...m, role } : m);
+      const updated = next.find(m => m.id === memberId);
+      if (updated) saveMember(updated);
+      return next;
+    });
     if (currentUser?.id === memberId) {
       setCurrentUser(prev => prev ? { ...prev, role } : null);
     }
@@ -2685,9 +2688,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const updateAdminAccess = useCallback((memberId: string, hasAccess: boolean) => {
-    setMembers(prev => prev.map(m =>
-      m.id === memberId ? { ...m, adminAccess: hasAccess } : m
-    ));
+    setMembers(prev => {
+      const next = prev.map(m => m.id === memberId ? { ...m, adminAccess: hasAccess } : m);
+      const updated = next.find(m => m.id === memberId);
+      if (updated) saveMember(updated);
+      return next;
+    });
     if (currentUser?.id === memberId) {
       setCurrentUser(prev => prev ? { ...prev, adminAccess: hasAccess } : null);
     }

@@ -2326,7 +2326,7 @@ export const InstructorView: React.FC = () => {
               {/* Offene Beitrittsanfragen Banner */}
               {pendingJoin > 0 && (
                 <button
-                  onClick={() => setAdminSubTab('bewerbungen')}
+                  onClick={() => { setActiveTabPersisted('dashboard'); setDashboardSubTab('anfragen'); setRequestSubTab('beitritt'); }}
                   className="w-full bg-yellow-900/30 border border-yellow-700/50 rounded-xl px-4 py-3 flex items-center justify-between hover:bg-yellow-900/40 transition-colors"
                 >
                   <div className="flex items-center gap-2">
