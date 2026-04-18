@@ -730,21 +730,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
     // Check-ins: nur heutige pending/approved laden
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-    supabase.from('check_ins').select('*').gte('requested_at', todayStart.toISOString()).then(({ data }) => {
-      if (!data || data.length === 0) return;
-      const loaded: CheckIn[] = data.map(r => ({
-        id: r.id as string,
-        memberId: r.member_id as string,
-        memberName: r.member_name as string,
-        locationId: r.location_id as string | undefined,
-        status: r.status as CheckIn['status'],
-        requestedAt: new Date(r.requested_at as string),
-        approvedById: r.approved_by_id as string | undefined,
-        approvedByName: r.approved_by_name as string | undefined,
-        approvedAt: r.approved_at ? new Date(r.approved_at as string) : undefined,
-      }));
-      setCheckIns(loaded);
+    const mapCheckIn = (r: Record<string, unknown>): CheckIn => ({
+      id: r.id as string,
+      memberId: r.member_id as string,
+      memberName: r.member_name as string,
+      locationId: r.location_id as string | undefined,
+      status: r.status as CheckIn['status'],
+      requestedAt: new Date(r.requested_at as string),
+      approvedById: r.approved_by_id as string | undefined,
+      approvedByName: r.approved_by_name as string | undefined,
+      approvedAt: r.approved_at ? new Date(r.approved_at as string) : undefined,
     });
+    supabase.from('check_ins').select('*').gte('requested_at', todayStart.toISOString()).then(({ data }) => {
+      if (data && data.length > 0) setCheckIns(data.map(mapCheckIn));
+    });
+    // Realtime: neue Check-ins sofort anzeigen
+    const channel = supabase.channel('check_ins_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'check_ins' }, payload => {
+        if (payload.eventType === 'INSERT') {
+          setCheckIns(prev => {
+            if (prev.some(c => c.id === payload.new.id)) return prev;
+            return [...prev, mapCheckIn(payload.new as Record<string, unknown>)];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          setCheckIns(prev => prev.map(c => c.id === payload.new.id ? mapCheckIn(payload.new as Record<string, unknown>) : c));
+        } else if (payload.eventType === 'DELETE') {
+          setCheckIns(prev => prev.filter(c => c.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Supabase: App-Einstellungen + Modul-Reihenfolge beim Start laden

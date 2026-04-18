@@ -313,7 +313,7 @@ export const InstructorView: React.FC = () => {
         case 'training':  return true;
         case 'community': return true;
         case 'profil':    return true;
-        case 'admin':     return hasAdminAccess(currentUser);
+        case 'admin':     return currentUser?.role === 'admin';
         default:          return false;
       }
     })();
