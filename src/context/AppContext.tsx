@@ -50,6 +50,43 @@ import { MEMBERS, CHECK_INS, BOARD_MESSAGES, NOTIFICATIONS, LOCATIONS, VIDEOS, C
 import { MODULES, BLOCKS, getAllTechniques, getModuleById } from '../data/modules';
 
 // ============================================
+// LOCALSTORAGE QUOTA SCHUTZ
+// ============================================
+
+// Beim ersten Import: prüfe ob localStorage voll ist und räume auf
+try {
+  localStorage.setItem('__quota_test__', '1');
+  localStorage.removeItem('__quota_test__');
+} catch {
+  // localStorage voll — lösche große/nicht-kritische Einträge
+  const clearTargets = ['mi_profile_img_url'];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.startsWith('mi-quiz-') || key.startsWith('mi-board-'))) {
+      clearTargets.push(key);
+    }
+  }
+  clearTargets.forEach(k => localStorage.removeItem(k));
+}
+
+// Wrapper für localStorage.setItem mit automatischem Cleanup
+function safeLS(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Quota überschritten — räume auf und versuche erneut
+    localStorage.removeItem('mi_profile_img_url');
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('mi-quiz-') || k.startsWith('mi-board-'))) {
+        localStorage.removeItem(k);
+      }
+    }
+    try { localStorage.setItem(key, value); } catch { /* aufgegeben */ }
+  }
+}
+
+// ============================================
 // CONTEXT TYPE
 // ============================================
 
@@ -589,19 +626,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error || !data.user) return { ok: false, debug: `Auth-Fehler: ${error?.message ?? 'kein User'}` };
 
-      // localStorage-Quota freimachen: große Einträge leeren
-      const safeSetItem = (key: string, value: string) => {
-        try {
-          localStorage.setItem(key, value);
-        } catch {
-          // Quota überschritten — große Daten löschen und nochmal versuchen
-          localStorage.removeItem('mi_profile_img_url');
-          localStorage.removeItem('mi-quiz-progress');
-          localStorage.removeItem('mi-board-read');
-          try { localStorage.setItem(key, value); } catch { /* ignorieren */ }
-        }
-      };
-
       // Alle Members aus Supabase laden (Session ist jetzt aktiv)
       const supabaseMembers = await loadMembers();
       const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
@@ -613,7 +637,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (member) {
           const now = new Date();
           const online = { ...member, onlineSince: now, lastSeenAt: now };
-          safeSetItem('mi_current_user', JSON.stringify(online));
+          safeLS('mi_current_user', JSON.stringify(online));
           setCurrentUser(online);
           setMembers(prev => prev.map(m => m.id === member.id ? online : m));
           return { ok: true };
@@ -626,7 +650,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (member) {
         const now = new Date();
         const online = { ...member, onlineSince: now, lastSeenAt: now, ...(imgs[member.id] ? { profileImageUrl: imgs[member.id] } : {}) };
-        safeSetItem('mi_current_user', JSON.stringify(online));
+        safeLS('mi_current_user', JSON.stringify(online));
         setCurrentUser(online);
         setMembers(prev => prev.some(m => m.id === member.id) ? prev.map(m => m.id === member.id ? online : m) : [...prev, online]);
         return { ok: true };
@@ -735,40 +759,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // App-Settings anwenden (Supabase überschreibt localStorage)
         if (settings.permissions_config) {
           setPermissionsConfig(settings.permissions_config as typeof permissionsConfig);
-          localStorage.setItem('mi-permissions-config', JSON.stringify(settings.permissions_config));
+          safeLS('mi-permissions-config', JSON.stringify(settings.permissions_config));
         }
         if (settings.tab_config) {
           setTabConfig(settings.tab_config as typeof tabConfig);
-          localStorage.setItem('mi-tab-config', JSON.stringify(settings.tab_config));
+          safeLS('mi-tab-config', JSON.stringify(settings.tab_config));
         }
         if (settings.platform_config) {
           setPlatformConfig(prev => ({ ...prev, ...(settings.platform_config as typeof platformConfig) }));
-          localStorage.setItem('mi-platform-config', JSON.stringify(settings.platform_config));
+          safeLS('mi-platform-config', JSON.stringify(settings.platform_config));
         }
         if (settings.topic_overrides) {
           setTopicOverrides(settings.topic_overrides as Record<string, string>);
-          localStorage.setItem('mi-topic-overrides', JSON.stringify(settings.topic_overrides));
+          safeLS('mi-topic-overrides', JSON.stringify(settings.topic_overrides));
         }
         if (settings.module_name_overrides) {
           setModuleNameOverrides(settings.module_name_overrides as Record<string, string>);
-          localStorage.setItem('mi-module-name-overrides', JSON.stringify(settings.module_name_overrides));
+          safeLS('mi-module-name-overrides', JSON.stringify(settings.module_name_overrides));
         }
         if (settings.module_subtitle_overrides) {
           setModuleSubtitleOverrides(settings.module_subtitle_overrides as Record<string, string>);
-          localStorage.setItem('mi-module-subtitle-overrides', JSON.stringify(settings.module_subtitle_overrides));
+          safeLS('mi-module-subtitle-overrides', JSON.stringify(settings.module_subtitle_overrides));
         }
         if (settings.question_overrides) {
           setQuestionOverrides(settings.question_overrides as Record<string, Partial<QuizQuestion>>);
-          localStorage.setItem('mi-quiz-overrides', JSON.stringify(settings.question_overrides));
+          safeLS('mi-quiz-overrides', JSON.stringify(settings.question_overrides));
         }
         if (settings.flag_system_enabled !== undefined) {
           setFlagSystemEnabled(settings.flag_system_enabled as boolean);
-          localStorage.setItem('mi-quiz-flag-enabled', String(settings.flag_system_enabled));
+          safeLS('mi-quiz-flag-enabled', String(settings.flag_system_enabled));
         }
         if (settings.badge_display_settings) {
           const bds = settings.badge_display_settings as Record<string, { scale: number; posX: number; posY: number }>;
           setBadgeDisplayState(bds);
-          localStorage.setItem('mi_badge_display', JSON.stringify(bds));
+          safeLS('mi_badge_display', JSON.stringify(bds));
         }
 
         // Modul-Reihenfolge anwenden
