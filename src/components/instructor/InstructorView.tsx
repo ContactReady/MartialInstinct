@@ -141,7 +141,12 @@ export const InstructorView: React.FC = () => {
     getProfileImgSettings,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<Tab>(() => (localStorage.getItem('mi_active_tab_instructor') as Tab) || 'dashboard');
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const saved = (localStorage.getItem('mi_active_tab_instructor') as Tab) || 'dashboard';
+    // Admin-Tab nur für Admin zugänglich — bei Rollenwechsel auf dashboard zurückfallen
+    if (saved === 'admin' && !hasAdminAccess(currentUser)) return 'dashboard';
+    return saved;
+  });
   const setActiveTabPersisted = (tab: Tab) => { setActiveTab(tab); localStorage.setItem('mi_active_tab_instructor', tab); };
   const [dashboardSubTab, setDashboardSubTab] = useState<DashboardSubTab>('fortschritt');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
