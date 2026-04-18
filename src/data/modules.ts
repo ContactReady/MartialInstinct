@@ -199,6 +199,28 @@ const module10: Module = {
 };
 
 // ============================================
+// CONTACT READY - WEAPONS II (Module 10)
+// ============================================
+
+const moduleWeapons2: Module = {
+  id: 'mod-weapons-2',
+  number: 10,
+  name: 'Weapons II',
+  subtitle: 'Letale Waffen & Bewaffneter Kampf',
+  level: 'contact',
+  description: 'Messer-Offense, bewaffneter Nahkampf, Waffen entwinden',
+  icon: '🔪',
+  requiredTechniquesPercent: 80,
+  techniques: [
+    createTechnique('t-w2-1', 'Messer-Offense', 'mod-weapons-2', 'contact', 1, true),
+    createTechnique('t-w2-2', 'Bewaffneter Nahkampf', 'mod-weapons-2', 'contact', 2, true),
+    createTechnique('t-w2-3', 'Waffe entwinden', 'mod-weapons-2', 'contact', 3, true),
+    createTechnique('t-w2-4', 'Kombinierte Waffen-Szenarien', 'mod-weapons-2', 'contact', 4, true),
+    createTechnique('t-w2-5', 'Waffen unter Druck', 'mod-weapons-2', 'contact', 5, true),
+  ]
+};
+
+// ============================================
 // CONTACT READY - OPERATOR (Module 11-13)
 // ============================================
 
@@ -264,6 +286,7 @@ export const MODULES: Module[] = [
   module7,
   module9,
   module10,
+  moduleWeapons2,
   module11,
   module12,
   module13

@@ -27,7 +27,7 @@ const CURRICULUM_MODULES = BLOCKS
   .filter(b => b.id !== 'assistant_instructor' && !b.adminOnly)
   .flatMap(b => b.moduleIds.map(id => MODULES.find(m => m.id === id)!))
   .filter(Boolean)
-  .slice(0, 9);
+  .slice(0, 10);
 
 interface CertificateViewProps {
   onClose: () => void;

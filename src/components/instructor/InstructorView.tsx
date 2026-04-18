@@ -815,7 +815,7 @@ export const InstructorView: React.FC = () => {
             return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) + `, ${time}`;
           };
           // Modul-Abschluss (Module 1–10, dedupliziert nach Nummer)
-          const listCurrMods = MODULES.filter(m => m.number <= 9);
+          const listCurrMods = MODULES.filter(m => m.number <= 10);
           const currModNums = [...new Set(listCurrMods.map(m => m.number))]; // [1..10]
           const getMemberModsDone = (member: Member) => {
             let tactics = 0, combat = 0;
@@ -2288,7 +2288,7 @@ export const InstructorView: React.FC = () => {
           allM.forEach(m => { levelCounts[m.currentLevel] = (levelCounts[m.currentLevel] ?? 0) + 1; });
 
           // Modul-Abschluss (Module 1–10, dedupliziert nach Nummer)
-          const currMods = MODULES.filter(m => m.number <= 9);
+          const currMods = MODULES.filter(m => m.number <= 10);
           const currModNumsA = [...new Set(currMods.map(m => m.number))];
 
           const getModDone = (member: Member, modId: string) => {
@@ -2594,7 +2594,7 @@ export const InstructorView: React.FC = () => {
                               // Init module progress from member's techniqueProgress
                               (() => {
                                 const allTechs = getAllTechniques();
-                                const currMods = MODULES.filter(m => m.number <= 9);
+                                const currMods = MODULES.filter(m => m.number <= 10);
                                 const initProgress: Record<number, { tactics: boolean; combat: boolean; instructor: boolean }> = {};
                                 currMods.forEach((mod, idx) => {
                                   const reqTechs = allTechs.filter(t => t.moduleId === mod.id && t.isRequired);
@@ -2728,7 +2728,7 @@ export const InstructorView: React.FC = () => {
                           <span className="text-xs text-gray-600 text-center">T</span>
                           <span className="text-xs text-gray-600 text-center">C</span>
                           <span className="text-xs text-gray-600 text-center">I</span>
-                          {MODULES.filter(m => m.number <= 9).map((mod, idx) => {
+                          {MODULES.filter(m => m.number <= 10).map((mod, idx) => {
                             const num = idx + 1;
                             const prog = moduleProgressEdit[num] ?? { tactics: false, combat: false, instructor: false };
                             const isInstructor = m.role === 'instructor' || m.role === 'admin';
@@ -2782,7 +2782,7 @@ export const InstructorView: React.FC = () => {
                           disabled={moduleSaveState !== 'dirty'}
                           onClick={() => {
                             updateMemberModuleProgress(m.id, moduleProgressEdit);
-                            const instructorModIds = MODULES.filter(m2 => m2.number <= 9).filter((_mod, idx) => moduleProgressEdit[idx + 1]?.instructor).map(mod => mod.id);
+                            const instructorModIds = MODULES.filter(m2 => m2.number <= 10).filter((_mod, idx) => moduleProgressEdit[idx + 1]?.instructor).map(mod => mod.id);
                             updateMemberInstructorModules(m.id, instructorModIds);
                             setModuleSaveState('saved');
                           }}

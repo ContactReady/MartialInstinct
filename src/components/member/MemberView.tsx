@@ -548,7 +548,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                             : tacDone  ? 'bg-gray-600/40 text-gray-300'
                             : 'bg-gray-700 text-gray-500'
                           }`}>
-                            {fullyDone ? '✓' : idx + 1}
+                            {fullyDone ? '✓' : mod.number}
                           </div>
 
                           {/* Modul-Name */}

@@ -2549,7 +2549,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const techniqueProgress: Member['techniqueProgress'] = {};
     const allTechs = getAllTechniques();
     // Finde die ersten 9 Module in Reihenfolge
-    const curriculum = MODULES.filter(m => m.number <= 9);
+    const curriculum = MODULES.filter(m => m.number <= 10);
     Object.entries(data.moduleProgress).forEach(([moduleNumStr, progress]) => {
       const moduleNum = parseInt(moduleNumStr) - 1; // 0-indexed
       const mod = curriculum[moduleNum];
@@ -2682,7 +2682,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateMemberModuleProgress = useCallback((memberId: string, moduleProgress: Record<number, { tactics: boolean; combat: boolean }>) => {
     const allTechs = getAllTechniques();
-    const curriculum = MODULES.filter(m => m.number <= 9);
+    const curriculum = MODULES.filter(m => m.number <= 10);
     setMembers(prev => {
       const next = prev.map(m => {
         if (m.id !== memberId) return m;

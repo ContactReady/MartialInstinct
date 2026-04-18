@@ -7,12 +7,12 @@ import React, { useState } from 'react';
 import { MODULES, BLOCKS } from '../../context/AppContext';
 import { Member, CheckIn, LEVEL_DISPLAY } from '../../types';
 
-// Curriculum: erste 9 Module über alle Blöcke (wie im Zertifikat)
+// Curriculum: erste 10 Module über alle Blöcke (wie im Zertifikat)
 const CURRICULUM_BLOCKS = BLOCKS.filter(b => b.id !== 'assistant_instructor' && !b.adminOnly);
 const CURRICULUM_MODULES = CURRICULUM_BLOCKS
   .flatMap(b => b.moduleIds.map(id => MODULES.find(m => m.id === id)!))
   .filter(Boolean)
-  .slice(0, 9);
+  .slice(0, 10);
 
 // Modul-Fortschritt berechnen
 function getModProgress(member: Member, moduleId: string): { tactics: boolean; combat: boolean } {
