@@ -101,6 +101,7 @@ export interface Block {
   moduleIds: string[];
   requiresApplication: boolean;
   adminOnly?: boolean;  // Block nur für Admins sichtbar
+  disabled?: boolean;   // Block deaktiviert (nicht angezeigt)
 }
 
 // Technik-Fortschritt eines Mitglieds (zwei Prüfebenen)
@@ -608,6 +609,7 @@ export interface ContentTechnique {
 export interface ModuleSettings {
   moduleId: string;
   quizCount: number;
+  disabled?: boolean;
 }
 
 // ── Quiz-Flagging ─────────────────────────────────────────────────────────────

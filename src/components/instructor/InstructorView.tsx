@@ -109,6 +109,10 @@ export const InstructorView: React.FC = () => {
     saveQuizQuestion,
     deleteQuizQuestion,
     saveModuleSettings,
+    moduleSettings,
+    blockSettings,
+    effectiveBlocks,
+    saveBlockSettings,
     joinRequests,
     createMemberFromRequest,
     rejectJoinRequest,
@@ -3086,6 +3090,39 @@ export const InstructorView: React.FC = () => {
             )}
             </div>
 
+            {/* ── Kapitel-Verwaltung ── */}
+            <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
+              <TrainingAccordionHeader id="training_kapitel" title="Kapitel-Verwaltung" subtitle="Namen ändern · Kapitel aktivieren oder deaktivieren." />
+              {plattformOpen['training_kapitel'] && (
+                <div className="border-t border-gray-700/50 p-3 space-y-2">
+                  <p className="text-gray-600 text-xs pb-1">Deaktivierte Kapitel sind für Member unsichtbar. Name-Änderung wirkt sofort.</p>
+                  {effectiveBlocks.filter(b => !b.adminOnly).map(block => (
+                    <div key={block.id} className="bg-gray-900/50 rounded-lg border border-gray-700/50 p-3 flex items-center gap-3">
+                      <span className="text-xl flex-shrink-0">{block.icon}</span>
+                      <input
+                        defaultValue={block.name}
+                        onBlur={e => {
+                          const val = e.target.value.trim();
+                          if (val && val !== block.name) saveBlockSettings(block.id, { name: val });
+                        }}
+                        className="flex-1 bg-transparent text-sm text-white border-b border-transparent focus:border-gray-500 outline-none min-w-0"
+                        placeholder={block.name}
+                      />
+                      <div className="text-gray-600 text-xs flex-shrink-0 w-16 text-right">
+                        {(MODULES.filter(m => m.level === block.level && !moduleSettings[m.id]?.disabled).length)} Module
+                      </div>
+                      <button
+                        onClick={() => saveBlockSettings(block.id, { disabled: !blockSettings[block.id]?.disabled })}
+                        className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors ${blockSettings[block.id]?.disabled ? 'bg-red-600' : 'bg-green-600'}`}
+                      >
+                        <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${blockSettings[block.id]?.disabled ? 'left-1' : 'left-6'}`} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* ── Modul-Inhalt bearbeiten ── */}
             <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
               <TrainingAccordionHeader id="training_inhalt" title="Modul-Inhalt bearbeiten" subtitle="Techniken und Quiz-Fragen pro Modul pflegen." />
@@ -3234,6 +3271,25 @@ export const InstructorView: React.FC = () => {
                           <button onClick={() => handleQuizCountChange(Math.min(moduleQuestions.length || 50, (contentModuleId ? getQuizCountForModule(contentModuleId) : contentQuizCount) + 1))} className="w-7 h-7 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">+</button>
                         </div>
                       </div>
+
+                      {/* Modul deaktivieren */}
+                      {contentModuleId && (
+                        <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-gray-300 text-xs font-semibold">Modul deaktivieren</div>
+                            <div className="text-gray-600 text-xs">Wird in der Lernansicht ausgeblendet</div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const isDisabled = moduleSettings[contentModuleId]?.disabled ?? false;
+                              saveModuleSettings(contentModuleId, getQuizCountForModule(contentModuleId), !isDisabled);
+                            }}
+                            className={`relative w-11 h-6 rounded-full transition-colors ${moduleSettings[contentModuleId]?.disabled ? 'bg-red-600' : 'bg-gray-600'}`}
+                          >
+                            <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${moduleSettings[contentModuleId]?.disabled ? 'left-6' : 'left-1'}`} />
+                          </button>
+                        </div>
+                      )}
 
                       <div className="flex gap-2">
                         <button onClick={() => openEditQuestion('new')} className="flex-1 text-xs bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg">+ Neue Frage</button>

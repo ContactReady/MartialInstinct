@@ -177,7 +177,10 @@ interface AppContextType {
   saveQuizQuestion: (q: QuizQuestion & { moduleId: string }) => Promise<void>;
   deleteQuizQuestion: (id: string) => Promise<void>;
   reorderQuizQuestions: (moduleId: string, orderedIds: string[]) => Promise<void>;
-  saveModuleSettings: (moduleId: string, quizCount: number) => Promise<void>;
+  saveModuleSettings: (moduleId: string, quizCount: number, disabled?: boolean) => Promise<void>;
+  blockSettings: Record<string, { name?: string; disabled?: boolean }>;
+  effectiveBlocks: import('../types').Block[];
+  saveBlockSettings: (blockId: string, overrides: { name?: string; disabled?: boolean }) => Promise<void>;
 
   // Helpers
   // Trainingsreport
@@ -296,7 +299,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [authLoading] = useState(false);
 
   const [checkIns, setCheckIns] = useState<CheckIn[]>(CHECK_INS);
-  const [boardMessages, setBoardMessages] = useState<BoardMessage[]>(BOARD_MESSAGES);
+  const [boardMessages, setBoardMessages] = useState<BoardMessage[]>(() => {
+    try {
+      const saved = localStorage.getItem('mi-board-read');
+      if (!saved) return BOARD_MESSAGES;
+      const readMap: Record<string, string[]> = JSON.parse(saved);
+      return BOARD_MESSAGES.map(msg => ({
+        ...msg,
+        readBy: Array.from(new Set([...(msg.readBy ?? []), ...(readMap[msg.id] ?? [])]))
+      }));
+    } catch { return BOARD_MESSAGES; }
+  });
   const [boardRepliesGloballyEnabled, setBoardRepliesGloballyEnabledState] = useState<boolean>(() => {
     try { const saved = localStorage.getItem('mi-board-replies-enabled'); return saved === null ? true : saved === 'true'; } catch { return true; }
   });
@@ -331,6 +344,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return questions;
   });
   const [moduleSettings, setModuleSettings] = useState<Record<string, ModuleSettings>>({});
+  // blockSettings: Overrides für Kapitel (Name, deaktiviert)
+  const [blockSettings, setBlockSettings] = useState<Record<string, { name?: string; disabled?: boolean }>>(() => {
+    try {
+      const saved = localStorage.getItem('mi-block-settings');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
   const [permissionsConfig, setPermissionsConfig] = useState<PermissionsConfig>(() => {
     try {
       const saved = localStorage.getItem('mi-permissions-config');
@@ -500,7 +520,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         let techniques: ContentTechnique[] = (techRes.data ?? []).map(mapTech);
         let questions: QuizQuestion[] = (quizRes.data ?? []).map(mapQ);
         const settings: Record<string, ModuleSettings> = {};
-        (settRes.data ?? []).forEach((r: { module_id: string; quiz_count: number }) => { settings[r.module_id] = { moduleId: r.module_id, quizCount: r.quiz_count }; });
+        (settRes.data ?? []).forEach((r: { module_id: string; quiz_count: number; disabled?: boolean }) => { settings[r.module_id] = { moduleId: r.module_id, quizCount: r.quiz_count, disabled: r.disabled ?? false }; });
 
         // Auto-Seed: falls Tabellen leer, hardcoded Daten einspielen
         if (techniques.length === 0) {
@@ -770,6 +790,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => clearInterval(interval);
   }, [currentUser?.id]);
 
+  // Check-in Polling: alle 20s heutige Check-ins aus Supabase laden (Cross-Device)
+  useEffect(() => {
+    if (!currentUser) return;
+    const fetchCheckIns = async () => {
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const { data } = await supabase.from('check_ins').select('*').gte('requested_at', todayStart.toISOString());
+      if (data && data.length > 0) {
+        setCheckIns(data.map(r => ({
+          id: r.id as string,
+          memberId: r.member_id as string,
+          memberName: r.member_name as string,
+          locationId: r.location_id as string | undefined,
+          status: r.status as CheckIn['status'],
+          requestedAt: new Date(r.requested_at as string),
+          approvedById: r.approved_by_id as string | undefined,
+          approvedByName: r.approved_by_name as string | undefined,
+          approvedAt: r.approved_at ? new Date(r.approved_at as string) : undefined,
+        })));
+      }
+    };
+    fetchCheckIns();
+    const interval = setInterval(fetchCheckIns, 20_000);
+    return () => clearInterval(interval);
+  }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ============================================
   // CHECK-INS
   // ============================================
@@ -777,50 +822,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const requestCheckIn = useCallback(() => {
     if (!currentUser) return;
 
-    // Guard: kein doppelter Check-in für heute
+    // Guard: kein doppelter Check-in für heute (außerhalb setState)
     const todayStr = new Date().toDateString();
-    setCheckIns(prev => {
-      const alreadyExists = prev.some(
-        c => c.memberId === currentUser.id &&
-             new Date(c.requestedAt).toDateString() === todayStr &&
-             (c.status === 'pending' || c.status === 'approved')
-      );
-      if (alreadyExists) return prev;
+    const alreadyExists = checkIns.some(
+      c => c.memberId === currentUser.id &&
+           new Date(c.requestedAt).toDateString() === todayStr &&
+           (c.status === 'pending' || c.status === 'approved')
+    );
+    if (alreadyExists) return;
 
-      const newCheckIn: CheckIn = {
-        id: `checkin-${Date.now()}`,
-        memberId: currentUser.id,
-        memberName: currentUser.name,
-        locationId: currentUser.locationId,
-        requestedAt: new Date(),
-        status: 'pending'
-      };
+    const newCheckIn: CheckIn = {
+      id: `checkin-${Date.now()}`,
+      memberId: currentUser.id,
+      memberName: currentUser.name,
+      locationId: currentUser.locationId,
+      requestedAt: new Date(),
+      status: 'pending'
+    };
 
-      // Notify instructors
-      const instructorNotification: Notification = {
-        id: `notif-checkin-${Date.now()}`,
-        oduserId: 'all-instructors',
-        type: 'checkin',
-        title: 'Check-in Anfrage',
-        message: `${currentUser.name} möchte einchecken`,
-        read: false,
-        createdAt: new Date()
-      };
-      setNotifications(n => [...n, instructorNotification]);
+    // Pure State-Updates
+    setCheckIns(prev => [...prev, newCheckIn]);
+    setNotifications(n => [...n, {
+      id: `notif-checkin-${Date.now()}`,
+      oduserId: 'all-instructors',
+      type: 'checkin' as const,
+      title: 'Check-in Anfrage',
+      message: `${currentUser.name} möchte einchecken`,
+      read: false,
+      createdAt: new Date()
+    }]);
 
-      // In Supabase speichern
-      supabase.from('check_ins').insert({
-        id: newCheckIn.id,
-        member_id: newCheckIn.memberId,
-        member_name: newCheckIn.memberName,
-        location_id: newCheckIn.locationId ?? null,
-        status: 'pending',
-        requested_at: newCheckIn.requestedAt.toISOString(),
-      });
-
-      return [...prev, newCheckIn];
+    // Supabase Insert außerhalb setState
+    supabase.from('check_ins').insert({
+      id: newCheckIn.id,
+      member_id: newCheckIn.memberId,
+      member_name: newCheckIn.memberName,
+      location_id: newCheckIn.locationId ?? null,
+      status: 'pending',
+      requested_at: newCheckIn.requestedAt.toISOString(),
     });
-  }, [currentUser]);
+  }, [currentUser, checkIns]);
 
   const approveCheckIn = useCallback((checkInId: string) => {
     if (!currentUser) return;
@@ -1528,11 +1569,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const markBoardMessageRead = useCallback((messageId: string) => {
     if (!currentUser) return;
-    setBoardMessages(prev => prev.map(msg =>
-      msg.id === messageId
-        ? { ...msg, readBy: Array.from(new Set([...(msg.readBy ?? []), currentUser.id])) }
-        : msg
-    ));
+    setBoardMessages(prev => {
+      const updated = prev.map(msg =>
+        msg.id === messageId
+          ? { ...msg, readBy: Array.from(new Set([...(msg.readBy ?? []), currentUser.id])) }
+          : msg
+      );
+      try {
+        const readMap: Record<string, string[]> = {};
+        updated.forEach(msg => { if (msg.readBy?.length) readMap[msg.id] = msg.readBy; });
+        localStorage.setItem('mi-board-read', JSON.stringify(readMap));
+      } catch { /* ignore */ }
+      return updated;
+    });
   }, [currentUser]);
 
   const sendReadReminder = useCallback((messageId: string, targetMemberId: string) => {
@@ -2310,10 +2359,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await Promise.all(updates.map(u => supabase.from('content_quiz_questions').update({ position: u.position }).eq('id', u.id)));
   }, []);
 
-  const saveModuleSettings = useCallback(async (moduleId: string, quizCount: number) => {
-    setModuleSettings(prev => ({ ...prev, [moduleId]: { moduleId, quizCount } }));
-    await supabase.from('module_settings').upsert([{ module_id: moduleId, quiz_count: quizCount, updated_at: new Date().toISOString() }], { onConflict: 'module_id' });
+  const saveModuleSettings = useCallback(async (moduleId: string, quizCount: number, disabled?: boolean) => {
+    setModuleSettings(prev => ({ ...prev, [moduleId]: { moduleId, quizCount, disabled: disabled ?? prev[moduleId]?.disabled ?? false } }));
+    await supabase.from('module_settings').upsert([{ module_id: moduleId, quiz_count: quizCount, disabled: disabled ?? false, updated_at: new Date().toISOString() }], { onConflict: 'module_id' });
   }, []);
+
+  // Block-Settings laden aus app_settings beim Start
+  useEffect(() => {
+    supabase.from('app_settings').select('value').eq('key', 'block_settings').single().then(({ data }) => {
+      if (!data?.value) return;
+      try {
+        const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+        setBlockSettings(parsed);
+        localStorage.setItem('mi-block-settings', JSON.stringify(parsed));
+      } catch { /* ignore */ }
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const saveBlockSettings = useCallback(async (blockId: string, overrides: { name?: string; disabled?: boolean }) => {
+    const next = { ...blockSettings, [blockId]: { ...blockSettings[blockId], ...overrides } };
+    setBlockSettings(next);
+    localStorage.setItem('mi-block-settings', JSON.stringify(next));
+    await saveSetting('block_settings', next);
+  }, [blockSettings]);
+
+  const effectiveBlocks = BLOCKS.map(b => ({
+    ...b,
+    name: blockSettings[b.id]?.name ?? b.name,
+    disabled: blockSettings[b.id]?.disabled ?? false,
+  }));
 
   // ============================================
   // MODUL-REIHENFOLGE
@@ -2865,6 +2939,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     deleteQuizQuestion,
     reorderQuizQuestions,
     saveModuleSettings,
+    blockSettings,
+    effectiveBlocks,
+    saveBlockSettings,
     // Quiz — Stern
     starredQuestions,
     isQuestionStarred,

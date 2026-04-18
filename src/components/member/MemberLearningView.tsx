@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { CertificateView } from './CertificateView';
 import { ChevronLeft, Star, Zap, BookOpen, Trophy, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
-import { useApp, BLOCKS } from '../../context/AppContext';
+import { useApp } from '../../context/AppContext';
 import { QuizEngine } from '../shared/QuizEngine';
 import { ProgressBar } from '../shared/ProgressBar';
 import { Module, Block, TechniqueProgress, xpProgress } from '../../types';
@@ -184,6 +184,7 @@ export const MemberLearningView: React.FC = () => {
     quizExamState, canTakeExam, completeQuizExam,
     flaggedQuestions, flagSystemEnabled, flagQuestion, unflagQuestion,
     topicOverrides, platformConfig, getModuleName, getModuleSubtitle,
+    moduleSettings, effectiveBlocks,
   } = useApp();
   const [activeModule, setActiveModule] = useState<Module | null>(null);
   const [activeTopic, setActiveTopic] = useState<ModuleTopic | null>(null);
@@ -212,9 +213,11 @@ export const MemberLearningView: React.FC = () => {
   if (!currentUser) return null;
 
   const isAdmin = currentUser?.role === 'admin';
-  const visibleBlocks = BLOCKS.filter(b => !b.adminOnly || isAdmin);
+  const visibleBlocks = effectiveBlocks.filter(b => (!b.adminOnly || isAdmin) && !b.disabled);
   const visibleBlockLevels = new Set(visibleBlocks.map(b => b.level));
-  const orderedModules = getOrderedModules().filter(m => visibleBlockLevels.has(m.level));
+  const orderedModules = getOrderedModules()
+    .filter(m => visibleBlockLevels.has(m.level))
+    .filter(m => !moduleSettings[m.id]?.disabled);
   const quizProgress = currentUser.quizProgress ?? {};
   const totalXP = currentUser.xp ?? 0;
 
