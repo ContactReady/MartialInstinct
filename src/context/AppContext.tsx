@@ -64,7 +64,7 @@ interface AppContextType {
   darkMode: boolean;
   
   // Auth
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; debug?: string }>;
   logout: () => void;
   switchUser: (userId: string) => void;
   
@@ -584,10 +584,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // AUTH
   // ============================================
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<{ ok: boolean; debug?: string }> => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error || !data.user) return false;
+      if (error || !data.user) return { ok: false, debug: `Auth-Fehler: ${error?.message ?? 'kein User'}` };
 
       // Alle Members aus Supabase laden (Session ist jetzt aktiv)
       const supabaseMembers = await loadMembers();
@@ -596,30 +596,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (supabaseMembers.length > 0) {
         const merged = supabaseMembers.map(m => imgs[m.id] ? { ...m, profileImageUrl: imgs[m.id] } : m);
         setMembers(merged);
-        const member = merged.find(m => m.email === email) ?? null;
+        const member = merged.find(m => m.email.toLowerCase() === email.toLowerCase()) ?? null;
         if (member) {
           const now = new Date();
           const online = { ...member, onlineSince: now, lastSeenAt: now };
           localStorage.setItem('mi_current_user', JSON.stringify(online));
           setCurrentUser(online);
           setMembers(prev => prev.map(m => m.id === member.id ? online : m));
-          return true;
+          return { ok: true };
         }
+        return { ok: false, debug: `Supabase: ${supabaseMembers.length} Member geladen, aber ${email} nicht gefunden` };
       }
 
       // Fallback: lokale Daten (mockData)
-      const member = members.find(m => m.email === email) ?? null;
+      const member = members.find(m => m.email.toLowerCase() === email.toLowerCase()) ?? null;
       if (member) {
         const now = new Date();
         const online = { ...member, onlineSince: now, lastSeenAt: now, ...(imgs[member.id] ? { profileImageUrl: imgs[member.id] } : {}) };
         localStorage.setItem('mi_current_user', JSON.stringify(online));
         setCurrentUser(online);
         setMembers(prev => prev.some(m => m.id === member.id) ? prev.map(m => m.id === member.id ? online : m) : [...prev, online]);
-        return true;
+        return { ok: true };
       }
-      return false;
-    } catch {
-      return false;
+      return { ok: false, debug: `Kein Member für ${email} gefunden (Supabase leer, lokaler Fallback auch leer)` };
+    } catch (e) {
+      return { ok: false, debug: `Exception: ${String(e)}` };
     }
   }, [members]);
 

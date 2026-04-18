@@ -97,7 +97,7 @@ const JoinRequestForm: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 };
 
 // ── Login ─────────────────────────────────────────────────────────────────────
-const Login: React.FC<{ onLogin: (email: string, password: string) => Promise<boolean>; darkMode: boolean; onShowJoinForm: () => void }> = ({ onLogin, darkMode, onShowJoinForm }) => {
+const Login: React.FC<{ onLogin: (email: string, password: string) => Promise<{ ok: boolean; debug?: string }>; darkMode: boolean; onShowJoinForm: () => void }> = ({ onLogin, darkMode, onShowJoinForm }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -109,10 +109,10 @@ const Login: React.FC<{ onLogin: (email: string, password: string) => Promise<bo
     setLoading(true);
     setError('');
     try {
-      const success = await onLogin(email, password);
-      if (!success) { setError('E-Mail oder Passwort falsch'); setLoading(false); }
-    } catch {
-      setError('Verbindungsfehler – bitte nochmal versuchen');
+      const result = await onLogin(email, password);
+      if (!result.ok) { setError(result.debug ?? 'E-Mail oder Passwort falsch'); setLoading(false); }
+    } catch (e) {
+      setError(`Verbindungsfehler: ${String(e)}`);
       setLoading(false);
     }
   };
