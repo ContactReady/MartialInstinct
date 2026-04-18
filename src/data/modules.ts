@@ -155,22 +155,6 @@ const module7: Module = {
   ]
 };
 
-const module8Advanced: Module = {
-  id: 'mod-8-adv',
-  number: 8,
-  name: 'Weapons I',
-  subtitle: 'Advanced Application',
-  level: 'combat',
-  description: 'Anwendung unter Druck, Kombination mit Stand/Infight, Timing & Stress',
-  icon: '⚔️',
-  requiredTechniquesPercent: 80,
-  techniques: [
-    createTechnique('t-8a-1', 'Anwendung unter Druck', 'mod-8-adv', 'combat', 1, true),
-    createTechnique('t-8a-2', 'Kombination mit Stand / Infight', 'mod-8-adv', 'combat', 2, true),
-    createTechnique('t-8a-3', 'Timing & Stress', 'mod-8-adv', 'combat', 3, true),
-    createTechnique('t-8a-4', 'Integration in dynamische Situationen', 'mod-8-adv', 'combat', 4, true)
-  ]
-};
 
 // ============================================
 // TACTICAL READY - SPECIALIST (Module 9-10)
@@ -178,25 +162,25 @@ const module8Advanced: Module = {
 
 const module9: Module = {
   id: 'mod-9',
-  number: 9,
-  name: 'Weapons II',
-  subtitle: 'Edged & Impact Weapon Defense',
-  level: 'tactical',
-  description: 'Messerverteidigung, Hiebwaffen, Winkelarbeit, Distanzmanagement',
+  number: 8,
+  name: 'Weapons I',
+  subtitle: 'Non-Lethal & Improvised Weapons',
+  level: 'combat',
+  description: 'Non-Lethal & Improvised Weapons',
   icon: '🗡️',
   requiredTechniquesPercent: 80,
   techniques: [
-    createTechnique('t-9-1', 'Messerverteidigung', 'mod-9', 'tactical', 1, true),
-    createTechnique('t-9-2', 'Hiebwaffen', 'mod-9', 'tactical', 2, true),
-    createTechnique('t-9-3', 'Winkelarbeit', 'mod-9', 'tactical', 3, true),
-    createTechnique('t-9-4', 'Distanzmanagement', 'mod-9', 'tactical', 4, true),
-    createTechnique('t-9-5', 'Technische Verteidigungsprinzipien', 'mod-9', 'tactical', 5, true)
+    createTechnique('t-9-1', 'Messerverteidigung', 'mod-9', 'combat', 1, true),
+    createTechnique('t-9-2', 'Hiebwaffen', 'mod-9', 'combat', 2, true),
+    createTechnique('t-9-3', 'Winkelarbeit', 'mod-9', 'combat', 3, true),
+    createTechnique('t-9-4', 'Distanzmanagement', 'mod-9', 'combat', 4, true),
+    createTechnique('t-9-5', 'Technische Verteidigungsprinzipien', 'mod-9', 'combat', 5, true)
   ]
 };
 
 const module10: Module = {
   id: 'mod-10',
-  number: 10,
+  number: 9,
   name: 'Tactics & Survival',
   subtitle: 'Kombination & Überleben',
   level: 'tactical',
@@ -278,7 +262,6 @@ export const MODULES: Module[] = [
   module5,
   module6,
   module7,
-  module8Advanced,
   module9,
   module10,
   module11,
@@ -312,7 +295,7 @@ export const BLOCKS: Block[] = [
     bgColor: 'bg-gray-900/80',
     borderColor: 'border-gray-500',
     icon: '⚫',
-    moduleIds: ['mod-5', 'mod-6', 'mod-7', 'mod-8-adv'],
+    moduleIds: ['mod-5', 'mod-6', 'mod-7', 'mod-9'],
     requiresApplication: false
   },
   {
@@ -324,7 +307,7 @@ export const BLOCKS: Block[] = [
     bgColor: 'bg-gray-800/60',
     borderColor: 'border-red-900/60',
     icon: '🔴',
-    moduleIds: ['mod-9', 'mod-10'],
+    moduleIds: ['mod-10'],
     requiresApplication: false
   },
   {

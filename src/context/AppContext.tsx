@@ -206,6 +206,7 @@ interface AppContextType {
   updateDataVisibility: (prefs: NonNullable<Member['dataVisibility']>) => void;
   updateMemberCoreData: (memberId: string, data: { name?: string; firstName?: string; lastName?: string; birthDate?: string; memberId?: string }) => void;
   updateMemberModuleProgress: (memberId: string, moduleProgress: Record<number, { tactics: boolean; combat: boolean }>) => void;
+  updateMemberInstructorModules: (memberId: string, moduleIds: string[]) => void;
   connectWithCode: (code: string) => { success: boolean; memberName?: string };
 
   // Buddy System
@@ -2494,8 +2495,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Erstelle techniqueProgress aus moduleProgress
     const techniqueProgress: Member['techniqueProgress'] = {};
     const allTechs = getAllTechniques();
-    // Finde die ersten 10 Module in Reihenfolge
-    const curriculum = MODULES.filter(m => m.number <= 10);
+    // Finde die ersten 9 Module in Reihenfolge
+    const curriculum = MODULES.filter(m => m.number <= 9);
     Object.entries(data.moduleProgress).forEach(([moduleNumStr, progress]) => {
       const moduleNum = parseInt(moduleNumStr) - 1; // 0-indexed
       const mod = curriculum[moduleNum];
@@ -2628,7 +2629,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateMemberModuleProgress = useCallback((memberId: string, moduleProgress: Record<number, { tactics: boolean; combat: boolean }>) => {
     const allTechs = getAllTechniques();
-    const curriculum = MODULES.filter(m => m.number <= 10);
+    const curriculum = MODULES.filter(m => m.number <= 9);
     setMembers(prev => {
       const next = prev.map(m => {
         if (m.id !== memberId) return m;
@@ -2648,6 +2649,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
         return { ...m, techniqueProgress: tp };
       });
+      const updated = next.find(m => m.id === memberId);
+      if (updated) saveMember(updated);
+      return next;
+    });
+  }, []);
+
+  const updateMemberInstructorModules = useCallback((memberId: string, moduleIds: string[]) => {
+    setMembers(prev => {
+      const next = prev.map(m => m.id === memberId ? { ...m, instructorModules: moduleIds } : m);
       const updated = next.find(m => m.id === memberId);
       if (updated) saveMember(updated);
       return next;
@@ -2899,6 +2909,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     updateDataVisibility,
     updateMemberCoreData,
     updateMemberModuleProgress,
+    updateMemberInstructorModules,
     connectWithCode,
     generateBuddyCode,
     sendBuddyRequest,

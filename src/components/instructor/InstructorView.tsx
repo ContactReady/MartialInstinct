@@ -118,6 +118,7 @@ export const InstructorView: React.FC = () => {
     rejectJoinRequest,
     updateMemberCoreData,
     updateMemberModuleProgress,
+    updateMemberInstructorModules,
     getBadgeDisplaySettings,
     setBadgeDisplaySettings,
     computeBadges,
@@ -137,6 +138,7 @@ export const InstructorView: React.FC = () => {
     platformConfig,
     updatePlatformConfig,
     trainingSessions,
+    getProfileImgSettings,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>(() => (localStorage.getItem('mi_active_tab_instructor') as Tab) || 'dashboard');
@@ -188,7 +190,7 @@ export const InstructorView: React.FC = () => {
   const [coreDataPendingClose, setCoreDataPendingClose] = useState(false);
   const [streakSaveState, setStreakSaveState] = useState<'idle' | 'dirty' | 'saved'>('idle');
   const [streakPendingClose, setStreakPendingClose] = useState(false);
-  const [moduleProgressEdit, setModuleProgressEdit] = useState<Record<number, { tactics: boolean; combat: boolean }>>({});
+  const [moduleProgressEdit, setModuleProgressEdit] = useState<Record<number, { tactics: boolean; combat: boolean; instructor: boolean }>>({});
   const [moduleSaveState, setModuleSaveState] = useState<'idle' | 'dirty' | 'saved'>('idle');
 
   const [coreName, setCoreName] = useState('');
@@ -808,7 +810,7 @@ export const InstructorView: React.FC = () => {
             return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) + `, ${time}`;
           };
           // Modul-Abschluss (Module 1–10, dedupliziert nach Nummer)
-          const listCurrMods = MODULES.filter(m => m.number <= 10);
+          const listCurrMods = MODULES.filter(m => m.number <= 9);
           const currModNums = [...new Set(listCurrMods.map(m => m.number))]; // [1..10]
           const getMemberModsDone = (member: Member) => {
             let tactics = 0, combat = 0;
@@ -2281,7 +2283,7 @@ export const InstructorView: React.FC = () => {
           allM.forEach(m => { levelCounts[m.currentLevel] = (levelCounts[m.currentLevel] ?? 0) + 1; });
 
           // Modul-Abschluss (Module 1–10, dedupliziert nach Nummer)
-          const currMods = MODULES.filter(m => m.number <= 10);
+          const currMods = MODULES.filter(m => m.number <= 9);
           const currModNumsA = [...new Set(currMods.map(m => m.number))];
 
           const getModDone = (member: Member, modId: string) => {
@@ -2507,12 +2509,26 @@ export const InstructorView: React.FC = () => {
               return (
                 <div key={m.id} className="overflow-hidden">
                   <div className="flex items-center gap-3 px-4 py-3">
-                    <button
-                      onClick={() => setProfileMember(m)}
-                      className="w-9 h-9 rounded-full bg-white border border-gray-600 flex-shrink-0 overflow-hidden hover:ring-2 hover:ring-red-500/50 transition-all"
-                    >
-                      <img src={m.profileImageUrl || '/logos/mi-icon.jpg'} alt="" className="w-full h-full object-cover" />
-                    </button>
+                    {(() => {
+                      const ps = getProfileImgSettings(m.id);
+                      return (
+                        <button
+                          onClick={() => setProfileMember(m)}
+                          className="w-9 h-9 rounded-full border border-gray-600 flex-shrink-0 hover:ring-2 hover:ring-red-500/50 transition-all"
+                          style={m.profileImageUrl ? {
+                            backgroundImage: `url(${m.profileImageUrl})`,
+                            backgroundSize: `${ps.scale}%`,
+                            backgroundPosition: `${ps.posX / 3}% ${ps.posY / 3}%`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundColor: '#fff',
+                          } : undefined}
+                        >
+                          {!m.profileImageUrl && (
+                            <img src="/logos/mi-icon.jpg" alt="" className="w-full h-full object-cover rounded-full" />
+                          )}
+                        </button>
+                      );
+                    })()}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <button onClick={() => setProfileMember(m)} className="text-white font-semibold text-sm hover:text-red-400 transition-colors">{m.name}</button>
@@ -2573,14 +2589,15 @@ export const InstructorView: React.FC = () => {
                               // Init module progress from member's techniqueProgress
                               (() => {
                                 const allTechs = getAllTechniques();
-                                const currMods = MODULES.filter(m => m.number <= 10);
-                                const initProgress: Record<number, { tactics: boolean; combat: boolean }> = {};
+                                const currMods = MODULES.filter(m => m.number <= 9);
+                                const initProgress: Record<number, { tactics: boolean; combat: boolean; instructor: boolean }> = {};
                                 currMods.forEach((mod, idx) => {
                                   const reqTechs = allTechs.filter(t => t.moduleId === mod.id && t.isRequired);
-                                  if (!reqTechs.length) { initProgress[idx + 1] = { tactics: false, combat: false }; return; }
+                                  if (!reqTechs.length) { initProgress[idx + 1] = { tactics: false, combat: false, instructor: false }; return; }
                                   const tactics = reqTechs.every(t => { const s = m.techniqueProgress[t.id]?.status; return s === 'tech_passed' || s === 'tac_passed'; });
                                   const combat = reqTechs.every(t => m.techniqueProgress[t.id]?.status === 'tac_passed');
-                                  initProgress[idx + 1] = { tactics, combat };
+                                  const instructor = (m.instructorModules ?? []).includes(mod.id);
+                                  initProgress[idx + 1] = { tactics, combat, instructor };
                                 });
                                 setModuleProgressEdit(initProgress);
                               })();
@@ -2701,49 +2718,67 @@ export const InstructorView: React.FC = () => {
                       {/* ── Module Progress ── */}
                       <div className="border-t border-gray-700/50 pt-3 space-y-2">
                         <p className="text-xs text-gray-500 font-medium uppercase tracking-widest">📋 Module</p>
-                        <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 gap-y-1.5 items-center">
+                        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 gap-y-1.5 items-center">
                           <span className="text-xs text-gray-600">Modul</span>
                           <span className="text-xs text-gray-600 text-center">T</span>
                           <span className="text-xs text-gray-600 text-center">C</span>
-                          {MODULES.filter(m => m.number <= 10).map((mod, idx) => {
+                          <span className="text-xs text-gray-600 text-center">I</span>
+                          {MODULES.filter(m => m.number <= 9).map((mod, idx) => {
                             const num = idx + 1;
-                            const prog = moduleProgressEdit[num] ?? { tactics: false, combat: false };
+                            const prog = moduleProgressEdit[num] ?? { tactics: false, combat: false, instructor: false };
+                            const isInstructor = m.role === 'instructor' || m.role === 'admin';
                             return (
                               <React.Fragment key={mod.id}>
                                 <span className="text-xs text-gray-300 truncate leading-tight">
                                   {num}. {mod.name}
                                   {mod.subtitle && <span className="block text-[10px] text-gray-500 font-normal">{mod.subtitle}</span>}
                                 </span>
-                                <input
-                                  type="checkbox"
-                                  checked={prog.tactics}
-                                  onChange={e => {
-                                    const t = e.target.checked;
-                                    setModuleProgressEdit(prev => ({ ...prev, [num]: { tactics: t, combat: t ? prev[num]?.combat ?? false : false } }));
+                                {/* T checkbox — gray */}
+                                <button
+                                  onClick={() => {
+                                    const t = !prog.tactics;
+                                    setModuleProgressEdit(prev => ({ ...prev, [num]: { ...prev[num], tactics: t, combat: t ? prev[num]?.combat ?? false : false, instructor: prev[num]?.instructor ?? false } }));
                                     setModuleSaveState('dirty');
                                   }}
-                                  className="w-4 h-4 accent-blue-500 cursor-pointer mx-auto"
-                                />
-                                <input
-                                  type="checkbox"
-                                  checked={prog.combat}
+                                  className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors ${prog.tactics ? 'bg-gray-500' : 'bg-gray-800 border border-gray-600'}`}
+                                >
+                                  {prog.tactics && <span className="text-white text-[10px] font-bold">✓</span>}
+                                </button>
+                                {/* C checkbox — black */}
+                                <button
                                   disabled={!prog.tactics}
-                                  onChange={e => {
-                                    const c = e.target.checked;
-                                    setModuleProgressEdit(prev => ({ ...prev, [num]: { tactics: true, combat: c } }));
+                                  onClick={() => {
+                                    const c = !prog.combat;
+                                    setModuleProgressEdit(prev => ({ ...prev, [num]: { ...prev[num], tactics: true, combat: c, instructor: prev[num]?.instructor ?? false } }));
                                     setModuleSaveState('dirty');
                                   }}
-                                  className="w-4 h-4 accent-red-500 cursor-pointer mx-auto disabled:opacity-30"
-                                />
+                                  className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors disabled:opacity-30 ${prog.combat ? 'bg-black border border-gray-500' : 'bg-gray-800 border border-gray-600'}`}
+                                >
+                                  {prog.combat && <span className="text-white text-[10px] font-bold">✓</span>}
+                                </button>
+                                {/* I checkbox — red, only interactive for instructors */}
+                                <button
+                                  disabled={!isInstructor}
+                                  onClick={() => {
+                                    const i = !prog.instructor;
+                                    setModuleProgressEdit(prev => ({ ...prev, [num]: { ...prev[num], instructor: i } }));
+                                    setModuleSaveState('dirty');
+                                  }}
+                                  className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors disabled:opacity-25 ${prog.instructor ? 'bg-red-600' : 'bg-gray-800 border border-gray-600'}`}
+                                >
+                                  {prog.instructor && <span className="text-white text-[10px] font-bold">✓</span>}
+                                </button>
                               </React.Fragment>
                             );
                           })}
                         </div>
-                        <p className="text-xs text-gray-600">T = Taktik bestanden · C = Combat bestanden</p>
+                        <p className="text-xs text-gray-600">T = Taktik · C = Combat · I = Instructor</p>
                         <button
                           disabled={moduleSaveState !== 'dirty'}
                           onClick={() => {
                             updateMemberModuleProgress(m.id, moduleProgressEdit);
+                            const instructorModIds = MODULES.filter(m2 => m2.number <= 9).filter((_mod, idx) => moduleProgressEdit[idx + 1]?.instructor).map(mod => mod.id);
+                            updateMemberInstructorModules(m.id, instructorModIds);
                             setModuleSaveState('saved');
                           }}
                           className={`w-full py-2 rounded-lg text-sm font-medium transition-all ${

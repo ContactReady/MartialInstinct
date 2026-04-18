@@ -22,12 +22,12 @@ function toRoman(n: number): string {
   return result;
 }
 
-// ── Ersten 10 Curriculum-Module ──────────────────────────────────────────────
+// ── Ersten 9 Curriculum-Module ──────────────────────────────────────────────
 const CURRICULUM_MODULES = BLOCKS
   .filter(b => b.id !== 'assistant_instructor' && !b.adminOnly)
   .flatMap(b => b.moduleIds.map(id => MODULES.find(m => m.id === id)!))
   .filter(Boolean)
-  .slice(0, 10);
+  .slice(0, 9);
 
 interface CertificateViewProps {
   onClose: () => void;

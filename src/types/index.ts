@@ -296,6 +296,9 @@ export interface Member {
   // Verbundene Mitglieder (in-person Connect via Code)
   connections?: string[];  // Array von Member-IDs
 
+  // Module die dieser Instructor unterrichten kann
+  instructorModules?: string[];  // Array von Module-IDs
+
   // Vorfortschritt beim Anlegen (gesetzt vom Admin)
   initialModuleProgress?: Record<number, { tactics: boolean; combat: boolean }>; // Modul 1-10
 
