@@ -589,6 +589,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error || !data.user) return { ok: false, debug: `Auth-Fehler: ${error?.message ?? 'kein User'}` };
 
+      // localStorage-Quota freimachen: große Einträge leeren
+      const safeSetItem = (key: string, value: string) => {
+        try {
+          localStorage.setItem(key, value);
+        } catch {
+          // Quota überschritten — große Daten löschen und nochmal versuchen
+          localStorage.removeItem('mi_profile_img_url');
+          localStorage.removeItem('mi-quiz-progress');
+          localStorage.removeItem('mi-board-read');
+          try { localStorage.setItem(key, value); } catch { /* ignorieren */ }
+        }
+      };
+
       // Alle Members aus Supabase laden (Session ist jetzt aktiv)
       const supabaseMembers = await loadMembers();
       const imgs: Record<string, string> = JSON.parse(localStorage.getItem('mi_profile_img_url') || '{}');
@@ -600,7 +613,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (member) {
           const now = new Date();
           const online = { ...member, onlineSince: now, lastSeenAt: now };
-          localStorage.setItem('mi_current_user', JSON.stringify(online));
+          safeSetItem('mi_current_user', JSON.stringify(online));
           setCurrentUser(online);
           setMembers(prev => prev.map(m => m.id === member.id ? online : m));
           return { ok: true };
@@ -613,7 +626,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (member) {
         const now = new Date();
         const online = { ...member, onlineSince: now, lastSeenAt: now, ...(imgs[member.id] ? { profileImageUrl: imgs[member.id] } : {}) };
-        localStorage.setItem('mi_current_user', JSON.stringify(online));
+        safeSetItem('mi_current_user', JSON.stringify(online));
         setCurrentUser(online);
         setMembers(prev => prev.some(m => m.id === member.id) ? prev.map(m => m.id === member.id ? online : m) : [...prev, online]);
         return { ok: true };
