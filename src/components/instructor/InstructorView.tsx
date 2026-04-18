@@ -1066,7 +1066,8 @@ export const InstructorView: React.FC = () => {
 
   // ── DASHBOARD TAB ─────────────────────────────────────────────────────────
   const renderDashboardTab = () => {
-    const anfragenBadge = pendingCheckIns.length + pendingExamRequests.length + totalPendingApps + joinRequests.filter(r => r.status === 'pending').length;
+    const memberEmailsSet = new Set(members.map(m => m.email.toLowerCase()));
+    const anfragenBadge = pendingCheckIns.length + pendingExamRequests.length + totalPendingApps + joinRequests.filter(r => r.status === 'pending' && !memberEmailsSet.has(r.email.toLowerCase())).length;
     const boardBadge = unreadBoardNotifs;
 
     const subTabs: { id: DashboardSubTab; label: string; badge?: number }[] = [
@@ -1216,7 +1217,10 @@ export const InstructorView: React.FC = () => {
 
   // Render Requests Tab
   const renderRequestsTab = () => {
-    const pendingJoinRequests = joinRequests.filter(r => r.status === 'pending');
+    const memberEmails = new Set(members.map(m => m.email.toLowerCase()));
+    const pendingJoinRequests = joinRequests.filter(r =>
+      r.status === 'pending' && !memberEmails.has(r.email.toLowerCase())
+    );
     const isAdmin = hasAdminAccess(currentUser);
 
     const openCreateModal = (req: JoinRequest) => {
@@ -2249,7 +2253,8 @@ export const InstructorView: React.FC = () => {
           ).size;
           const avgStreak = allM.length ? Math.round(allM.reduce((s, m) => s + m.streak.currentStreak, 0) / allM.length) : 0;
           const stbCount = allM.filter(m => m.stopTheBleedCertified).length;
-          const pendingJoin = joinRequests.filter(r => r.status === 'pending').length;
+          const analyticsEmailsSet = new Set(allM.map(m => m.email.toLowerCase()));
+          const pendingJoin = joinRequests.filter(r => r.status === 'pending' && !analyticsEmailsSet.has(r.email.toLowerCase())).length;
           const totalXP = allM.reduce((s, m) => s + (m.xp ?? 0), 0);
 
           // Check-in Trend: letzte 8 Wochen
