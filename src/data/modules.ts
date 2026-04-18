@@ -180,7 +180,7 @@ const module9: Module = {
 
 const module10: Module = {
   id: 'mod-10',
-  number: 9,
+  number: 10,
   name: 'Tactics & Survival',
   subtitle: 'Kombination & Überleben',
   level: 'tactical',
@@ -204,7 +204,7 @@ const module10: Module = {
 
 const moduleWeapons2: Module = {
   id: 'mod-weapons-2',
-  number: 10,
+  number: 9,
   name: 'Weapons II',
   subtitle: 'Letale Waffen & Bewaffneter Kampf',
   level: 'contact',
@@ -285,8 +285,8 @@ export const MODULES: Module[] = [
   module6,
   module7,
   module9,
-  module10,
   moduleWeapons2,
+  module10,
   module11,
   module12,
   module13
@@ -342,7 +342,7 @@ export const BLOCKS: Block[] = [
     bgColor: 'bg-gray-900/80',
     borderColor: 'border-red-800/50',
     icon: '☠️',
-    moduleIds: ['mod-11', 'mod-12', 'mod-13'],
+    moduleIds: ['mod-weapons-2', 'mod-11', 'mod-12', 'mod-13'],
     requiresApplication: true,
     adminOnly: true,
   },

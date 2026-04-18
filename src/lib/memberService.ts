@@ -137,10 +137,21 @@ export async function createMemberInSupabase(
   member: Member
 ): Promise<{ ok: boolean; error?: string }> {
   try {
+    // Admin-Session sichern, da signUp die aktuelle Session überschreibt
+    const { data: { session: adminSession } } = await supabase.auth.getSession();
+
     const { error: authError } = await supabase.auth.signUp({ email, password });
     if (authError && !authError.message.includes('already registered')) {
+      // Session wiederherstellen auch im Fehlerfall
+      if (adminSession) await supabase.auth.setSession({ access_token: adminSession.access_token, refresh_token: adminSession.refresh_token });
       return { ok: false, error: authError.message };
     }
+
+    // Admin-Session sofort wiederherstellen
+    if (adminSession) {
+      await supabase.auth.setSession({ access_token: adminSession.access_token, refresh_token: adminSession.refresh_token });
+    }
+
     const row = memberToRow(member);
     const { error: dbError } = await supabase.from('members').upsert(row, { onConflict: 'id' });
     if (dbError) return { ok: false, error: dbError.message };

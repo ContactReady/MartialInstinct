@@ -2757,9 +2757,9 @@ export const InstructorView: React.FC = () => {
                                     setModuleProgressEdit(prev => ({ ...prev, [num]: { ...prev[num], tactics: true, combat: c, instructor: prev[num]?.instructor ?? false } }));
                                     setModuleSaveState('dirty');
                                   }}
-                                  className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors disabled:opacity-30 ${prog.combat ? 'bg-black border border-gray-500' : 'bg-gray-800 border border-gray-600'}`}
+                                  className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors disabled:opacity-30 ${prog.combat ? 'bg-white border border-gray-300' : 'bg-gray-800 border border-gray-600'}`}
                                 >
-                                  {prog.combat && <span className="text-white text-[10px] font-bold">✓</span>}
+                                  {prog.combat && <span className="text-black text-[10px] font-bold">✓</span>}
                                 </button>
                                 {/* I checkbox — red, only interactive for instructors */}
                                 <button
