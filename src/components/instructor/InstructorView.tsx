@@ -3006,9 +3006,9 @@ export const InstructorView: React.FC = () => {
 
           return (
           <div className="space-y-3">
-            {/* ── Modul-Reihenfolge ── */}
+            {/* ── Module & Kapitel ── */}
             <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
-              <TrainingAccordionHeader id="training_reihenfolge" title="Modul-Reihenfolge" subtitle="▲▼ Reihenfolge ändern · Block-Zuordnung via Dropdown."
+              <TrainingAccordionHeader id="training_reihenfolge" title="Module & Kapitel" subtitle="Reihenfolge · Block-Zuordnung · Kapitel umbenennen & aktivieren"
                 onBeforeClose={() => {
                   if (dndSaveState === 'dirty') { setDndPendingClose(true); return false; }
                   setDndSaveState('idle'); setDndPendingClose(false); return true;
@@ -3016,6 +3016,29 @@ export const InstructorView: React.FC = () => {
               />
               {plattformOpen['training_reihenfolge'] && (
               <div className="border-t border-gray-700/50 p-3">
+
+              {/* Kapitel-Namen + Aktivierung */}
+              <div className="mb-4 space-y-1.5">
+                <div className="text-gray-500 text-xs mb-2 font-semibold uppercase tracking-wider">Kapitel</div>
+                {effectiveBlocks.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level' && !b.adminOnly).map(block => (
+                  <div key={block.id} className={`flex items-center gap-2 rounded-lg px-3 py-2 border ${block.borderColor} ${block.bgColor}`}>
+                    <span className="text-base flex-shrink-0">{block.icon}</span>
+                    <input
+                      defaultValue={block.name}
+                      onBlur={e => { const v = e.target.value.trim(); if (v && v !== block.name) saveBlockSettings(block.id, { name: v }); }}
+                      className={`flex-1 bg-transparent text-sm font-semibold ${block.color} outline-none border-b border-transparent focus:border-gray-500 min-w-0`}
+                    />
+                    <button
+                      onClick={() => saveBlockSettings(block.id, { disabled: !blockSettings[block.id]?.disabled })}
+                      title={blockSettings[block.id]?.disabled ? 'Deaktiviert – klicken zum Aktivieren' : 'Aktiv – klicken zum Deaktivieren'}
+                      className={`relative flex-shrink-0 w-10 h-5 rounded-full transition-colors ${blockSettings[block.id]?.disabled ? 'bg-red-700' : 'bg-green-700'}`}
+                    >
+                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${blockSettings[block.id]?.disabled ? 'left-1' : 'left-5'}`} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
               <div className="flex items-center justify-between mb-3">
                 <span className="text-gray-500 text-xs">▲▼ Reihenfolge innerhalb eines Blocks · Block via Dropdown ändern.</span>
                 <button
@@ -3088,39 +3111,6 @@ export const InstructorView: React.FC = () => {
               })}
             </div>
             )}
-            </div>
-
-            {/* ── Kapitel-Verwaltung ── */}
-            <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
-              <TrainingAccordionHeader id="training_kapitel" title="Kapitel-Verwaltung" subtitle="Namen ändern · Kapitel aktivieren oder deaktivieren." />
-              {plattformOpen['training_kapitel'] && (
-                <div className="border-t border-gray-700/50 p-3 space-y-2">
-                  <p className="text-gray-600 text-xs pb-1">Deaktivierte Kapitel sind für Member unsichtbar. Name-Änderung wirkt sofort.</p>
-                  {effectiveBlocks.filter(b => !b.adminOnly).map(block => (
-                    <div key={block.id} className="bg-gray-900/50 rounded-lg border border-gray-700/50 p-3 flex items-center gap-3">
-                      <span className="text-xl flex-shrink-0">{block.icon}</span>
-                      <input
-                        defaultValue={block.name}
-                        onBlur={e => {
-                          const val = e.target.value.trim();
-                          if (val && val !== block.name) saveBlockSettings(block.id, { name: val });
-                        }}
-                        className="flex-1 bg-transparent text-sm text-white border-b border-transparent focus:border-gray-500 outline-none min-w-0"
-                        placeholder={block.name}
-                      />
-                      <div className="text-gray-600 text-xs flex-shrink-0 w-16 text-right">
-                        {(MODULES.filter(m => m.level === block.level && !moduleSettings[m.id]?.disabled).length)} Module
-                      </div>
-                      <button
-                        onClick={() => saveBlockSettings(block.id, { disabled: !blockSettings[block.id]?.disabled })}
-                        className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors ${blockSettings[block.id]?.disabled ? 'bg-red-600' : 'bg-green-600'}`}
-                      >
-                        <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${blockSettings[block.id]?.disabled ? 'left-1' : 'left-6'}`} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* ── Modul-Inhalt bearbeiten ── */}

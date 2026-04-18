@@ -24,7 +24,7 @@ const createTechnique = (
 });
 
 // ============================================
-// CONFLICT READY - BEGINNER (Module 1-4, 8)
+// CONFLICT READY - BEGINNER (Module 1-4)
 // ============================================
 
 const module1: Module = {
@@ -97,25 +97,6 @@ const module4: Module = {
     createTechnique('t-4-2', 'Kontrolle herstellen', 'mod-4', 'conflict', 2, true),
     createTechnique('t-4-3', 'Kontern', 'mod-4', 'conflict', 3, true),
     createTechnique('t-4-4', 'Beenden', 'mod-4', 'conflict', 4, true)
-  ]
-};
-
-const module8Basic: Module = {
-  id: 'mod-8',
-  number: 8,
-  name: 'Weapons I',
-  subtitle: 'Non-Lethal & Improvised Tools',
-  level: 'conflict',
-  description: 'Pfefferspray, Tactical Pen, Alltagsgegenstände, rechtliche Einordnung',
-  icon: '🔧',
-  requiredTechniquesPercent: 80,
-  techniques: [
-    createTechnique('t-8-1', 'Pfefferspray', 'mod-8', 'conflict', 1, true),
-    createTechnique('t-8-2', 'Tactical Pen', 'mod-8', 'conflict', 2, true),
-    createTechnique('t-8-3', 'Alltagsgegenstände', 'mod-8', 'conflict', 3, true),
-    createTechnique('t-8-4', 'Distanz & Zugriff', 'mod-8', 'conflict', 4, true),
-    createTechnique('t-8-5', 'Rechtliche Einordnung', 'mod-8', 'conflict', 5, true),
-    createTechnique('t-8-6', 'Anwendung im realistischen Kontext', 'mod-8', 'conflict', 6, true)
   ]
 };
 
@@ -294,7 +275,6 @@ export const MODULES: Module[] = [
   module2,
   module3,
   module4,
-  module8Basic,
   module5,
   module6,
   module7,
@@ -320,7 +300,7 @@ export const BLOCKS: Block[] = [
     bgColor: 'bg-gray-800/50',
     borderColor: 'border-gray-600',
     icon: '⚪',
-    moduleIds: ['mod-1', 'mod-2', 'mod-3', 'mod-4', 'mod-8'],
+    moduleIds: ['mod-1', 'mod-2', 'mod-3', 'mod-4'],
     requiresApplication: false
   },
   {
