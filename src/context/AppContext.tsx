@@ -1015,14 +1015,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [currentUser, checkIns, members]);
 
   const rejectCheckIn = useCallback((checkInId: string) => {
+    const checkIn = checkIns.find(c => c.id === checkInId);
     setCheckIns(prev => prev.map(c =>
       c.id === checkInId
         ? { ...c, status: 'rejected' as const }
         : c
     ));
+    if (checkIn) {
+      setNotifications(n => [...n, {
+        id: `notif-rejected-${Date.now()}`,
+        oduserId: checkIn.memberId,
+        type: 'checkin' as const,
+        title: 'Check-in abgelehnt',
+        message: `Dein Check-in${checkIn.unitName ? ` für ${checkIn.unitName}` : ''} wurde abgelehnt.`,
+        read: false,
+        createdAt: new Date(),
+      }]);
+    }
     supabase.from('check_ins').update({ status: 'rejected' }).eq('id', checkInId)
       .then(({ error }) => { if (error) console.warn('Reject Check-in Fehler:', error.message); });
-  }, []);
+  }, [checkIns]);
 
   const checkOut = useCallback((memberId: string) => {
     const toCheckOut = checkIns.filter(c => c.memberId === memberId && c.status === 'approved');

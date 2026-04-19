@@ -503,30 +503,30 @@ export const InstructorView: React.FC = () => {
                       ? new Date(ci.approvedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
                       : '–';
                     return (
-                      <div key={ci.id} className="px-4 py-3 flex items-center gap-3">
-                        <span className="text-xl flex-shrink-0">{member.avatar}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-white font-medium text-sm">{member.name}</div>
-                          <div className="text-gray-500 text-xs">
-                            {LEVEL_DISPLAY[member.currentLevel].subtitle}
-                            {detectedCourse && <span> · {detectedCourse.split(' •')[0]}</span>}
+                      <div key={ci.id} className="px-4 py-3 space-y-2">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl flex-shrink-0">{member.avatar}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-white font-medium text-sm">{member.name}</div>
+                            <div className="text-gray-500 text-xs truncate">
+                              {LEVEL_DISPLAY[member.currentLevel].subtitle}
+                              {ci.unitName && <span> · {ci.unitName}</span>}
+                            </div>
                           </div>
+                          <div className="text-green-400 text-xs font-semibold flex-shrink-0">✅ {checkedInTime}</div>
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <div className="text-green-400 text-sm font-medium">✅ {checkedInTime} Uhr</div>
-                        </div>
-                        <div className="flex gap-1 flex-shrink-0">
+                        <div className="flex gap-2 pl-9">
                           {canAccessTab('dashboard') && (
                             <button
                               onClick={() => { setSelectedMember(member); setActiveTab('dashboard'); setDashboardSubTab('bewerten'); }}
-                              className="bg-blue-600/80 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs"
+                              className="flex-1 bg-red-600/80 hover:bg-red-600 active:scale-95 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                             >
                               Bewerten
                             </button>
                           )}
                           <button
                             onClick={() => checkOut(member.id)}
-                            className="bg-gray-600/80 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg text-xs"
+                            className="flex-1 bg-gray-700/80 hover:bg-gray-600 active:scale-95 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                           >
                             Auschecken
                           </button>
@@ -2754,7 +2754,7 @@ export const InstructorView: React.FC = () => {
                                 >
                                   {prog.tactics && <span className="text-white text-[10px] font-bold">✓</span>}
                                 </button>
-                                {/* C checkbox — black */}
+                                {/* C checkbox */}
                                 <button
                                   disabled={!prog.tactics}
                                   onClick={() => {
@@ -2762,9 +2762,9 @@ export const InstructorView: React.FC = () => {
                                     setModuleProgressEdit(prev => ({ ...prev, [num]: { ...prev[num], tactics: true, combat: c, instructor: prev[num]?.instructor ?? false } }));
                                     setModuleSaveState('dirty');
                                   }}
-                                  className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors disabled:opacity-30 ${prog.combat ? 'bg-white border border-gray-300' : 'bg-gray-800 border border-gray-600'}`}
+                                  className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors disabled:opacity-30 ${prog.combat ? 'bg-gray-400' : 'bg-gray-800 border border-gray-600'}`}
                                 >
-                                  {prog.combat && <span className="text-black text-[10px] font-bold">✓</span>}
+                                  {prog.combat && <span className="text-white text-[10px] font-bold">✓</span>}
                                 </button>
                                 {/* I checkbox — red, only interactive for instructors */}
                                 <button

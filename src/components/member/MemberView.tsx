@@ -147,19 +147,15 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
   const activeUnit = todayUnits.find(u => nowTime >= u.startTime && nowTime < u.endTime);
   const DAY_SHORT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 
+  // Einheit zum genehmigten Check-in (für Zeitanzeige nach Bestätigung)
+  const approvedUnit = todayCheckIn?.unitId
+    ? trainingUnits.find(u => u.id === todayCheckIn.unitId)
+    : undefined;
+
   const handleCheckInPress = () => {
-    if (todayUnits.length === 0) {
-      // Keine Einheit heute — direkt einchecken ohne Unit
-      requestCheckIn(undefined);
-    } else if (todayUnits.length === 1) {
-      // Genau eine Einheit → direkt auswählen, Picker zur Bestätigung zeigen
-      setSelectedUnitId(todayUnits[0].id);
-      setShowUnitPicker(true);
-    } else {
-      // Mehrere Einheiten → Picker zeigen, aktive vorauswählen
-      setSelectedUnitId(activeUnit?.id ?? todayUnits[0].id);
-      setShowUnitPicker(true);
-    }
+    // Immer Picker anzeigen — auch wenn kein Kurs heute
+    setSelectedUnitId(activeUnit?.id ?? todayUnits[0]?.id ?? trainingUnits[0]?.id);
+    setShowUnitPicker(true);
   };
 
   // Submit contact application
@@ -248,7 +244,9 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
               <div className="text-sm font-bold text-white">Trainings Check-In</div>
               <div className={`text-xs mt-0.5 ${checkInStatus === 'approved' ? 'text-green-400' : 'text-gray-400'}`}>
                 {checkInStatus === 'approved'
-                  ? `✅ Eingecheckt${checkInApprovedAt ? ` · ${checkInApprovedAt.getHours().toString().padStart(2,'0')}:${checkInApprovedAt.getMinutes().toString().padStart(2,'0')} Uhr` : ''}${todayCheckIn?.unitName ? ` · ${todayCheckIn.unitName}` : ''}`
+                  ? approvedUnit
+                    ? `✅ ${approvedUnit.name} · ${approvedUnit.startTime}–${approvedUnit.endTime} Uhr`
+                    : `✅ Eingecheckt${checkInApprovedAt ? ` · ${checkInApprovedAt.getHours().toString().padStart(2,'0')}:${checkInApprovedAt.getMinutes().toString().padStart(2,'0')} Uhr` : ''}`
                   : checkInStatus === 'pending' ? `Warte auf Bestätigung…${todayCheckIn?.unitName ? ` (${todayCheckIn.unitName})` : ''}`
                   : 'Sei heute dabei!'}
               </div>
