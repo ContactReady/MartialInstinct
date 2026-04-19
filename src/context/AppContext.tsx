@@ -849,16 +849,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => clearTimeout(timer);
   }, [currentUser]);
 
-  // Heartbeat: lastSeenAt alle 60s aktualisieren (→ "online" = < 3 Min)
+  // Heartbeat: lastSeenAt alle 60s lokal + nach Supabase schreiben
   useEffect(() => {
     if (!currentUser) return;
-    const interval = setInterval(() => {
+    const id = currentUser.id;
+    const tick = () => {
       const now = new Date();
-      setMembers(prev => prev.map(m =>
-        m.id === currentUser.id ? { ...m, lastSeenAt: now } : m
-      ));
+      setMembers(prev => prev.map(m => m.id === id ? { ...m, lastSeenAt: now } : m));
       setCurrentUser(prev => prev ? { ...prev, lastSeenAt: now } : null);
-    }, 60_000);
+      supabase.from('members').update({ last_seen_at: now.toISOString() }).eq('id', id);
+    };
+    tick(); // sofort beim Login
+    const interval = setInterval(tick, 60_000);
+    return () => clearInterval(interval);
+  }, [currentUser?.id]);
+
+  // Online-Status Polling: alle 30s lastSeenAt aller Members aus Supabase laden
+  useEffect(() => {
+    if (!currentUser) return;
+    const ONLINE_MS = 3 * 60 * 1000; // 3 Min
+    const fetchOnline = async () => {
+      const { data } = await supabase.from('members').select('id, last_seen_at');
+      if (!data) return;
+      const now = Date.now();
+      setMembers(prev => prev.map(m => {
+        if (m.id === currentUser.id) return m; // eigener User: lokaler State hat Vorrang
+        const row = data.find((r: Record<string, unknown>) => r.id === m.id);
+        if (!row?.last_seen_at) return { ...m, onlineSince: undefined };
+        const lastSeen = new Date(row.last_seen_at as string).getTime();
+        const online = now - lastSeen < ONLINE_MS;
+        return { ...m, lastSeenAt: new Date(row.last_seen_at as string), onlineSince: online ? new Date(row.last_seen_at as string) : undefined };
+      }));
+    };
+    fetchOnline();
+    const interval = setInterval(fetchOnline, 30_000);
     return () => clearInterval(interval);
   }, [currentUser?.id]);
 

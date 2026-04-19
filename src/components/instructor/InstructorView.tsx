@@ -436,7 +436,7 @@ export const InstructorView: React.FC = () => {
                       {onlineInstructors.map(m => (
                         <div key={m.id} className="flex items-center gap-3">
                           <OnlineDot member={m} />
-                          <span className="text-xl">{m.avatar}</span>
+                          {m.profileImage ? <img src={m.profileImage} className="w-7 h-7 rounded-full object-cover flex-shrink-0" /> : <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
                           <div className="flex-1 min-w-0">
                             <span className="text-white font-medium text-sm">{m.name}</span>
                             <span className={`ml-2 text-xs ${ROLE_DISPLAY[m.role].color}`}>
@@ -458,7 +458,7 @@ export const InstructorView: React.FC = () => {
                       {onlineRegularMembers.map(m => (
                         <div key={m.id} className="flex items-center gap-3">
                           <OnlineDot member={m} />
-                          <span className="text-xl">{m.avatar}</span>
+                          {m.profileImage ? <img src={m.profileImage} className="w-7 h-7 rounded-full object-cover flex-shrink-0" /> : <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
                           <div className="flex-1 min-w-0">
                             <span className="text-white font-medium text-sm">{m.name}</span>
                             <span className="ml-2 text-xs text-gray-500">{LEVEL_DISPLAY[m.currentLevel].subtitle}</span>
@@ -802,7 +802,7 @@ export const InstructorView: React.FC = () => {
         {communitySubTab === 'mitglieder' && (() => {
           const allMembers = members.filter(m => m.role === 'member');
           const getMemberStatus = (m: Member): 'training' | 'online' | 'offline' => {
-            if (m.isCheckedIn) return 'training';
+            if (checkIns.some(c => c.memberId === m.id && c.status === 'approved')) return 'training';
             if (m.onlineSince !== undefined) return 'online';
             return 'offline';
           };

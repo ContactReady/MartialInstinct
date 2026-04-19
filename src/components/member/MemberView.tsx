@@ -739,7 +739,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     const myConnections = (currentUser.connections ?? []);
     const connectedMembers = members.filter(m => myConnections.includes(m.id));
     const onlineConnected = connectedMembers.filter(m => m.onlineSince);
-    const trainingConnected = connectedMembers.filter(m => m.isCheckedIn);
+    const trainingConnected = connectedMembers.filter(m => checkIns.some(c => c.memberId === m.id && c.status === 'approved'));
 
 
     const formatTimeAgo = (date: Date | undefined): string => {
@@ -799,7 +799,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
               onlineConnected.map(m => (
                 <div key={m.id} className="bg-gray-800/50 rounded-xl border border-gray-700 px-4 py-3 flex items-center gap-3">
                   <div className="relative flex-shrink-0">
-                    <span className="text-2xl">{m.avatar}</span>
+                    {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
                     <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border border-gray-900 animate-pulse" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -833,7 +833,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                 {trainingConnected.map(m => (
                   <div key={m.id} className="bg-gray-800/50 rounded-xl border border-orange-800/30 px-4 py-3 flex items-center gap-3 mb-2">
                     <div className="relative flex-shrink-0">
-                      <span className="text-2xl">{m.avatar}</span>
+                      {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
                       <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-orange-400 rounded-full border border-gray-900" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -974,11 +974,11 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
               ) : (
                 <div className="space-y-2">
                   {connectedMembers.map(m => {
-                    const status = m.isCheckedIn ? 'training' : m.onlineSince ? 'online' : 'offline';
+                    const status = checkIns.some(c => c.memberId === m.id && c.status === 'approved') ? 'training' : m.onlineSince ? 'online' : 'offline';
                     return (
                       <div key={m.id} className="bg-gray-800/50 rounded-xl border border-gray-700 px-4 py-3 flex items-center gap-3">
                         <div className="relative flex-shrink-0">
-                          <span className="text-2xl">{m.avatar}</span>
+                          {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
                           <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900 ${
                             status === 'training' ? 'bg-orange-400' :
                             status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-gray-600'
