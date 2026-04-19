@@ -3060,7 +3060,7 @@ export const InstructorView: React.FC = () => {
               {/* Kapitel-Namen + Aktivierung */}
               <div className="mb-4 space-y-1.5">
                 <div className="text-gray-500 text-xs mb-2 font-semibold uppercase tracking-wider">Kapitel</div>
-                {effectiveBlocks.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level' && !b.adminOnly).map(block => (
+                {effectiveBlocks.filter(b => b.level !== 'assistant_instructor' && b.level !== 'instructor_level' && (!b.adminOnly || currentUser?.role === 'admin')).map(block => (
                   <div key={block.id} className={`flex items-center gap-2 rounded-lg px-3 py-2 border ${block.borderColor} ${block.bgColor}`}>
                     <span className="text-base flex-shrink-0">{block.icon}</span>
                     <input

@@ -914,6 +914,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       location_id: newCheckIn.locationId ?? null,
       status: 'pending',
       requested_at: newCheckIn.requestedAt.toISOString(),
+    }).then(({ error }) => {
+      if (error) console.warn('Check-in Insert Fehler:', error.message, error.code);
     });
   }, [currentUser, checkIns]);
 
