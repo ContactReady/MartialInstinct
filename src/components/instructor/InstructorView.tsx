@@ -2550,17 +2550,6 @@ export const InstructorView: React.FC = () => {
                         <span className="text-orange-400/70 flex-shrink-0">🔥 {m.streak.currentStreak} W</span>
                         <span className="truncate">{m.email}</span>
                       </div>
-                      {isOwnerOrAdmin && m.id !== currentUser.id && (
-                        <select
-                          value={m.role}
-                          onChange={e => updateMemberRole(m.id, e.target.value as InstructorRole)}
-                          className="mt-1.5 bg-gray-700 border border-gray-600 text-white text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-red-500 max-w-[160px]"
-                        >
-                          {roleOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
-                      )}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {canToggleAdmin && (
@@ -2621,6 +2610,20 @@ export const InstructorView: React.FC = () => {
                   {isSettingsOpen && (
                     <div className="border-t border-gray-700/50 px-4 py-3 bg-gray-800/30 space-y-4">
                       <p className="text-xs text-gray-400 font-medium">Persönliche Daten · {m.name}</p>
+                      {isOwnerOrAdmin && m.id !== currentUser.id && (
+                        <div>
+                          <label className="text-xs text-gray-500 block mb-1">Rolle</label>
+                          <select
+                            value={m.role}
+                            onChange={e => updateMemberRole(m.id, e.target.value as InstructorRole)}
+                            className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-red-500"
+                          >
+                            {roleOptions.map(opt => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                       <div className="space-y-2">
                         <div>
                           <label className="text-xs text-gray-500 block mb-1">Anzeigename</label>
