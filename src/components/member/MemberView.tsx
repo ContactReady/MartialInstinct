@@ -752,7 +752,11 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
       return canSeeAll; // mVis='all' → nur sichtbar wenn ich auch 'all' bin
     });
 
-    const onlineConnected = visibleMembers.filter(m => m.onlineSince);
+    const ONLINE_CUTOFF_MS = 10 * 60 * 1000; // 10 Min — konsistent mit InstructorView
+    const nowTs = Date.now();
+    const onlineConnected = visibleMembers.filter(m =>
+      m.onlineSince !== undefined || (nowTs - new Date(m.lastSeenAt).getTime()) < ONLINE_CUTOFF_MS
+    );
     const trainingConnected = visibleMembers.filter(m => checkIns.some(c => c.memberId === m.id && c.status === 'approved'));
 
 

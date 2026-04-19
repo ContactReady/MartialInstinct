@@ -2253,7 +2253,7 @@ export const InstructorView: React.FC = () => {
 
         {/* ── ANALYTICS ──────────────────────────────────────────────── */}
         {adminSubTab === 'analytics' && (() => {
-          const allM = members.filter(m => m.role === 'member');
+          const allM = members;
           const now = new Date();
 
           // Wochenstart-Helfer
@@ -2752,7 +2752,7 @@ export const InstructorView: React.FC = () => {
                           {MODULES.filter(m => m.number <= 10).map((mod, idx) => {
                             const num = idx + 1;
                             const prog = moduleProgressEdit[num] ?? { tactics: false, combat: false, instructor: false };
-                            const isInstructor = m.role === 'instructor' || m.role === 'admin';
+                            const isInstructor = ['instructor', 'full_instructor', 'head_instructor', 'admin'].includes(m.role);
                             return (
                               <React.Fragment key={mod.id}>
                                 <span className="text-xs text-gray-300 truncate leading-tight">
