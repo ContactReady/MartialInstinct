@@ -2778,7 +2778,7 @@ export const InstructorView: React.FC = () => {
                                     setModuleProgressEdit(prev => ({ ...prev, [num]: { ...prev[num], tactics: true, combat: c, instructor: prev[num]?.instructor ?? false } }));
                                     setModuleSaveState('dirty');
                                   }}
-                                  className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors disabled:opacity-30 ${prog.combat ? 'bg-gray-900 border border-gray-700' : 'bg-gray-800 border border-gray-600'}`}
+                                  className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors disabled:opacity-30 ${prog.combat ? 'bg-black border border-gray-800' : 'bg-gray-800 border border-gray-600'}`}
                                 >
                                   {prog.combat && <svg viewBox="0 0 10 10" className="w-3 h-3" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                 </button>
