@@ -898,25 +898,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => clearInterval(interval);
   }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-Checkout: jede Minute prüfen ob eine Einheit abgelaufen ist
-  useEffect(() => {
-    const checkAutoCheckout = () => {
-      const now = new Date();
-      const day = now.getDay();
-      const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-      checkIns
-        .filter(c => c.status === 'approved' && c.unitId)
-        .forEach(c => {
-          const unit = trainingUnits.find(u => u.id === c.unitId);
-          if (unit && unit.daysOfWeek.includes(day) && time >= unit.endTime) {
-            checkOut(c.memberId);
-          }
-        });
-    };
-    const id = setInterval(checkAutoCheckout, 60_000);
-    return () => clearInterval(id);
-  }, [checkIns, trainingUnits, checkOut]);
-
   // ============================================
   // CHECK-INS
   // ============================================
@@ -1060,6 +1041,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     supabase.from('check_ins').delete().eq('id', checkInId)
       .then(({ error }) => { if (error) console.warn('Cancel Check-in Fehler:', error.message); });
   }, []);
+
+  // Auto-Checkout: jede Minute prüfen ob eine Einheit abgelaufen ist
+  // (muss NACH checkOut stehen, da checkOut in der Dependency-Array referenziert wird)
+  useEffect(() => {
+    const checkAutoCheckout = () => {
+      const now = new Date();
+      const day = now.getDay();
+      const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      checkIns
+        .filter(c => c.status === 'approved' && c.unitId)
+        .forEach(c => {
+          const unit = trainingUnits.find(u => u.id === c.unitId);
+          if (unit && unit.daysOfWeek.includes(day) && time >= unit.endTime) {
+            checkOut(c.memberId);
+          }
+        });
+    };
+    const id = setInterval(checkAutoCheckout, 60_000);
+    return () => clearInterval(id);
+  }, [checkIns, trainingUnits, checkOut]);
 
   // ============================================
   // EXAM REQUESTS
