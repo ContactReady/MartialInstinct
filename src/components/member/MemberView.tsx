@@ -968,19 +968,21 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
               )}
             </div>
 
-            {/* Verbundene Mitglieder */}
+            {/* Alle sichtbaren Member */}
             <div>
               <p className="text-gray-500 text-xs uppercase tracking-wider px-1 mb-2">
-                Trainingspartner ({connectedMembers.length})
+                Member ({visibleMembers.length})
               </p>
-              {connectedMembers.length === 0 ? (
+              {visibleMembers.length === 0 ? (
                 <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-6 text-center">
-                  <p className="text-gray-500 text-sm">Noch keine Trainingspartner</p>
+                  <p className="text-gray-500 text-sm">Keine Member sichtbar</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {connectedMembers.map(m => {
-                    const status = checkIns.some(c => c.memberId === m.id && c.status === 'approved') ? 'training' : m.onlineSince ? 'online' : 'offline';
+                  {visibleMembers.map(m => {
+                    const isTrainingPartner = myConnections.includes(m.id);
+                    const isOnlineNow = m.onlineSince !== undefined || (nowTs - new Date(m.lastSeenAt).getTime()) < ONLINE_CUTOFF_MS;
+                    const status = checkIns.some(c => c.memberId === m.id && c.status === 'approved') ? 'training' : isOnlineNow ? 'online' : 'offline';
                     return (
                       <div key={m.id} className="bg-gray-800/50 rounded-xl border border-gray-700 px-4 py-3 flex items-center gap-3">
                         <div className="relative flex-shrink-0">
@@ -1014,10 +1016,17 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
 
   // ── Rangliste ─────────────────────────────────────────────────────────────
   const renderRanking = () => {
-    const rankMembers = members.filter(m => m.role === 'member');
+    const myConnections = currentUser.connections ?? [];
+    const canSeeAll = (currentUser.visibilityPreference ?? 'all') === 'all';
+    const rankMembers = members.filter(m => {
+      if (m.id === currentUser.id) return false;
+      const mVis = m.visibilityPreference ?? 'all';
+      if (mVis === 'buddies') return myConnections.includes(m.id);
+      return canSeeAll;
+    });
     return (
       <RankingList
-        members={rankMembers}
+        members={[currentUser, ...rankMembers]}
         currentUserId={currentUser.id}
         currentUserLevel={currentUser.currentLevel}
         checkIns={checkIns}
