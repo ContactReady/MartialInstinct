@@ -168,9 +168,7 @@ export const RankingList: React.FC<RankingListProps> = ({
             return (
               <div
                 key={m.id}
-                className={`rounded-xl border overflow-hidden transition-all ${
-                  isMe ? 'bg-yellow-900/20 border-yellow-500/40' : 'bg-gray-800/50 border-gray-700'
-                }`}
+                className="rounded-xl border overflow-hidden transition-all bg-gray-800/50 border-gray-700"
               >
                 {/* Klickbare Hauptzeile */}
                 <button
@@ -188,10 +186,10 @@ export const RankingList: React.FC<RankingListProps> = ({
                     <div className="flex-1 min-w-0">
                       {/* Name + Badges */}
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className={`font-semibold text-sm ${isMe ? 'text-yellow-300' : 'text-white'}`}>
+                        <span className="font-semibold text-sm text-white">
                           {m.name}
                         </span>
-                        {isMe && <span className="text-yellow-500/70 text-[10px]">(Du)</span>}
+                        {isMe && <span className="text-gray-500 text-[10px]">(Du)</span>}
                         {m.customBadge && (
                           <span className="text-[9px] bg-gray-700 border border-gray-600 rounded px-1.5 py-0.5 text-gray-200 font-medium">
                             {m.customBadge}

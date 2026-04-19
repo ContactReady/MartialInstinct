@@ -740,14 +740,15 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     const myVisibility = currentUser.visibilityPreference ?? 'all';
     const canSeeAll = myVisibility === 'all';
 
-    // Sichtbarkeitsregel (symmetrisch) — self immer sichtbar:
-    // B.visibility='all'     → nur sichtbar wenn ich auch 'all' habe
-    // B.visibility='buddies' → nur sichtbar wenn B in meinen Connections ist
+    // Sichtbarkeitsregel (one-way privacy):
+    // Deine Einstellung bestimmt ob DU erscheinst — nicht was du siehst.
+    // B.visibility='all'     → sichtbar für alle
+    // B.visibility='buddies' → nur sichtbar für eigene Connections
     const visibleMembers = members.filter(m => {
-      if (m.id === currentUser.id) return true; // selbst immer sichtbar
+      if (m.id === currentUser.id) return true; // self immer sichtbar
       const mVis = m.visibilityPreference ?? 'all';
       if (mVis === 'buddies') return myConnections.includes(m.id);
-      return canSeeAll;
+      return true; // 'all' → sichtbar für jeden
     });
 
     const ONLINE_CUTOFF_MS = 10 * 60 * 1000; // 10 Min — konsistent mit InstructorView
@@ -1034,10 +1035,10 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     const myConnections = currentUser.connections ?? [];
     const canSeeAll = (currentUser.visibilityPreference ?? 'all') === 'all';
     const rankMembers = members.filter(m => {
-      if (m.id === currentUser.id) return true; // self immer dabei
+      if (m.id === currentUser.id) return true;
       const mVis = m.visibilityPreference ?? 'all';
       if (mVis === 'buddies') return myConnections.includes(m.id);
-      return canSeeAll;
+      return true;
     });
     return (
       <RankingList
