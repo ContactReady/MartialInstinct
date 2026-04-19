@@ -738,8 +738,21 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
   const renderCommunity = () => {
     const myConnections = (currentUser.connections ?? []);
     const connectedMembers = members.filter(m => myConnections.includes(m.id));
-    const onlineConnected = connectedMembers.filter(m => m.onlineSince);
-    const trainingConnected = connectedMembers.filter(m => checkIns.some(c => c.memberId === m.id && c.status === 'approved'));
+    const myVisibility = currentUser.visibilityPreference ?? 'all';
+    const canSeeAll = myVisibility === 'all';
+
+    // Sichtbarkeitsregel:
+    // 'all': eigene Einstellung = alle sehen mich → ich sehe alle mit 'all' + meine Trainingspartner
+    // 'buddies': nur Trainingspartner sehen mich → ich sehe auch nur meine Trainingspartner
+    const visibleMembers = members.filter(m => {
+      if (m.id === currentUser.id) return false;
+      if (myConnections.includes(m.id)) return true; // Trainingspartner immer sichtbar
+      if (!canSeeAll) return false;
+      return (m.visibilityPreference ?? 'all') === 'all';
+    });
+
+    const onlineConnected = visibleMembers.filter(m => m.onlineSince);
+    const trainingConnected = visibleMembers.filter(m => checkIns.some(c => c.memberId === m.id && c.status === 'approved'));
 
 
     const formatTimeAgo = (date: Date | undefined): string => {
@@ -783,17 +796,11 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
         {/* ── ONLINE ── */}
         {communitySubTab === 'online' && (
           <div className="space-y-3">
-            {myConnections.length === 0 ? (
-              <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
-                <div className="text-3xl mb-2">👥</div>
-                <p className="text-gray-400 text-sm font-medium">Noch keine Trainingspartner</p>
-                <p className="text-gray-500 text-xs mt-1">Verbinde dich im Training unter "Member".</p>
-              </div>
-            ) : onlineConnected.length === 0 ? (
+            {onlineConnected.length === 0 ? (
               <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
                 <div className="text-3xl mb-2">😴</div>
-                <p className="text-gray-400 text-sm font-medium">Keine Verbindungen gerade online</p>
-                <p className="text-gray-500 text-xs mt-1">{connectedMembers.length} Verbindung{connectedMembers.length !== 1 ? 'en' : ''} insgesamt</p>
+                <p className="text-gray-400 text-sm font-medium">Niemand ist gerade online</p>
+                <p className="text-gray-500 text-xs mt-1">{canSeeAll ? 'Alle Members mit sichtbarem Status werden hier angezeigt.' : 'Du siehst nur deine Trainingspartner.'}</p>
               </div>
             ) : (
               onlineConnected.map(m => (
@@ -815,17 +822,11 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
         {/* ── TRAINING ── */}
         {communitySubTab === 'training' && (
           <div className="space-y-3">
-            {myConnections.length === 0 ? (
+            {trainingConnected.length === 0 ? (
               <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
                 <div className="text-3xl mb-2">🥋</div>
-                <p className="text-gray-400 text-sm font-medium">Noch keine Trainingspartner</p>
-                <p className="text-gray-500 text-xs mt-1">Verbinde dich im Training unter "Member".</p>
-              </div>
-            ) : trainingConnected.length === 0 ? (
-              <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
-                <div className="text-3xl mb-2">🥋</div>
-                <p className="text-gray-400 text-sm font-medium">Niemand aus deinen Verbindungen trainiert gerade</p>
-                <p className="text-gray-500 text-xs mt-1">{connectedMembers.length} Verbindung{connectedMembers.length !== 1 ? 'en' : ''} insgesamt</p>
+                <p className="text-gray-400 text-sm font-medium">Niemand trainiert gerade</p>
+                <p className="text-gray-500 text-xs mt-1">{canSeeAll ? 'Alle Members mit sichtbarem Status werden hier angezeigt.' : 'Du siehst nur deine Trainingspartner.'}</p>
               </div>
             ) : (
               <div>

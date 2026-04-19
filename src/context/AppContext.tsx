@@ -869,7 +869,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!currentUser) return;
     const ONLINE_MS = 3 * 60 * 1000; // 3 Min
     const fetchOnline = async () => {
-      const { data } = await supabase.from('members').select('id, last_seen_at');
+      const { data } = await supabase.from('members').select('id, last_seen_at, visibility_preference');
       if (!data) return;
       const now = Date.now();
       setMembers(prev => prev.map(m => {
@@ -878,7 +878,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (!row?.last_seen_at) return { ...m, onlineSince: undefined };
         const lastSeen = new Date(row.last_seen_at as string).getTime();
         const online = now - lastSeen < ONLINE_MS;
-        return { ...m, lastSeenAt: new Date(row.last_seen_at as string), onlineSince: online ? new Date(row.last_seen_at as string) : undefined };
+        return {
+          ...m,
+          lastSeenAt: new Date(row.last_seen_at as string),
+          onlineSince: online ? new Date(row.last_seen_at as string) : undefined,
+          visibilityPreference: (row.visibility_preference as Member['visibilityPreference']) ?? m.visibilityPreference,
+        };
       }));
     };
     fetchOnline();
