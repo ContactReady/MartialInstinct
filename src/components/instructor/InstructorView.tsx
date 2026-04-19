@@ -505,7 +505,10 @@ export const InstructorView: React.FC = () => {
                     return (
                       <div key={ci.id} className="px-4 py-3 space-y-2">
                         <div className="flex items-center gap-3">
-                          <span className="text-xl flex-shrink-0">{member.avatar}</span>
+                          {member.profileImage
+                            ? <img src={member.profileImage} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                            : <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-300">{member.name.charAt(0).toUpperCase()}</div>
+                          }
                           <div className="flex-1 min-w-0">
                             <div className="text-white font-medium text-sm">{member.name}</div>
                             <div className="text-gray-500 text-xs truncate">
@@ -2765,9 +2768,9 @@ export const InstructorView: React.FC = () => {
                                   }}
                                   className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors ${prog.tactics ? 'bg-gray-500' : 'bg-gray-800 border border-gray-600'}`}
                                 >
-                                  {prog.tactics && <span className="text-white text-[10px] font-bold">✓</span>}
+                                  {prog.tactics && <svg viewBox="0 0 10 10" className="w-3 h-3" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                 </button>
-                                {/* C checkbox */}
+                                {/* C checkbox — black */}
                                 <button
                                   disabled={!prog.tactics}
                                   onClick={() => {
@@ -2775,9 +2778,9 @@ export const InstructorView: React.FC = () => {
                                     setModuleProgressEdit(prev => ({ ...prev, [num]: { ...prev[num], tactics: true, combat: c, instructor: prev[num]?.instructor ?? false } }));
                                     setModuleSaveState('dirty');
                                   }}
-                                  className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors disabled:opacity-30 ${prog.combat ? 'bg-gray-500' : 'bg-gray-800 border border-gray-600'}`}
+                                  className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors disabled:opacity-30 ${prog.combat ? 'bg-gray-900 border border-gray-700' : 'bg-gray-800 border border-gray-600'}`}
                                 >
-                                  {prog.combat && <span className="text-white text-[10px] font-bold">✓</span>}
+                                  {prog.combat && <svg viewBox="0 0 10 10" className="w-3 h-3" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                 </button>
                                 {/* I checkbox — red, only interactive for instructors */}
                                 <button
@@ -2789,7 +2792,7 @@ export const InstructorView: React.FC = () => {
                                   }}
                                   className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors disabled:opacity-25 ${prog.instructor ? 'bg-red-600' : 'bg-gray-800 border border-gray-600'}`}
                                 >
-                                  {prog.instructor && <span className="text-white text-[10px] font-bold">✓</span>}
+                                  {prog.instructor && <svg viewBox="0 0 10 10" className="w-3 h-3" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                 </button>
                               </React.Fragment>
                             );
