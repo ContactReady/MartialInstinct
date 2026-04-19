@@ -2809,7 +2809,7 @@ export const InstructorView: React.FC = () => {
                           }}
                           className={`w-full py-2 rounded-lg text-sm font-medium transition-all ${
                             moduleSaveState === 'saved' ? 'bg-green-600 text-white cursor-default' :
-                            moduleSaveState === 'dirty' ? 'bg-blue-600 hover:bg-blue-500 text-white' :
+                            moduleSaveState === 'dirty' ? 'bg-red-600 hover:bg-red-500 text-white' :
                             'bg-gray-700 text-gray-500 cursor-not-allowed'
                           }`}
                         >

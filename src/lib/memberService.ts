@@ -72,6 +72,8 @@ function rowToMember(row: DbRow): Member {
     assistantInstructorApplication: row.assistant_instructor_application
       ? reviveDates(row.assistant_instructor_application) as Member['assistantInstructorApplication']
       : undefined,
+    instructorModules: (row.instructor_modules as string[]) || [],
+    profileImage: row.profile_image as string | undefined,
   };
 }
 
@@ -107,6 +109,8 @@ function memberToRow(m: Member): DbRow {
     data_visibility:       m.dataVisibility || null,
     contact_application:   m.contactApplication || null,
     assistant_instructor_application: m.assistantInstructorApplication || null,
+    instructor_modules:    m.instructorModules || [],
+    profile_image:         m.profileImage || null,
     updated_at:            new Date().toISOString(),
   };
 }
