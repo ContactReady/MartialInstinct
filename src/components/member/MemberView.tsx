@@ -741,14 +741,15 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     const myVisibility = currentUser.visibilityPreference ?? 'all';
     const canSeeAll = myVisibility === 'all';
 
-    // Sichtbarkeitsregel:
-    // 'all': eigene Einstellung = alle sehen mich → ich sehe alle mit 'all' + meine Trainingspartner
-    // 'buddies': nur Trainingspartner sehen mich → ich sehe auch nur meine Trainingspartner
+    // Sichtbarkeitsregel (symmetrisch):
+    // B.visibility='all'     → nur sichtbar wenn ich auch 'all' habe
+    // B.visibility='buddies' → nur sichtbar wenn B in meinen Connections ist
+    // (connectWithCode ist bidirektional → B in meinen = ich in B's Connections)
     const visibleMembers = members.filter(m => {
       if (m.id === currentUser.id) return false;
-      if (myConnections.includes(m.id)) return true; // Trainingspartner immer sichtbar
-      if (!canSeeAll) return false;
-      return (m.visibilityPreference ?? 'all') === 'all';
+      const mVis = m.visibilityPreference ?? 'all';
+      if (mVis === 'buddies') return myConnections.includes(m.id);
+      return canSeeAll; // mVis='all' → nur sichtbar wenn ich auch 'all' bin
     });
 
     const onlineConnected = visibleMembers.filter(m => m.onlineSince);
