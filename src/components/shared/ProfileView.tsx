@@ -37,13 +37,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
 
-  const techPassedCount = Object.values(member.techniqueProgress).filter(
-    p => p.status === 'tech_passed' || p.status === 'tac_passed' || p.status === 'tac_pending'
-  ).length;
-  const tacPassedCount = Object.values(member.techniqueProgress).filter(
-    p => p.status === 'tac_passed'
-  ).length;
-
   // Alle bestandenen Techniken mit Modulname
   const passedTechniques = MODULES.flatMap(mod =>
     mod.techniques
@@ -58,6 +51,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
         passedAt: member.techniqueProgress[t.id]?.techPassedAt ?? member.techniqueProgress[t.id]?.tacPassedAt
       }))
   );
+
+  // Zähle nur Techniken die in MODULES existieren → konsistent mit der Liste darunter
+  const techPassedCount = passedTechniques.length;
+  const tacPassedCount = passedTechniques.filter(t => t.status === 'tac_passed').length;
+  const instructorModCount = member.instructorModules?.length ?? 0;
 
   const handleImageClick = () => {
     if (canEditImage && !imgDraft) fileInputRef.current?.click();
@@ -260,21 +258,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
           <div className="grid grid-cols-4 gap-2 mt-4">
             <div className="bg-gray-800/60 rounded-xl p-2.5 border border-gray-700/50 text-center">
               <div className="text-lg font-black text-orange-400">{member.streak.longestStreak} W</div>
-              <div className="text-[10px] text-gray-500 mt-0.5">🏅 Rekord</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">Rekord</div>
             </div>
             <div className="bg-gray-800/60 rounded-xl p-2.5 border border-gray-700/50 text-center">
               <div className="text-lg font-black text-yellow-400">{member.xp ?? 0}</div>
               <div className="text-[10px] text-gray-500 mt-0.5">XP</div>
             </div>
             <div className="bg-gray-800/60 rounded-xl p-2.5 border border-gray-700/50 text-center">
-              <div className="text-lg font-black text-blue-400">{techPassedCount}</div>
-              <div className="text-[10px] text-gray-500 mt-0.5">◐ Tech.</div>
+              <div className="text-lg font-black text-white">{techPassedCount}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">T bestanden</div>
             </div>
             <div className="bg-gray-800/60 rounded-xl p-2.5 border border-gray-700/50 text-center">
-              <div className="text-lg font-black text-green-400">{tacPassedCount}</div>
-              <div className="text-[10px] text-gray-500 mt-0.5">● Vollst.</div>
+              <div className="text-lg font-black text-white">{tacPassedCount}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">C bestanden</div>
             </div>
           </div>
+          {instructorModCount > 0 && (
+            <div className="mt-2">
+              <div className="bg-gray-800/60 rounded-xl p-2.5 border border-gray-700/50 flex items-center justify-between px-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded bg-red-900/60 border border-red-700 flex items-center justify-center text-[10px] font-black text-red-400">I</span>
+                  <span className="text-[10px] text-gray-500">Instructor Module</span>
+                </div>
+                <span className="text-sm font-black text-white">{instructorModCount}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="px-5 pb-28 space-y-5 mt-4">

@@ -231,8 +231,14 @@ export const RankingList: React.FC<RankingListProps> = ({
                       <span className="font-semibold text-white">{combatDone}</span>
                       <span className="text-gray-600">/{total}</span>
                     </span>
+                    {(m.instructorModules?.length ?? 0) > 0 && (
+                      <span className="text-xs text-gray-400 flex items-center gap-1">
+                        <span className="w-3.5 h-3.5 rounded bg-red-900/60 border border-red-700 inline-flex items-center justify-center text-[7px] font-bold text-red-400 flex-shrink-0">I</span>
+                        <span className="font-semibold text-white">{m.instructorModules!.length}</span>
+                      </span>
+                    )}
                     <span className="text-[10px] text-gray-600 flex items-center gap-1 ml-auto">
-                      <span>✅ {passed} Tech.</span>
+                      <span>{passed} Tech.</span>
                     </span>
                   </div>
 

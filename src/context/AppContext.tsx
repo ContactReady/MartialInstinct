@@ -2761,8 +2761,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [currentUser]);
 
   const updateMemberCoreData = useCallback((memberId: string, data: { name?: string; firstName?: string; lastName?: string; birthDate?: string; memberId?: string }) => {
-    setMembers(prev => prev.map(m => {
-      if (m.id !== memberId) return m;
+    const apply = (m: Member): Member => {
       const updated = { ...m };
       if (data.name !== undefined) updated.name = data.name;
       if (data.firstName !== undefined) updated.firstName = data.firstName;
@@ -2770,16 +2769,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (data.birthDate !== undefined) updated.birthDate = data.birthDate;
       if (data.memberId !== undefined) updated.memberId = data.memberId;
       return updated;
-    }));
+    };
+    setMembers(prev => {
+      const next = prev.map(m => m.id === memberId ? apply(m) : m);
+      const updated = next.find(m => m.id === memberId);
+      if (updated) saveMember(updated);
+      return next;
+    });
     setCurrentUser(prev => {
       if (!prev || prev.id !== memberId) return prev;
-      const updated = { ...prev };
-      if (data.name !== undefined) updated.name = data.name;
-      if (data.firstName !== undefined) updated.firstName = data.firstName;
-      if (data.lastName !== undefined) updated.lastName = data.lastName;
-      if (data.birthDate !== undefined) updated.birthDate = data.birthDate;
-      if (data.memberId !== undefined) updated.memberId = data.memberId;
-      return updated;
+      return apply(prev);
     });
   }, []);
 

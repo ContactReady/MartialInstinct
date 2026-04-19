@@ -508,6 +508,18 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
               <div className="text-[10px] text-gray-500 mt-0.5">Combat bestanden</div>
             </div>
           </div>
+          {/* Instructor Module — nur wenn vorhanden */}
+          {(currentUser.instructorModules?.length ?? 0) > 0 && (
+            <div className="col-span-2 bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 flex items-center gap-3">
+              <div className="w-7 h-7 rounded-lg bg-red-900/40 flex items-center justify-center flex-shrink-0">
+                <span className="text-xs font-black text-red-400">I</span>
+              </div>
+              <div>
+                <div className="text-2xl font-black text-white leading-none">{currentUser.instructorModules!.length}</div>
+                <div className="text-[10px] text-gray-500 mt-0.5">Instructor Module</div>
+              </div>
+            </div>
+          )}
           {/* Bandaids — volle Breite */}
           <div className={`col-span-2 rounded-xl p-3 border flex items-center gap-3 ${
             currentUser.streak.bandaids > 0 ? 'bg-green-900/20 border-green-800/40' : 'bg-gray-800/50 border-gray-700/80'
