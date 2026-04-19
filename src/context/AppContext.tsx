@@ -110,6 +110,7 @@ interface AppContextType {
   approveCheckIn: (checkInId: string) => void;
   rejectCheckIn: (checkInId: string) => void;
   checkOut: (memberId: string) => void;
+  cancelCheckIn: (checkInId: string) => void;
   
   // Exam Requests
   requestExam: (techniqueId: string) => void;
@@ -851,7 +852,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
       const { data } = await supabase.from('check_ins').select('*').gte('requested_at', todayStart.toISOString());
       if (data && data.length > 0) {
-        setCheckIns(data.map(r => ({
+        const mapRow = (r: Record<string, unknown>): CheckIn => ({
           id: r.id as string,
           memberId: r.member_id as string,
           memberName: r.member_name as string,
@@ -861,7 +862,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           approvedById: r.approved_by_id as string | undefined,
           approvedByName: r.approved_by_name as string | undefined,
           approvedAt: r.approved_at ? new Date(r.approved_at as string) : undefined,
-        })));
+        });
+        // Merge: nie von 'approved' zurück auf 'pending' degradieren (Schutz gegen stale DB-Daten)
+        setCheckIns(prev => {
+          const fetched = (data as Record<string, unknown>[]).map(mapRow);
+          return fetched.map(fetchedCI => {
+            const existing = prev.find(e => e.id === fetchedCI.id);
+            if (existing?.status === 'approved' && fetchedCI.status === 'pending') return existing;
+            return fetchedCI;
+          });
+        });
       }
     };
     fetchCheckIns();
@@ -922,68 +932,63 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const approveCheckIn = useCallback((checkInId: string) => {
     if (!currentUser) return;
 
+    // CheckIn aus Closure lesen (keine Side Effects innerhalb von setState)
+    const checkIn = checkIns.find(c => c.id === checkInId);
+    if (!checkIn) return;
+
     const approvedAt = new Date();
 
-    // Finde den CheckIn im aktuellen State
-    setCheckIns(prev => {
-      const checkIn = prev.find(c => c.id === checkInId);
-      if (!checkIn) return prev;
+    // 1. checkIns State aktualisieren
+    setCheckIns(prev => prev.map(c =>
+      c.id === checkInId
+        ? { ...c, status: 'approved' as const, approvedById: currentUser.id, approvedByName: currentUser.name, approvedAt }
+        : c
+    ));
 
-      const updatedCheckIns = prev.map(c =>
-        c.id === checkInId
-          ? { ...c, status: 'approved' as const, approvedById: currentUser.id, approvedByName: currentUser.name, approvedAt }
-          : c
-      );
+    // 2. Member State aktualisieren (außerhalb setCheckIns)
+    const newStreak = (members.find(m => m.id === checkIn.memberId)?.streak.currentStreak ?? 0) + 1;
+    const interval = platformConfig.xp.streakInterval;
+    const streakXP = newStreak > 0 && newStreak % interval === 0 ? platformConfig.xp.streakWeeks : 0;
+    const updateMember = (m: import('../types').Member) =>
+      m.id === checkIn.memberId
+        ? {
+            ...m,
+            isCheckedIn: true,
+            checkedInAt: approvedAt,
+            lastSeenAt: approvedAt,
+            xp: (m.xp ?? 0) + platformConfig.xp.checkIn + streakXP,
+            streak: {
+              ...m.streak,
+              lastTrainingDate: approvedAt,
+              currentStreak: m.streak.currentStreak + 1,
+              longestStreak: Math.max(m.streak.longestStreak, m.streak.currentStreak + 1),
+            }
+          }
+        : m;
+    setMembers(prev => prev.map(updateMember));
+    setCurrentUser(prev => prev ? updateMember(prev) : null);
 
-      // Member-State + currentUser-State aktualisieren
-      const updateMember = (m: import('../types').Member) =>
-        m.id === checkIn.memberId
-          ? (() => {
-              const newStreak = m.streak.currentStreak + 1;
-              const interval = platformConfig.xp.streakInterval;
-              const streakXP = newStreak > 0 && newStreak % interval === 0 ? platformConfig.xp.streakWeeks : 0;
-              return {
-                ...m,
-                isCheckedIn: true,
-                checkedInAt: approvedAt,
-                lastSeenAt: approvedAt,
-                xp: (m.xp ?? 0) + platformConfig.xp.checkIn + streakXP,
-                streak: {
-                  ...m.streak,
-                  lastTrainingDate: approvedAt,
-                  currentStreak: newStreak,
-                  longestStreak: Math.max(m.streak.longestStreak, newStreak)
-                }
-              };
-            })()
-          : m;
+    // 3. Benachrichtigung für Mitglied
+    setNotifications(n => [...n, {
+      id: `notif-approved-${Date.now()}`,
+      oduserId: checkIn.memberId,
+      type: 'checkin' as const,
+      title: 'Eingecheckt!',
+      message: `Du wurdest um ${approvedAt.getHours().toString().padStart(2,'0')}:${approvedAt.getMinutes().toString().padStart(2,'0')} Uhr eingecheckt. Viel Erfolg!`,
+      read: false,
+      createdAt: approvedAt,
+    }]);
 
-      setMembers(prev => prev.map(updateMember));
-      setCurrentUser(prev => prev ? updateMember(prev) : null);
-
-      // Member-Benachrichtigung
-      const memberNotification: Notification = {
-        id: `notif-approved-${Date.now()}`,
-        oduserId: checkIn.memberId,
-        type: 'checkin',
-        title: 'Eingecheckt!',
-        message: `Du wurdest um ${approvedAt.getHours().toString().padStart(2,'0')}:${approvedAt.getMinutes().toString().padStart(2,'0')} Uhr eingecheckt. Viel Erfolg!`,
-        read: false,
-        createdAt: approvedAt
-      };
-      setNotifications(n => [...n, memberNotification]);
-
-      // In Supabase aktualisieren
-      supabase.from('check_ins').update({
-        status: 'approved',
-        approved_by_id: currentUser.id,
-        approved_by_name: currentUser.name,
-        approved_at: approvedAt.toISOString(),
-      }).eq('id', checkInId);
-
-      return updatedCheckIns;
+    // 4. Supabase außerhalb setState, mit Error-Handling
+    supabase.from('check_ins').update({
+      status: 'approved',
+      approved_by_id: currentUser.id,
+      approved_by_name: currentUser.name,
+      approved_at: approvedAt.toISOString(),
+    }).eq('id', checkInId).then(({ error }) => {
+      if (error) console.warn('Approve Check-in Fehler:', error.message);
     });
-  }, [currentUser]);
+  }, [currentUser, checkIns, members]);
 
   const rejectCheckIn = useCallback((checkInId: string) => {
     setCheckIns(prev => prev.map(c =>
@@ -991,20 +996,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         ? { ...c, status: 'rejected' as const }
         : c
     ));
-    supabase.from('check_ins').update({ status: 'rejected' }).eq('id', checkInId);
+    supabase.from('check_ins').update({ status: 'rejected' }).eq('id', checkInId)
+      .then(({ error }) => { if (error) console.warn('Reject Check-in Fehler:', error.message); });
   }, []);
 
   const checkOut = useCallback((memberId: string) => {
+    const toCheckOut = checkIns.filter(c => c.memberId === memberId && c.status === 'approved');
     setMembers(prev => prev.map(m =>
-      m.id === memberId
-        ? { ...m, isCheckedIn: false, checkedInAt: undefined }
-        : m
+      m.id === memberId ? { ...m, isCheckedIn: false, checkedInAt: undefined } : m
     ));
-    setCheckIns(prev => {
-      const toCheckOut = prev.filter(c => c.memberId === memberId && c.status === 'approved');
-      toCheckOut.forEach(c => supabase.from('check_ins').delete().eq('id', c.id));
-      return prev.filter(c => c.memberId !== memberId || c.status !== 'approved');
-    });
+    setCheckIns(prev => prev.filter(c => c.memberId !== memberId || c.status !== 'approved'));
+    toCheckOut.forEach(c =>
+      supabase.from('check_ins').delete().eq('id', c.id)
+        .then(({ error }) => { if (error) console.warn('CheckOut Delete Fehler:', error.message); })
+    );
+  }, [checkIns]);
+
+  const cancelCheckIn = useCallback((checkInId: string) => {
+    setCheckIns(prev => prev.filter(c => c.id !== checkInId));
+    supabase.from('check_ins').delete().eq('id', checkInId)
+      .then(({ error }) => { if (error) console.warn('Cancel Check-in Fehler:', error.message); });
   }, []);
 
   // ============================================
@@ -2906,6 +2917,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     approveCheckIn,
     rejectCheckIn,
     checkOut,
+    cancelCheckIn,
     requestExam,
     approveExam,
     rejectExam,

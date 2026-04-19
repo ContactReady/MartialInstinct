@@ -21,6 +21,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     currentUser,
     members,
     requestCheckIn,
+    cancelCheckIn,
     checkIns,
     isBlockUnlocked,
     submitContactApplication,
@@ -229,7 +230,14 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
           {checkInStatus === 'approved' ? (
             <span className="text-green-400 text-xs font-bold flex-shrink-0">✓ Dabei</span>
           ) : checkInStatus === 'pending' ? (
-            <Loader2 className="w-4 h-4 animate-spin text-gray-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+              <button
+                onClick={() => todayCheckIn && cancelCheckIn(todayCheckIn.id)}
+                className="text-xs text-gray-500 hover:text-red-400 transition-colors"
+                title="Anfrage zurückziehen"
+              >✕</button>
+            </div>
           ) : (
             <button onClick={requestCheckIn} className="flex-shrink-0 bg-red-600 hover:bg-red-500 active:scale-95 text-white px-4 py-1.5 rounded-lg font-bold text-sm transition-all">
               Check-In
