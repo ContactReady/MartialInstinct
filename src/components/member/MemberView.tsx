@@ -198,19 +198,18 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     const xpPercent = Math.min(100, Math.round((xpProg.current / xpProg.needed) * 100));
     const levelInfo = LEVEL_DISPLAY[currentUser.currentLevel];
 
-    // ── Stats-Berechnungen ──
-    const allProgress = Object.values(currentUser.techniqueProgress);
-    const tacticsPassed = allProgress.filter(p => p.status === 'tech_passed' || p.status === 'tac_passed').length;
-    const combatPassed  = allProgress.filter(p => p.status === 'tac_passed').length;
-
-    // ── Gesamtfortschritt ──
+    // ── Stats-Berechnungen (nur Pflichttechniken) ──
     const allRequired = MODULES.flatMap(m => m.techniques.filter(t => t.isRequired));
     const totalRequired = allRequired.length;
-    const totalPassedRequired = allRequired.filter(t => {
+    const tacticsPassed = allRequired.filter(t => {
       const s = currentUser.techniqueProgress[t.id]?.status;
       return s === 'tech_passed' || s === 'tac_passed';
     }).length;
-    const totalPercent = totalRequired > 0 ? Math.round((totalPassedRequired / totalRequired) * 100) : 0;
+    const combatPassed = allRequired.filter(t =>
+      currentUser.techniqueProgress[t.id]?.status === 'tac_passed'
+    ).length;
+    const totalPassedRequired = tacticsPassed;
+    const totalPercent = totalRequired > 0 ? Math.round((tacticsPassed / totalRequired) * 100) : 0;
 
     // ── Offene Prüfungsanfragen ──
     const pendingExams = currentUser.examRequests.filter(r => r.status === 'pending');
@@ -741,21 +740,22 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     const myVisibility = currentUser.visibilityPreference ?? 'all';
     const canSeeAll = myVisibility === 'all';
 
-    // Sichtbarkeitsregel (symmetrisch):
+    // Sichtbarkeitsregel (symmetrisch) — self immer sichtbar:
     // B.visibility='all'     → nur sichtbar wenn ich auch 'all' habe
     // B.visibility='buddies' → nur sichtbar wenn B in meinen Connections ist
-    // (connectWithCode ist bidirektional → B in meinen = ich in B's Connections)
     const visibleMembers = members.filter(m => {
-      if (m.id === currentUser.id) return false;
+      if (m.id === currentUser.id) return true; // selbst immer sichtbar
       const mVis = m.visibilityPreference ?? 'all';
       if (mVis === 'buddies') return myConnections.includes(m.id);
-      return canSeeAll; // mVis='all' → nur sichtbar wenn ich auch 'all' bin
+      return canSeeAll;
     });
 
     const ONLINE_CUTOFF_MS = 10 * 60 * 1000; // 10 Min — konsistent mit InstructorView
     const nowTs = Date.now();
     const onlineConnected = visibleMembers.filter(m =>
-      m.onlineSince !== undefined || (nowTs - new Date(m.lastSeenAt).getTime()) < ONLINE_CUTOFF_MS
+      m.id === currentUser.id || // self ist immer online
+      m.onlineSince !== undefined ||
+      (nowTs - new Date(m.lastSeenAt).getTime()) < ONLINE_CUTOFF_MS
     );
     const trainingConnected = visibleMembers.filter(m => checkIns.some(c => c.memberId === m.id && c.status === 'approved'));
 
@@ -808,18 +808,24 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                 <p className="text-gray-500 text-xs mt-1">{canSeeAll ? 'Alle Members mit sichtbarem Status werden hier angezeigt.' : 'Du siehst nur deine Trainingspartner.'}</p>
               </div>
             ) : (
-              onlineConnected.map(m => (
-                <div key={m.id} className="bg-gray-800/50 rounded-xl border border-gray-700 px-4 py-3 flex items-center gap-3">
+              onlineConnected.map(m => {
+                const isMe = m.id === currentUser.id;
+                return (
+                <div key={m.id} className={`rounded-xl border px-4 py-3 flex items-center gap-3 ${isMe ? 'bg-gray-700/60 border-gray-600' : 'bg-gray-800/50 border-gray-700'}`}>
                   <div className="relative flex-shrink-0">
                     {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
                     <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border border-gray-900 animate-pulse" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-white font-semibold text-sm">{m.name}</div>
-                    <div className="text-gray-500 text-xs">{formatTimeAgo(m.onlineSince)}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-white font-semibold text-sm">{m.name}</span>
+                      {isMe && <span className="text-gray-500 text-[10px]">(Du)</span>}
+                    </div>
+                    <div className="text-gray-500 text-xs">{isMe ? 'Gerade eben' : formatTimeAgo(m.onlineSince)}</div>
                   </div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
@@ -836,18 +842,24 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
             ) : (
               <div>
                 <p className="text-gray-500 text-xs px-1 mb-2">Gerade im Training ({trainingConnected.length})</p>
-                {trainingConnected.map(m => (
+                {trainingConnected.map(m => {
+                  const isMe = m.id === currentUser.id;
+                  return (
                   <div key={m.id} className="bg-gray-800/50 rounded-xl border border-orange-800/30 px-4 py-3 flex items-center gap-3 mb-2">
                     <div className="relative flex-shrink-0">
                       {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
                       <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-orange-400 rounded-full border border-gray-900" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-white font-semibold text-sm">{m.name}</div>
-                      <div className="text-orange-400/70 text-xs">🥋 Im Training</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-white font-semibold text-sm">{m.name}</span>
+                        {isMe && <span className="text-gray-500 text-[10px]">(Du)</span>}
+                      </div>
+                      <div className="text-orange-400/70 text-xs">Im Training</div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -980,11 +992,11 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
               ) : (
                 <div className="space-y-2">
                   {visibleMembers.map(m => {
-                    const isTrainingPartner = myConnections.includes(m.id);
-                    const isOnlineNow = m.onlineSince !== undefined || (nowTs - new Date(m.lastSeenAt).getTime()) < ONLINE_CUTOFF_MS;
+                    const isMe = m.id === currentUser.id;
+                    const isOnlineNow = isMe || m.onlineSince !== undefined || (nowTs - new Date(m.lastSeenAt).getTime()) < ONLINE_CUTOFF_MS;
                     const status = checkIns.some(c => c.memberId === m.id && c.status === 'approved') ? 'training' : isOnlineNow ? 'online' : 'offline';
                     return (
-                      <div key={m.id} className="bg-gray-800/50 rounded-xl border border-gray-700 px-4 py-3 flex items-center gap-3">
+                      <div key={m.id} className={`rounded-xl border px-4 py-3 flex items-center gap-3 ${isMe ? 'bg-gray-700/60 border-gray-600' : 'bg-gray-800/50 border-gray-700'}`}>
                         <div className="relative flex-shrink-0">
                           {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
                           <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900 ${
@@ -993,10 +1005,13 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                           }`} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-white font-semibold text-sm">{m.name}</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-white font-semibold text-sm">{m.name}</span>
+                            {isMe && <span className="text-gray-500 text-[10px]">(Du)</span>}
+                          </div>
                           <div className="text-gray-500 text-xs">
-                            {status === 'training' ? '🥋 Im Training' :
-                             status === 'online' ? '🟢 Online' : '⚫ Offline'}
+                            {status === 'training' ? 'Im Training' :
+                             status === 'online' ? 'Online' : 'Offline'}
                           </div>
                         </div>
                       </div>
@@ -1019,14 +1034,14 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     const myConnections = currentUser.connections ?? [];
     const canSeeAll = (currentUser.visibilityPreference ?? 'all') === 'all';
     const rankMembers = members.filter(m => {
-      if (m.id === currentUser.id) return false;
+      if (m.id === currentUser.id) return true; // self immer dabei
       const mVis = m.visibilityPreference ?? 'all';
       if (mVis === 'buddies') return myConnections.includes(m.id);
       return canSeeAll;
     });
     return (
       <RankingList
-        members={[currentUser, ...rankMembers]}
+        members={rankMembers}
         currentUserId={currentUser.id}
         currentUserLevel={currentUser.currentLevel}
         checkIns={checkIns}

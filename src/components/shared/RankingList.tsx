@@ -185,7 +185,6 @@ export const RankingList: React.FC<RankingListProps> = ({
                       </span>
                     </div>
                     {statusDot(m)}
-                    <span className="text-xl flex-shrink-0">{m.avatar}</span>
                     <div className="flex-1 min-w-0">
                       {/* Name + Badges */}
                       <div className="flex items-center gap-1.5 flex-wrap">
