@@ -2554,16 +2554,6 @@ export const InstructorView: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {canToggleAdmin && (
-                        <button
-                          onClick={() => updateAdminAccess(m.id, !memberHasAdmin)}
-                          className={`text-xs px-2 py-1.5 rounded-lg font-medium transition-all ${
-                            memberHasAdmin ? 'bg-red-900/40 text-red-400' : 'bg-gray-700/60 text-gray-400'
-                          }`}
-                        >
-                          {memberHasAdmin ? '🔓' : '🔐'}
-                        </button>
-                      )}
                       {isOwnerOrAdmin && (
                         <button
                           onClick={() => {
@@ -2613,17 +2603,41 @@ export const InstructorView: React.FC = () => {
                     <div className="border-t border-gray-700/50 px-4 py-3 bg-gray-800/30 space-y-4">
                       <p className="text-xs text-gray-400 font-medium">Persönliche Daten · {m.name}</p>
                       {isOwnerOrAdmin && m.id !== currentUser.id && (
-                        <div>
-                          <label className="text-xs text-gray-500 block mb-1">Rolle</label>
-                          <select
-                            value={m.role}
-                            onChange={e => updateMemberRole(m.id, e.target.value as InstructorRole)}
-                            className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-red-500"
-                          >
-                            {roleOptions.map(opt => (
-                              <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                          </select>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-xs text-gray-500 block mb-1">Rolle</label>
+                            <select
+                              value={m.role}
+                              onChange={e => updateMemberRole(m.id, e.target.value as InstructorRole)}
+                              className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-red-500"
+                            >
+                              {roleOptions.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                          {canToggleAdmin && (
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-xs text-gray-400 font-medium">Admin-Zugang</p>
+                                <p className="text-[10px] text-gray-600 mt-0.5">Plattform-Administration freischalten</p>
+                              </div>
+                              <button
+                                onClick={() => updateAdminAccess(m.id, !memberHasAdmin)}
+                                className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${
+                                  memberHasAdmin ? 'bg-red-900/40 text-red-400 hover:bg-red-900/60' : 'bg-gray-700/60 text-gray-400 hover:bg-gray-700'
+                                }`}
+                              >
+                                {memberHasAdmin ? '🔓 Zugang entfernen' : '🔐 Zugang geben'}
+                              </button>
+                            </div>
+                          )}
+                          {adminFixed && (
+                            <div className="flex items-center justify-between opacity-50">
+                              <p className="text-xs text-gray-400">Admin-Zugang</p>
+                              <span className="text-xs text-red-400 bg-red-900/20 px-2 py-1 rounded-lg">🔐 Admin (fest)</span>
+                            </div>
+                          )}
                         </div>
                       )}
                       <div className="space-y-2">
@@ -2683,7 +2697,7 @@ export const InstructorView: React.FC = () => {
                             max={52}
                             value={streakRestoreValue}
                             onChange={e => { setStreakRestoreValue(Number(e.target.value)); setStreakSaveState('dirty'); setStreakPendingClose(false); }}
-                            className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500"
+                            className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-red-500"
                           />
                         </div>
                         <div className="flex-[3]">
@@ -2693,7 +2707,7 @@ export const InstructorView: React.FC = () => {
                             placeholder="z.B. War 4 Wochen im Urlaub"
                             value={streakRestoreReason}
                             onChange={e => { setStreakRestoreReason(e.target.value); setStreakSaveState('dirty'); setStreakPendingClose(false); }}
-                            className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500"
+                            className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-red-500"
                           />
                         </div>
                       </div>
@@ -2702,7 +2716,7 @@ export const InstructorView: React.FC = () => {
                           <span className="text-xs text-yellow-400">⚠ Nicht gespeicherte Änderungen</span>
                           <div className="flex gap-2 flex-shrink-0">
                             <button onClick={() => { setStreakPendingClose(false); setStreakSaveState('idle'); }} className="text-xs px-2.5 py-1 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all">Verwerfen</button>
-                            <button onClick={() => { if (!streakRestoreReason.trim()) return; restoreStreak(m.id, streakRestoreValue, streakRestoreReason); setStreakPendingClose(false); setStreakSaveState('saved'); }} className="text-xs px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-all">Speichern</button>
+                            <button onClick={() => { restoreStreak(m.id, streakRestoreValue, streakRestoreReason); setStreakPendingClose(false); setStreakSaveState('saved'); }} className="text-xs px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-all">Speichern</button>
                           </div>
                         </div>
                       )}
@@ -2710,13 +2724,12 @@ export const InstructorView: React.FC = () => {
                         <button
                           disabled={streakSaveState !== 'dirty'}
                           onClick={() => {
-                            if (!streakRestoreReason.trim()) return;
                             restoreStreak(m.id, streakRestoreValue, streakRestoreReason);
                             setStreakSaveState('saved');
                           }}
                           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                             streakSaveState === 'saved' ? 'bg-green-600 text-white cursor-default' :
-                            streakSaveState === 'dirty' ? 'bg-orange-600 hover:bg-orange-500 text-white' :
+                            streakSaveState === 'dirty' ? 'bg-red-600 hover:bg-red-500 text-white' :
                             'bg-gray-700 text-gray-500 cursor-not-allowed'
                           }`}
                         >
@@ -2762,7 +2775,7 @@ export const InstructorView: React.FC = () => {
                                     setModuleProgressEdit(prev => ({ ...prev, [num]: { ...prev[num], tactics: true, combat: c, instructor: prev[num]?.instructor ?? false } }));
                                     setModuleSaveState('dirty');
                                   }}
-                                  className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors disabled:opacity-30 ${prog.combat ? 'bg-gray-400' : 'bg-gray-800 border border-gray-600'}`}
+                                  className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors disabled:opacity-30 ${prog.combat ? 'bg-gray-500' : 'bg-gray-800 border border-gray-600'}`}
                                 >
                                   {prog.combat && <span className="text-white text-[10px] font-bold">✓</span>}
                                 </button>

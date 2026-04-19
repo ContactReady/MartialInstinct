@@ -866,10 +866,10 @@ export function xpProgress(xp: number, config: PlatformConfig): { current: numbe
 }
 
 export const ROLE_DISPLAY: Record<InstructorRole, { label: string; color: string; bgColor: string }> = {
-  member: { label: 'Member', color: 'text-gray-400', bgColor: 'bg-gray-700' },
-  assistant_instructor: { label: 'Assistant Instructor', color: 'text-yellow-400', bgColor: 'bg-yellow-900/30' },
-  instructor: { label: 'Instructor', color: 'text-blue-400', bgColor: 'bg-blue-900/30' },
-  full_instructor: { label: 'Full Instructor', color: 'text-orange-400', bgColor: 'bg-orange-900/30' },
-  head_instructor: { label: 'Head Instructor', color: 'text-purple-400', bgColor: 'bg-purple-900/30' },
-  admin: { label: 'Admin', color: 'text-red-400', bgColor: 'bg-red-900/30' }
+  member: { label: 'Member', color: 'text-gray-400', bgColor: 'bg-gray-700/60' },
+  assistant_instructor: { label: 'Assistant Instructor', color: 'text-gray-300', bgColor: 'bg-gray-600/60' },
+  instructor: { label: 'Instructor', color: 'text-gray-200', bgColor: 'bg-gray-500/40' },
+  full_instructor: { label: 'Full Instructor', color: 'text-red-300', bgColor: 'bg-red-900/20' },
+  head_instructor: { label: 'Head Instructor', color: 'text-red-400', bgColor: 'bg-red-900/30' },
+  admin: { label: 'Admin', color: 'text-red-300', bgColor: 'bg-red-700/40' }
 };
