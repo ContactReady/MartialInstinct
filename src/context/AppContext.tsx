@@ -2786,39 +2786,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateMemberModuleProgress = useCallback((memberId: string, moduleProgress: Record<number, { tactics: boolean; combat: boolean }>) => {
     const allTechs = getAllTechniques();
     const curriculum = MODULES.filter(m => m.number <= 10);
-    setMembers(prev => {
-      const next = prev.map(m => {
-        if (m.id !== memberId) return m;
-        const tp = { ...m.techniqueProgress };
-        curriculum.forEach((mod, idx) => {
-          const progress = moduleProgress[idx + 1];
-          const techs = allTechs.filter(t => t.moduleId === mod.id && t.isRequired);
-          techs.forEach(t => {
-            if (progress?.combat) {
-              tp[t.id] = { techniqueId: t.id, status: 'tac_passed', tacPassedAt: new Date(), techPassedAt: new Date(), lastPracticedAt: new Date() };
-            } else if (progress?.tactics) {
-              tp[t.id] = { techniqueId: t.id, status: 'tech_passed', techPassedAt: new Date(), lastPracticedAt: new Date() };
-            } else {
-              delete tp[t.id];
-            }
-          });
-        });
-        return { ...m, techniqueProgress: tp };
+    const target = members.find(m => m.id === memberId);
+    if (!target) return;
+
+    const tp = { ...target.techniqueProgress };
+    curriculum.forEach((mod, idx) => {
+      const progress = moduleProgress[idx + 1];
+      const techs = allTechs.filter(t => t.moduleId === mod.id && t.isRequired);
+      techs.forEach(t => {
+        if (progress?.combat) {
+          tp[t.id] = { techniqueId: t.id, status: 'tac_passed', tacPassedAt: new Date(), techPassedAt: new Date(), lastPracticedAt: new Date() };
+        } else if (progress?.tactics) {
+          tp[t.id] = { techniqueId: t.id, status: 'tech_passed', techPassedAt: new Date(), lastPracticedAt: new Date() };
+        } else {
+          delete tp[t.id];
+        }
       });
-      const updated = next.find(m => m.id === memberId);
-      if (updated) saveMember(updated);
-      return next;
     });
-  }, []);
+    const updatedMember = { ...target, techniqueProgress: tp };
+
+    setMembers(prev => prev.map(m => m.id === memberId ? updatedMember : m));
+    if (currentUser?.id === memberId) {
+      setCurrentUser(prev => prev ? { ...prev, techniqueProgress: tp } : null);
+      // debounced save übernimmt für currentUser
+    } else {
+      saveMember(updatedMember);
+    }
+  }, [members, currentUser]);
 
   const updateMemberInstructorModules = useCallback((memberId: string, moduleIds: string[]) => {
-    setMembers(prev => {
-      const next = prev.map(m => m.id === memberId ? { ...m, instructorModules: moduleIds } : m);
-      const updated = next.find(m => m.id === memberId);
-      if (updated) saveMember(updated);
-      return next;
-    });
-  }, []);
+    const target = members.find(m => m.id === memberId);
+    const updatedMember = target ? { ...target, instructorModules: moduleIds } : null;
+
+    setMembers(prev => prev.map(m => m.id === memberId ? { ...m, instructorModules: moduleIds } : m));
+    if (currentUser?.id === memberId) {
+      setCurrentUser(prev => prev ? { ...prev, instructorModules: moduleIds } : null);
+      // debounced save übernimmt für currentUser
+    } else if (updatedMember) {
+      saveMember(updatedMember);
+    }
+  }, [members, currentUser]);
 
   const connectWithCode = (code: string): { success: boolean; memberName?: string } => {
     if (!currentUser) return { success: false };
