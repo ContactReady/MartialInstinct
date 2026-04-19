@@ -137,6 +137,8 @@ export const InstructorView: React.FC = () => {
     saveModuleSubtitle,
     platformConfig,
     updatePlatformConfig,
+    trainingUnits,
+    updateTrainingUnits,
     trainingSessions,
     getProfileImgSettings,
   } = useApp();
@@ -4163,6 +4165,83 @@ export const InstructorView: React.FC = () => {
 
                 </div>
                 )}
+              </div>
+
+              {/* F: Trainingseinheiten */}
+              <div className="border border-gray-700/50 rounded-xl overflow-hidden">
+                <AccordionHeader id="training_units" title="Trainingseinheiten" subtitle="Wöchentlich wiederkehrende Einheiten · Zeiten · Auto-Checkout" />
+                {plattformOpen['training_units'] && (() => {
+                  const DAY_LABELS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+                  return (
+                    <div className="px-4 pb-4 pt-2 space-y-3">
+                      <p className="text-[10px] text-gray-500">Mitglieder wählen beim Check-In eine dieser Einheiten. Nach Kursende erfolgt automatischer Checkout.</p>
+                      {trainingUnits.map((unit, idx) => (
+                        <div key={unit.id} className="bg-gray-900/60 border border-gray-700/50 rounded-lg p-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={unit.name}
+                              onChange={e => {
+                                const updated = trainingUnits.map((u, i) => i === idx ? { ...u, name: e.target.value } : u);
+                                updateTrainingUnits(updated);
+                              }}
+                              placeholder="Name der Einheit"
+                              className="flex-1 bg-gray-800 border border-gray-600 text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-gray-400"
+                            />
+                            <button
+                              onClick={() => updateTrainingUnits(trainingUnits.filter((_, i) => i !== idx))}
+                              className="text-gray-500 hover:text-red-400 transition-colors px-2 py-1.5 text-xs"
+                              title="Einheit löschen"
+                            >🗑</button>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {DAY_LABELS.map((label, day) => {
+                              const active = unit.daysOfWeek.includes(day);
+                              return (
+                                <button
+                                  key={day}
+                                  onClick={() => {
+                                    const days = active
+                                      ? unit.daysOfWeek.filter(d => d !== day)
+                                      : [...unit.daysOfWeek, day].sort();
+                                    updateTrainingUnits(trainingUnits.map((u, i) => i === idx ? { ...u, daysOfWeek: days } : u));
+                                  }}
+                                  className={`text-xs px-2 py-1 rounded-lg border transition-all ${active ? 'bg-red-600/30 border-red-500/60 text-red-300' : 'bg-gray-800 border-gray-600 text-gray-500 hover:border-gray-500'}`}
+                                >{label}</button>
+                              );
+                            })}
+                          </div>
+                          <div className="flex gap-2 items-center">
+                            <span className="text-xs text-gray-500 w-12">Start</span>
+                            <input
+                              type="time"
+                              value={unit.startTime}
+                              onChange={e => updateTrainingUnits(trainingUnits.map((u, i) => i === idx ? { ...u, startTime: e.target.value } : u))}
+                              className="bg-gray-800 border border-gray-600 text-white text-sm rounded-lg px-2 py-1 focus:outline-none focus:border-gray-400"
+                            />
+                            <span className="text-xs text-gray-500 w-8">Ende</span>
+                            <input
+                              type="time"
+                              value={unit.endTime}
+                              onChange={e => updateTrainingUnits(trainingUnits.map((u, i) => i === idx ? { ...u, endTime: e.target.value } : u))}
+                              className="bg-gray-800 border border-gray-600 text-white text-sm rounded-lg px-2 py-1 focus:outline-none focus:border-gray-400"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => updateTrainingUnits([...trainingUnits, {
+                          id: `tu-${Date.now()}`,
+                          name: '',
+                          daysOfWeek: [],
+                          startTime: '19:00',
+                          endTime: '21:00',
+                        }])}
+                        className="w-full py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 text-sm transition-all"
+                      >+ Einheit hinzufügen</button>
+                    </div>
+                  );
+                })()}
               </div>
 
             </div>

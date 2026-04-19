@@ -451,6 +451,15 @@ export interface TrainingSession {
   status: 'draft' | 'completed';
 }
 
+// Trainingseinheit (wöchentlich wiederkehrend)
+export interface TrainingUnit {
+  id: string;
+  name: string;
+  daysOfWeek: number[];  // 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa
+  startTime: string;     // HH:MM
+  endTime: string;       // HH:MM
+}
+
 // Check-in
 export interface CheckIn {
   id: string;
@@ -462,6 +471,8 @@ export interface CheckIn {
   approvedById?: string;
   approvedByName?: string;
   approvedAt?: Date;
+  unitId?: string;
+  unitName?: string;
 }
 
 // Benachrichtigung

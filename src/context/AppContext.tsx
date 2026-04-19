@@ -41,6 +41,7 @@ import {
   QuizExamAttempt,
   PlatformConfig,
   DEFAULT_PLATFORM_CONFIG,
+  TrainingUnit,
 } from '../types';
 import { MODULE_QUIZ_DATA } from '../data/memberQuizData';
 import { supabase } from '../lib/supabase';
@@ -105,8 +106,12 @@ interface AppContextType {
   logout: () => void;
   switchUser: (userId: string) => void;
   
+  // Training Units
+  trainingUnits: TrainingUnit[];
+  updateTrainingUnits: (units: TrainingUnit[]) => void;
+
   // Check-ins
-  requestCheckIn: () => void;
+  requestCheckIn: (unitId?: string) => void;
   approveCheckIn: (checkInId: string) => void;
   rejectCheckIn: (checkInId: string) => void;
   checkOut: (memberId: string) => void;
@@ -402,6 +407,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return saved ? JSON.parse(saved) : DEFAULT_TAB_CONFIG;
     } catch { return DEFAULT_TAB_CONFIG; }
   });
+  const DEFAULT_TRAINING_UNITS: TrainingUnit[] = [
+    { id: 'tu-1', name: 'JKD Streetdefense', daysOfWeek: [1], startTime: '19:00', endTime: '21:00' },
+    { id: 'tu-2', name: 'JKD Streetdefense', daysOfWeek: [3], startTime: '19:00', endTime: '21:00' },
+    { id: 'tu-3', name: 'JKD Streetdefense', daysOfWeek: [5], startTime: '19:00', endTime: '21:00' },
+  ];
+  const [trainingUnits, setTrainingUnits] = useState<TrainingUnit[]>(DEFAULT_TRAINING_UNITS);
+
   const [platformConfig, setPlatformConfig] = useState<PlatformConfig>(() => {
     try {
       const saved = localStorage.getItem('mi-platform-config');
@@ -741,6 +753,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       approvedById: r.approved_by_id as string | undefined,
       approvedByName: r.approved_by_name as string | undefined,
       approvedAt: r.approved_at ? new Date(r.approved_at as string) : undefined,
+      unitId: r.unit_id as string | undefined,
+      unitName: r.unit_name as string | undefined,
     });
     supabase.from('check_ins').select('*').gte('requested_at', todayStart.toISOString()).then(({ data }) => {
       if (data && data.length > 0) setCheckIns(data.map(mapCheckIn));
@@ -784,6 +798,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (settings.platform_config) {
           setPlatformConfig(prev => ({ ...prev, ...(settings.platform_config as typeof platformConfig) }));
           safeLS('mi-platform-config', JSON.stringify(settings.platform_config));
+        }
+        if (settings.training_units) {
+          setTrainingUnits(settings.training_units as TrainingUnit[]);
         }
         if (settings.topic_overrides) {
           setTopicOverrides(settings.topic_overrides as Record<string, string>);
@@ -862,6 +879,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           approvedById: r.approved_by_id as string | undefined,
           approvedByName: r.approved_by_name as string | undefined,
           approvedAt: r.approved_at ? new Date(r.approved_at as string) : undefined,
+          unitId: r.unit_id as string | undefined,
+          unitName: r.unit_name as string | undefined,
         });
         // Merge: nie von 'approved' zurück auf 'pending' degradieren (Schutz gegen stale DB-Daten)
         setCheckIns(prev => {
@@ -879,11 +898,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => clearInterval(interval);
   }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-Checkout: jede Minute prüfen ob eine Einheit abgelaufen ist
+  useEffect(() => {
+    const checkAutoCheckout = () => {
+      const now = new Date();
+      const day = now.getDay();
+      const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      checkIns
+        .filter(c => c.status === 'approved' && c.unitId)
+        .forEach(c => {
+          const unit = trainingUnits.find(u => u.id === c.unitId);
+          if (unit && unit.daysOfWeek.includes(day) && time >= unit.endTime) {
+            checkOut(c.memberId);
+          }
+        });
+    };
+    const id = setInterval(checkAutoCheckout, 60_000);
+    return () => clearInterval(id);
+  }, [checkIns, trainingUnits, checkOut]);
+
   // ============================================
   // CHECK-INS
   // ============================================
 
-  const requestCheckIn = useCallback(() => {
+  const requestCheckIn = useCallback((unitId?: string) => {
     if (!currentUser) return;
 
     // Guard: kein doppelter Check-in für heute (außerhalb setState)
@@ -895,13 +933,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
     if (alreadyExists) return;
 
+    const unit = unitId ? trainingUnits.find(u => u.id === unitId) : undefined;
     const newCheckIn: CheckIn = {
       id: `checkin-${Date.now()}`,
       memberId: currentUser.id,
       memberName: currentUser.name,
       locationId: currentUser.locationId,
       requestedAt: new Date(),
-      status: 'pending'
+      status: 'pending',
+      unitId: unit?.id,
+      unitName: unit?.name,
     };
 
     // Pure State-Updates
@@ -911,7 +952,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       oduserId: 'all-instructors',
       type: 'checkin' as const,
       title: 'Check-in Anfrage',
-      message: `${currentUser.name} möchte einchecken`,
+      message: `${currentUser.name} möchte einchecken${unit ? ` · ${unit.name}` : ''}`,
       read: false,
       createdAt: new Date()
     }]);
@@ -924,10 +965,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       location_id: newCheckIn.locationId ?? null,
       status: 'pending',
       requested_at: newCheckIn.requestedAt.toISOString(),
+      unit_id: unit?.id ?? null,
+      unit_name: unit?.name ?? null,
     }).then(({ error }) => {
       if (error) console.warn('Check-in Insert Fehler:', error.message, error.code);
     });
-  }, [currentUser, checkIns]);
+  }, [currentUser, checkIns, trainingUnits]);
 
   const approveCheckIn = useCallback((checkInId: string) => {
     if (!currentUser) return;
@@ -2356,6 +2399,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     saveSetting('platform_config', config);
   }, []);
 
+  const updateTrainingUnits = useCallback((units: TrainingUnit[]) => {
+    setTrainingUnits(units);
+    saveSetting('training_units', units);
+  }, []);
+
   // ============================================
   // CONTENT MANAGEMENT — Getter
   // ============================================
@@ -2913,6 +2961,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     login,
     logout,
     switchUser,
+    trainingUnits,
+    updateTrainingUnits,
     requestCheckIn,
     approveCheckIn,
     rejectCheckIn,

@@ -23,6 +23,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     requestCheckIn,
     cancelCheckIn,
     checkIns,
+    trainingUnits,
     isBlockUnlocked,
     submitContactApplication,
     submitInstructorApplication,
@@ -46,6 +47,8 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
   const [boardReplyOpenId, setBoardReplyOpenId] = useState<string | null>(null);
   const [boardReplyText, setBoardReplyText] = useState('');
   const [showApplicationModal, setShowApplicationModal] = useState<ApplicationType>(null);
+  const [showUnitPicker, setShowUnitPicker] = useState(false);
+  const [selectedUnitId, setSelectedUnitId] = useState<string | undefined>(undefined);
   const [communitySubTab, setCommunitySubTab] = useState<'online' | 'training' | 'mitglieder' | 'rangliste'>('online');
   const communityTabs = ['online', 'training', 'mitglieder', 'rangliste'] as const;
   const communitySubTabRef = useRef(communitySubTab);
@@ -137,6 +140,28 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
   const checkInStatus = todayCheckIn?.status ?? 'none'; // 'none' | 'pending' | 'approved' | 'rejected'
   const checkInApprovedAt = todayCheckIn?.approvedAt ? new Date(todayCheckIn.approvedAt) : null;
 
+  // Heutige Trainingseinheiten
+  const todayDay = now.getDay();
+  const nowTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  const todayUnits = trainingUnits.filter(u => u.daysOfWeek.includes(todayDay));
+  const activeUnit = todayUnits.find(u => nowTime >= u.startTime && nowTime < u.endTime);
+  const DAY_SHORT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
+  const handleCheckInPress = () => {
+    if (todayUnits.length === 0) {
+      // Keine Einheit heute — direkt einchecken ohne Unit
+      requestCheckIn(undefined);
+    } else if (todayUnits.length === 1) {
+      // Genau eine Einheit → direkt auswählen, Picker zur Bestätigung zeigen
+      setSelectedUnitId(todayUnits[0].id);
+      setShowUnitPicker(true);
+    } else {
+      // Mehrere Einheiten → Picker zeigen, aktive vorauswählen
+      setSelectedUnitId(activeUnit?.id ?? todayUnits[0].id);
+      setShowUnitPicker(true);
+    }
+  };
+
   // Submit contact application
   const handleSubmitContactApplication = () => {
     submitContactApplication(contactAnswers);
@@ -212,36 +237,84 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     return (
       <div className="space-y-3 p-4 pb-24">
 
-        {/* ── Check-In (UNVERÄNDERT) ── */}
+        {/* ── Check-In ── */}
         <div className="sticky top-[var(--mi-header-h)] z-20 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
-        <div className={`rounded-xl px-4 py-3 border flex items-center justify-between gap-3 transition-all ${
+        <div className={`rounded-xl border transition-all ${
           checkInStatus === 'approved' ? 'bg-green-900/20 border-green-600/40'
           : 'bg-gray-800/50 border-gray-700'
         }`}>
-          <div className="min-w-0">
-            <div className="text-sm font-bold text-white">Trainings Check-In</div>
-            <div className={`text-xs mt-0.5 ${checkInStatus === 'approved' ? 'text-green-400' : 'text-gray-400'}`}>
-              {checkInStatus === 'approved'
-                ? `✅ Eingecheckt${checkInApprovedAt ? ` · ${checkInApprovedAt.getHours().toString().padStart(2,'0')}:${checkInApprovedAt.getMinutes().toString().padStart(2,'0')} Uhr` : ''}`
-                : checkInStatus === 'pending' ? 'Warte auf Trainer-Bestätigung…'
-                : 'Sei heute dabei!'}
+          <div className="px-4 py-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-sm font-bold text-white">Trainings Check-In</div>
+              <div className={`text-xs mt-0.5 ${checkInStatus === 'approved' ? 'text-green-400' : 'text-gray-400'}`}>
+                {checkInStatus === 'approved'
+                  ? `✅ Eingecheckt${checkInApprovedAt ? ` · ${checkInApprovedAt.getHours().toString().padStart(2,'0')}:${checkInApprovedAt.getMinutes().toString().padStart(2,'0')} Uhr` : ''}${todayCheckIn?.unitName ? ` · ${todayCheckIn.unitName}` : ''}`
+                  : checkInStatus === 'pending' ? `Warte auf Bestätigung…${todayCheckIn?.unitName ? ` (${todayCheckIn.unitName})` : ''}`
+                  : 'Sei heute dabei!'}
+              </div>
             </div>
+            {checkInStatus === 'approved' ? (
+              <span className="text-green-400 text-xs font-bold flex-shrink-0">✓ Dabei</span>
+            ) : checkInStatus === 'pending' ? (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                <button
+                  onClick={() => todayCheckIn && cancelCheckIn(todayCheckIn.id)}
+                  className="text-xs text-gray-500 hover:text-red-400 transition-colors"
+                  title="Anfrage zurückziehen"
+                >✕</button>
+              </div>
+            ) : (
+              <button onClick={handleCheckInPress} className="flex-shrink-0 bg-red-600 hover:bg-red-500 active:scale-95 text-white px-4 py-1.5 rounded-lg font-bold text-sm transition-all">
+                Check-In
+              </button>
+            )}
           </div>
-          {checkInStatus === 'approved' ? (
-            <span className="text-green-400 text-xs font-bold flex-shrink-0">✓ Dabei</span>
-          ) : checkInStatus === 'pending' ? (
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-              <button
-                onClick={() => todayCheckIn && cancelCheckIn(todayCheckIn.id)}
-                className="text-xs text-gray-500 hover:text-red-400 transition-colors"
-                title="Anfrage zurückziehen"
-              >✕</button>
+
+          {/* ── Unit-Picker ── */}
+          {showUnitPicker && checkInStatus === 'none' && (
+            <div className="border-t border-gray-700/60 px-4 py-3 space-y-2">
+              <p className="text-xs text-gray-400 font-medium">Für welche Einheit?</p>
+              <div className="space-y-1.5">
+                {(todayUnits.length > 0 ? todayUnits : trainingUnits).map(unit => {
+                  const isActive = unit.daysOfWeek.includes(todayDay) && nowTime >= unit.startTime && nowTime < unit.endTime;
+                  const isSelected = selectedUnitId === unit.id;
+                  return (
+                    <button
+                      key={unit.id}
+                      onClick={() => setSelectedUnitId(unit.id)}
+                      className={`w-full text-left px-3 py-2 rounded-lg border transition-all ${
+                        isSelected
+                          ? 'bg-red-600/20 border-red-500/60 text-white'
+                          : 'bg-gray-700/40 border-gray-600/40 text-gray-300 hover:border-gray-500'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{unit.name}</span>
+                        {isActive && <span className="text-xs text-green-400 font-medium">läuft jetzt</span>}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {unit.daysOfWeek.map(d => DAY_SHORT[d]).join(', ')} · {unit.startTime}–{unit.endTime} Uhr
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => { setShowUnitPicker(false); setSelectedUnitId(undefined); }}
+                  className="flex-1 py-2 rounded-lg bg-gray-700 text-gray-300 text-sm font-medium hover:bg-gray-600 transition-all"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  onClick={() => { requestCheckIn(selectedUnitId); setShowUnitPicker(false); }}
+                  className="flex-1 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-bold transition-all"
+                >
+                  Einchecken
+                </button>
+              </div>
             </div>
-          ) : (
-            <button onClick={requestCheckIn} className="flex-shrink-0 bg-red-600 hover:bg-red-500 active:scale-95 text-white px-4 py-1.5 rounded-lg font-bold text-sm transition-all">
-              Check-In
-            </button>
           )}
         </div>
         </div>
