@@ -126,6 +126,17 @@ export async function loadMembers(): Promise<Member[]> {
   }
 }
 
+// ── Einzelnen Member laden (für Self-Refresh) ──
+export async function loadMemberById(id: string): Promise<Member | null> {
+  try {
+    const { data, error } = await supabase.from('members').select('*').eq('id', id).single();
+    if (error || !data) return null;
+    return rowToMember(data as DbRow);
+  } catch {
+    return null;
+  }
+}
+
 // ── Member speichern (upsert) ──
 export async function saveMember(member: Member): Promise<void> {
   try {

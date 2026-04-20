@@ -45,7 +45,7 @@ import {
 } from '../types';
 import { MODULE_QUIZ_DATA } from '../data/memberQuizData';
 import { supabase } from '../lib/supabase';
-import { loadMembers, saveMember, createMemberInSupabase } from '../lib/memberService';
+import { loadMembers, loadMemberById, saveMember, createMemberInSupabase } from '../lib/memberService';
 import { loadAllSettings, saveSetting } from '../lib/settingsService';
 import { MEMBERS, CHECK_INS, BOARD_MESSAGES, NOTIFICATIONS, LOCATIONS, VIDEOS, COURSES } from '../data/mockData';
 import { MODULES, BLOCKS, getAllTechniques, getModuleById } from '../data/modules';
@@ -849,20 +849,48 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => clearTimeout(timer);
   }, [currentUser]);
 
-  // Heartbeat: lastSeenAt alle 60s lokal + nach Supabase schreiben
+  // Heartbeat: lastSeenAt alle 60s aktualisieren + Self-Refresh aus Supabase (für Instructor-Änderungen)
   useEffect(() => {
     if (!currentUser) return;
     const id = currentUser.id;
-    const tick = () => {
+    const tick = async () => {
       const now = new Date();
+      // Lokales Update — löst debounced saveMember(currentUser) aus, der last_seen_at schreibt
       setMembers(prev => prev.map(m => m.id === id ? { ...m, lastSeenAt: now } : m));
       setCurrentUser(prev => prev ? { ...prev, lastSeenAt: now } : null);
-      supabase.from('members').update({ last_seen_at: now.toISOString() }).eq('id', id);
+
+      // Self-Refresh: frische Daten aus Supabase holen (Instructor-Änderungen, XP, Module)
+      const fresh = await loadMemberById(id);
+      if (fresh) {
+        setCurrentUser(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            techniqueProgress: fresh.techniqueProgress,
+            xp: Math.max(prev.xp ?? 0, fresh.xp ?? 0), // nie XP verlieren durch Race-Condition
+            currentLevel: fresh.currentLevel,
+            instructorModules: fresh.instructorModules,
+            examRequests: fresh.examRequests,
+            certificates: fresh.certificates,
+            streak: fresh.streak,
+            // Runtime-only Felder beibehalten:
+            onlineSince: prev.onlineSince,
+            lastSeenAt: prev.lastSeenAt,
+          };
+        });
+        setMembers(prev => prev.map(m => m.id === id ? {
+          ...m,
+          techniqueProgress: fresh.techniqueProgress,
+          xp: Math.max(m.xp ?? 0, fresh.xp ?? 0),
+          currentLevel: fresh.currentLevel,
+          instructorModules: fresh.instructorModules,
+        } : m));
+      }
     };
     tick(); // sofort beim Login
     const interval = setInterval(tick, 60_000);
     return () => clearInterval(interval);
-  }, [currentUser?.id]);
+  }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Online-Status Polling: alle 30s lastSeenAt aller Members aus Supabase laden
   useEffect(() => {
@@ -875,14 +903,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setMembers(prev => prev.map(m => {
         if (m.id === currentUser.id) return m; // eigener User: lokaler State hat Vorrang
         const row = data.find((r: Record<string, unknown>) => r.id === m.id);
-        if (!row?.last_seen_at) return { ...m, onlineSince: undefined };
-        const lastSeen = new Date(row.last_seen_at as string).getTime();
-        const online = now - lastSeen < ONLINE_MS;
+        // Lokalen Wert beibehalten wenn er neuer ist (z.B. nach switchUser auf diesem Gerät)
+        const localTs = m.lastSeenAt ? new Date(m.lastSeenAt).getTime() : 0;
+        const remoteTs = row?.last_seen_at ? new Date(row.last_seen_at as string).getTime() : 0;
+        const effectiveTs = Math.max(localTs, remoteTs);
+        if (effectiveTs === 0) return { ...m, onlineSince: undefined };
+        const online = now - effectiveTs < ONLINE_MS;
         return {
           ...m,
-          lastSeenAt: new Date(row.last_seen_at as string),
-          onlineSince: online ? new Date(row.last_seen_at as string) : undefined,
-          visibilityPreference: (row.visibility_preference as Member['visibilityPreference']) ?? m.visibilityPreference,
+          lastSeenAt: new Date(effectiveTs),
+          onlineSince: online ? new Date(effectiveTs) : undefined,
+          visibilityPreference: row?.visibility_preference
+            ? (row.visibility_preference as Member['visibilityPreference'])
+            : m.visibilityPreference,
         };
       }));
     };

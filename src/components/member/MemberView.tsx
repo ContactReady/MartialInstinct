@@ -216,11 +216,25 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
       const s = currentUser.techniqueProgress[t.id]?.status;
       return s === 'tech_passed' || s === 'tac_passed';
     }).length;
-    const combatPassed = allRequired.filter(t =>
-      currentUser.techniqueProgress[t.id]?.status === 'tac_passed'
-    ).length;
     const totalPassedRequired = tacticsPassed;
     const totalPercent = totalRequired > 0 ? Math.round((tacticsPassed / totalRequired) * 100) : 0;
+
+    // ── Modul-Kacheln: Anzahl Module (nicht Techniken) ──
+    const visibleModules = MODULES.filter(m => visibleModuleIds.has(m.id));
+    const tacticsModsDone = visibleModules.filter(mod => {
+      const req = mod.techniques.filter(t => t.isRequired);
+      return req.length > 0 && req.every(t => {
+        const s = currentUser.techniqueProgress[t.id]?.status;
+        return s === 'tech_passed' || s === 'tac_passed';
+      });
+    }).length;
+    const combatModsDone = visibleModules.filter(mod => {
+      const req = mod.techniques.filter(t => t.isRequired);
+      return req.length > 0 && req.every(t =>
+        currentUser.techniqueProgress[t.id]?.status === 'tac_passed'
+      );
+    }).length;
+    const totalVisibleMods = visibleModules.length;
 
     // ── Offene Prüfungsanfragen ──
     const pendingExams = currentUser.examRequests.filter(r => r.status === 'pending');
@@ -505,8 +519,8 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
               <span className="text-xs font-black text-gray-300">T</span>
             </div>
             <div>
-              <div className="text-2xl font-black text-white leading-none">{tacticsPassed}</div>
-              <div className="text-[10px] text-gray-500 mt-0.5">Tactics bestanden</div>
+              <div className="text-2xl font-black text-white leading-none">{tacticsModsDone}<span className="text-sm font-normal text-gray-500">/{totalVisibleMods}</span></div>
+              <div className="text-[10px] text-gray-500 mt-0.5">Module Tactics</div>
             </div>
           </div>
           {/* Combat bestanden */}
@@ -515,8 +529,8 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
               <span className="text-xs font-black text-red-400">C</span>
             </div>
             <div>
-              <div className="text-2xl font-black text-white leading-none">{combatPassed}</div>
-              <div className="text-[10px] text-gray-500 mt-0.5">Combat bestanden</div>
+              <div className="text-2xl font-black text-white leading-none">{combatModsDone}<span className="text-sm font-normal text-gray-500">/{totalVisibleMods}</span></div>
+              <div className="text-[10px] text-gray-500 mt-0.5">Module Combat</div>
             </div>
           </div>
           {/* Instructor Module — nur wenn vorhanden */}
@@ -779,24 +793,31 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
 
     const ONLINE_CUTOFF_MS = 10 * 60 * 1000; // 10 Min — konsistent mit InstructorView
     const nowTs = Date.now();
-    const onlineConnected = visibleMembers.filter(m =>
-      m.id === currentUser.id || // self ist immer online
-      m.onlineSince !== undefined ||
-      (nowTs - new Date(m.lastSeenAt).getTime()) < ONLINE_CUTOFF_MS
-    );
+    const nowDate = new Date();
+    const isActive = (m: typeof visibleMembers[0]) => m.id === currentUser.id || !!m.onlineSince;
+    const isInactive = (m: typeof visibleMembers[0]) =>
+      !m.onlineSince && m.id !== currentUser.id &&
+      (nowTs - new Date(m.lastSeenAt).getTime()) < ONLINE_CUTOFF_MS;
+    const onlineConnected = visibleMembers.filter(m => isActive(m) || isInactive(m));
     const trainingConnected = visibleMembers.filter(m => checkIns.some(c => c.memberId === m.id && c.status === 'approved'));
 
+    const instructorRoles = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'admin'];
+    const onlineInstructors = onlineConnected.filter(m => instructorRoles.includes(m.role));
+    const onlineMembers2 = onlineConnected.filter(m => !instructorRoles.includes(m.role));
 
-    const formatTimeAgo = (date: Date | undefined): string => {
-      if (!date) return '';
-      const diff = Date.now() - new Date(date).getTime();
-      const min = Math.floor(diff / 60000);
-      if (min < 1) return 'Gerade eben';
-      if (min < 60) return `vor ${min} Min`;
-      const h = Math.floor(diff / 3600000);
-      if (h < 24) return `vor ${h} Std`;
-      return `vor ${Math.floor(diff / 86400000)} Tagen`;
+    const formatOnlineSince = (m: typeof visibleMembers[0]): string => {
+      if (m.id === currentUser.id) return 'gerade eben';
+      const since = m.onlineSince ? new Date(m.onlineSince) : new Date(m.lastSeenAt);
+      const diffMs = nowDate.getTime() - since.getTime();
+      const mins = Math.floor(diffMs / 60_000);
+      if (mins < 1) return 'gerade eben';
+      if (mins < 60) return `seit ${mins} Min`;
+      return `seit ${Math.floor(mins / 60)} Std`;
     };
+
+    const OnlineDot = ({ member }: { member: typeof visibleMembers[0] }) => (
+      <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${isActive(member) ? 'bg-green-400' : 'bg-yellow-400'}`} />
+    );
 
     return (
       <div className="space-y-4">
@@ -804,21 +825,22 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
         <div className="sticky top-[var(--mi-header-h)] z-30 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
         <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
           {([
-            { id: 'online' as const, label: '🟢 Online', badge: onlineConnected.length },
-            { id: 'training' as const, label: '🥋 Training', badge: trainingConnected.length },
-            { id: 'mitglieder' as const, label: '👥 Member' },
-            { id: 'rangliste' as const, label: '🏆 Rang' },
-          ]).map(tab => (
+            { id: 'online' as const, label: 'Online', badge: onlineConnected.length, dot: true },
+            { id: 'training' as const, label: 'Training', badge: trainingConnected.length, dot: false },
+            { id: 'mitglieder' as const, label: 'Member', badge: 0, dot: false },
+            { id: 'rangliste' as const, label: 'Rangliste', badge: 0, dot: false },
+          ] as { id: 'online'|'training'|'mitglieder'|'rangliste'; label: string; badge: number; dot: boolean }[]).map(tab => (
             <button
               key={tab.id}
               onClick={() => setCommunitySubTab(tab.id)}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all relative flex items-center justify-center gap-1 ${
+              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
                 communitySubTab === tab.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
               }`}
             >
+              {tab.dot && <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />}
               {tab.label}
-              {'badge' in tab && tab.badge !== undefined && tab.badge > 0 && (
-                <span className="text-[9px] bg-red-500 text-white px-1 rounded-full font-bold">{tab.badge}</span>
+              {tab.badge > 0 && (
+                <span className="bg-gray-600 text-gray-300 text-[10px] px-1.5 py-0.5 rounded-full">{tab.badge}</span>
               )}
             </button>
           ))}
@@ -827,33 +849,67 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
 
         {/* ── ONLINE ── */}
         {communitySubTab === 'online' && (
-          <div className="space-y-3">
+          <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-700/60 flex items-center justify-between">
+              <h3 className="font-bold text-white flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-400 inline-block animate-pulse" />
+                Online
+                <span className="text-gray-500 font-normal text-sm">({onlineConnected.length})</span>
+              </h3>
+            </div>
             {onlineConnected.length === 0 ? (
-              <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
-                <div className="text-3xl mb-2">😴</div>
-                <p className="text-gray-400 text-sm font-medium">Niemand ist gerade online</p>
-                <p className="text-gray-500 text-xs mt-1">{canSeeAll ? 'Alle Members mit sichtbarem Status werden hier angezeigt.' : 'Du siehst nur deine Trainingspartner.'}</p>
+              <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                <div className="text-2xl mb-2">😴</div>
+                {canSeeAll ? 'Alle Members mit sichtbarem Status werden hier angezeigt.' : 'Du siehst nur deine Trainingspartner.'}
               </div>
             ) : (
-              onlineConnected.map(m => {
-                const isMe = m.id === currentUser.id;
-                return (
-                <div key={m.id} className={`rounded-xl border px-4 py-3 flex items-center gap-3 ${isMe ? 'bg-gray-700/60 border-gray-600' : 'bg-gray-800/50 border-gray-700'}`}>
-                  <div className="relative flex-shrink-0">
-                    {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
-                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border border-gray-900 animate-pulse" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-white font-semibold text-sm">{m.name}</span>
-                      {isMe && <span className="text-gray-500 text-[10px]">(Du)</span>}
+              <div className="divide-y divide-gray-700/40">
+                {onlineInstructors.length > 0 && (
+                  <div className="px-4 py-3">
+                    <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Trainer ({onlineInstructors.length})</div>
+                    <div className="space-y-2">
+                      {onlineInstructors.map(m => (
+                        <div key={m.id} className="flex items-center gap-3">
+                          <OnlineDot member={m} />
+                          {m.profileImage ? <img src={m.profileImage} className="w-7 h-7 rounded-full object-cover flex-shrink-0" /> : <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
+                          <div className="flex-1 min-w-0">
+                            <span className="text-white font-medium text-sm">{m.name}{m.id === currentUser.id && <span className="text-gray-500 text-[10px] ml-1">(Du)</span>}</span>
+                            <span className="ml-2 text-xs text-gray-500">{LEVEL_DISPLAY[m.currentLevel].subtitle}</span>
+                          </div>
+                          <span className="text-gray-500 text-xs flex-shrink-0">{formatOnlineSince(m)}</span>
+                        </div>
+                      ))}
                     </div>
-                    <div className="text-gray-500 text-xs">{isMe ? 'Gerade eben' : formatTimeAgo(m.onlineSince)}</div>
                   </div>
-                </div>
-                );
-              })
+                )}
+                {onlineMembers2.length > 0 && (
+                  <div className="px-4 py-3">
+                    <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Members ({onlineMembers2.length})</div>
+                    <div className="space-y-2">
+                      {onlineMembers2.map(m => (
+                        <div key={m.id} className="flex items-center gap-3">
+                          <OnlineDot member={m} />
+                          {m.profileImage ? <img src={m.profileImage} className="w-7 h-7 rounded-full object-cover flex-shrink-0" /> : <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
+                          <div className="flex-1 min-w-0">
+                            <span className="text-white font-medium text-sm">{m.name}{m.id === currentUser.id && <span className="text-gray-500 text-[10px] ml-1">(Du)</span>}</span>
+                            <span className="ml-2 text-xs text-gray-500">{LEVEL_DISPLAY[m.currentLevel].subtitle}</span>
+                          </div>
+                          <span className="text-gray-500 text-xs flex-shrink-0">{formatOnlineSince(m)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
+            <div className="px-4 py-2 border-t border-gray-700/40 flex items-center gap-4">
+              <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                <span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> Aktiv
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> Inaktiv (&lt;10 Min)
+              </span>
+            </div>
           </div>
         )}
 
