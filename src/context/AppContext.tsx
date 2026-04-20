@@ -1018,7 +1018,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             }
           }
         : m;
-    setMembers(prev => prev.map(updateMember));
+    setMembers(prev => {
+      const next = prev.map(updateMember);
+      const updated = next.find(m => m.id === checkIn.memberId);
+      if (updated) saveMember(updated);
+      return next;
+    });
     setCurrentUser(prev => prev ? updateMember(prev) : null);
 
     // 3. Benachrichtigung für Mitglied
@@ -1193,13 +1198,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       techniqueProgress: { ...m.techniqueProgress, [request.techniqueId]: updatedProgress },
     });
 
+    // Duplikat-Schutz: XP nur vergeben wenn Technik erstmals auf dieses Level gebracht wird
+    const prevStatus = member.techniqueProgress[request.techniqueId]?.status;
+    const isAlreadyAtLevel = isTechnical
+      ? (prevStatus === 'tech_passed' || prevStatus === 'tac_passed')
+      : prevStatus === 'tac_passed';
+    const wasAlreadyTacPassed = prevStatus === 'tac_passed';
+
     // XP vergeben: tech_passed = 50 XP, tac_passed = 200 XP (aus Config)
-    const examXP = isTechnical ? platformConfig.xp.techPassed : platformConfig.xp.tacPassed;
+    const examXP = isAlreadyAtLevel ? 0 : (isTechnical ? platformConfig.xp.techPassed : platformConfig.xp.tacPassed);
     const applyApproveWithXP = (m: Member): Member => {
       const base = applyApprove(m);
-      // Modul-Abschluss prüfen (nur bei tac_passed): alle required techniques tac_passed?
+      // Modul-Abschluss prüfen (nur bei tac_passed + erstmalig): alle required techniques tac_passed?
       let bonusXP = 0;
-      if (!isTechnical) {
+      if (!isTechnical && !wasAlreadyTacPassed) {
         const module = MODULES.find(mod => mod.techniques.some(t => t.id === request.techniqueId));
         if (module) {
           const block = BLOCKS.find(b => b.level === module.level);
@@ -1215,7 +1227,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return { ...base, xp: (base.xp ?? 0) + examXP + bonusXP };
     };
 
-    setMembers(prev => prev.map(m => m.id === memberId ? applyApproveWithXP(m) : m));
+    setMembers(prev => {
+      const next = prev.map(m => m.id === memberId ? applyApproveWithXP(m) : m);
+      const updated = next.find(m => m.id === memberId);
+      if (updated) saveMember(updated);
+      return next;
+    });
     if (currentUser.id === memberId) setCurrentUser(prev => prev ? applyApproveWithXP(prev) : null);
 
     const levelLabel = isTechnical ? 'Technisch' : 'Taktisch';
@@ -1260,7 +1277,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       techniqueProgress: { ...m.techniqueProgress, [request.techniqueId]: updatedProgress },
     });
 
-    setMembers(prev => prev.map(m => m.id === memberId ? applyReject(m) : m));
+    setMembers(prev => {
+      const next = prev.map(m => m.id === memberId ? applyReject(m) : m);
+      const updated = next.find(m => m.id === memberId);
+      if (updated) saveMember(updated);
+      return next;
+    });
     if (currentUser.id === memberId) setCurrentUser(prev => prev ? applyReject(prev) : null);
 
     setNotifications(prev => [...prev, {
@@ -1314,42 +1336,99 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!technique) return;
 
     const now = new Date();
-    setMembers(prev => prev.map(m => {
-      if (m.id !== memberId) return m;
-      const prev_ = m.techniqueProgress[techniqueId];
-      return {
-        ...m,
-        techniqueProgress: {
-          ...m.techniqueProgress,
-          [techniqueId]: {
-            ...prev_,
-            techniqueId,
-            status: 'tac_passed' as TechniqueStatus,
-            lastFeedback: notes,
-            techPassedAt: prev_?.techPassedAt ?? now,
-            techExaminerId: prev_?.techExaminerId ?? currentUser.id,
-            techExaminerName: prev_?.techExaminerName ?? currentUser.name,
-            tacPassedAt: now,
-            tacExaminerId: currentUser.id,
-            tacExaminerName: currentUser.name,
-            practiceCount: prev_?.practiceCount,
-            lastPracticedAt: prev_?.lastPracticedAt,
+    const member = members.find(m => m.id === memberId);
+    if (!member) return;
+
+    const prevStatus = member.techniqueProgress[techniqueId]?.status;
+    const wasAlreadyTacPassed = prevStatus === 'tac_passed';
+
+    // XP: tech_passed + tac_passed (falls noch nicht vergeben), Duplikat-Schutz
+    const baseXP = prevStatus === 'tech_passed' || prevStatus === 'tac_passed'
+      ? 0 : platformConfig.xp.techPassed;
+    const tacXP = wasAlreadyTacPassed ? 0 : platformConfig.xp.tacPassed;
+
+    // Modul-Abschluss-Bonus prüfen (nur wenn erstmalig tac_passed)
+    let bonusXP = 0;
+    if (!wasAlreadyTacPassed) {
+      const module = MODULES.find(mod => mod.techniques.some(t => t.id === techniqueId));
+      if (module) {
+        const block = BLOCKS.find(b => b.level === module.level);
+        const blockPos = block ? BLOCKS.indexOf(block) : -1;
+        const allRequired = module.techniques.filter(t => t.isRequired);
+        const simulatedProgress = { ...member.techniqueProgress, [techniqueId]: { techniqueId, status: 'tac_passed' as TechniqueStatus } };
+        const allTacPassed = allRequired.every(t => simulatedProgress[t.id]?.status === 'tac_passed');
+        if (allTacPassed && blockPos >= 0) {
+          bonusXP = platformConfig.xp.moduleBlock[Math.min(blockPos, platformConfig.xp.moduleBlock.length - 1)];
+        }
+      }
+    }
+    const totalXP = baseXP + tacXP + bonusXP;
+
+    setMembers(prev => {
+      const next = prev.map(m => {
+        if (m.id !== memberId) return m;
+        const prev_ = m.techniqueProgress[techniqueId];
+        return {
+          ...m,
+          xp: (m.xp ?? 0) + totalXP,
+          techniqueProgress: {
+            ...m.techniqueProgress,
+            [techniqueId]: {
+              ...prev_,
+              techniqueId,
+              status: 'tac_passed' as TechniqueStatus,
+              lastFeedback: notes,
+              techPassedAt: prev_?.techPassedAt ?? now,
+              techExaminerId: prev_?.techExaminerId ?? currentUser.id,
+              techExaminerName: prev_?.techExaminerName ?? currentUser.name,
+              tacPassedAt: now,
+              tacExaminerId: currentUser.id,
+              tacExaminerName: currentUser.name,
+              practiceCount: prev_?.practiceCount,
+              lastPracticedAt: prev_?.lastPracticedAt,
+            },
           },
-        },
-      };
-    }));
+        };
+      });
+      const updated = next.find(m => m.id === memberId);
+      if (updated) saveMember(updated);
+      return next;
+    });
+    if (currentUser.id === memberId) {
+      setCurrentUser(prev => {
+        if (!prev) return null;
+        const prev_ = prev.techniqueProgress[techniqueId];
+        return {
+          ...prev,
+          xp: (prev.xp ?? 0) + totalXP,
+          techniqueProgress: {
+            ...prev.techniqueProgress,
+            [techniqueId]: {
+              ...prev_,
+              techniqueId,
+              status: 'tac_passed' as TechniqueStatus,
+              lastFeedback: notes,
+              techPassedAt: prev_?.techPassedAt ?? now,
+              tacPassedAt: now,
+              tacExaminerId: currentUser.id,
+              tacExaminerName: currentUser.name,
+            },
+          },
+        };
+      });
+    }
 
     const memberNotification: Notification = {
       id: `notif-${Date.now()}`,
       oduserId: memberId,
       type: 'exam_result',
       title: 'Technik bestanden! ✅',
-      message: `${technique.name} wurde von ${currentUser.name} als bestanden markiert.`,
+      message: `${technique.name} wurde von ${currentUser.name} als bestanden markiert.${totalXP > 0 ? ` (+${totalXP} XP)` : ''}`,
       read: false,
       createdAt: new Date()
     };
     setNotifications(prev => [...prev, memberNotification]);
-  }, [currentUser]);
+  }, [currentUser, members, platformConfig]);
 
   // ============================================
   // CONTACT APPLICATION
@@ -2073,9 +2152,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     if (!member || !block) return { total: 0, completed: 0, percentage: 0 };
 
-    const allTechs = contentTechniques.length > 0
+    const allTechs = (contentTechniques.length > 0
       ? contentTechniques.filter(t => block.moduleIds.includes(t.moduleId))
-      : MODULES.filter(m => block.moduleIds.includes(m.id)).flatMap(m => m.techniques);
+      : MODULES.filter(m => block.moduleIds.includes(m.id)).flatMap(m => m.techniques)
+    ).filter(t => t.isRequired);
 
     const total = allTechs.length;
     const completed = allTechs.filter(
@@ -2540,11 +2620,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await saveSetting('block_settings', next);
   }, [blockSettings]);
 
-  const effectiveBlocks = BLOCKS.map(b => ({
-    ...b,
-    name: blockSettings[b.id]?.name ?? b.name,
-    disabled: blockSettings[b.id]?.disabled ?? false,
-  }));
+  // effectiveBlocks: Admin-Overrides (Name, Deaktiviert) + dynamische Modul-Zuordnung aus moduleOrder
+  const effectiveBlocks = BLOCKS.map(b => {
+    const moduleIds = moduleOrder.length > 0
+      ? moduleOrder
+          .filter(o => o.blockLevel === b.level)
+          .sort((a, c) => a.position - c.position)
+          .map(o => o.moduleId)
+      : b.moduleIds;
+    return {
+      ...b,
+      moduleIds,
+      name: blockSettings[b.id]?.name ?? b.name,
+      disabled: blockSettings[b.id]?.disabled ?? false,
+    };
+  });
 
   // ============================================
   // MODUL-REIHENFOLGE
@@ -2788,30 +2878,60 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const target = members.find(m => m.id === memberId);
     if (!target) return;
 
-    const tp = { ...target.techniqueProgress };
+    const oldTp = target.techniqueProgress;
+    const tp: typeof oldTp = { ...oldTp };
+    const now = new Date();
+    let xpDelta = 0;
+
     curriculum.forEach((mod, idx) => {
       const progress = moduleProgress[idx + 1];
       const techs = allTechs.filter(t => t.moduleId === mod.id && t.isRequired);
+
+      // Modul-Abschluss-Bonus: war Modul vorher komplett?
+      const wasAllTacPassed = techs.length > 0 && techs.every(t => oldTp[t.id]?.status === 'tac_passed');
+
       techs.forEach(t => {
+        const oldStatus = oldTp[t.id]?.status;
+
         if (progress?.combat) {
-          tp[t.id] = { techniqueId: t.id, status: 'tac_passed', tacPassedAt: new Date(), techPassedAt: new Date(), lastPracticedAt: new Date() };
+          // → tac_passed: XP für tech + tac falls noch nicht vergeben
+          if (oldStatus !== 'tech_passed' && oldStatus !== 'tac_passed') xpDelta += platformConfig.xp.techPassed;
+          if (oldStatus !== 'tac_passed') xpDelta += platformConfig.xp.tacPassed;
+          tp[t.id] = { techniqueId: t.id, status: 'tac_passed', tacPassedAt: now, techPassedAt: oldTp[t.id]?.techPassedAt ?? now, lastPracticedAt: now };
         } else if (progress?.tactics) {
-          tp[t.id] = { techniqueId: t.id, status: 'tech_passed', techPassedAt: new Date(), lastPracticedAt: new Date() };
+          // → tech_passed
+          if (oldStatus !== 'tech_passed' && oldStatus !== 'tac_passed') xpDelta += platformConfig.xp.techPassed;
+          if (oldStatus === 'tac_passed') xpDelta -= platformConfig.xp.tacPassed; // zurückgenommen
+          tp[t.id] = { techniqueId: t.id, status: 'tech_passed', techPassedAt: oldTp[t.id]?.techPassedAt ?? now, lastPracticedAt: now };
         } else {
+          // → gelöscht
+          if (oldStatus === 'tech_passed' || oldStatus === 'tac_passed') xpDelta -= platformConfig.xp.techPassed;
+          if (oldStatus === 'tac_passed') xpDelta -= platformConfig.xp.tacPassed;
           delete tp[t.id];
         }
       });
+
+      // Modul-Abschluss-Bonus prüfen (delta)
+      const willBeAllTacPassed = techs.length > 0 && techs.every(t => tp[t.id]?.status === 'tac_passed');
+      const block = BLOCKS.find(b => b.level === mod.level);
+      const blockPos = block ? BLOCKS.indexOf(block) : -1;
+      if (blockPos >= 0) {
+        const bonus = platformConfig.xp.moduleBlock[Math.min(blockPos, platformConfig.xp.moduleBlock.length - 1)];
+        if (willBeAllTacPassed && !wasAllTacPassed) xpDelta += bonus;
+        else if (!willBeAllTacPassed && wasAllTacPassed) xpDelta -= bonus;
+      }
     });
-    const updatedMember = { ...target, techniqueProgress: tp };
+
+    const newXp = Math.max(0, (target.xp ?? 0) + xpDelta);
+    const updatedMember = { ...target, techniqueProgress: tp, xp: newXp };
 
     setMembers(prev => prev.map(m => m.id === memberId ? updatedMember : m));
     if (currentUser?.id === memberId) {
-      setCurrentUser(prev => prev ? { ...prev, techniqueProgress: tp } : null);
-      // debounced save übernimmt für currentUser
+      setCurrentUser(prev => prev ? { ...prev, techniqueProgress: tp, xp: newXp } : null);
     } else {
       saveMember(updatedMember);
     }
-  }, [members, currentUser]);
+  }, [members, currentUser, platformConfig]);
 
   const updateMemberInstructorModules = useCallback((memberId: string, moduleIds: string[]) => {
     const target = members.find(m => m.id === memberId);

@@ -39,6 +39,9 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     markBoardMessageRead,
     addBoardReply,
     boardRepliesGloballyEnabled,
+    effectiveBlocks,
+    moduleOrder,
+    moduleSettings,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>(() => (localStorage.getItem('mi_active_tab_member') as Tab) || 'dashboard');
@@ -198,8 +201,16 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     const xpPercent = Math.min(100, Math.round((xpProg.current / xpProg.needed) * 100));
     const levelInfo = LEVEL_DISPLAY[currentUser.currentLevel];
 
-    // ── Stats-Berechnungen (nur Pflichttechniken) ──
-    const allRequired = MODULES.flatMap(m => m.techniques.filter(t => t.isRequired));
+    // ── Stats-Berechnungen (nur Pflichttechniken aus sichtbaren Blöcken) ──
+    const isAdminUser = currentUser.role === 'admin';
+    const assignedMods = new Set(currentUser.instructorModules ?? []);
+    const dashboardBlocks = effectiveBlocks.filter(b =>
+      (!b.adminOnly || isAdminUser || b.moduleIds.some(mid => assignedMods.has(mid))) && !b.disabled
+    );
+    const visibleModuleIds = new Set(dashboardBlocks.flatMap(b => b.moduleIds));
+    const allRequired = MODULES
+      .filter(m => visibleModuleIds.has(m.id))
+      .flatMap(m => m.techniques.filter(t => t.isRequired));
     const totalRequired = allRequired.length;
     const tacticsPassed = allRequired.filter(t => {
       const s = currentUser.techniqueProgress[t.id]?.status;
@@ -568,9 +579,12 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
 
         {/* ── Block-Fortschritt — gleiche Struktur wie Instructor Fortschritt-Tab ── */}
         <div className="space-y-3">
-          {BLOCKS.filter(b => !b.adminOnly || currentUser.role === 'admin').map(block => {
+          {dashboardBlocks.map(block => {
             const unlocked = isBlockUnlocked(currentUser.id, block.level);
-            const blockModules = MODULES.filter(m => m.level === block.level);
+            // Verwende admin-konfigurierte Reihenfolge + Zuweisung aus effectiveBlocks.moduleIds
+            const blockModules = block.moduleIds
+              .map(id => MODULES.find(m => m.id === id))
+              .filter((m): m is NonNullable<typeof m> => !!m && !moduleSettings[m.id]?.disabled);
             const required = blockModules.flatMap(m => m.techniques.filter(t => t.isRequired));
             const tacticsPassed = required.filter(t => {
               const s = currentUser.techniqueProgress[t.id]?.status;

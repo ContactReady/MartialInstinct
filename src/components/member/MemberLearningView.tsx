@@ -11,6 +11,7 @@ import { QuizEngine } from '../shared/QuizEngine';
 import { ProgressBar } from '../shared/ProgressBar';
 import { Module, Block, TechniqueProgress, xpProgress } from '../../types';
 import { ModuleTopic, getTopicsForModule } from '../../data/moduleTopics';
+import { MODULES } from '../../data/modules';
 
 // ============================================
 // PRAXIS STATUS HELPER
@@ -184,7 +185,7 @@ export const MemberLearningView: React.FC = () => {
     quizExamState, canTakeExam, completeQuizExam,
     flaggedQuestions, flagSystemEnabled, flagQuestion, unflagQuestion,
     topicOverrides, platformConfig, getModuleName, getModuleSubtitle,
-    moduleSettings, effectiveBlocks,
+    moduleSettings, effectiveBlocks, moduleOrder,
   } = useApp();
   const [activeModule, setActiveModule] = useState<Module | null>(null);
   const [activeTopic, setActiveTopic] = useState<ModuleTopic | null>(null);
@@ -213,11 +214,20 @@ export const MemberLearningView: React.FC = () => {
   if (!currentUser) return null;
 
   const isAdmin = currentUser?.role === 'admin';
-  const visibleBlocks = effectiveBlocks.filter(b => (!b.adminOnly || isAdmin) && !b.disabled);
-  const visibleBlockLevels = new Set(visibleBlocks.map(b => b.level));
-  const orderedModules = getOrderedModules()
-    .filter(m => visibleBlockLevels.has(m.level))
-    .filter(m => !moduleSettings[m.id]?.disabled);
+  const assignedModuleIds = new Set(currentUser?.instructorModules ?? []);
+  const visibleBlocks = effectiveBlocks.filter(b =>
+    (!b.adminOnly || isAdmin || b.moduleIds.some(mid => assignedModuleIds.has(mid))) && !b.disabled
+  );
+  // Verwende dynamische moduleIds aus effectiveBlocks (admin-konfiguriert via moduleOrder)
+  const visibleModuleIdSet = new Set(visibleBlocks.flatMap(b => b.moduleIds));
+  const orderedModules = (moduleOrder.length > 0
+    ? moduleOrder
+        .filter(o => visibleModuleIdSet.has(o.moduleId))
+        .sort((a, b) => a.position - b.position)
+        .map(o => MODULES.find(m => m.id === o.moduleId)!)
+        .filter(Boolean)
+    : MODULES.filter(m => visibleModuleIdSet.has(m.id))
+  ).filter(m => !moduleSettings[m.id]?.disabled);
   const quizProgress = currentUser.quizProgress ?? {};
   const totalXP = currentUser.xp ?? 0;
 
@@ -641,9 +651,9 @@ export const MemberLearningView: React.FC = () => {
   const isCombatDone = (techniqueId: string): boolean =>
     currentUser.techniqueProgress[techniqueId]?.status === 'tac_passed';
 
-  // Techniken gesamt taktisch bestanden (für Header)
+  // Techniken gesamt taktisch bestanden (für Header) — nur Pflicht
   const getTechniquesDone = (moduleId: string): number =>
-    getTechniquesForModule(moduleId).filter(t => isTacticsDone(t.id)).length;
+    getTechniquesForModule(moduleId).filter(t => t.isRequired && isTacticsDone(t.id)).length;
 
   // Modul: alle required Techniken taktisch bestanden?
   const isModuleTacticsDone = (moduleId: string): boolean => {
@@ -658,7 +668,7 @@ export const MemberLearningView: React.FC = () => {
   };
 
   const totalTechniquesDone = orderedModules.reduce((sum, m) => sum + getTechniquesDone(m.id), 0);
-  const totalTechniques = orderedModules.reduce((sum, m) => sum + getTechniquesForModule(m.id).length, 0);
+  const totalTechniques = orderedModules.reduce((sum, m) => sum + getTechniquesForModule(m.id).filter(t => t.isRequired).length, 0);
   const totalPct = totalTechniques > 0 ? Math.round((totalTechniquesDone / totalTechniques) * 100) : 0;
 
   const modulesTotal = orderedModules.length;
@@ -825,7 +835,7 @@ export const MemberLearningView: React.FC = () => {
           {orderedModules.map(module => {
             const techniques = getTechniquesForModule(module.id);
             const done = getTechniquesDone(module.id);
-            const total = techniques.length;
+            const total = techniques.filter(t => t.isRequired).length;
             const pct = total > 0 ? Math.round((done / total) * 100) : 0;
             const isOpen = expandedModules.has(module.id);
             const tacticsDone = isModuleTacticsDone(module.id);
