@@ -521,7 +521,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Beim Start: Lerninhalte (Techniken + Quiz) aus Supabase laden
   // Mit localStorage-Cache für Offline-Betrieb, Fallback auf hardcoded Daten
   useEffect(() => {
-    const CACHE_KEY = 'mi_content_v5'; // v5: topic-Feld auf Fragen
+    const CACHE_KEY = 'mi_content_v6'; // v6: topic-Feld korrekt aus hardcoded Daten
+
+    // Lookup-Map: question-ID → topic (aus hardcoded Daten, kein Supabase-Feld nötig)
+    const topicByQId = new Map<string, string>();
+    Object.values(MODULE_QUIZ_DATA).forEach(qs => qs.forEach(q => { if (q.topic) topicByQId.set(q.id, q.topic); }));
 
     const mapTech = (r: { id: string; module_id: string; name: string; description: string; is_required: boolean; position: number }): ContentTechnique => ({
       id: r.id, moduleId: r.module_id, name: r.name, description: r.description ?? '', isRequired: r.is_required, position: r.position
@@ -537,6 +541,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       pairs: (r.pairs as { left: string; right: string }[] | null) ?? undefined,
       explanation: (r.explanation as string) ?? '',
       position: r.position as number,
+      topic: topicByQId.get(r.id as string),
     });
 
     const buildHardcoded = () => {

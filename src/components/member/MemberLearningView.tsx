@@ -546,7 +546,7 @@ export const MemberLearningView: React.FC = () => {
                         <span className="text-xl flex-shrink-0">{topic.icon}</span>
                         <div className="flex-1 min-w-0">
                           <div className="text-white font-medium text-sm">{topic.title}</div>
-                          <div className="text-gray-500 text-xs">{topicQ.length} Fragen</div>
+                          <div className="text-gray-500 text-xs">Theorie</div>
                         </div>
                         <ChevronRight className="w-4 h-4 text-gray-600 flex-shrink-0" />
                       </button>
@@ -566,7 +566,7 @@ export const MemberLearningView: React.FC = () => {
             <ul className="space-y-1 text-sm text-gray-300">
               <li>• {q.length} Fragen im Pool — {quizCount} werden zufällig gewählt</li>
               <li>• 2 XP pro richtige Antwort + 10 Bonus bei 100%</li>
-              <li>• ⭐ Stern = Frage öfter üben (25% der Session)</li>
+              <li>• ⭐ Stern = Ich kenne diese Frage — kommt seltener vor</li>
               <li>• Wiederholung empfohlen für echten Lernerfolg</li>
             </ul>
           </div>

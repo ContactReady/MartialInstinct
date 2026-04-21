@@ -78,7 +78,7 @@ function buildExamSession(pool: QuizQuestion[]): QuizQuestion[] {
   });
 }
 
-/** Practice-Session: Stern-Fragen füllen 25% der Slots, Rest zufällig (mit Wiederholung) */
+/** Practice-Session: Bekannte (Stern-)Fragen füllen max. 10% der Slots — unbekannte Fragen dominieren */
 function buildSession(pool: QuizQuestion[], sessionCount: number, starredIds?: string[]): QuizQuestion[] {
   if (pool.length === 0) return [];
 
@@ -87,7 +87,10 @@ function buildSession(pool: QuizQuestion[], sessionCount: number, starredIds?: s
     : [];
   const unstarred = pool.filter(q => !starred.find(s => s.id === q.id));
 
-  const starSlots = starred.length > 0 ? Math.max(1, Math.round(sessionCount * 0.25)) : 0;
+  // Bekannte Fragen (Stern) kommen selten vor — max. 1 pro 10 Slots
+  const starSlots = starred.length > 0 && unstarred.length < sessionCount
+    ? Math.min(starred.length, Math.max(1, Math.floor(sessionCount * 0.10)))
+    : 0;
   const normalSlots = sessionCount - starSlots;
 
   const pickWithRepeat = (src: QuizQuestion[], count: number): QuizQuestion[] => {
@@ -102,7 +105,7 @@ function buildSession(pool: QuizQuestion[], sessionCount: number, starredIds?: s
   };
 
   const starPicks = pickWithRepeat(starred, starSlots);
-  // Falls nicht genug Stern-Fragen: Lücken mit normalen füllen
+  // Lücken immer mit unbekannten Fragen füllen
   const normalCount = normalSlots + (starSlots - starPicks.length);
   const normalPicks = pickWithRepeat(unstarred.length > 0 ? unstarred : pool, normalCount);
 
@@ -772,7 +775,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
           {!isExam && (onStar || onUnstar) && q && (
             <button
               onClick={handleStarToggle}
-              title={currentStarred ? 'Stern entfernen' : 'Als Lernfrage markieren'}
+              title={currentStarred ? 'Stern entfernen — Frage wieder üben' : 'Als bekannt markieren — kommt seltener'}
               className={`text-xl transition-all active:scale-90 ${currentStarred ? 'text-yellow-400' : 'text-gray-600 hover:text-yellow-500'}`}
             >
               {currentStarred ? '⭐' : '☆'}
