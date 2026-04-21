@@ -901,6 +901,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => clearInterval(interval);
   }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Session-Check: beim Zurückkehren in die App Session prüfen und ggf. erneuern
+  useEffect(() => {
+    if (!currentUser) return;
+    const handleVisibility = async () => {
+      if (document.visibilityState !== 'visible') return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        const { error } = await supabase.auth.refreshSession();
+        if (error) {
+          console.warn('[Session] Refresh fehlgeschlagen — automatischer Logout');
+          logout();
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [currentUser?.id, logout]);
+
   // Online-Status Polling: alle 30s lastSeenAt aller Members aus Supabase laden
   useEffect(() => {
     if (!currentUser) return;
