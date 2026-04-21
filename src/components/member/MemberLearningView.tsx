@@ -546,7 +546,7 @@ export const MemberLearningView: React.FC = () => {
                         <span className="text-xl flex-shrink-0">{topic.icon}</span>
                         <div className="flex-1 min-w-0">
                           <div className="text-white font-medium text-sm">{topic.title}</div>
-                          <div className="text-gray-500 text-xs">Theorie</div>
+                          <div className="text-gray-500 text-xs">Theorie für {topicQ.length} Fragen</div>
                         </div>
                         <ChevronRight className="w-4 h-4 text-gray-600 flex-shrink-0" />
                       </button>
@@ -561,7 +561,7 @@ export const MemberLearningView: React.FC = () => {
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
             <div className="flex items-center gap-2 text-blue-400 font-semibold text-sm mb-2">
               <BookOpen className="w-4 h-4" />
-              Gesamt-Quiz
+              Infos zum Quiz
             </div>
             <ul className="space-y-1 text-sm text-gray-300">
               <li>• {q.length} Fragen im Pool — {quizCount} werden zufällig gewählt</li>
@@ -624,9 +624,8 @@ export const MemberLearningView: React.FC = () => {
               </div>
             );
           })()}
-        </div>
 
-        <div className="px-4 pb-4 pt-2 border-t border-gray-700/50">
+          {/* Quiz-Button */}
           <button
             onClick={() => setShowQuiz(true)}
             className="w-full bg-red-600 hover:bg-red-500 text-white py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2"
