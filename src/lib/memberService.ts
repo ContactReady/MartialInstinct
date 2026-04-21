@@ -141,8 +141,11 @@ export async function loadMemberById(id: string): Promise<Member | null> {
 export async function saveMember(member: Member): Promise<void> {
   try {
     const row = memberToRow(member);
-    await supabase.from('members').upsert(row, { onConflict: 'id' });
-  } catch { /* silent */ }
+    const { error } = await supabase.from('members').upsert(row, { onConflict: 'id' });
+    if (error) console.error('[saveMember] Supabase upsert failed:', error.message, '| Member:', member.id);
+  } catch (e) {
+    console.error('[saveMember] Exception:', e, '| Member:', member.id);
+  }
 }
 
 // ── Neues Mitglied anlegen: Auth + DB ──

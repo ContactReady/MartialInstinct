@@ -800,7 +800,7 @@ export const InstructorView: React.FC = () => {
 
         {/* ── Mitglieder ─────────────────────────────────────────────────── */}
         {communitySubTab === 'mitglieder' && (() => {
-          const allMembers = members.filter(m => m.role === 'member');
+          const allMembers = members.filter(m => m.role !== 'member');
           const getMemberStatus = (m: Member): 'training' | 'online' | 'offline' => {
             if (checkIns.some(c => c.memberId === m.id && c.status === 'approved')) return 'training';
             if (m.onlineSince !== undefined) return 'online';
@@ -943,7 +943,7 @@ export const InstructorView: React.FC = () => {
         {/* ── Rangliste ───────────────────────────────────────────────────── */}
         {communitySubTab === 'rangliste' && (
           <RankingList
-            members={members.filter(m => m.role === 'member')}
+            members={members.filter(m => m.role !== 'member')}
             currentUserId={currentUser!.id}
             currentUserLevel={currentUser!.currentLevel}
             checkIns={checkIns}
