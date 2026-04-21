@@ -219,22 +219,22 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     const totalPassedRequired = tacticsPassed;
     const totalPercent = totalRequired > 0 ? Math.round((tacticsPassed / totalRequired) * 100) : 0;
 
-    // ── Modul-Kacheln: Anzahl Module (nicht Techniken) ──
-    const visibleModules = MODULES.filter(m => visibleModuleIds.has(m.id));
-    const tacticsModsDone = visibleModules.filter(mod => {
+    // ── Modul-Kacheln: immer gegen alle 10 Curriculum-Module (Nummern 1–10) ──
+    const curriculumMods = MODULES.filter(m => m.number <= 10);
+    const tacticsModsDone = curriculumMods.filter(mod => {
       const req = mod.techniques.filter(t => t.isRequired);
       return req.length > 0 && req.every(t => {
         const s = currentUser.techniqueProgress[t.id]?.status;
         return s === 'tech_passed' || s === 'tac_passed';
       });
     }).length;
-    const combatModsDone = visibleModules.filter(mod => {
+    const combatModsDone = curriculumMods.filter(mod => {
       const req = mod.techniques.filter(t => t.isRequired);
       return req.length > 0 && req.every(t =>
         currentUser.techniqueProgress[t.id]?.status === 'tac_passed'
       );
     }).length;
-    const totalVisibleMods = visibleModules.length;
+    const totalVisibleMods = curriculumMods.length; // immer 10
 
     // ── Offene Prüfungsanfragen ──
     const pendingExams = currentUser.examRequests.filter(r => r.status === 'pending');

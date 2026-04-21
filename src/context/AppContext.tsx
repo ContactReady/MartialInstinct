@@ -2180,7 +2180,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [members, contentTechniques]);
 
   const getBlockProgress = useCallback((memberId: string, blockLevel: ModuleLevel): { total: number; completed: number; percentage: number } => {
-    const member = members.find(m => m.id === memberId);
+    const member = members.find(m => m.id === memberId)
+      ?? (currentUser?.id === memberId ? currentUser : undefined);
     const block = BLOCKS.find(b => b.level === blockLevel);
 
     if (!member || !block) return { total: 0, completed: 0, percentage: 0 };
@@ -2196,10 +2197,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     ).length;
 
     return { total, completed, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
-  }, [members, contentTechniques]);
+  }, [members, currentUser, contentTechniques]);
 
   const isBlockUnlocked = useCallback((memberId: string, blockLevel: ModuleLevel): boolean => {
-    const member = members.find(m => m.id === memberId);
+    const member = members.find(m => m.id === memberId)
+      ?? (currentUser?.id === memberId ? currentUser : undefined);
     if (!member) return false;
     
     // First block is always unlocked
@@ -2230,7 +2232,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const prevProgress = getBlockProgress(memberId, previousLevel);
     
     return prevProgress.percentage >= 80;
-  }, [members, getBlockProgress]);
+  }, [members, currentUser, getBlockProgress]);
 
   // ============================================
   // INSTRUCTOR LEARNING

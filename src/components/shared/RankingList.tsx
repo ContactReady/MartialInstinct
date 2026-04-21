@@ -7,12 +7,16 @@ import React, { useState } from 'react';
 import { MODULES, BLOCKS } from '../../context/AppContext';
 import { Member, CheckIn, LEVEL_DISPLAY } from '../../types';
 
-// Curriculum: erste 10 Module über alle Blöcke (wie im Zertifikat)
-const CURRICULUM_BLOCKS = BLOCKS.filter(b => b.id !== 'assistant_instructor' && !b.adminOnly);
-const CURRICULUM_MODULES = CURRICULUM_BLOCKS
-  .flatMap(b => b.moduleIds.map(id => MODULES.find(m => m.id === id)!))
-  .filter(Boolean)
-  .slice(0, 10);
+// Curriculum: genau die 10 nummerierten Module (1–10), unabhängig von Block-Sichtbarkeit
+const CURRICULUM_MODULES = MODULES
+  .filter(m => m.number <= 10)
+  .sort((a, b) => a.number - b.number);
+
+// Für die aufgeklappte Detail-Ansicht: Blöcke die Curriculum-Module enthalten
+const CURRICULUM_BLOCKS = BLOCKS.filter(b =>
+  b.id !== 'assistant_instructor' &&
+  b.moduleIds.some(id => CURRICULUM_MODULES.some(cm => cm.id === id))
+);
 
 // Modul-Fortschritt berechnen
 function getModProgress(member: Member, moduleId: string): { tactics: boolean; combat: boolean } {
@@ -61,10 +65,13 @@ export const RankingList: React.FC<RankingListProps> = ({
   const [filterKey, setFilterKey] = useState<FilterKey>('alle');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  // Nur Pflicht-Techniken aus den 10 Curriculum-Modulen zählen
   const countPassedTechs = (m: Member) =>
-    Object.values(m.techniqueProgress).filter(
-      p => p.status === 'tech_passed' || p.status === 'tac_passed'
-    ).length;
+    CURRICULUM_MODULES.flatMap(mod => mod.techniques.filter(t => t.isRequired))
+      .filter(t => {
+        const s = m.techniqueProgress[t.id]?.status;
+        return s === 'tech_passed' || s === 'tac_passed';
+      }).length;
 
   // Filter
   const filtered = members.filter(m => {
