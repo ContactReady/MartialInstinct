@@ -871,6 +871,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           if (!prev) return null;
           return {
             ...prev,
+            name: fresh.name,
+            role: fresh.role,
             techniqueProgress: fresh.techniqueProgress,
             xp: Math.max(prev.xp ?? 0, fresh.xp ?? 0), // nie XP verlieren durch Race-Condition
             currentLevel: fresh.currentLevel,
@@ -885,6 +887,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
         setMembers(prev => prev.map(m => m.id === id ? {
           ...m,
+          name: fresh.name,
+          role: fresh.role,
           techniqueProgress: fresh.techniqueProgress,
           xp: Math.max(m.xp ?? 0, fresh.xp ?? 0),
           currentLevel: fresh.currentLevel,
