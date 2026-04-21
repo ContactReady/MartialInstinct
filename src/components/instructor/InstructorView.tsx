@@ -3598,15 +3598,25 @@ export const InstructorView: React.FC = () => {
                             </div>
                           )}
 
-                          {/* Quick-Edit: Erklärung */}
+                          {/* Quick-Edit: Frage + Erklärung */}
                           {q && (
                             <div className="space-y-2">
+                              <div className="text-xs text-gray-500 font-medium">Frage (Override):</div>
+                              <textarea
+                                defaultValue={override.question ?? q.question ?? ''}
+                                onBlur={e => {
+                                  const val = e.target.value.trim();
+                                  if (val !== (override.question ?? q.question ?? '')) editQuestionOverride(flag.questionId, { question: val });
+                                }}
+                                rows={2}
+                                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-white resize-none focus:outline-none focus:border-red-500"
+                              />
                               <div className="text-xs text-gray-500 font-medium">Erklärung (Override):</div>
                               <textarea
                                 defaultValue={override.explanation ?? q.explanation ?? ''}
                                 onBlur={e => {
                                   const val = e.target.value.trim();
-                                  if (val !== (q.explanation ?? '')) editQuestionOverride(flag.questionId, { explanation: val });
+                                  if (val !== (override.explanation ?? q.explanation ?? '')) editQuestionOverride(flag.questionId, { explanation: val });
                                 }}
                                 rows={2}
                                 className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-white resize-none focus:outline-none focus:border-yellow-500"

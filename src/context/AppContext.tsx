@@ -2575,8 +2575,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   [contentTechniques]);
 
   const getQuizQuestionsForModule = useCallback((moduleId: string): QuizQuestion[] =>
-    quizQuestions.filter(q => q.moduleId === moduleId).sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
-  [quizQuestions]);
+    quizQuestions
+      .filter(q => q.moduleId === moduleId)
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+      .map(q => questionOverrides[q.id] ? { ...q, ...questionOverrides[q.id] } : q),
+  [quizQuestions, questionOverrides]);
 
   const getQuizCountForModule = useCallback((moduleId: string): number =>
     moduleSettings[moduleId]?.quizCount ?? 10,
