@@ -647,6 +647,9 @@ const [sichtbarkeitOpen, setSichtbarkeitOpen] = useState(false);
         })}
         {persoenlichOpen && (
           <div className="px-1 space-y-3 pb-2">
+            {!hasAdminAccess(currentUser) && (
+              <p className="text-[10px] text-gray-600">Kerndaten können nur vom Admin geändert werden.</p>
+            )}
 
             {/* ── Daten-Felder ── */}
             <div className="space-y-2">
@@ -664,25 +667,41 @@ const [sichtbarkeitOpen, setSichtbarkeitOpen] = useState(false);
               {/* Vorname */}
               <div>
                 <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Vorname</label>
-                <input type="text" value={firstNameDraft} onChange={e => { setFirstNameDraft(e.target.value); setPersoenlichSaved(false); }} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400" />
+                {hasAdminAccess(currentUser) ? (
+                  <input type="text" value={firstNameDraft} onChange={e => { setFirstNameDraft(e.target.value); setPersoenlichSaved(false); }} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400" />
+                ) : (
+                  <div className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-400">{firstNameDraft || '—'}</div>
+                )}
               </div>
 
               {/* Nachname */}
               <div>
                 <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Nachname</label>
-                <input type="text" value={lastNameDraft} onChange={e => { setLastNameDraft(e.target.value); setPersoenlichSaved(false); }} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400" />
+                {hasAdminAccess(currentUser) ? (
+                  <input type="text" value={lastNameDraft} onChange={e => { setLastNameDraft(e.target.value); setPersoenlichSaved(false); }} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400" />
+                ) : (
+                  <div className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-400">{lastNameDraft || '—'}</div>
+                )}
               </div>
 
               {/* Geburtsdatum */}
               <div>
                 <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Geburtsdatum</label>
-                <input type="text" value={birthDateDraft} onChange={e => { setBirthDateDraft(e.target.value); setPersoenlichSaved(false); }} placeholder="TT.MM.YYYY" className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400 placeholder-gray-600" />
+                {hasAdminAccess(currentUser) ? (
+                  <input type="text" value={birthDateDraft} onChange={e => { setBirthDateDraft(e.target.value); setPersoenlichSaved(false); }} placeholder="TT.MM.YYYY" className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400 placeholder-gray-600" />
+                ) : (
+                  <div className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-400">{birthDateDraft || '—'}</div>
+                )}
               </div>
 
               {/* Member ID */}
               <div>
                 <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Member ID</label>
-                <input type="text" value={memberIdDraft} onChange={e => { setMemberIdDraft(e.target.value); setPersoenlichSaved(false); }} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400" />
+                {hasAdminAccess(currentUser) ? (
+                  <input type="text" value={memberIdDraft} onChange={e => { setMemberIdDraft(e.target.value); setPersoenlichSaved(false); }} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gray-400" />
+                ) : (
+                  <div className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-400">{memberIdDraft || '—'}</div>
+                )}
               </div>
             </div>
 
@@ -692,12 +711,14 @@ const [sichtbarkeitOpen, setSichtbarkeitOpen] = useState(false);
               onClick={() => {
                 const nameResult = updateAnzeigename(anzeigenameDraft);
                 if (!nameResult.ok) { setPersoenlichError(nameResult.error ?? ''); return; }
-                updateMemberCoreData(currentUser.id, {
-                  firstName: firstNameDraft,
-                  lastName: lastNameDraft,
-                  birthDate: birthDateDraft ? (() => { const p = birthDateDraft.split('.'); return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : birthDateDraft; })() : undefined,
-                  memberId: memberIdDraft || undefined,
-                });
+                if (hasAdminAccess(currentUser)) {
+                  updateMemberCoreData(currentUser.id, {
+                    firstName: firstNameDraft,
+                    lastName: lastNameDraft,
+                    birthDate: birthDateDraft ? (() => { const p = birthDateDraft.split('.'); return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : birthDateDraft; })() : undefined,
+                    memberId: memberIdDraft || undefined,
+                  });
+                }
                 setPersoenlichSaved(true);
                 setTimeout(() => setPersoenlichSaved(false), 3000);
               }}
@@ -725,6 +746,10 @@ const [sichtbarkeitOpen, setSichtbarkeitOpen] = useState(false);
             <div className="border-t border-gray-800 pt-3">
               <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Auf Profil sichtbar</div>
               <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white">Anzeigename</span>
+                  <span className="text-xs text-gray-500 italic">Immer</span>
+                </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-white">Vorname</span>
                   <span className="text-xs text-gray-500 italic">Immer</span>
