@@ -4,19 +4,14 @@
 // ============================================
 
 import React, { useState } from 'react';
-import { MODULES, BLOCKS } from '../../context/AppContext';
-import { Member, CheckIn, LEVEL_DISPLAY } from '../../types';
+import { MODULES } from '../../context/AppContext';
+import { useApp } from '../../context/AppContext';
+import { Member, CheckIn, LEVEL_DISPLAY, ROLE_DISPLAY } from '../../types';
 
-// Curriculum: genau die 10 nummerierten Module (1–10), unabhängig von Block-Sichtbarkeit
+// Curriculum: genau die 10 nummerierten Module (1–10)
 const CURRICULUM_MODULES = MODULES
   .filter(m => m.number <= 10)
   .sort((a, b) => a.number - b.number);
-
-// Für die aufgeklappte Detail-Ansicht: Blöcke die Curriculum-Module enthalten
-const CURRICULUM_BLOCKS = BLOCKS.filter(b =>
-  b.id !== 'assistant_instructor' &&
-  b.moduleIds.some(id => CURRICULUM_MODULES.some(cm => cm.id === id))
-);
 
 // Modul-Fortschritt berechnen
 function getModProgress(member: Member, moduleId: string): { tactics: boolean; combat: boolean } {
@@ -65,6 +60,14 @@ export const RankingList: React.FC<RankingListProps> = ({
   const [filterKey, setFilterKey] = useState<FilterKey>('alle');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  const { effectiveBlocks } = useApp();
+
+  // Nutzt Admin-Einstellungen (effectiveBlocks) statt hardcodierter BLOCKS
+  const curriculumBlocks = effectiveBlocks.filter(b =>
+    b.id !== 'assistant_instructor' &&
+    b.moduleIds.some(id => CURRICULUM_MODULES.some(cm => cm.id === id))
+  );
+
   // Nur Pflicht-Techniken aus den 10 Curriculum-Modulen zählen
   const countPassedTechs = (m: Member) =>
     CURRICULUM_MODULES.flatMap(mod => mod.techniques.filter(t => t.isRequired))
@@ -107,7 +110,10 @@ export const RankingList: React.FC<RankingListProps> = ({
 
   const statusDot = (m: Member) => {
     if (m.isCheckedIn) return <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />;
-    if (m.onlineSince)  return <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 animate-pulse" />;
+    const lastSeen = m.lastSeenAt ? new Date(m.lastSeenAt).getTime() : 0;
+    const minutesAgo = (Date.now() - lastSeen) / 60000;
+    if (minutesAgo < 5)  return <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 animate-pulse" />;
+    if (minutesAgo < 15) return <span className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0" />;
     return <span className="w-2 h-2 rounded-full bg-gray-700 flex-shrink-0" />;
   };
 
@@ -167,10 +173,13 @@ export const RankingList: React.FC<RankingListProps> = ({
             const isMe = m.id === currentUserId;
             const isExpanded = expandedId === m.id;
             const levelInfo = LEVEL_DISPLAY[m.currentLevel];
+            const roleInfo = ROLE_DISPLAY[m.role];
+            const isInstructor = m.role !== 'member';
             const passed = countPassedTechs(m);
             const tacticsDone = CURRICULUM_MODULES.filter(mod => getModProgress(m, mod.id).tactics).length;
             const combatDone = CURRICULUM_MODULES.filter(mod => getModProgress(m, mod.id).combat).length;
             const total = CURRICULUM_MODULES.length;
+            const instructorModCount = m.instructorModules?.length ?? 0;
 
             return (
               <div
@@ -206,9 +215,9 @@ export const RankingList: React.FC<RankingListProps> = ({
                           <span className="text-[9px] bg-red-900/40 text-red-400 border border-red-800/40 px-1.5 py-0.5 rounded font-semibold">STB</span>
                         )}
                       </div>
-                      {/* Kapitel-Badge */}
-                      <span className={`text-[10px] font-semibold ${levelInfo.color}`}>
-                        {levelInfo.icon} {levelInfo.name}
+                      {/* Kapitel-Badge: Instructoren zeigen Rolle, Member zeigen Level */}
+                      <span className={`text-[10px] font-semibold ${isInstructor ? roleInfo.color : levelInfo.color}`}>
+                        {isInstructor ? roleInfo.label : `${levelInfo.icon} ${levelInfo.name}`}
                       </span>
                     </div>
                     {/* XP + Chevron */}
@@ -229,19 +238,20 @@ export const RankingList: React.FC<RankingListProps> = ({
                       <span className="text-gray-600">Wo.</span>
                     </span>
                     <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <span className="w-3.5 h-3.5 rounded-full bg-gray-700 border border-gray-500 inline-flex items-center justify-center text-[7px] font-bold text-white flex-shrink-0">T</span>
+                      <span className="w-3.5 h-3.5 rounded-full bg-gray-600 inline-flex items-center justify-center text-[7px] font-bold text-gray-900 flex-shrink-0">T</span>
                       <span className="font-semibold text-white">{tacticsDone}</span>
                       <span className="text-gray-600">/{total}</span>
                     </span>
                     <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <span className="w-3.5 h-3.5 rounded-full bg-red-700 border border-red-500 inline-flex items-center justify-center text-[7px] font-bold text-white flex-shrink-0">C</span>
+                      <span className="w-3.5 h-3.5 rounded-full bg-gray-900 border border-gray-600 inline-flex items-center justify-center text-[7px] font-bold text-white flex-shrink-0">C</span>
                       <span className="font-semibold text-white">{combatDone}</span>
                       <span className="text-gray-600">/{total}</span>
                     </span>
-                    {(m.instructorModules?.length ?? 0) > 0 && (
+                    {isInstructor && (
                       <span className="text-xs text-gray-400 flex items-center gap-1">
-                        <span className="w-3.5 h-3.5 rounded bg-red-900/60 border border-red-700 inline-flex items-center justify-center text-[7px] font-bold text-red-400 flex-shrink-0">I</span>
-                        <span className="font-semibold text-white">{m.instructorModules!.length}</span>
+                        <span className="w-3.5 h-3.5 rounded bg-red-600 inline-flex items-center justify-center text-[7px] font-bold text-white flex-shrink-0">I</span>
+                        <span className="font-semibold text-white">{instructorModCount}</span>
+                        <span className="text-gray-600">/{total}</span>
                       </span>
                     )}
                     <span className="text-[10px] text-gray-600 flex items-center gap-1 ml-auto">
@@ -265,7 +275,7 @@ export const RankingList: React.FC<RankingListProps> = ({
                 {/* Aufgeklapptes Modul-Detail */}
                 {isExpanded && (
                   <div className="border-t border-gray-700/40 bg-gray-900/60 px-3 py-3 space-y-3">
-                    {CURRICULUM_BLOCKS.map(block => {
+                    {curriculumBlocks.map(block => {
                       const blockMods = block.moduleIds
                         .map(id => MODULES.find(mm => mm.id === id)!)
                         .filter(Boolean)
@@ -291,12 +301,12 @@ export const RankingList: React.FC<RankingListProps> = ({
                               return (
                                 <div key={mod.id} className="flex items-center gap-2 py-0.5">
                                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${
-                                    prog.tactics ? 'bg-gray-700 border-gray-500' : 'border-gray-700'
+                                    prog.tactics ? 'bg-gray-600 border-gray-500' : 'border-gray-700'
                                   }`}>
-                                    {prog.tactics && <span className="text-white font-bold" style={{ fontSize: '7px' }}>T</span>}
+                                    {prog.tactics && <span className="text-gray-900 font-bold" style={{ fontSize: '7px' }}>T</span>}
                                   </div>
                                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${
-                                    prog.combat ? 'bg-red-700 border-red-500' : 'border-gray-700'
+                                    prog.combat ? 'bg-gray-900 border-gray-600' : 'border-gray-700'
                                   }`}>
                                     {prog.combat && <span className="text-white font-bold" style={{ fontSize: '7px' }}>C</span>}
                                   </div>
@@ -321,15 +331,19 @@ export const RankingList: React.FC<RankingListProps> = ({
       )}
 
       {/* Legende */}
-      <div className="flex items-center gap-4 text-[10px] text-gray-600 pt-1 flex-wrap">
+      <div className="flex items-center gap-3 text-[10px] text-gray-600 pt-1 flex-wrap">
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> Beim Training</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> Online</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> Inaktiv</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-700 inline-block" /> Offline</span>
         <span className="flex items-center gap-1">
-          <span className="w-3.5 h-3.5 rounded-full bg-gray-700 border border-gray-500 inline-flex items-center justify-center text-[7px] font-bold text-white">T</span> Tactics
+          <span className="w-3.5 h-3.5 rounded-full bg-gray-600 inline-flex items-center justify-center text-[7px] font-bold text-gray-900">T</span> Tactics
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-3.5 h-3.5 rounded-full bg-red-700 border border-red-500 inline-flex items-center justify-center text-[7px] font-bold text-white">C</span> Combat
+          <span className="w-3.5 h-3.5 rounded-full bg-gray-900 border border-gray-600 inline-flex items-center justify-center text-[7px] font-bold text-white">C</span> Combat
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3.5 h-3.5 rounded bg-red-600 inline-flex items-center justify-center text-[7px] font-bold text-white">I</span> Instructor
         </span>
       </div>
     </div>

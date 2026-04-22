@@ -45,7 +45,7 @@ import {
 } from '../types';
 import { MODULE_QUIZ_DATA } from '../data/memberQuizData';
 import { supabase } from '../lib/supabase';
-import { loadMembers, loadMemberById, saveMember, createMemberInSupabase } from '../lib/memberService';
+import { loadMembers, loadMemberById, saveMember, updateMemberFields, createMemberInSupabase } from '../lib/memberService';
 import { loadAllSettings, saveSetting } from '../lib/settingsService';
 import { MEMBERS, CHECK_INS, BOARD_MESSAGES, NOTIFICATIONS, LOCATIONS, VIDEOS, COURSES } from '../data/mockData';
 import { MODULES, BLOCKS, getAllTechniques, getModuleById } from '../data/modules';
@@ -2994,7 +2994,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (currentUser?.id === memberId) {
       setCurrentUser(prev => prev ? { ...prev, techniqueProgress: tp, xp: newXp } : null);
     } else {
-      saveMember(updatedMember);
+      updateMemberFields(memberId, { technique_progress: tp, xp: newXp });
     }
   }, [members, currentUser, platformConfig]);
 
@@ -3006,8 +3006,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (currentUser?.id === memberId) {
       setCurrentUser(prev => prev ? { ...prev, instructorModules: moduleIds } : null);
       // debounced save übernimmt für currentUser
-    } else if (updatedMember) {
-      saveMember(updatedMember);
+    } else {
+      updateMemberFields(memberId, { instructor_modules: moduleIds });
     }
   }, [members, currentUser]);
 

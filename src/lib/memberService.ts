@@ -148,6 +148,16 @@ export async function saveMember(member: Member): Promise<void> {
   }
 }
 
+// ── Einzelne Felder updaten (kein vollständiger Upsert — verhindert Race Conditions) ──
+export async function updateMemberFields(memberId: string, fields: Record<string, unknown>): Promise<void> {
+  try {
+    const { error } = await supabase.from('members').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', memberId);
+    if (error) console.error('[updateMemberFields] Supabase update failed:', error.message, '| Member:', memberId);
+  } catch (e) {
+    console.error('[updateMemberFields] Exception:', e, '| Member:', memberId);
+  }
+}
+
 // ── Neues Mitglied anlegen: Auth + DB ──
 export async function createMemberInSupabase(
   email: string,

@@ -269,8 +269,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
             </div>
           )}
 
-          {/* Stats — direkt unter dem Hero, kein eigener Block */}
-          <div className="grid grid-cols-4 gap-2 mt-4">
+          {/* Stats — Rekord + XP oben, T/C/I als Zeilen darunter */}
+          <div className="grid grid-cols-2 gap-2 mt-4">
             <div className="bg-gray-800/60 rounded-xl p-2.5 border border-gray-700/50 text-center">
               <div className="text-lg font-black text-orange-400">{member.streak.longestStreak} W</div>
               <div className="text-[10px] text-gray-500 mt-0.5">Rekord</div>
@@ -279,26 +279,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
               <div className="text-lg font-black text-yellow-400">{member.xp ?? 0}</div>
               <div className="text-[10px] text-gray-500 mt-0.5">XP</div>
             </div>
-            <div className="bg-gray-800/60 rounded-xl p-2.5 border border-gray-700/50 text-center">
-              <div className="text-lg font-black text-white">{techPassedModCount}<span className="text-xs font-normal text-gray-600">/{totalModules}</span></div>
-              <div className="text-[10px] text-gray-500 mt-0.5">T bestanden</div>
-            </div>
-            <div className="bg-gray-800/60 rounded-xl p-2.5 border border-gray-700/50 text-center">
-              <div className="text-lg font-black text-white">{tacPassedModCount}<span className="text-xs font-normal text-gray-600">/{totalModules}</span></div>
-              <div className="text-[10px] text-gray-500 mt-0.5">C bestanden</div>
-            </div>
           </div>
-          {instructorModCount > 0 && (
-            <div className="mt-2">
-              <div className="bg-gray-800/60 rounded-xl p-2.5 border border-gray-700/50 flex items-center justify-between px-4">
+          <div className="mt-2 bg-gray-800/60 rounded-xl border border-gray-700/50 divide-y divide-gray-700/40">
+            <div className="flex items-center justify-between px-4 py-2">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-gray-600 flex items-center justify-center text-[10px] font-black text-gray-900">T</span>
+                <span className="text-[10px] text-gray-500">Tactics bestanden</span>
+              </div>
+              <span className="text-sm font-black text-white">{techPassedModCount}<span className="text-xs font-normal text-gray-600">/{totalModules}</span></span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-2">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-gray-900 border border-gray-600 flex items-center justify-center text-[10px] font-black text-white">C</span>
+                <span className="text-[10px] text-gray-500">Combat bestanden</span>
+              </div>
+              <span className="text-sm font-black text-white">{tacPassedModCount}<span className="text-xs font-normal text-gray-600">/{totalModules}</span></span>
+            </div>
+            {(member.role !== 'member' || instructorModCount > 0) && (
+              <div className="flex items-center justify-between px-4 py-2">
                 <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded bg-red-900/60 border border-red-700 flex items-center justify-center text-[10px] font-black text-red-400">I</span>
+                  <span className="w-5 h-5 rounded bg-red-600 flex items-center justify-center text-[10px] font-black text-white">I</span>
                   <span className="text-[10px] text-gray-500">Instructor Module</span>
                 </div>
-                <span className="text-sm font-black text-white">{instructorModCount}</span>
+                <span className="text-sm font-black text-white">{instructorModCount}<span className="text-xs font-normal text-gray-600">/{totalModules}</span></span>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <div className="px-5 pb-28 space-y-5 mt-4">
