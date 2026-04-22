@@ -52,9 +52,24 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
       }))
   );
 
-  // Zähle nur Techniken die in MODULES existieren → konsistent mit der Liste darunter
-  const techPassedCount = passedTechniques.length;
-  const tacPassedCount = passedTechniques.filter(t => t.status === 'tac_passed').length;
+  // Modul-Zähler (Module 1–10) — wie Dashboard-Kacheln
+  const curriculumModules = MODULES.filter(m => m.number <= 10);
+  const techPassedModCount = curriculumModules.filter(mod =>
+    mod.techniques.length > 0 &&
+    mod.techniques.every(t => {
+      const prog = member.techniqueProgress[t.id];
+      return prog && (prog.status === 'tech_passed' || prog.status === 'tac_passed');
+    })
+  ).length;
+  const tacPassedModCount = curriculumModules.filter(mod =>
+    mod.techniques.length > 0 &&
+    mod.techniques.every(t => {
+      const prog = member.techniqueProgress[t.id];
+      return prog && prog.status === 'tac_passed';
+    })
+  ).length;
+  const totalModules = curriculumModules.length;
+
   const instructorModCount = member.instructorModules?.length ?? 0;
 
   const handleImageClick = () => {
@@ -205,7 +220,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
                       {roleInfo.label}
                     </span>
                   )}
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${levelInfo.bgColor} ${levelInfo.color}`}>
+                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-gray-800 text-gray-300 border border-gray-700">
                     {levelInfo.icon} {levelInfo.name}
                   </span>
                 </div>
@@ -265,11 +280,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
               <div className="text-[10px] text-gray-500 mt-0.5">XP</div>
             </div>
             <div className="bg-gray-800/60 rounded-xl p-2.5 border border-gray-700/50 text-center">
-              <div className="text-lg font-black text-white">{techPassedCount}</div>
+              <div className="text-lg font-black text-white">{techPassedModCount}<span className="text-xs font-normal text-gray-600">/{totalModules}</span></div>
               <div className="text-[10px] text-gray-500 mt-0.5">T bestanden</div>
             </div>
             <div className="bg-gray-800/60 rounded-xl p-2.5 border border-gray-700/50 text-center">
-              <div className="text-lg font-black text-white">{tacPassedCount}</div>
+              <div className="text-lg font-black text-white">{tacPassedModCount}<span className="text-xs font-normal text-gray-600">/{totalModules}</span></div>
               <div className="text-[10px] text-gray-500 mt-0.5">C bestanden</div>
             </div>
           </div>

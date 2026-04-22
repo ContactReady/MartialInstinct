@@ -23,4 +23,5 @@ Zielgruppe: Mitglieder, Trainer, Admins.
 - Stelle Rückfragen bevor du implementierst
 - Arbeitssprache: Deutsch
 - Erkläre was du tust und warum
+- CRITICAL: Wenn der User sagt "erst bestätigen", "erst antworten", "bevor du umsetzt" o.ä. → NIEMALS direkt implementieren. Immer warten bis der User explizit grünes Licht gibt. Das gilt auch nach Session-Komprimierung.
 
