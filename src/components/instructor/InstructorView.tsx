@@ -229,6 +229,8 @@ export const InstructorView: React.FC = () => {
   const [flagEditQuestion, setFlagEditQuestion] = useState('');
   const [flagEditOptions, setFlagEditOptions] = useState(['', '', '', '']);
   const [flagEditCorrectIndex, setFlagEditCorrectIndex] = useState(0);
+  const [flagEditCorrectIndices, setFlagEditCorrectIndices] = useState<number[]>([]);
+  const [flagEditType, setFlagEditType] = useState<string>('single');
   const [flagEditExplanation, setFlagEditExplanation] = useState('');
   const [flagEditTheoryText, setFlagEditTheoryText] = useState('');
   const [showBulkImport, setShowBulkImport] = useState(false);
@@ -3634,16 +3636,42 @@ export const InstructorView: React.FC = () => {
                                 rows={2}
                                 className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-xs text-white resize-none focus:outline-none focus:border-red-500"
                               />
+                              {q.type !== 'truefalse' && q.type !== 'matching' && q.type !== 'fillblank' && (
+                                <div className="flex gap-1">
+                                  {(['single', 'multiple'] as const).map(t => (
+                                    <button
+                                      key={t}
+                                      onClick={() => setFlagEditType(t)}
+                                      className={`flex-1 py-1 rounded text-xs font-semibold transition-all ${flagEditType === t ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}
+                                    >
+                                      {t === 'single' ? 'Einzel (SC)' : 'Mehrfach (MC)'}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
                               {q.type !== 'truefalse' && q.type !== 'matching' && (
                                 <div className="space-y-1">
                                   {flagEditOptions.map((opt, oi) => (
                                     <div key={oi} className="flex items-center gap-2">
-                                      <input
-                                        type="radio"
-                                        checked={flagEditCorrectIndex === oi}
-                                        onChange={() => setFlagEditCorrectIndex(oi)}
-                                        className="accent-red-500 flex-shrink-0"
-                                      />
+                                      {flagEditType === 'multiple' ? (
+                                        <input
+                                          type="checkbox"
+                                          checked={flagEditCorrectIndices.includes(oi)}
+                                          onChange={() => {
+                                            setFlagEditCorrectIndices(prev =>
+                                              prev.includes(oi) ? prev.filter(i => i !== oi) : [...prev, oi]
+                                            );
+                                          }}
+                                          className="accent-red-500 flex-shrink-0"
+                                        />
+                                      ) : (
+                                        <input
+                                          type="radio"
+                                          checked={flagEditCorrectIndex === oi}
+                                          onChange={() => setFlagEditCorrectIndex(oi)}
+                                          className="accent-red-500 flex-shrink-0"
+                                        />
+                                      )}
                                       <input
                                         value={opt}
                                         onChange={e => { const o = [...flagEditOptions]; o[oi] = e.target.value; setFlagEditOptions(o); }}
@@ -3664,7 +3692,8 @@ export const InstructorView: React.FC = () => {
                               <div className="flex gap-2">
                                 <button
                                   onClick={async () => {
-                                    await saveQuizQuestion({ id: flag.questionId, moduleId: flag.moduleId, question: flagEditQuestion.trim(), options: q.type !== 'truefalse' && q.type !== 'matching' ? flagEditOptions.map(o => o.trim()) : q.options, correctIndex: q.type !== 'truefalse' && q.type !== 'matching' ? flagEditCorrectIndex : q.correctIndex, correctIndices: q.correctIndices, pairs: q.pairs, explanation: flagEditExplanation.trim(), position: q.position ?? 0, type: q.type });
+                                    const isMulti = flagEditType === 'multiple';
+                                    await saveQuizQuestion({ id: flag.questionId, moduleId: flag.moduleId, question: flagEditQuestion.trim(), options: q.type !== 'truefalse' && q.type !== 'matching' ? flagEditOptions.map(o => o.trim()) : q.options, correctIndex: isMulti ? (flagEditCorrectIndices[0] ?? 0) : flagEditCorrectIndex, correctIndices: isMulti ? flagEditCorrectIndices : q.correctIndices, pairs: q.pairs, explanation: flagEditExplanation.trim(), position: q.position ?? 0, type: (q.type === 'truefalse' || q.type === 'matching' || q.type === 'fillblank') ? q.type : flagEditType });
                                     setEditingFlagId(null);
                                   }}
                                   className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs py-2 rounded-lg font-semibold transition-all"
@@ -3685,6 +3714,8 @@ export const InstructorView: React.FC = () => {
                                   setFlagEditQuestion(q.question);
                                   setFlagEditOptions([...(q.options ?? ['', '', '', '']), '', '', '', ''].slice(0, 4));
                                   setFlagEditCorrectIndex(q.correctIndex ?? 0);
+                                  setFlagEditCorrectIndices(q.correctIndices ?? []);
+                                  setFlagEditType(q.type === 'multiple' ? 'multiple' : 'single');
                                   setFlagEditExplanation(q.explanation ?? '');
                                 }}
                                 className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded-lg font-semibold transition-all"

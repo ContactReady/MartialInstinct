@@ -74,6 +74,7 @@ function rowToMember(row: DbRow): Member {
       : undefined,
     instructorModules: (row.instructor_modules as string[]) || [],
     profileImage: row.profile_image as string | undefined,
+    quizProgress: reviveDates(row.quiz_progress || {}) as Member['quizProgress'],
   };
 }
 
@@ -111,6 +112,7 @@ function memberToRow(m: Member): DbRow {
     assistant_instructor_application: m.assistantInstructorApplication || null,
     instructor_modules:    m.instructorModules || [],
     profile_image:         m.profileImage || null,
+    quiz_progress:         m.quizProgress || null,
     updated_at:            new Date().toISOString(),
   };
 }

@@ -154,28 +154,6 @@ const SingleRenderer: React.FC<SingleProps> = ({ q, selected, feedback, onSelect
   const isFillBlank = q.type === 'fillblank';
   return (
     <div className="space-y-2">
-      {isFillBlank && (
-        <div className="bg-gray-900/60 rounded-xl px-4 py-3 border border-gray-700/50 text-center">
-          <p className="text-gray-300 text-sm leading-relaxed">
-            {q.question.split('___').map((part, i, arr) => (
-              <span key={i}>
-                {part}
-                {i < arr.length - 1 && (
-                  <span className={`inline-block mx-1 px-3 py-0.5 rounded border font-bold text-sm ${
-                    !feedback.answered
-                      ? 'border-dashed border-gray-500 text-gray-500 bg-gray-800'
-                      : selected === q.correctIndex
-                      ? 'border-green-500 text-green-300 bg-green-500/20'
-                      : 'border-red-500 text-red-300 bg-red-500/20'
-                  }`}>
-                    {feedback.answered && selected !== null ? q.options?.[selected] : '___'}
-                  </span>
-                )}
-              </span>
-            ))}
-          </p>
-        </div>
-      )}
       {(q.options ?? []).map((opt, idx) => {
         let cls = 'w-full text-left px-4 py-3.5 rounded-xl border transition-all text-sm font-medium flex items-center gap-3 ';
         if (!feedback.answered) {

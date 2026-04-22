@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { MemberTabId, Badge } from '../../types';
+import { MemberTabId, Badge, Member } from '../../types';
 import { BLOCKS, MODULES } from '../../data/modules';
 import { xpProgress, LEVEL_DISPLAY } from '../../types';
 import { MemberLearningView } from './MemberLearningView';
@@ -53,6 +53,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
   const [showUnitPicker, setShowUnitPicker] = useState(false);
   const [selectedUnitId, setSelectedUnitId] = useState<string | undefined>(undefined);
   const [communitySubTab, setCommunitySubTab] = useState<'online' | 'training' | 'mitglieder' | 'rangliste'>('online');
+  const [viewingMember, setViewingMember] = useState<Member | null>(null);
   const communityTabs = ['online', 'training', 'mitglieder', 'rangliste'] as const;
   const communitySubTabRef = useRef(communitySubTab);
   useEffect(() => { communitySubTabRef.current = communitySubTab; }, [communitySubTab]);
@@ -869,7 +870,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                     <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Trainer ({onlineInstructors.length})</div>
                     <div className="space-y-2">
                       {onlineInstructors.map(m => (
-                        <div key={m.id} className="flex items-center gap-3">
+                        <div key={m.id} className="flex items-center gap-3 cursor-pointer" onClick={() => setViewingMember(m)}>
                           <OnlineDot member={m} />
                           {m.profileImage ? <img src={m.profileImage} className="w-7 h-7 rounded-full object-cover flex-shrink-0" /> : <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
                           <div className="flex-1 min-w-0">
@@ -887,7 +888,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                     <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Members ({onlineMembers2.length})</div>
                     <div className="space-y-2">
                       {onlineMembers2.map(m => (
-                        <div key={m.id} className="flex items-center gap-3">
+                        <div key={m.id} className="flex items-center gap-3 cursor-pointer" onClick={() => setViewingMember(m)}>
                           <OnlineDot member={m} />
                           {m.profileImage ? <img src={m.profileImage} className="w-7 h-7 rounded-full object-cover flex-shrink-0" /> : <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
                           <div className="flex-1 min-w-0">
@@ -928,7 +929,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                 {trainingConnected.map(m => {
                   const isMe = m.id === currentUser.id;
                   return (
-                  <div key={m.id} className="bg-gray-800/50 rounded-xl border border-orange-800/30 px-4 py-3 flex items-center gap-3 mb-2">
+                  <div key={m.id} className="bg-gray-800/50 rounded-xl border border-orange-800/30 px-4 py-3 flex items-center gap-3 mb-2 cursor-pointer" onClick={() => setViewingMember(m)}>
                     <div className="relative flex-shrink-0">
                       {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
                       <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-orange-400 rounded-full border border-gray-900" />
@@ -1079,7 +1080,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                     const isOnlineNow = isMe || m.onlineSince !== undefined || (nowTs - new Date(m.lastSeenAt).getTime()) < ONLINE_CUTOFF_MS;
                     const status = checkIns.some(c => c.memberId === m.id && c.status === 'approved') ? 'training' : isOnlineNow ? 'online' : 'offline';
                     return (
-                      <div key={m.id} className={`rounded-xl border px-4 py-3 flex items-center gap-3 ${isMe ? 'bg-gray-700/60 border-gray-600' : 'bg-gray-800/50 border-gray-700'}`}>
+                      <div key={m.id} className={`rounded-xl border px-4 py-3 flex items-center gap-3 cursor-pointer ${isMe ? 'bg-gray-700/60 border-gray-600' : 'bg-gray-800/50 border-gray-700'}`} onClick={() => setViewingMember(m)}>
                         <div className="relative flex-shrink-0">
                           {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
                           <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900 ${
@@ -1369,6 +1370,11 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
       {/* Application Modals */}
       {showApplicationModal === 'contact' && renderContactApplicationModal()}
       {showApplicationModal === 'assistant_instructor' && renderInstructorApplicationModal()}
+
+      {/* Member Profile Modal */}
+      {viewingMember && (
+        <ProfileView isModal member={viewingMember} onClose={() => setViewingMember(null)} />
+      )}
     </div>
   );
 };

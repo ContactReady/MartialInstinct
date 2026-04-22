@@ -124,7 +124,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ member, isModal = fals
   const dv = member.dataVisibility;
   const viewerRole = currentUser?.role ?? 'member';
   // Ab Instructor (nicht assistant_instructor) alle Daten sichtbar
-  const canSeeAll = isOwnProfile || ['instructor', 'full_instructor', 'head_instructor', 'admin'].includes(viewerRole);
+  const canSeeAll = ['instructor', 'full_instructor', 'head_instructor', 'admin'].includes(viewerRole);
 
   // Geburtsdatum formatieren
   const formatBirthDate = (visibility: 'hidden' | 'dayMonth' | 'full' | 'all') => {
