@@ -2925,12 +2925,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (data.memberId !== undefined) updated.memberId = data.memberId;
       return updated;
     };
-    setMembers(prev => {
-      const next = prev.map(m => m.id === memberId ? apply(m) : m);
-      const updated = next.find(m => m.id === memberId);
-      if (updated) saveMember(updated);
-      return next;
-    });
+    // Nur geänderte Felder in Supabase schreiben → kein Race Condition mit Heartbeat/debounce
+    const fields: Record<string, unknown> = {};
+    if (data.name !== undefined) fields['name'] = data.name;
+    if (data.firstName !== undefined) fields['first_name'] = data.firstName;
+    if (data.lastName !== undefined) fields['last_name'] = data.lastName;
+    if (data.birthDate !== undefined) fields['birth_date'] = data.birthDate;
+    if (data.memberId !== undefined) fields['member_id'] = data.memberId;
+    if (Object.keys(fields).length > 0) updateMemberFields(memberId, fields);
+
+    setMembers(prev => prev.map(m => m.id === memberId ? apply(m) : m));
     setCurrentUser(prev => {
       if (!prev || prev.id !== memberId) return prev;
       return apply(prev);
