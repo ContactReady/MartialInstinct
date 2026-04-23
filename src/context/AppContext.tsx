@@ -3065,38 +3065,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const normalizedCode = code.trim().toUpperCase();
     const now = Date.now();
     // Supabase: Member mit passendem Code suchen
-    const { data, error } = await supabase.from('members').select('id, name, buddy_code').not('buddy_code', 'is', null);
+    const { data, error } = await supabase.from('members').select('id, name, buddy_code, connections').not('buddy_code', 'is', null);
     if (error) return { ok: false, error: 'Verbindung fehlgeschlagen. Bitte erneut versuchen.' };
     const match = (data ?? []).find((r: { id: string; buddy_code: { code: string; expiresAt: number } | null }) =>
       r.buddy_code?.code === normalizedCode && (r.buddy_code?.expiresAt ?? 0) > now
-    );
+    ) as { id: string; name: string; connections: string[] | null } | undefined;
     if (!match) return { ok: false, error: 'Code ungültig oder abgelaufen.' };
     if (match.id === currentUser.id) return { ok: false, error: 'Du kannst nicht deinen eigenen Code eingeben.' };
     if ((currentUser.connections ?? []).includes(match.id)) return { ok: false, error: 'Ihr seid bereits verbunden.' };
-    const requests: BuddyRequest[] = JSON.parse(localStorage.getItem(BUDDY_REQUESTS_KEY) || '[]');
-    const existing = requests.find(r => r.fromMemberId === currentUser.id && r.toMemberId === match.id && r.status === 'pending');
-    if (existing) return { ok: true };
-    const newRequest: BuddyRequest = {
-      id: `br_${now}_${Math.random().toString(36).slice(2)}`,
-      fromMemberId: currentUser.id,
-      fromMemberName: currentUser.name,
-      toMemberId: match.id,
-      code: normalizedCode,
-      createdAt: now,
-      status: 'pending',
-    };
-    localStorage.setItem(BUDDY_REQUESTS_KEY, JSON.stringify([...requests, newRequest]));
-    // Benachrichtigung für den Empfänger
+
+    // Direkt verbinden — kein Bestätigungsschritt nötig
+    const myId = currentUser.id;
+    const theirId = match.id;
+    const myConnections = [...new Set([...(currentUser.connections ?? []), theirId])];
+    const theirConnections = [...new Set([...(match.connections ?? []), myId])];
+
+    // Supabase: beide Members updaten
+    await Promise.all([
+      supabase.from('members').update({ connections: myConnections, updated_at: new Date().toISOString() }).eq('id', myId),
+      supabase.from('members').update({ connections: theirConnections, updated_at: new Date().toISOString() }).eq('id', theirId),
+    ]);
+
+    // Lokaler State
+    setCurrentUser(prev => prev ? { ...prev, connections: myConnections } : null);
+    setMembers(prev => prev.map(m => {
+      if (m.id === myId) return { ...m, connections: myConnections };
+      if (m.id === theirId) return { ...m, connections: theirConnections };
+      return m;
+    }));
+
+    // Notification für den Code-Ersteller
     setNotifications(prev => [...prev, {
       id: `notif-buddy-${now}`,
-      oduserId: match.id,
+      oduserId: theirId,
       type: 'buddy_request' as const,
-      title: 'Trainingspartner-Anfrage',
-      message: `${currentUser.name} möchte sich mit dir verbinden.`,
+      title: 'Neuer Trainingspartner',
+      message: `${currentUser.name} hat sich mit dir verbunden.`,
       read: false,
       createdAt: new Date(),
-      data: { requestId: newRequest.id },
     }]);
+
     return { ok: true };
   };
 

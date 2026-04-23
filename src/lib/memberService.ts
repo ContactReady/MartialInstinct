@@ -76,6 +76,7 @@ function rowToMember(row: DbRow): Member {
     profileImage: row.profile_image as string | undefined,
     quizProgress: reviveDates(row.quiz_progress || {}) as Member['quizProgress'],
     buddyCode: row.buddy_code as Member['buddyCode'],
+    connections: (row.connections as string[]) || [],
   };
 }
 
@@ -115,6 +116,7 @@ function memberToRow(m: Member): DbRow {
     profile_image:         m.profileImage || null,
     quiz_progress:         m.quizProgress || null,
     buddy_code:            m.buddyCode || null,
+    connections:           m.connections || [],
     updated_at:            new Date().toISOString(),
   };
 }
