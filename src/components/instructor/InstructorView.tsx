@@ -233,6 +233,8 @@ export const InstructorView: React.FC = () => {
   const [flagEditType, setFlagEditType] = useState<string>('single');
   const [flagEditExplanation, setFlagEditExplanation] = useState('');
   const [flagEditTheoryText, setFlagEditTheoryText] = useState('');
+  const [topicDraft, setTopicDraft] = useState<Record<string, string>>({});
+  const [topicSaveState, setTopicSaveState] = useState<Record<string, 'clean' | 'dirty' | 'saved'>>({});
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [bulkImportText, setBulkImportText] = useState('');
   const [showQuizBulkImport, setShowQuizBulkImport] = useState(false);
@@ -3436,7 +3438,7 @@ export const InstructorView: React.FC = () => {
                               <div className="text-gray-200 text-sm leading-relaxed">{q.question}</div>
                               <div className="text-gray-500 text-xs mt-0.5">✓ {q.options?.[q.correctIndex ?? 0]}</div>
                             </div>
-                            <button onClick={() => openEditQuestion(q.id, q.question, q.options ?? [], q.correctIndex ?? 0, q.explanation ?? '')} className="text-gray-500 hover:text-white text-xs flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">✏️</button>
+                            <button onClick={() => openEditQuestion(q.id, q.question, q.options ?? [], q.correctIndex ?? 0, q.explanation ?? '')} className="text-gray-500 hover:text-white text-xs flex-shrink-0 mt-0.5">✏️</button>
                           </div>
                         )
                       ))}
@@ -3459,7 +3461,7 @@ export const InstructorView: React.FC = () => {
                     }
                     return (
                       <div className="space-y-3">
-                        <p className="text-gray-500 text-xs">Bearbeite die Theorie-Texte der einzelnen Abschnitte. Änderungen sind sofort für alle Member sichtbar.</p>
+                        <p className="text-gray-500 text-xs">Bearbeite die Theorie-Texte der einzelnen Abschnitte. Änderungen nach Speichern für alle Member sichtbar.</p>
                         {moduleTopicsList.map(topic => {
                           const overrideKey = `${contentModuleId}:${topic.id}`;
                           const currentText = topicOverrides[overrideKey] ?? topic.theoryText;
@@ -3476,20 +3478,36 @@ export const InstructorView: React.FC = () => {
                                   </span>
                                 )}
                                 <button
-                                  onClick={() => setEditingQuestionId(isEditing ? null : overrideKey)}
+                                  onClick={() => {
+                                    if (isEditing) {
+                                      setEditingQuestionId(null);
+                                    } else {
+                                      setTopicDraft(prev => ({ ...prev, [overrideKey]: currentText }));
+                                      setTopicSaveState(prev => ({ ...prev, [overrideKey]: 'clean' }));
+                                      setEditingQuestionId(overrideKey);
+                                    }
+                                  }}
                                   className="text-xs text-gray-400 hover:text-white px-2 py-0.5 rounded"
                                 >
                                   {isEditing ? 'Schließen' : 'Bearbeiten'}
                                 </button>
-                                {topicOverrides[overrideKey] && (
-                                  <button
-                                    onClick={() => updateTopicText(overrideKey, topic.theoryText)}
-                                    className="text-xs text-orange-400 hover:text-orange-300 px-2 py-0.5 rounded"
-                                    title="Standard-Text wiederherstellen"
-                                  >
-                                    Reset
-                                  </button>
-                                )}
+                                <button
+                                  onClick={() => {
+                                    const draft = topicDraft[overrideKey] ?? currentText;
+                                    updateTopicText(overrideKey, draft);
+                                    setTopicSaveState(prev => ({ ...prev, [overrideKey]: 'saved' }));
+                                    setTimeout(() => setTopicSaveState(prev => ({ ...prev, [overrideKey]: 'clean' })), 2000);
+                                  }}
+                                  className={`text-xs px-2 py-0.5 rounded font-semibold transition-colors ${
+                                    topicSaveState[overrideKey] === 'saved'
+                                      ? 'text-green-400'
+                                      : topicSaveState[overrideKey] === 'dirty'
+                                      ? 'text-red-400 hover:text-red-300'
+                                      : 'text-gray-600 hover:text-gray-400'
+                                  }`}
+                                >
+                                  Speichern
+                                </button>
                               </div>
                               {topicFlags.length > 0 && (
                                 <div className="px-3 py-2 space-y-1.5 border-b border-gray-700/50 bg-orange-500/5">
@@ -3509,8 +3527,11 @@ export const InstructorView: React.FC = () => {
                               {isEditing ? (
                                 <div className="p-2 space-y-2">
                                   <textarea
-                                    value={currentText}
-                                    onChange={e => updateTopicText(overrideKey, e.target.value)}
+                                    value={topicDraft[overrideKey] ?? currentText}
+                                    onChange={e => {
+                                      setTopicDraft(prev => ({ ...prev, [overrideKey]: e.target.value }));
+                                      setTopicSaveState(prev => ({ ...prev, [overrideKey]: 'dirty' }));
+                                    }}
                                     rows={12}
                                     className="w-full bg-gray-800 text-gray-200 text-xs rounded px-2 py-2 border border-gray-600 resize-y font-mono leading-relaxed"
                                   />
