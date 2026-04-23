@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'react-qr-code';
+import { supabase } from '../../lib/supabase';
 import { useApp, MODULES, BLOCKS, COURSES } from '../../context/AppContext';
 import { getAllTechniques } from '../../data/modules';
 import { INSTRUCTOR_TRACKS } from '../../data/instructorCurriculum';
@@ -23,6 +24,35 @@ import { TechniqueCard } from '../shared/TechniqueCard';
 import { InstructorLearningView } from './InstructorLearningView';
 import { ProfileView } from '../shared/ProfileView';
 import { RankingList } from '../shared/RankingList';
+
+// ── ISO 8601 Kalenderwochen-Helfer ───────────────────────────────────────────
+function isoMonday(d: Date): Date {
+  const date = new Date(d);
+  const day = date.getDay();
+  date.setDate(date.getDate() + (day === 0 ? -6 : 1 - day));
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function isoKW(d: Date): number {
+  const thu = new Date(d);
+  thu.setDate(thu.getDate() + (4 - (thu.getDay() || 7)));
+  const y1 = new Date(thu.getFullYear(), 0, 1);
+  return Math.ceil(((thu.getTime() - y1.getTime()) / 86400000 + 1) / 7);
+}
+
+const MON_SHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+function kwLabel(monday: Date): { range: string; kw: number } {
+  const sun = new Date(monday); sun.setDate(sun.getDate() + 6);
+  const kw = isoKW(monday);
+  const dM = monday.getDate(), mM = monday.getMonth();
+  const dS = sun.getDate(), mS = sun.getMonth();
+  const range = mM === mS
+    ? `${dM}.–${dS}.`
+    : `${dM}. ${MON_SHORT[mM]}–${dS}. ${MON_SHORT[mS]}`;
+  return { range, kw };
+}
 
 // ── Kurs-Erkennung anhand aktueller Uhrzeit ──────────────────────────────────
 function detectCurrentCourse(locationId: string): string | null {
@@ -282,6 +312,15 @@ export const InstructorView: React.FC = () => {
   const [createMemberProgress, setCreateMemberProgress] = useState<Record<number, { tactics: boolean; combat: boolean }>>({});
   const [createMemberSTB, setCreateMemberSTB] = useState(false);
 
+  // Check-in Trend State
+  const [trendPreset, setTrendPreset] = useState<'4W' | '8W' | '3M' | '6M' | '12M' | 'custom'>('8W');
+  const [trendHistorical, setTrendHistorical] = useState<string[]>([]);
+  const [trendLoading, setTrendLoading] = useState(false);
+  const [trendCustomFrom, setTrendCustomFrom] = useState<Date>(() => {
+    const d = isoMonday(new Date()); d.setDate(d.getDate() - 7 * 7); return d;
+  });
+  const [trendCustomTo, setTrendCustomTo] = useState<Date>(() => isoMonday(new Date()));
+
   // Session-Builder State (alle an Top-Level wegen Rules of Hooks)
   const [showSessionBuilder, setShowSessionBuilder] = useState(false);
   const [sessionAttendees, setSessionAttendees] = useState<string[]>([]);
@@ -295,6 +334,24 @@ export const InstructorView: React.FC = () => {
     const interval = setInterval(() => setLiveTick(t => t + 1), 30_000);
     return () => clearInterval(interval);
   }, []);
+
+  // Historische Check-ins für Trend-Chart (letzten 12 Monate)
+  useEffect(() => {
+    if (adminSubTab !== 'analytics') return;
+    setTrendLoading(true);
+    const cutoff = new Date();
+    cutoff.setFullYear(cutoff.getFullYear() - 1);
+    supabase
+      .from('check_ins')
+      .select('approved_at')
+      .eq('status', 'approved')
+      .not('approved_at', 'is', null)
+      .gte('approved_at', cutoff.toISOString())
+      .then(({ data }) => {
+        setTrendHistorical((data ?? []).map((r: { approved_at: string }) => r.approved_at));
+        setTrendLoading(false);
+      });
+  }, [adminSubTab]);
 
   if (!currentUser) return null;
 
@@ -2277,21 +2334,6 @@ export const InstructorView: React.FC = () => {
           const pendingJoin = joinRequests.filter(r => r.status === 'pending' && !analyticsEmailsSet.has(r.email.toLowerCase())).length;
           const totalXP = allM.reduce((s, m) => s + (m.xp ?? 0), 0);
 
-          // Check-in Trend: letzte 8 Wochen
-          const weekTrend: { label: string; count: number }[] = [];
-          for (let i = 7; i >= 0; i--) {
-            const wS = new Date(thisWeekStart); wS.setDate(wS.getDate() - i * 7);
-            const wE = new Date(wS); wE.setDate(wE.getDate() + 7);
-            const label = i === 0 ? 'Jetzt'
-              : `${wS.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}`;
-            const count = checkIns.filter(c =>
-              c.status === 'approved' && c.approvedAt &&
-              new Date(c.approvedAt) >= wS && new Date(c.approvedAt) < wE
-            ).length;
-            weekTrend.push({ label, count });
-          }
-          const maxCheckIns = Math.max(...weekTrend.map(w => w.count), 1);
-
           // Kapitel-Verteilung
           const levelCounts: Record<string, number> = {};
           allM.forEach(m => { levelCounts[m.currentLevel] = (levelCounts[m.currentLevel] ?? 0) + 1; });
@@ -2369,22 +2411,119 @@ export const InstructorView: React.FC = () => {
               {/* ── Check-in Trend ── */}
               <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-700/30">
-                  <div className="text-sm font-semibold text-white">Check-in Trend</div>
-                  <div className="text-[10px] text-gray-500 mt-0.5">Bestätigte Trainings — letzte 8 Wochen</div>
-                </div>
-                <div className="px-4 py-4">
-                  <div className="flex items-end gap-1.5 h-24">
-                    {weekTrend.map((w, i) => (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                        <span className="text-[9px] text-gray-500 font-mono">{w.count || ''}</span>
-                        <div
-                          className={`w-full rounded-t transition-all ${i === weekTrend.length - 1 ? 'bg-red-600' : 'bg-gray-600'}`}
-                          style={{ height: `${Math.max((w.count / maxCheckIns) * 72, w.count > 0 ? 4 : 0)}px` }}
-                        />
-                        <span className="text-[8px] text-gray-600 text-center leading-tight">{w.label}</span>
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-semibold text-white">Check-in Trend</div>
+                      <div className="text-[10px] text-gray-500 mt-0.5">Bestätigte Trainings{trendLoading ? ' · lädt…' : ''}</div>
+                    </div>
                   </div>
+                  {/* Preset Buttons */}
+                  <div className="flex gap-1.5 mt-2.5 flex-wrap">
+                    {(['4W','8W','3M','6M','12M'] as const).map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setTrendPreset(p)}
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded transition-colors ${trendPreset === p ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setTrendPreset('custom')}
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded transition-colors ${trendPreset === 'custom' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+                    >
+                      Benutzerdefiniert
+                    </button>
+                  </div>
+                  {/* Custom Week Picker */}
+                  {trendPreset === 'custom' && (() => {
+                    const thisMonday = isoMonday(now);
+                    const fromLbl = kwLabel(trendCustomFrom);
+                    const toLbl = kwLabel(trendCustomTo);
+                    const moveFrom = (dir: number) => {
+                      const d = new Date(trendCustomFrom); d.setDate(d.getDate() + dir * 7); setTrendCustomFrom(d);
+                    };
+                    const moveTo = (dir: number) => {
+                      const d = new Date(trendCustomTo); d.setDate(d.getDate() + dir * 7);
+                      if (d > thisMonday) return;
+                      setTrendCustomTo(d);
+                    };
+                    return (
+                      <div className="mt-2 flex gap-2">
+                        <div className="flex items-center gap-1 flex-1 bg-gray-700/50 rounded px-2 py-1.5">
+                          <span className="text-gray-500 text-[9px] flex-shrink-0">Von</span>
+                          <button onClick={() => moveFrom(-1)} className="text-gray-400 hover:text-white text-sm leading-none px-0.5">‹</button>
+                          <span className="flex-1 text-center text-[10px] text-white font-mono">KW{fromLbl.kw} · {fromLbl.range}</span>
+                          <button onClick={() => moveFrom(1)} className="text-gray-400 hover:text-white text-sm leading-none px-0.5">›</button>
+                        </div>
+                        <div className="flex items-center gap-1 flex-1 bg-gray-700/50 rounded px-2 py-1.5">
+                          <span className="text-gray-500 text-[9px] flex-shrink-0">Bis</span>
+                          <button onClick={() => moveTo(-1)} className="text-gray-400 hover:text-white text-sm leading-none px-0.5">‹</button>
+                          <span className="flex-1 text-center text-[10px] text-white font-mono">KW{toLbl.kw} · {toLbl.range}</span>
+                          <button onClick={() => moveTo(1)} className="text-gray-400 hover:text-white text-sm leading-none px-0.5">›</button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+                {/* Chart */}
+                <div className="px-4 py-4">
+                  {(() => {
+                    const thisMonday = isoMonday(now);
+                    const weeks: Date[] = [];
+                    if (trendPreset === 'custom') {
+                      const cur = isoMonday(trendCustomFrom);
+                      const end = isoMonday(trendCustomTo);
+                      while (cur <= end) { weeks.push(new Date(cur)); cur.setDate(cur.getDate() + 7); }
+                    } else {
+                      const numWeeks = { '4W': 4, '8W': 8, '3M': 13, '6M': 26, '12M': 52 }[trendPreset] ?? 8;
+                      for (let i = numWeeks - 1; i >= 0; i--) {
+                        const d = new Date(thisMonday); d.setDate(d.getDate() - i * 7); weeks.push(d);
+                      }
+                    }
+                    // Historisch + aktuelle State-Daten mergen
+                    const allDates = [
+                      ...trendHistorical,
+                      ...checkIns.filter(c => c.status === 'approved' && c.approvedAt).map(c => new Date(c.approvedAt!).toISOString()),
+                    ];
+                    const weekData = weeks.map(monday => {
+                      const nextMonday = new Date(monday); nextMonday.setDate(nextMonday.getDate() + 7);
+                      const count = allDates.filter(d => {
+                        const t = new Date(d).getTime();
+                        return t >= monday.getTime() && t < nextMonday.getTime();
+                      }).length;
+                      const isCurrent = monday.getTime() === thisMonday.getTime();
+                      const { range, kw } = kwLabel(monday);
+                      return { count, isCurrent, range, kw };
+                    });
+                    const maxCount = Math.max(...weekData.map(w => w.count), 1);
+                    const showKw = weeks.length <= 13;
+                    const gap = weeks.length > 26 ? 'gap-px' : weeks.length > 13 ? 'gap-0.5' : 'gap-1';
+                    return (
+                      <div className={`flex items-end ${gap}`} style={{ height: '96px' }}>
+                        {weekData.map((w, i) => (
+                          <div key={i} className="flex-1 flex flex-col items-center h-full justify-end" style={{ minWidth: 0 }}>
+                            {w.count > 0 && (
+                              <span className="text-[7px] text-gray-500 font-mono leading-none mb-0.5">{w.count}</span>
+                            )}
+                            <div
+                              className={`w-full rounded-t transition-all ${w.isCurrent ? 'bg-red-600' : 'bg-gray-600'}`}
+                              style={{ height: `${Math.max((w.count / maxCount) * 68, w.count > 0 ? 3 : 0)}px` }}
+                              title={`KW${w.kw}: ${w.count} Check-ins`}
+                            />
+                            <div className="flex flex-col items-center mt-0.5" style={{ minWidth: 0 }}>
+                              <span className={`leading-none text-center truncate w-full ${weeks.length > 26 ? 'text-[5px]' : weeks.length > 13 ? 'text-[6px]' : 'text-[8px]'} ${w.isCurrent ? 'text-red-400' : 'text-gray-600'}`}>
+                                {w.isCurrent ? 'Jetzt' : w.range}
+                              </span>
+                              {showKw && !w.isCurrent && (
+                                <span className="text-[6px] text-gray-700 leading-none">KW{w.kw}</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -3434,6 +3573,7 @@ export const InstructorView: React.FC = () => {
                           </div>
                         ) : (
                           <div key={q.id} className="flex items-start gap-2 bg-gray-800/50 rounded-lg px-3 py-2.5 group border border-gray-700/30 hover:border-gray-600/50">
+                            <span className="text-[10px] text-gray-600 font-mono flex-shrink-0 mt-0.5 w-6 text-right">#{idx + 1}</span>
                             <div className="flex-1 min-w-0">
                               <div className="text-gray-200 text-sm leading-relaxed">{q.question}</div>
                               <div className="text-gray-500 text-xs mt-0.5">✓ {q.options?.[q.correctIndex ?? 0]}</div>
