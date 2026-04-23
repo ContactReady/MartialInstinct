@@ -314,8 +314,9 @@ export const InstructorView: React.FC = () => {
 
   // Check-in Trend State
   const [trendPreset, setTrendPreset] = useState<'4W' | '8W' | '3M' | '6M' | '12M' | 'custom'>('8W');
-  const [trendHistorical, setTrendHistorical] = useState<string[]>([]);
+  const [trendHistorical, setTrendHistorical] = useState<{ approved_at: string; member_id: string }[]>([]);
   const [trendLoading, setTrendLoading] = useState(false);
+  const [activeThisWeekCount, setActiveThisWeekCount] = useState<number | null>(null);
   const [trendCustomFrom, setTrendCustomFrom] = useState<Date>(() => {
     const d = isoMonday(new Date()); d.setDate(d.getDate() - 7 * 7); return d;
   });
@@ -335,20 +336,28 @@ export const InstructorView: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Historische Check-ins für Trend-Chart (letzten 12 Monate)
+  // Historische Check-ins für Trend-Chart + aktiv-diese-Woche KPI
   useEffect(() => {
     if (adminSubTab !== 'analytics') return;
     setTrendLoading(true);
     const cutoff = new Date();
     cutoff.setFullYear(cutoff.getFullYear() - 1);
+    // Wochenstart (ISO Montag) für KPI
+    const weekStart = isoMonday(new Date());
     supabase
       .from('check_ins')
-      .select('approved_at')
+      .select('approved_at, member_id')
       .eq('status', 'approved')
       .not('approved_at', 'is', null)
       .gte('approved_at', cutoff.toISOString())
       .then(({ data }) => {
-        setTrendHistorical((data ?? []).map((r: { approved_at: string }) => r.approved_at));
+        const rows = (data ?? []) as { approved_at: string; member_id: string }[];
+        setTrendHistorical(rows);
+        // Unique Members die diese Woche trainiert haben
+        const thisWeekMembers = new Set(
+          rows.filter(r => new Date(r.approved_at) >= weekStart).map(r => r.member_id)
+        );
+        setActiveThisWeekCount(thisWeekMembers.size);
         setTrendLoading(false);
       });
   }, [adminSubTab]);
@@ -2325,7 +2334,7 @@ export const InstructorView: React.FC = () => {
           const thisWeekStart = wStart(now);
 
           // KPIs
-          const activeThisWeek = new Set(
+          const activeThisWeek = activeThisWeekCount ?? new Set(
             checkIns.filter(c => c.status === 'approved' && c.approvedAt && new Date(c.approvedAt) >= thisWeekStart).map(c => c.memberId)
           ).size;
           const avgStreak = allM.length ? Math.round(allM.reduce((s, m) => s + m.streak.currentStreak, 0) / allM.length) : 0;
@@ -2482,9 +2491,9 @@ export const InstructorView: React.FC = () => {
                         const d = new Date(thisMonday); d.setDate(d.getDate() - i * 7); weeks.push(d);
                       }
                     }
-                    // Historisch + aktuelle State-Daten mergen, deduplizieren
+                    // Historisch + aktuelle State-Daten mergen
                     const allDates = [
-                      ...trendHistorical,
+                      ...trendHistorical.map(r => r.approved_at),
                       ...checkIns.filter(c => c.status === 'approved' && c.approvedAt).map(c => new Date(c.approvedAt!).toISOString()),
                     ];
                     // Mo=offset 0, Mi=offset 2, Fr=offset 4
