@@ -3397,14 +3397,14 @@ export const InstructorView: React.FC = () => {
 
                       {editingQuestionId === 'new' && (
                         <div className="bg-gray-700/50 rounded-lg p-3 border border-gray-600 space-y-2">
-                          <textarea value={qEditQuestion} onChange={e => setQEditQuestion(e.target.value)} placeholder="Frage *" rows={2} className="w-full bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none" />
+                          <textarea value={qEditQuestion} onChange={e => setQEditQuestion(e.target.value)} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} placeholder="Frage *" rows={2} className="w-full bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none overflow-hidden" />
                           {qEditOptions.map((opt, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                              <button onClick={() => setQEditCorrectIndex(i)} className={`w-6 h-6 rounded-full border-2 flex-shrink-0 text-xs font-bold transition-all ${i === qEditCorrectIndex ? 'bg-green-500 border-green-500 text-white' : 'border-gray-500 text-gray-500'}`}>{String.fromCharCode(65 + i)}</button>
-                              <input value={opt} onChange={e => { const o = [...qEditOptions]; o[i] = e.target.value; setQEditOptions(o); }} placeholder={`Option ${String.fromCharCode(65 + i)}`} className="flex-1 bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500" />
+                            <div key={i} className="flex items-start gap-2">
+                              <button onClick={() => setQEditCorrectIndex(i)} className={`w-6 h-6 rounded-full border-2 flex-shrink-0 text-xs font-bold transition-all mt-1 ${i === qEditCorrectIndex ? 'bg-green-500 border-green-500 text-white' : 'border-gray-500 text-gray-500'}`}>{String.fromCharCode(65 + i)}</button>
+                              <textarea value={opt} onChange={e => { const o = [...qEditOptions]; o[i] = e.target.value; setQEditOptions(o); }} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} placeholder={`Option ${String.fromCharCode(65 + i)}`} rows={1} className="flex-1 bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none overflow-hidden" />
                             </div>
                           ))}
-                          <input value={qEditExplanation} onChange={e => setQEditExplanation(e.target.value)} placeholder="Erklärung nach der Antwort (optional)" className="w-full bg-gray-800 text-gray-300 text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-gray-500" />
+                          <textarea value={qEditExplanation} onChange={e => setQEditExplanation(e.target.value)} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} placeholder="Erklärung nach der Antwort (optional)" rows={1} className="w-full bg-gray-800 text-gray-300 text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-gray-500 resize-none overflow-hidden" />
                           <div className="flex gap-2 justify-end">
                             <button onClick={() => setEditingQuestionId(null)} className="text-xs text-gray-400 px-3 py-1">Abbrechen</button>
                             <button onClick={handleSaveQuestion} className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded">Speichern</button>
@@ -3416,14 +3416,14 @@ export const InstructorView: React.FC = () => {
                         editingQuestionId === q.id ? (
                           <div key={q.id} className="bg-gray-700/50 rounded-lg p-3 border border-gray-600 space-y-2">
                             <div className="text-gray-500 text-xs">Frage {idx + 1}</div>
-                            <textarea value={qEditQuestion} onChange={e => setQEditQuestion(e.target.value)} rows={2} className="w-full bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none" />
+                            <textarea value={qEditQuestion} onChange={e => setQEditQuestion(e.target.value)} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} rows={2} className="w-full bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none overflow-hidden" />
                             {qEditOptions.map((opt, i) => (
-                              <div key={i} className="flex items-center gap-2">
-                                <button onClick={() => setQEditCorrectIndex(i)} className={`w-6 h-6 rounded-full border-2 flex-shrink-0 text-xs font-bold transition-all ${i === qEditCorrectIndex ? 'bg-green-500 border-green-500 text-white' : 'border-gray-500 text-gray-500'}`}>{String.fromCharCode(65 + i)}</button>
-                                <input value={opt} onChange={e => { const o = [...qEditOptions]; o[i] = e.target.value; setQEditOptions(o); }} className="flex-1 bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500" />
+                              <div key={i} className="flex items-start gap-2">
+                                <button onClick={() => setQEditCorrectIndex(i)} className={`w-6 h-6 rounded-full border-2 flex-shrink-0 text-xs font-bold transition-all mt-1 ${i === qEditCorrectIndex ? 'bg-green-500 border-green-500 text-white' : 'border-gray-500 text-gray-500'}`}>{String.fromCharCode(65 + i)}</button>
+                                <textarea value={opt} onChange={e => { const o = [...qEditOptions]; o[i] = e.target.value; setQEditOptions(o); }} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} rows={1} className="flex-1 bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none overflow-hidden" />
                               </div>
                             ))}
-                            <input value={qEditExplanation} onChange={e => setQEditExplanation(e.target.value)} placeholder="Erklärung (optional)" className="w-full bg-gray-800 text-gray-300 text-sm rounded px-2 py-1.5 border border-gray-600 outline-none" />
+                            <textarea value={qEditExplanation} onChange={e => setQEditExplanation(e.target.value)} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} placeholder="Erklärung (optional)" rows={1} className="w-full bg-gray-800 text-gray-300 text-sm rounded px-2 py-1.5 border border-gray-600 outline-none resize-none overflow-hidden" />
                             <div className="flex gap-2 justify-between">
                               <button onClick={() => handleDeleteQuestion(q.id)} className="text-xs bg-red-900/50 hover:bg-red-800 text-red-400 px-3 py-1 rounded">Löschen</button>
                               <div className="flex gap-2">
@@ -3532,8 +3532,9 @@ export const InstructorView: React.FC = () => {
                                       setTopicDraft(prev => ({ ...prev, [overrideKey]: e.target.value }));
                                       setTopicSaveState(prev => ({ ...prev, [overrideKey]: 'dirty' }));
                                     }}
-                                    rows={12}
-                                    className="w-full bg-gray-800 text-gray-200 text-xs rounded px-2 py-2 border border-gray-600 resize-y font-mono leading-relaxed"
+                                    onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }}
+                                    rows={8}
+                                    className="w-full bg-gray-800 text-gray-200 text-xs rounded px-2 py-2 border border-gray-600 resize-none overflow-hidden font-mono leading-relaxed"
                                   />
                                   <p className="text-gray-600 text-[10px]">Formatierung: ## Überschrift 1, ### Überschrift 2, **fett**, - Liste, --- Trennlinie</p>
                                 </div>
