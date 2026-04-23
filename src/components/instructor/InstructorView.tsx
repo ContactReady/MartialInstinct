@@ -2466,10 +2466,11 @@ export const InstructorView: React.FC = () => {
                     );
                   })()}
                 </div>
-                {/* Chart */}
+                {/* Chart — 3 Balken pro Woche (Mo / Mi / Fr) */}
                 <div className="px-4 py-4">
                   {(() => {
                     const thisMonday = isoMonday(now);
+                    const todayStr = now.toDateString();
                     const weeks: Date[] = [];
                     if (trendPreset === 'custom') {
                       const cur = isoMonday(trendCustomFrom);
@@ -2481,42 +2482,66 @@ export const InstructorView: React.FC = () => {
                         const d = new Date(thisMonday); d.setDate(d.getDate() - i * 7); weeks.push(d);
                       }
                     }
-                    // Historisch + aktuelle State-Daten mergen
+                    // Historisch + aktuelle State-Daten mergen, deduplizieren
                     const allDates = [
                       ...trendHistorical,
                       ...checkIns.filter(c => c.status === 'approved' && c.approvedAt).map(c => new Date(c.approvedAt!).toISOString()),
                     ];
-                    const weekData = weeks.map(monday => {
-                      const nextMonday = new Date(monday); nextMonday.setDate(nextMonday.getDate() + 7);
-                      const count = allDates.filter(d => {
-                        const t = new Date(d).getTime();
-                        return t >= monday.getTime() && t < nextMonday.getTime();
-                      }).length;
-                      const isCurrent = monday.getTime() === thisMonday.getTime();
+                    // Mo=offset 0, Mi=offset 2, Fr=offset 4
+                    const DAY_OFFSETS = [0, 2, 4];
+                    const DAY_LABELS = ['Mo', 'Mi', 'Fr'];
+                    const weekGroups = weeks.map(monday => {
                       const { range, kw } = kwLabel(monday);
-                      return { count, isCurrent, range, kw };
+                      const isCurWeek = monday.getTime() === thisMonday.getTime();
+                      const days = DAY_OFFSETS.map((offset, di) => {
+                        const date = new Date(monday); date.setDate(date.getDate() + offset);
+                        const nextDay = new Date(date); nextDay.setDate(nextDay.getDate() + 1);
+                        const count = allDates.filter(d => {
+                          const t = new Date(d).getTime();
+                          return t >= date.getTime() && t < nextDay.getTime();
+                        }).length;
+                        const isToday = date.toDateString() === todayStr;
+                        const isFuture = date > now;
+                        return { count, label: DAY_LABELS[di], isToday, isFuture };
+                      });
+                      return { monday, kw, range, isCurWeek, days };
                     });
-                    const maxCount = Math.max(...weekData.map(w => w.count), 1);
-                    const showKw = weeks.length <= 13;
-                    const gap = weeks.length > 26 ? 'gap-px' : weeks.length > 13 ? 'gap-0.5' : 'gap-1';
+                    const maxCount = Math.max(...weekGroups.flatMap(w => w.days.map(d => d.count)), 1);
+                    const showKw = weeks.length <= 26;
+                    const wGap = weeks.length > 13 ? 'gap-px' : 'gap-1';
                     return (
-                      <div className={`flex items-end ${gap}`} style={{ height: '96px' }}>
-                        {weekData.map((w, i) => (
-                          <div key={i} className="flex-1 flex flex-col items-center h-full justify-end" style={{ minWidth: 0 }}>
-                            {w.count > 0 && (
-                              <span className="text-[7px] text-gray-500 font-mono leading-none mb-0.5">{w.count}</span>
-                            )}
-                            <div
-                              className={`w-full rounded-t transition-all ${w.isCurrent ? 'bg-red-600' : 'bg-gray-600'}`}
-                              style={{ height: `${Math.max((w.count / maxCount) * 68, w.count > 0 ? 3 : 0)}px` }}
-                              title={`KW${w.kw}: ${w.count} Check-ins`}
-                            />
-                            <div className="flex flex-col items-center mt-0.5" style={{ minWidth: 0 }}>
-                              <span className={`leading-none text-center truncate w-full ${weeks.length > 26 ? 'text-[5px]' : weeks.length > 13 ? 'text-[6px]' : 'text-[8px]'} ${w.isCurrent ? 'text-red-400' : 'text-gray-600'}`}>
-                                {w.isCurrent ? 'Jetzt' : w.range}
-                              </span>
-                              {showKw && !w.isCurrent && (
-                                <span className="text-[6px] text-gray-700 leading-none">KW{w.kw}</span>
+                      <div className={`flex items-end ${wGap}`} style={{ height: '108px' }}>
+                        {weekGroups.map((week, wi) => (
+                          <div key={wi} className="flex-1 flex flex-col min-w-0" style={{ minWidth: 0 }}>
+                            {/* 3 Tages-Balken */}
+                            <div className="flex items-end gap-px flex-1">
+                              {week.days.map((day, di) => (
+                                <div key={di} className="flex-1 flex flex-col items-center justify-end" style={{ height: '72px' }}>
+                                  {day.count > 0 && !day.isFuture && (
+                                    <span className="text-[6px] text-gray-500 font-mono leading-none mb-px">{day.count}</span>
+                                  )}
+                                  <div
+                                    className={`w-full rounded-t transition-all ${
+                                      day.isFuture ? 'bg-gray-800' :
+                                      day.isToday ? 'bg-red-600' :
+                                      week.isCurWeek ? 'bg-gray-500' :
+                                      'bg-gray-600'
+                                    }`}
+                                    style={{ height: `${day.isFuture ? 2 : Math.max((day.count / maxCount) * 68, day.count > 0 ? 3 : 0)}px` }}
+                                    title={`${day.label} KW${week.kw}: ${day.count} Check-ins`}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                            {/* Wochenlabel */}
+                            <div className="flex flex-col items-center mt-1" style={{ minWidth: 0 }}>
+                              {showKw && (
+                                <span className={`leading-none text-center truncate w-full ${weeks.length > 13 ? 'text-[5px]' : 'text-[7px]'} ${week.isCurWeek ? 'text-red-400' : 'text-gray-600'}`}>
+                                  {week.isCurWeek ? 'Jetzt' : `KW${week.kw}`}
+                                </span>
+                              )}
+                              {weeks.length <= 13 && (
+                                <span className="text-[5px] text-gray-700 leading-none truncate w-full text-center">{week.range}</span>
                               )}
                             </div>
                           </div>
