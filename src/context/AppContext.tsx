@@ -254,7 +254,7 @@ interface AppContextType {
 
   // Buddy System
   generateBuddyCode: () => string;
-  sendBuddyRequest: (code: string) => { ok: boolean; error?: string };
+  sendBuddyRequest: (code: string) => Promise<{ ok: boolean; error?: string }>;
   acceptBuddyRequest: (requestId: string) => void;
   getPendingBuddyRequests: () => BuddyRequest[];
   getBuddies: () => Member[];
@@ -3051,35 +3051,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const rand = (n: number) =>
       Array.from({ length: n }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
     const code = `${rand(3)}-${rand(3)}`;
-    const now = Date.now();
-    const existing: BuddyCode[] = JSON.parse(localStorage.getItem(BUDDY_CODES_KEY) || '[]');
-    const cleaned = existing.filter(c => c.expiresAt > now && c.generatedBy !== currentUser.id);
-    const entry: BuddyCode = { code, generatedBy: currentUser.id, expiresAt: now + 15 * 60 * 1000 };
-    localStorage.setItem(BUDDY_CODES_KEY, JSON.stringify([...cleaned, entry]));
+    const expiresAt = Date.now() + 15 * 60 * 1000;
+    // Supabase: Code im Member-Datensatz speichern (Cross-Device)
+    supabase.from('members').update({ buddy_code: { code, expiresAt }, updated_at: new Date().toISOString() }).eq('id', currentUser.id)
+      .then(({ error }) => { if (error) console.warn('[generateBuddyCode] Supabase error:', error.message); });
+    // Lokaler State für sofortiges UI-Feedback
+    setMembers(prev => prev.map(m => m.id === currentUser.id ? { ...m, buddyCode: { code, expiresAt } } : m));
     return code;
   };
 
-  const sendBuddyRequest = (code: string): { ok: boolean; error?: string } => {
+  const sendBuddyRequest = async (code: string): Promise<{ ok: boolean; error?: string }> => {
     if (!currentUser) return { ok: false, error: 'Nicht eingeloggt.' };
     const normalizedCode = code.trim().toUpperCase();
     const now = Date.now();
-    const buddyCodes: BuddyCode[] = JSON.parse(localStorage.getItem(BUDDY_CODES_KEY) || '[]');
-    const codeEntry = buddyCodes.find(c => c.code === normalizedCode && c.expiresAt > now);
-    if (!codeEntry) return { ok: false, error: 'Code ungültig oder abgelaufen.' };
-    if (codeEntry.generatedBy === currentUser.id) return { ok: false, error: 'Du kannst nicht deinen eigenen Code eingeben.' };
-    if ((currentUser.connections ?? []).includes(codeEntry.generatedBy)) {
-      return { ok: false, error: 'Ihr seid bereits verbunden.' };
-    }
-    const requests: BuddyRequest[] = JSON.parse(localStorage.getItem(BUDDY_REQUESTS_KEY) || '[]');
-    const existing = requests.find(
-      r => r.fromMemberId === currentUser.id && r.toMemberId === codeEntry.generatedBy && r.status === 'pending'
+    // Supabase: Member mit passendem Code suchen
+    const { data, error } = await supabase.from('members').select('id, name, buddy_code').not('buddy_code', 'is', null);
+    if (error) return { ok: false, error: 'Verbindung fehlgeschlagen. Bitte erneut versuchen.' };
+    const match = (data ?? []).find((r: { id: string; buddy_code: { code: string; expiresAt: number } | null }) =>
+      r.buddy_code?.code === normalizedCode && (r.buddy_code?.expiresAt ?? 0) > now
     );
+    if (!match) return { ok: false, error: 'Code ungültig oder abgelaufen.' };
+    if (match.id === currentUser.id) return { ok: false, error: 'Du kannst nicht deinen eigenen Code eingeben.' };
+    if ((currentUser.connections ?? []).includes(match.id)) return { ok: false, error: 'Ihr seid bereits verbunden.' };
+    const requests: BuddyRequest[] = JSON.parse(localStorage.getItem(BUDDY_REQUESTS_KEY) || '[]');
+    const existing = requests.find(r => r.fromMemberId === currentUser.id && r.toMemberId === match.id && r.status === 'pending');
     if (existing) return { ok: true };
     const newRequest: BuddyRequest = {
       id: `br_${now}_${Math.random().toString(36).slice(2)}`,
       fromMemberId: currentUser.id,
       fromMemberName: currentUser.name,
-      toMemberId: codeEntry.generatedBy,
+      toMemberId: match.id,
       code: normalizedCode,
       createdAt: now,
       status: 'pending',
@@ -3088,7 +3089,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Benachrichtigung für den Empfänger
     setNotifications(prev => [...prev, {
       id: `notif-buddy-${now}`,
-      oduserId: codeEntry.generatedBy,
+      oduserId: match.id,
       type: 'buddy_request' as const,
       title: 'Trainingspartner-Anfrage',
       message: `${currentUser.name} möchte sich mit dir verbinden.`,

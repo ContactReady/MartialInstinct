@@ -296,6 +296,9 @@ export interface Member {
   // Verbundene Mitglieder (in-person Connect via Code)
   connections?: string[];  // Array von Member-IDs
 
+  // Aktiver Buddy-Code (in Supabase gespeichert für Cross-Device)
+  buddyCode?: { code: string; expiresAt: number };
+
   // Module die dieser Instructor unterrichten kann
   instructorModules?: string[];  // Array von Module-IDs
 

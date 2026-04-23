@@ -1032,9 +1032,11 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                 onBlur={() => setIsConnectInputFocused(false)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' && /^[A-Z0-9-]{6,}$/.test(connectCode)) {
-                    const result = sendBuddyRequest(connectCode);
-                    setBuddyRequestResult(result);
-                    if (result.ok) setConnectCode('');
+                    setBuddyRequestResult({ ok: false, error: '…' });
+                    sendBuddyRequest(connectCode).then(result => {
+                      setBuddyRequestResult(result);
+                      if (result.ok) setConnectCode('');
+                    });
                   }
                 }}
                 placeholder="Z.B. A3F7B2E9"
@@ -1044,9 +1046,11 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
               {/* Verbinden Button */}
               <button
                 onClick={() => {
-                  const result = sendBuddyRequest(connectCode);
-                  setBuddyRequestResult(result);
-                  if (result.ok) setConnectCode('');
+                  setBuddyRequestResult({ ok: false, error: '…' });
+                  sendBuddyRequest(connectCode).then(result => {
+                    setBuddyRequestResult(result);
+                    if (result.ok) setConnectCode('');
+                  });
                 }}
                 disabled={!/^[A-Z0-9-]{6,}$/.test(connectCode)}
                 className="w-full py-2.5 rounded-lg font-semibold text-sm transition-all disabled:bg-gray-700 disabled:text-gray-500 bg-red-600 hover:bg-red-500 text-white"

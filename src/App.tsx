@@ -391,8 +391,15 @@ const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) =
 
   if (!currentUser) return null;
 
+  const isOwnerRoleD = ['head_instructor', 'admin'].includes(currentUser.role ?? '');
+  const isInstructorRoleD = ['instructor', 'assistant_instructor', 'full_instructor', 'head_instructor', 'admin'].includes(currentUser.role ?? '');
+
   const userNotifs = notifications
-    .filter(n => n.oduserId === currentUser.id)
+    .filter(n =>
+      n.oduserId === currentUser.id ||
+      (n.oduserId === 'all-instructors' && isInstructorRoleD) ||
+      (n.oduserId === 'all-owners' && isOwnerRoleD)
+    )
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const unreadCount = userNotifs.filter(n => !n.read).length;
@@ -856,8 +863,14 @@ const AppContent: React.FC = () => {
   const isInstructor = currentUser?.role !== 'member';
   const actualViewMode = isInstructor ? viewMode : 'member';
 
+  const isOwnerRole = ['head_instructor', 'admin'].includes(currentUser?.role ?? '');
+  const isInstructorRole = ['instructor', 'assistant_instructor', 'full_instructor', 'head_instructor', 'admin'].includes(currentUser?.role ?? '');
   const unreadCount = currentUser
-    ? notifications.filter(n => n.oduserId === currentUser.id && !n.read).length
+    ? notifications.filter(n => !n.read && (
+        n.oduserId === currentUser.id ||
+        (n.oduserId === 'all-instructors' && isInstructorRole) ||
+        (n.oduserId === 'all-owners' && isOwnerRole)
+      )).length
     : 0;
 
   // Sound bei neuer Benachrichtigung (wenn aktiviert)
