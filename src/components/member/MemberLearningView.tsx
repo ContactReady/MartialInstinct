@@ -857,15 +857,15 @@ export const MemberLearningView: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     {/* Tactics Badge */}
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border transition-all ${
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold border transition-all ${
                       tacticsDone
-                        ? 'bg-gray-600/40 border-gray-400 text-white'
+                        ? 'bg-gray-600 border-gray-600 text-gray-900'
                         : 'bg-gray-800 border-gray-700 text-gray-600'
                     }`}>T</span>
                     {/* Combat Badge */}
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border transition-all ${
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold border transition-all ${
                       combatDone
-                        ? 'bg-red-500/20 border-red-500/50 text-red-400'
+                        ? 'bg-gray-900 border-gray-600 text-white'
                         : 'bg-gray-800 border-gray-700 text-gray-600'
                     }`}>C</span>
                     <span className="text-gray-500 text-xs ml-1">{done}/{total}</span>
@@ -893,11 +893,11 @@ export const MemberLearningView: React.FC = () => {
                             ) : null}
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${
-                              tDone ? 'bg-gray-600/40 border-gray-400 text-white' : 'bg-gray-800 border-gray-700 text-gray-600'
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold border ${
+                              tDone ? 'bg-gray-600 border-gray-600 text-gray-900' : 'bg-gray-800 border-gray-700 text-gray-600'
                             }`}>T</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${
-                              cDone ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-gray-800 border-gray-700 text-gray-600'
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold border ${
+                              cDone ? 'bg-gray-900 border-gray-600 text-white' : 'bg-gray-800 border-gray-700 text-gray-600'
                             }`}>C</span>
                             <span className={`text-xs px-2 py-1 rounded-lg border font-medium ${color} ${bg}`}>
                               {label}

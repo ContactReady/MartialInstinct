@@ -1587,17 +1587,17 @@ export const InstructorView: React.FC = () => {
                           <button
                             onClick={() => toggleProgress(num, 'tactics')}
                             className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                              prog.tactics ? 'bg-gray-900 border-gray-700' : 'border-gray-700 hover:border-gray-500'
+                              prog.tactics ? 'bg-gray-600 border-gray-600' : 'border-gray-700 hover:border-gray-500'
                             }`}
                           >
-                            {prog.tactics && <span className="text-white font-bold" style={{ fontSize: '9px' }}>T</span>}
+                            {prog.tactics && <span className="text-gray-900 font-bold" style={{ fontSize: '9px' }}>T</span>}
                           </button>
                         </div>
                         <div className="w-16 flex justify-center">
                           <button
                             onClick={() => toggleProgress(num, 'combat')}
                             className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                              prog.combat ? 'bg-red-600 border-red-500' : 'border-gray-700 hover:border-gray-500'
+                              prog.combat ? 'bg-gray-900 border-gray-600' : 'border-gray-700 hover:border-gray-500'
                             }`}
                           >
                             {prog.combat && <span className="text-white font-bold" style={{ fontSize: '9px' }}>C</span>}
@@ -2748,9 +2748,9 @@ export const InstructorView: React.FC = () => {
                         <p className="text-xs text-gray-500 font-medium uppercase tracking-widest">📋 Module</p>
                         <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 gap-y-1.5 items-center">
                           <span className="text-xs text-gray-600">Modul</span>
-                          <span className="text-xs text-gray-600 text-center">T</span>
-                          <span className="text-xs text-gray-600 text-center">C</span>
-                          <span className="text-xs text-gray-600 text-center">I</span>
+                          <span className="w-4 h-4 rounded-full bg-gray-600 inline-flex items-center justify-center text-[8px] font-black text-gray-900 mx-auto">T</span>
+                          <span className="w-4 h-4 rounded-full bg-gray-900 border border-gray-600 inline-flex items-center justify-center text-[8px] font-black text-white mx-auto">C</span>
+                          <span className="w-4 h-4 rounded bg-red-600 inline-flex items-center justify-center text-[8px] font-black text-white mx-auto">I</span>
                           {MODULES.filter(m => m.number <= 10).map((mod, idx) => {
                             const num = idx + 1;
                             const prog = moduleProgressEdit[num] ?? { tactics: false, combat: false, instructor: false };
@@ -2768,7 +2768,7 @@ export const InstructorView: React.FC = () => {
                                     setModuleProgressEdit(prev => ({ ...prev, [num]: { ...prev[num], tactics: t, combat: t ? prev[num]?.combat ?? false : false, instructor: prev[num]?.instructor ?? false } }));
                                     setModuleSaveState('dirty');
                                   }}
-                                  className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors ${prog.tactics ? 'bg-gray-500' : 'bg-gray-800 border border-gray-600'}`}
+                                  className={`w-5 h-5 rounded-full flex items-center justify-center mx-auto transition-colors ${prog.tactics ? 'bg-gray-600' : 'bg-gray-800 border border-gray-600'}`}
                                 >
                                   {prog.tactics && <svg viewBox="0 0 10 10" className="w-3 h-3" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                 </button>
@@ -2780,7 +2780,7 @@ export const InstructorView: React.FC = () => {
                                     setModuleProgressEdit(prev => ({ ...prev, [num]: { ...prev[num], tactics: true, combat: c, instructor: prev[num]?.instructor ?? false } }));
                                     setModuleSaveState('dirty');
                                   }}
-                                  className={`w-5 h-5 rounded flex items-center justify-center mx-auto transition-colors disabled:opacity-30 ${prog.combat ? 'bg-black border border-gray-800' : 'bg-gray-800 border border-gray-600'}`}
+                                  className={`w-5 h-5 rounded-full flex items-center justify-center mx-auto transition-colors disabled:opacity-30 ${prog.combat ? 'bg-gray-900 border border-gray-600' : 'bg-gray-800 border border-gray-600'}`}
                                 >
                                   {prog.combat && <svg viewBox="0 0 10 10" className="w-3 h-3" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                 </button>

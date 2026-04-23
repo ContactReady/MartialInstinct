@@ -516,8 +516,8 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
           </div>
           {/* Tactics bestanden */}
           <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-gray-700 flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-black text-gray-300">T</span>
+            <div className="w-7 h-7 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-black text-gray-900">T</span>
             </div>
             <div>
               <div className="text-2xl font-black text-white leading-none">{tacticsModsDone}<span className="text-sm font-normal text-gray-500">/{totalVisibleMods}</span></div>
@@ -526,8 +526,8 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
           </div>
           {/* Combat bestanden */}
           <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-red-900/40 flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-black text-red-400">C</span>
+            <div className="w-7 h-7 rounded-full bg-gray-900 border-2 border-gray-600 flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-black text-white">C</span>
             </div>
             <div>
               <div className="text-2xl font-black text-white leading-none">{combatModsDone}<span className="text-sm font-normal text-gray-500">/{totalVisibleMods}</span></div>
@@ -537,8 +537,8 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
           {/* Instructor Module — nur wenn vorhanden */}
           {(currentUser.instructorModules?.length ?? 0) > 0 && (
             <div className="col-span-2 bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 flex items-center gap-3">
-              <div className="w-7 h-7 rounded-lg bg-red-900/40 flex items-center justify-center flex-shrink-0">
-                <span className="text-xs font-black text-red-400">I</span>
+              <div className="w-7 h-7 rounded bg-red-600 flex items-center justify-center flex-shrink-0">
+                <span className="text-xs font-black text-white">I</span>
               </div>
               <div>
                 <div className="text-2xl font-black text-white leading-none">{currentUser.instructorModules!.length}</div>
@@ -680,10 +680,10 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                           {/* T / C Badges */}
                           <div className="flex items-center gap-1 flex-shrink-0">
                             <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border ${
-                              tacDone ? 'bg-gray-600 text-white border-gray-500' : 'text-gray-700 border-gray-700/40'
+                              tacDone ? 'bg-gray-600 text-gray-900 border-gray-600' : 'text-gray-700 border-gray-700/40'
                             }`}>T</span>
                             <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border ${
-                              combatDone ? 'bg-red-900/60 text-red-400 border-red-700/50' : 'text-gray-700 border-gray-700/40'
+                              combatDone ? 'bg-gray-900 text-white border-gray-600' : 'text-gray-700 border-gray-700/40'
                             }`}>C</span>
                           </div>
                         </div>
