@@ -910,6 +910,10 @@ export const InstructorView: React.FC = () => {
             return { tactics, combat };
           };
 
+          // Meine Verbindungen
+          const myConnectionIds = currentUser.connections ?? [];
+          const myConnectedMembers = members.filter(m => myConnectionIds.includes(m.id));
+
           const filtered = allMembers.filter(m =>
             m.name.toLowerCase().includes(memberSearch.toLowerCase())
           );
@@ -943,6 +947,35 @@ export const InstructorView: React.FC = () => {
           );
           return (
             <div className="space-y-4">
+
+              {/* Meine Verbindungen */}
+              {myConnectedMembers.length > 0 && (
+                <div>
+                  <p className="text-gray-500 text-xs uppercase tracking-wider px-1 mb-2">Meine Verbindungen ({myConnectedMembers.length})</p>
+                  <div className="space-y-2">
+                    {myConnectedMembers.map(m => {
+                      const inTraining = checkIns.some(c => c.memberId === m.id && c.status === 'approved');
+                      const status = inTraining ? 'training' : m.onlineSince !== undefined ? 'online' : 'offline';
+                      return (
+                        <div key={m.id} onClick={() => setProfileMember(m)} className="rounded-xl border border-red-900/40 bg-red-950/20 px-4 py-3 flex items-center gap-3 cursor-pointer hover:border-red-700/50 transition-colors">
+                          <div className="relative flex-shrink-0">
+                            {m.profileImage
+                              ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" />
+                              : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
+                            <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900 ${status === 'training' ? 'bg-orange-400' : status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-white font-semibold text-sm">{m.name}</div>
+                            <div className="text-gray-500 text-xs">{status === 'training' ? 'Im Training' : status === 'online' ? 'Online' : 'Offline'}</div>
+                          </div>
+                          <span className="text-red-700 text-xs">Verbunden</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <h3 className="text-lg font-bold text-white">
                   Member

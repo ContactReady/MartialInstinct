@@ -1060,13 +1060,45 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
 
               {/* Feedback */}
               {buddyRequestResult && (
-                <p className={`text-xs ${buddyRequestResult.ok ? 'text-gray-400' : 'text-red-400'}`}>
-                  {buddyRequestResult.ok
-                    ? '⏳ Warte auf Bestätigung...'
-                    : `✗ ${buddyRequestResult.error}`}
+                <p className={`text-xs ${buddyRequestResult.ok ? 'text-green-400' : buddyRequestResult.error === '…' ? 'text-gray-500' : 'text-red-400'}`}>
+                  {buddyRequestResult.ok ? '✓ Verbunden!' : buddyRequestResult.error === '…' ? 'Verbinde…' : `✗ ${buddyRequestResult.error}`}
                 </p>
               )}
             </div>
+
+            {/* Meine Trainingspartner */}
+            {(currentUser.connections ?? []).length > 0 && (() => {
+              const myPartners = members.filter(m => (currentUser.connections ?? []).includes(m.id));
+              return (
+                <div>
+                  <p className="text-gray-500 text-xs uppercase tracking-wider px-1 mb-2">
+                    Meine Trainingspartner ({myPartners.length})
+                  </p>
+                  <div className="space-y-2">
+                    {myPartners.map(m => {
+                      const inTraining = checkIns.some(c => c.memberId === m.id && c.status === 'approved');
+                      const isOnlineNow = m.onlineSince !== undefined || (nowTs - new Date(m.lastSeenAt).getTime()) < ONLINE_CUTOFF_MS;
+                      const status = inTraining ? 'training' : isOnlineNow ? 'online' : 'offline';
+                      return (
+                        <div key={m.id} onClick={() => setViewingMember(m)} className="rounded-xl border border-red-900/40 bg-red-950/20 px-4 py-3 flex items-center gap-3 cursor-pointer hover:border-red-700/50 transition-colors">
+                          <div className="relative flex-shrink-0">
+                            {m.profileImage
+                              ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" />
+                              : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
+                            <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900 ${status === 'training' ? 'bg-orange-400' : status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-white font-semibold text-sm">{m.name}</div>
+                            <div className="text-gray-500 text-xs">{status === 'training' ? 'Im Training' : status === 'online' ? 'Online' : 'Offline'}</div>
+                          </div>
+                          <span className="text-red-700 text-xs">Partner</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Alle sichtbaren Member */}
             <div>
