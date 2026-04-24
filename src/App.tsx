@@ -378,7 +378,7 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
 
 // ── Notifications Dropdown ─────────────────────────────────────────────────────
 const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { currentUser, notifications, markNotificationRead, clearNotifications, acceptBuddyRequest, rejectBuddyRequest } = useApp();
+  const { currentUser, notifications, markNotificationRead, clearNotifications, acceptBuddyRequest, rejectBuddyRequest, getPendingCheckIns, getPendingExamRequests, joinRequests } = useApp();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -394,6 +394,10 @@ const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) =
   const isOwnerRoleD = ['head_instructor', 'admin'].includes(currentUser.role ?? '');
   const isInstructorRoleD = ['instructor', 'assistant_instructor', 'full_instructor', 'head_instructor', 'admin'].includes(currentUser.role ?? '');
 
+  const pendingCIs = isInstructorRoleD ? getPendingCheckIns() : [];
+  const pendingExams = isInstructorRoleD ? getPendingExamRequests() : [];
+  const pendingJoins = isOwnerRoleD ? joinRequests.filter(r => r.status === 'pending') : [];
+
   const userNotifs = notifications
     .filter(n =>
       n.oduserId === currentUser.id ||
@@ -402,7 +406,9 @@ const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) =
     )
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const unreadCount = userNotifs.filter(n => !n.read).length;
+  const unreadCount = userNotifs.filter(n => !n.read).length
+    + (currentUser?.buddyRequests?.length ?? 0)
+    + pendingCIs.length + pendingExams.length + pendingJoins.length;
 
   const formatTime = (date: Date) => {
     const d = new Date(date);
@@ -431,7 +437,7 @@ const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) =
       <div className="max-h-96 overflow-y-auto">
         {/* Ausstehende Trainingspartner-Anfragen */}
         {(currentUser?.buddyRequests ?? []).map(req => (
-          <div key={req.id} className="px-4 py-3 border-b border-gray-800/60 bg-red-950/20">
+          <div key={req.id} className="px-4 py-3 border-b border-gray-800/60 bg-gray-800/30">
             <div className="text-white text-sm font-semibold leading-tight">{req.fromMemberName}</div>
             <div className="text-gray-400 text-xs mt-0.5">möchte sich als Trainingspartner verbinden</div>
             <div className="flex gap-2 mt-2">
@@ -440,7 +446,38 @@ const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) =
             </div>
           </div>
         ))}
-        {userNotifs.length === 0 && (currentUser?.buddyRequests ?? []).length === 0 ? (
+        {/* Offene Check-in Anfragen (für Instructoren) */}
+        {pendingCIs.map(ci => (
+          <div key={ci.id} className="px-4 py-3 border-b border-gray-800/60 bg-gray-800/30">
+            <div className="text-white text-sm font-semibold leading-tight">{ci.memberName}</div>
+            <div className="text-gray-400 text-xs mt-0.5">
+              Check-in Anfrage{ci.unitName ? ` · ${ci.unitName}` : ''}
+            </div>
+            <div className="text-gray-600 text-xs mt-1">
+              {new Date(ci.requestedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr
+            </div>
+          </div>
+        ))}
+        {/* Offene Prüfungsanfragen (für Instructoren) */}
+        {pendingExams.map(ex => (
+          <div key={ex.id} className="px-4 py-3 border-b border-gray-800/60 bg-gray-800/30">
+            <div className="text-white text-sm font-semibold leading-tight">{ex.memberName}</div>
+            <div className="text-gray-400 text-xs mt-0.5">
+              Prüfungsanfrage · {ex.techniqueName}
+            </div>
+            <div className="text-gray-600 text-xs mt-1">{ex.moduleName}</div>
+          </div>
+        ))}
+        {/* Offene Beitrittsanfragen (für Owner/Admins) */}
+        {pendingJoins.map(jr => (
+          <div key={jr.id} className="px-4 py-3 border-b border-gray-800/60 bg-gray-800/30">
+            <div className="text-white text-sm font-semibold leading-tight">{jr.name || jr.email}</div>
+            <div className="text-gray-400 text-xs mt-0.5">Beitrittsanfrage</div>
+            <div className="text-gray-600 text-xs mt-1">{jr.email}</div>
+          </div>
+        ))}
+        {userNotifs.length === 0 && (currentUser?.buddyRequests ?? []).length === 0
+          && pendingCIs.length === 0 && pendingExams.length === 0 && pendingJoins.length === 0 ? (
           <div className="px-4 py-8 text-center">
             <div className="text-3xl mb-2">🔔</div>
             <p className="text-gray-500 text-sm">Keine Benachrichtigungen</p>
@@ -860,7 +897,7 @@ function playNotificationSound() {
 }
 
 const AppContent: React.FC = () => {
-  const { currentUser, authLoading, login, darkMode, notifications, getProfileImgSettings } = useApp();
+  const { currentUser, authLoading, login, darkMode, notifications, getProfileImgSettings, getPendingCheckIns, getPendingExamRequests, joinRequests } = useApp();
   const [viewMode, setViewMode] = useState<'member' | 'instructor'>('member');
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -877,12 +914,15 @@ const AppContent: React.FC = () => {
   const isOwnerRole = ['head_instructor', 'admin'].includes(currentUser?.role ?? '');
   const isInstructorRole = ['instructor', 'assistant_instructor', 'full_instructor', 'head_instructor', 'admin'].includes(currentUser?.role ?? '');
   const pendingBuddyCount = currentUser?.buddyRequests?.length ?? 0;
+  const pendingCIsCount = currentUser && isInstructorRole ? getPendingCheckIns().length : 0;
+  const pendingExamsCount = currentUser && isInstructorRole ? getPendingExamRequests().length : 0;
+  const pendingJoinsCount = currentUser && isOwnerRole ? joinRequests.filter(r => r.status === 'pending').length : 0;
   const unreadCount = currentUser
     ? notifications.filter(n => !n.read && (
         n.oduserId === currentUser.id ||
         (n.oduserId === 'all-instructors' && isInstructorRole) ||
         (n.oduserId === 'all-owners' && isOwnerRole)
-      )).length + pendingBuddyCount
+      )).length + pendingBuddyCount + pendingCIsCount + pendingExamsCount + pendingJoinsCount
     : 0;
 
   // Sound bei neuer Benachrichtigung (wenn aktiviert)

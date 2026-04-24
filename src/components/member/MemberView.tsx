@@ -559,7 +559,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
           {/* Instructor Module — nur wenn vorhanden */}
           {(currentUser.instructorModules?.length ?? 0) > 0 && (
             <div className="col-span-2 bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 flex items-center gap-3">
-              <div className="w-7 h-7 rounded bg-red-600 flex items-center justify-center flex-shrink-0">
+              <div className="w-7 h-7 rounded bg-gray-900 border-2 border-gray-600 flex items-center justify-center flex-shrink-0">
                 <span className="text-xs font-black text-white">I</span>
               </div>
               <div>
