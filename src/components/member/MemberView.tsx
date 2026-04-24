@@ -833,6 +833,68 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
       return `seit ${Math.floor(mins / 60)} Std`;
     };
 
+    const formatDT = (d: Date | string | null | undefined): string => {
+      if (!d) return '—';
+      const dt = d instanceof Date ? d : new Date(d as string);
+      const yesterday = new Date(nowDate); yesterday.setDate(yesterday.getDate() - 1);
+      const time = dt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+      if (dt.toDateString() === nowDate.toDateString()) return `Heute, ${time}`;
+      if (dt.toDateString() === yesterday.toDateString()) return `Gestern, ${time}`;
+      return dt.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) + `, ${time}`;
+    };
+
+    const listCurrMods = MODULES.filter(m => m.number <= 10);
+    const currModNums = [...new Set(listCurrMods.map(m => m.number))];
+    const getModsDone = (m: typeof visibleMembers[0]) => {
+      let tactics = 0, combat = 0;
+      const instrModIds = new Set(m.instructorModules ?? []);
+      const instructor = listCurrMods.filter(mod => instrModIds.has(mod.id)).length;
+      currModNums.forEach(num => {
+        const variants = listCurrMods.filter(mod => mod.number === num);
+        if (variants.some(mod => mod.techniques.filter(t => t.isRequired).every(t => { const s = m.techniqueProgress[t.id]?.status; return s === 'tech_passed' || s === 'tac_passed'; }) && mod.techniques.filter(t => t.isRequired).length > 0)) tactics++;
+        if (variants.some(mod => mod.techniques.filter(t => t.isRequired).every(t => m.techniqueProgress[t.id]?.status === 'tac_passed') && mod.techniques.filter(t => t.isRequired).length > 0)) combat++;
+      });
+      return { tactics, combat, instructor };
+    };
+
+    const isInstructorRole = (role: string) => ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'admin'].includes(role);
+
+    const MemberCard = ({ m, phase }: { m: typeof visibleMembers[0]; phase: 'training' | 'checkedIn' | 'online' }) => {
+      const isMe = m.id === currentUser.id;
+      const mods = getModsDone(m);
+      const isInstr = isInstructorRole(m.role);
+      const ci = phase !== 'online' ? checkIns.find(c => c.memberId === m.id && c.status === 'approved') : undefined;
+      const unit = ci?.unitId ? trainingUnits.find(u => u.id === ci.unitId) : undefined;
+      const borderCls = phase === 'training' ? 'border-orange-500/30' : phase === 'checkedIn' ? 'border-yellow-600/30' : 'border-green-500/20';
+      const dotCls = phase === 'training' ? 'bg-orange-400' : phase === 'checkedIn' ? 'bg-yellow-400' : 'bg-green-400 animate-pulse';
+      const statusText = phase === 'training'
+        ? <span className="text-orange-400 text-xs font-medium">Im Training{unit ? ` · ${unit.name}` : ''}</span>
+        : phase === 'checkedIn'
+          ? <span className="text-yellow-400 text-xs font-medium">Eingecheckt{unit ? ` · ${unit.name} · ${unit.startTime} Uhr` : ''}</span>
+          : <span className="text-green-400 text-xs font-medium">Online{m.id !== currentUser.id ? ` · ${formatOnlineSince(m)}` : ''}</span>;
+      return (
+        <div className={`bg-gray-800/50 rounded-xl border ${borderCls} cursor-pointer`} onClick={() => setViewingMember(m)}>
+          <div className="px-4 py-3 flex items-center gap-3">
+            <span className={`w-3 h-3 rounded-full flex-shrink-0 ${dotCls}`} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-white font-semibold text-sm">{m.name}{isMe && <span className="text-gray-500 text-[10px] ml-1">(Du)</span>}</span>
+                <span className="text-gray-500 text-xs">T: {mods.tactics} · C: {mods.combat}{isInstr ? ` · I: ${mods.instructor}` : ''} Module</span>
+                {m.stopTheBleedCertified && <span className="text-red-400 text-xs">STB</span>}
+              </div>
+              <div className="mt-0.5">{statusText}</div>
+            </div>
+          </div>
+          <div className="px-4 pb-3 flex flex-wrap gap-x-5 gap-y-1 text-xs border-t border-gray-700/40 pt-2">
+            <span><span className="text-gray-600">Zuletzt online:</span> <span className="text-gray-400">{formatDT(m.lastSeenAt)}</span></span>
+            <span><span className="text-gray-600">Letztes Training:</span> <span className="text-gray-400">{formatDT(m.streak?.lastTrainingDate)}</span></span>
+            <span className="text-gray-400">🔥 {m.streak?.currentStreak ?? 0} Wo.</span>
+            <span className="text-gray-400">🩹 {m.streak?.bandaids ?? 0}/{m.streak?.maxBandaids ?? 2}</span>
+          </div>
+        </div>
+      );
+    };
+
     const OnlineDot = ({ member: _member }: { member: typeof visibleMembers[0] }) => (
       <span className="inline-block w-2 h-2 rounded-full flex-shrink-0 bg-green-400" />
     );
@@ -867,122 +929,51 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
 
         {/* ── ONLINE ── */}
         {communitySubTab === 'online' && (
-          <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-700/60 flex items-center justify-between">
-              <h3 className="font-bold text-white flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-400 inline-block animate-pulse" />
-                Online
-                <span className="text-gray-500 font-normal text-sm">({onlineConnected.length})</span>
-              </h3>
-            </div>
+          <div className="space-y-2">
             {onlineConnected.length === 0 ? (
-              <div className="px-4 py-6 text-center text-gray-500 text-sm">
-                <div className="text-2xl mb-2">😴</div>
+              <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center text-gray-500 text-sm">
                 {canSeeAll ? 'Alle Members mit sichtbarem Status werden hier angezeigt.' : 'Du siehst nur deine Trainingspartner.'}
               </div>
             ) : (
-              <div className="divide-y divide-gray-700/40">
+              <>
                 {onlineInstructors.length > 0 && (
-                  <div className="px-4 py-3">
-                    <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Trainer ({onlineInstructors.length})</div>
-                    <div className="space-y-2">
-                      {onlineInstructors.map(m => (
-                        <div key={m.id} className="flex items-center gap-3 cursor-pointer" onClick={() => setViewingMember(m)}>
-                          <OnlineDot member={m} />
-                          {m.profileImage ? <img src={m.profileImage} className="w-7 h-7 rounded-full object-cover flex-shrink-0" /> : <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
-                          <div className="flex-1 min-w-0">
-                            <span className="text-white font-medium text-sm">{m.name}{m.id === currentUser.id && <span className="text-gray-500 text-[10px] ml-1">(Du)</span>}</span>
-                            <span className="ml-2 text-xs text-gray-500">{LEVEL_DISPLAY[m.currentLevel].subtitle}</span>
-                          </div>
-                          <span className="text-gray-500 text-xs flex-shrink-0">{formatOnlineSince(m)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <>
+                    <p className="text-gray-500 text-xs px-1">Trainer ({onlineInstructors.length})</p>
+                    {onlineInstructors.map(m => <MemberCard key={m.id} m={m} phase="online" />)}
+                  </>
                 )}
                 {onlineMembers2.length > 0 && (
-                  <div className="px-4 py-3">
-                    <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Members ({onlineMembers2.length})</div>
-                    <div className="space-y-2">
-                      {onlineMembers2.map(m => (
-                        <div key={m.id} className="flex items-center gap-3 cursor-pointer" onClick={() => setViewingMember(m)}>
-                          <OnlineDot member={m} />
-                          {m.profileImage ? <img src={m.profileImage} className="w-7 h-7 rounded-full object-cover flex-shrink-0" /> : <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
-                          <div className="flex-1 min-w-0">
-                            <span className="text-white font-medium text-sm">{m.name}{m.id === currentUser.id && <span className="text-gray-500 text-[10px] ml-1">(Du)</span>}</span>
-                            <span className="ml-2 text-xs text-gray-500">{LEVEL_DISPLAY[m.currentLevel].subtitle}</span>
-                          </div>
-                          <span className="text-gray-500 text-xs flex-shrink-0">{formatOnlineSince(m)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <>
+                    <p className="text-gray-500 text-xs px-1 mt-2">Members ({onlineMembers2.length})</p>
+                    {onlineMembers2.map(m => <MemberCard key={m.id} m={m} phase="online" />)}
+                  </>
                 )}
-              </div>
+              </>
             )}
           </div>
         )}
 
         {/* ── TRAINING ── */}
         {communitySubTab === 'training' && (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {trainingConnected.length === 0 && checkedInBeforeStart.length === 0 ? (
               <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
-                <div className="text-3xl mb-2">🥋</div>
                 <p className="text-gray-400 text-sm font-medium">Niemand trainiert gerade</p>
                 <p className="text-gray-500 text-xs mt-1">{canSeeAll ? 'Alle Members mit sichtbarem Status werden hier angezeigt.' : 'Du siehst nur deine Trainingspartner.'}</p>
               </div>
             ) : (
               <>
                 {trainingConnected.length > 0 && (
-                  <div>
-                    <p className="text-gray-500 text-xs px-1 mb-2">Im Training ({trainingConnected.length})</p>
-                    {trainingConnected.map(m => {
-                      const isMe = m.id === currentUser.id;
-                      return (
-                        <div key={m.id} className="bg-gray-800/50 rounded-xl border border-orange-800/30 px-4 py-3 flex items-center gap-3 mb-2 cursor-pointer" onClick={() => setViewingMember(m)}>
-                          <div className="relative flex-shrink-0">
-                            {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
-                            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-orange-400 rounded-full border border-gray-900" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-white font-semibold text-sm">{m.name}</span>
-                              {isMe && <span className="text-gray-500 text-[10px]">(Du)</span>}
-                            </div>
-                            <div className="text-orange-400/70 text-xs">🥋 Im Training</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <>
+                    <p className="text-gray-500 text-xs px-1">Im Training ({trainingConnected.length})</p>
+                    {trainingConnected.map(m => <MemberCard key={m.id} m={m} phase="training" />)}
+                  </>
                 )}
                 {checkedInBeforeStart.length > 0 && (
-                  <div>
-                    <p className="text-gray-500 text-xs px-1 mb-2">Eingecheckt · Kurs startet gleich ({checkedInBeforeStart.length})</p>
-                    {checkedInBeforeStart.map(m => {
-                      const isMe = m.id === currentUser.id;
-                      const ci = checkIns.find(c => c.memberId === m.id && c.status === 'approved');
-                      const unit = ci?.unitId ? trainingUnits.find(u => u.id === ci.unitId) : undefined;
-                      return (
-                        <div key={m.id} className="bg-gray-800/50 rounded-xl border border-gray-700 px-4 py-3 flex items-center gap-3 mb-2 cursor-pointer" onClick={() => setViewingMember(m)}>
-                          <div className="relative flex-shrink-0">
-                            {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
-                            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-yellow-400 rounded-full border border-gray-900" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-white font-semibold text-sm">{m.name}</span>
-                              {isMe && <span className="text-gray-500 text-[10px]">(Du)</span>}
-                            </div>
-                            <div className="text-yellow-500/70 text-xs">
-                              {unit ? `✅ Eingecheckt · startet ${unit.startTime} Uhr` : '✅ Eingecheckt'}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <>
+                    <p className="text-gray-500 text-xs px-1 mt-2">Eingecheckt · startet gleich ({checkedInBeforeStart.length})</p>
+                    {checkedInBeforeStart.map(m => <MemberCard key={m.id} m={m} phase="checkedIn" />)}
+                  </>
                 )}
               </>
             )}
