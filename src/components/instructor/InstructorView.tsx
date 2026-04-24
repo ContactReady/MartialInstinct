@@ -425,9 +425,21 @@ export const InstructorView: React.FC = () => {
     const onlineRegularMembers = onlineMembers.filter(m => m.role === 'member');
 
     // Bestätigte Check-ins von heute
-    const todayCheckIns = checkIns.filter(
+    const nowTimeCom = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+    const allApprovedToday = checkIns.filter(
       c => c.status === 'approved' && new Date(c.requestedAt).toDateString() === todayStr
     );
+    // Split: Im Training (Kurs gestartet) vs. Eingecheckt (Kurs noch nicht gestartet)
+    const todayCheckIns = allApprovedToday.filter(c => {
+      const unit = trainingUnits.find(u => u.id === c.unitId);
+      if (!unit) return true; // kein Unit = annehmen gestartet
+      return nowTimeCom >= unit.startTime && nowTimeCom < unit.endTime;
+    });
+    const checkedInBeforeStart = allApprovedToday.filter(c => {
+      const unit = trainingUnits.find(u => u.id === c.unitId);
+      if (!unit) return false;
+      return nowTimeCom < unit.startTime;
+    });
 
     const formatOnlineSince = (m: typeof members[0]): string => {
       const since = m.onlineSince ? new Date(m.onlineSince) : new Date(m.lastSeenAt);
@@ -460,7 +472,7 @@ export const InstructorView: React.FC = () => {
         <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
           {([
             { id: 'online' as CommunitySubTab, label: 'Online', badge: onlineMembers.length, dot: true },
-            { id: 'training' as CommunitySubTab, label: 'Training', badge: todayCheckIns.length, dot: false },
+            { id: 'training' as CommunitySubTab, label: 'Training', badge: todayCheckIns.length + checkedInBeforeStart.length, dot: false },
             { id: 'mitglieder' as CommunitySubTab, label: 'Member', badge: 0, dot: false },
             { id: 'rangliste' as CommunitySubTab, label: 'Rangliste', badge: 0, dot: false },
           ] as { id: CommunitySubTab; label: string; badge: number; dot: boolean }[]).map(item => (
@@ -547,15 +559,16 @@ export const InstructorView: React.FC = () => {
         {/* ── Tab: Beim Training ───────────────────────────────────────────── */}
         {communitySubTab === 'training' && (
           <div className="space-y-4">
+            {/* Im Training (Kurs gestartet) */}
             <div className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-700/60">
                 <h3 className="font-bold text-white flex items-center gap-2">
-                  📍 Beim Training
+                  🥋 Im Training
                   <span className="text-gray-500 font-normal text-sm">({todayCheckIns.length})</span>
                 </h3>
               </div>
               {todayCheckIns.length === 0 ? (
-                <div className="px-4 py-6 text-center text-gray-500 text-sm">Niemand ist heute eingecheckt</div>
+                <div className="px-4 py-6 text-center text-gray-500 text-sm">Niemand trainiert gerade</div>
               ) : (
                 <div className="divide-y divide-gray-700/40">
                   {todayCheckIns.map(ci => {
@@ -578,7 +591,7 @@ export const InstructorView: React.FC = () => {
                               {ci.unitName && <span> · {ci.unitName}</span>}
                             </div>
                           </div>
-                          <div className="text-green-400 text-xs font-semibold flex-shrink-0">✅ {checkedInTime}</div>
+                          <div className="text-orange-400 text-xs font-semibold flex-shrink-0">🥋 {checkedInTime}</div>
                         </div>
                         <div className="flex gap-2 pl-9">
                           {canAccessTab('dashboard') && (
@@ -602,6 +615,44 @@ export const InstructorView: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Eingecheckt — Kurs startet gleich */}
+            {checkedInBeforeStart.length > 0 && (
+              <div className="bg-yellow-900/10 rounded-xl border border-yellow-800/30 overflow-hidden">
+                <div className="px-4 py-3 border-b border-yellow-800/20">
+                  <h3 className="font-bold text-white flex items-center gap-2">
+                    ✅ Eingecheckt · Kurs startet gleich
+                    <span className="text-gray-500 font-normal text-sm">({checkedInBeforeStart.length})</span>
+                  </h3>
+                </div>
+                <div className="divide-y divide-yellow-800/20">
+                  {checkedInBeforeStart.map(ci => {
+                    const member = members.find(m => m.id === ci.memberId);
+                    if (!member) return null;
+                    const unit = trainingUnits.find(u => u.id === ci.unitId);
+                    return (
+                      <div key={ci.id} className="px-4 py-3 flex items-center gap-3">
+                        {member.profileImage
+                          ? <img src={member.profileImage} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                          : <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-300">{member.name.charAt(0).toUpperCase()}</div>
+                        }
+                        <div className="flex-1 min-w-0">
+                          <div className="text-white font-medium text-sm">{member.name}</div>
+                          <div className="text-yellow-500/70 text-xs truncate">
+                            {unit ? `Kurs startet ${unit.startTime} Uhr` : ci.unitName ?? '–'}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => checkOut(member.id)}
+                          className="text-gray-500 hover:text-red-400 text-xs transition-colors flex-shrink-0"
+                          title="Auschecken"
+                        >✕</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
         {/* ── Training dokumentieren ────────────────────────────────────── */}
         {(() => {
@@ -863,8 +914,14 @@ export const InstructorView: React.FC = () => {
         {/* ── Mitglieder ─────────────────────────────────────────────────── */}
         {communitySubTab === 'mitglieder' && (() => {
           const allMembers = members.filter(m => m.role !== 'member');
-          const getMemberStatus = (m: Member): 'training' | 'online' | 'offline' => {
-            if (checkIns.some(c => c.memberId === m.id && c.status === 'approved')) return 'training';
+          const getMemberStatus = (m: Member): 'training' | 'checkedIn' | 'online' | 'offline' => {
+            const ci = checkIns.find(c => c.memberId === m.id && c.status === 'approved');
+            if (ci) {
+              const unit = trainingUnits.find(u => u.id === ci.unitId);
+              if (!unit) return 'training';
+              if (nowTimeCom >= unit.startTime && nowTimeCom < unit.endTime) return 'training';
+              if (nowTimeCom < unit.startTime) return 'checkedIn';
+            }
             if (m.onlineSince !== undefined) return 'online';
             return 'offline';
           };
@@ -919,13 +976,15 @@ export const InstructorView: React.FC = () => {
           const countTraining = allMembers.filter(m => m.isCheckedIn).length;
           const countOnline = allMembers.filter(m => !m.isCheckedIn && m.onlineSince !== undefined).length;
           const countOffline = allMembers.length - countTraining - countOnline;
-          const StatusDot = ({ status }: { status: 'training' | 'online' | 'offline' }) => {
+          const StatusDot = ({ status }: { status: 'training' | 'checkedIn' | 'online' | 'offline' }) => {
             if (status === 'training') return <span className="w-3 h-3 rounded-full bg-orange-400 flex-shrink-0 inline-block" />;
+            if (status === 'checkedIn') return <span className="w-3 h-3 rounded-full bg-yellow-400 flex-shrink-0 inline-block" />;
             if (status === 'online') return <span className="w-3 h-3 rounded-full bg-green-400 flex-shrink-0 inline-block animate-pulse" />;
             return <span className="w-3 h-3 rounded-full bg-gray-600 flex-shrink-0 inline-block" />;
           };
-          const statusLabel = (status: 'training' | 'online' | 'offline') => {
-            if (status === 'training') return <span className="text-orange-400 text-xs font-medium">Beim Training</span>;
+          const statusLabel = (status: 'training' | 'checkedIn' | 'online' | 'offline') => {
+            if (status === 'training') return <span className="text-orange-400 text-xs font-medium">🥋 Im Training</span>;
+            if (status === 'checkedIn') return <span className="text-yellow-400 text-xs font-medium">✅ Eingecheckt</span>;
             if (status === 'online') return <span className="text-green-400 text-xs font-medium">Online</span>;
             return <span className="text-gray-500 text-xs">Offline</span>;
           };
@@ -946,19 +1005,18 @@ export const InstructorView: React.FC = () => {
                   <p className="text-gray-500 text-xs uppercase tracking-wider px-1 mb-2">Meine Verbindungen ({myConnectedMembers.length})</p>
                   <div className="space-y-2">
                     {myConnectedMembers.map(m => {
-                      const inTraining = checkIns.some(c => c.memberId === m.id && c.status === 'approved');
-                      const status = inTraining ? 'training' : m.onlineSince !== undefined ? 'online' : 'offline';
+                      const mStatus = getMemberStatus(m);
                       return (
                         <div key={m.id} className="rounded-xl border border-red-900/40 bg-red-950/20 px-4 py-3 flex items-center gap-3">
                           <div className="relative flex-shrink-0 cursor-pointer" onClick={() => setProfileMember(m)}>
                             {m.profileImage
                               ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" />
                               : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
-                            <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900 ${status === 'training' ? 'bg-orange-400' : status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
+                            <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900 ${mStatus === 'training' ? 'bg-orange-400' : mStatus === 'checkedIn' ? 'bg-yellow-400' : mStatus === 'online' ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
                           </div>
                           <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setProfileMember(m)}>
                             <div className="text-white font-semibold text-sm">{m.name}</div>
-                            <div className="text-gray-500 text-xs">{status === 'training' ? 'Im Training' : status === 'online' ? 'Online' : 'Offline'}</div>
+                            <div className="text-gray-500 text-xs">{mStatus === 'training' ? '🥋 Im Training' : mStatus === 'checkedIn' ? '✅ Eingecheckt' : mStatus === 'online' ? 'Online' : 'Offline'}</div>
                           </div>
                           <button onClick={() => disconnectBuddy(m.id)} className="text-gray-600 hover:text-red-400 text-xs transition-colors flex-shrink-0" title="Verbindung trennen">✕</button>
                         </div>
@@ -1001,7 +1059,7 @@ export const InstructorView: React.FC = () => {
                     const status = getMemberStatus(member);
                     const mods = getMemberModsDone(member);
                     return (
-                      <div key={member.id} className={`bg-gray-800/50 rounded-xl border transition-all ${status === 'training' ? 'border-orange-500/30' : status === 'online' ? 'border-green-500/20' : 'border-gray-700'}`}>
+                      <div key={member.id} className={`bg-gray-800/50 rounded-xl border transition-all ${status === 'training' ? 'border-orange-500/30' : status === 'checkedIn' ? 'border-yellow-600/30' : status === 'online' ? 'border-green-500/20' : 'border-gray-700'}`}>
                         <div className="px-4 py-3 flex items-center gap-3">
                           <StatusDot status={status} />
                           <span className="text-2xl flex-shrink-0">{member.avatar}</span>

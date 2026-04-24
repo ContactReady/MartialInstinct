@@ -114,6 +114,11 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     const timer = setTimeout(() => setNow(new Date()), msUntilMidnight);
     return () => clearTimeout(timer);
   }, [now]); // nach jedem Reset neu planen
+  // 30s-Ticker: Trainings-Phase live aktualisieren (Eingecheckt → Im Training beim Kursstart)
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   // Buddy-Code Countdown
   useEffect(() => {
@@ -157,6 +162,13 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
   const approvedUnit = todayCheckIn?.unitId
     ? trainingUnits.find(u => u.id === todayCheckIn.unitId)
     : undefined;
+
+  // Trainings-Phase: Eingecheckt (bestätigt, aber Kurs noch nicht gestartet) vs. Im Training
+  const trainingStarted = checkInStatus === 'approved' && (
+    approvedUnit ? nowTime >= approvedUnit.startTime : true
+  );
+  const inTraining = checkInStatus === 'approved' && trainingStarted;
+  const checkedInNotStarted = checkInStatus === 'approved' && !trainingStarted;
 
   const handleCheckInPress = () => {
     // Immer Picker anzeigen — auch wenn kein Kurs heute
@@ -263,23 +275,31 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
         {/* ── Check-In ── */}
         <div className="sticky top-[var(--mi-header-h)] z-20 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
         <div className={`rounded-xl border transition-all ${
-          checkInStatus === 'approved' ? 'bg-green-900/20 border-green-600/40'
+          inTraining        ? 'bg-green-900/20 border-green-600/40'
+          : checkedInNotStarted ? 'bg-yellow-900/20 border-yellow-600/40'
           : 'bg-gray-800/50 border-gray-700'
         }`}>
           <div className="px-4 py-3 flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="text-sm font-bold text-white">Trainings Check-In</div>
-              <div className={`text-xs mt-0.5 ${checkInStatus === 'approved' ? 'text-green-400' : 'text-gray-400'}`}>
-                {checkInStatus === 'approved'
+              <div className={`text-xs mt-0.5 ${inTraining ? 'text-green-400' : checkedInNotStarted ? 'text-yellow-400' : 'text-gray-400'}`}>
+                {inTraining
                   ? approvedUnit
-                    ? `✅ ${approvedUnit.name} · ${approvedUnit.startTime}–${approvedUnit.endTime} Uhr`
-                    : `✅ Eingecheckt${checkInApprovedAt ? ` · ${checkInApprovedAt.getHours().toString().padStart(2,'0')}:${checkInApprovedAt.getMinutes().toString().padStart(2,'0')} Uhr` : ''}`
-                  : checkInStatus === 'pending' ? `Warte auf Bestätigung…${todayCheckIn?.unitName ? ` (${todayCheckIn.unitName})` : ''}`
-                  : 'Sei heute dabei!'}
+                    ? `🥋 Im Training · ${approvedUnit.name} · ${approvedUnit.startTime}–${approvedUnit.endTime} Uhr`
+                    : '🥋 Im Training'
+                  : checkedInNotStarted
+                    ? approvedUnit
+                      ? `✅ Eingecheckt · Kurs startet um ${approvedUnit.startTime} Uhr`
+                      : '✅ Eingecheckt'
+                    : checkInStatus === 'pending'
+                      ? `Warte auf Bestätigung…${todayCheckIn?.unitName ? ` (${todayCheckIn.unitName})` : ''}`
+                      : 'Sei heute dabei!'}
               </div>
             </div>
-            {checkInStatus === 'approved' ? (
-              <span className="text-green-400 text-xs font-bold flex-shrink-0">✓ Dabei</span>
+            {inTraining ? (
+              <span className="text-green-400 text-xs font-bold flex-shrink-0">🥋 Dabei</span>
+            ) : checkedInNotStarted ? (
+              <span className="text-yellow-400 text-xs font-bold flex-shrink-0">✅ Dabei</span>
             ) : checkInStatus === 'pending' ? (
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
@@ -795,9 +815,21 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     });
 
     const nowDate = new Date();
+    const nowTimeCom = `${nowDate.getHours().toString().padStart(2,'0')}:${nowDate.getMinutes().toString().padStart(2,'0')}`;
     const isActive = (m: typeof visibleMembers[0]) => m.id === currentUser.id || !!m.onlineSince;
     const onlineConnected = visibleMembers.filter(m => isActive(m));
-    const trainingConnected = visibleMembers.filter(m => checkIns.some(c => c.memberId === m.id && c.status === 'approved'));
+
+    // Training-Status: nur "Im Training" wenn Kurs bereits gestartet hat
+    const getCheckInPhase = (memberId: string): 'training' | 'checkedIn' | null => {
+      const ci = checkIns.find(c => c.memberId === memberId && c.status === 'approved');
+      if (!ci) return null;
+      const unit = trainingUnits.find(u => u.id === ci.unitId);
+      if (!unit) return 'training'; // kein Unit = annehmen gestartet
+      if (nowTimeCom >= unit.endTime) return null; // bereits vorbei (auto-checkout ausstehend)
+      return nowTimeCom >= unit.startTime ? 'training' : 'checkedIn';
+    };
+    const trainingConnected = visibleMembers.filter(m => getCheckInPhase(m.id) === 'training');
+    const checkedInBeforeStart = visibleMembers.filter(m => getCheckInPhase(m.id) === 'checkedIn');
 
     const instructorRoles = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'admin'];
     const onlineInstructors = onlineConnected.filter(m => instructorRoles.includes(m.role));
@@ -824,7 +856,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
         <div className="flex bg-gray-800/50 rounded-xl p-1 border border-gray-700 gap-1">
           {([
             { id: 'online' as const, label: 'Online', badge: onlineConnected.length, dot: true },
-            { id: 'training' as const, label: 'Training', badge: trainingConnected.length, dot: false },
+            { id: 'training' as const, label: 'Training', badge: trainingConnected.length + checkedInBeforeStart.length, dot: false },
             { id: 'mitglieder' as const, label: 'Member', badge: 0, dot: false },
             { id: 'rangliste' as const, label: 'Rangliste', badge: 0, dot: false },
           ] as { id: 'online'|'training'|'mitglieder'|'rangliste'; label: string; badge: number; dot: boolean }[]).map(tab => (
@@ -906,34 +938,65 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
         {/* ── TRAINING ── */}
         {communitySubTab === 'training' && (
           <div className="space-y-3">
-            {trainingConnected.length === 0 ? (
+            {trainingConnected.length === 0 && checkedInBeforeStart.length === 0 ? (
               <div className="rounded-xl border border-gray-700/30 bg-gray-800/20 p-8 text-center">
                 <div className="text-3xl mb-2">🥋</div>
                 <p className="text-gray-400 text-sm font-medium">Niemand trainiert gerade</p>
                 <p className="text-gray-500 text-xs mt-1">{canSeeAll ? 'Alle Members mit sichtbarem Status werden hier angezeigt.' : 'Du siehst nur deine Trainingspartner.'}</p>
               </div>
             ) : (
-              <div>
-                <p className="text-gray-500 text-xs px-1 mb-2">Gerade im Training ({trainingConnected.length})</p>
-                {trainingConnected.map(m => {
-                  const isMe = m.id === currentUser.id;
-                  return (
-                  <div key={m.id} className="bg-gray-800/50 rounded-xl border border-orange-800/30 px-4 py-3 flex items-center gap-3 mb-2 cursor-pointer" onClick={() => setViewingMember(m)}>
-                    <div className="relative flex-shrink-0">
-                      {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
-                      <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-orange-400 rounded-full border border-gray-900" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-white font-semibold text-sm">{m.name}</span>
-                        {isMe && <span className="text-gray-500 text-[10px]">(Du)</span>}
-                      </div>
-                      <div className="text-orange-400/70 text-xs">Im Training</div>
-                    </div>
+              <>
+                {trainingConnected.length > 0 && (
+                  <div>
+                    <p className="text-gray-500 text-xs px-1 mb-2">Im Training ({trainingConnected.length})</p>
+                    {trainingConnected.map(m => {
+                      const isMe = m.id === currentUser.id;
+                      return (
+                        <div key={m.id} className="bg-gray-800/50 rounded-xl border border-orange-800/30 px-4 py-3 flex items-center gap-3 mb-2 cursor-pointer" onClick={() => setViewingMember(m)}>
+                          <div className="relative flex-shrink-0">
+                            {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
+                            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-orange-400 rounded-full border border-gray-900" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-white font-semibold text-sm">{m.name}</span>
+                              {isMe && <span className="text-gray-500 text-[10px]">(Du)</span>}
+                            </div>
+                            <div className="text-orange-400/70 text-xs">🥋 Im Training</div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  );
-                })}
-              </div>
+                )}
+                {checkedInBeforeStart.length > 0 && (
+                  <div>
+                    <p className="text-gray-500 text-xs px-1 mb-2">Eingecheckt · Kurs startet gleich ({checkedInBeforeStart.length})</p>
+                    {checkedInBeforeStart.map(m => {
+                      const isMe = m.id === currentUser.id;
+                      const ci = checkIns.find(c => c.memberId === m.id && c.status === 'approved');
+                      const unit = ci?.unitId ? trainingUnits.find(u => u.id === ci.unitId) : undefined;
+                      return (
+                        <div key={m.id} className="bg-yellow-900/10 rounded-xl border border-yellow-800/30 px-4 py-3 flex items-center gap-3 mb-2 cursor-pointer" onClick={() => setViewingMember(m)}>
+                          <div className="relative flex-shrink-0">
+                            {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
+                            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-yellow-400 rounded-full border border-gray-900" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-white font-semibold text-sm">{m.name}</span>
+                              {isMe && <span className="text-gray-500 text-[10px]">(Du)</span>}
+                            </div>
+                            <div className="text-yellow-500/70 text-xs">
+                              {unit ? `✅ Eingecheckt · startet ${unit.startTime} Uhr` : '✅ Eingecheckt'}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
