@@ -299,6 +299,9 @@ export interface Member {
   // Aktiver Buddy-Code (in Supabase gespeichert für Cross-Device)
   buddyCode?: { code: string; expiresAt: number };
 
+  // Eingehende Trainingspartner-Anfragen (in Supabase gespeichert)
+  buddyRequests?: BuddyRequest[];
+
   // Module die dieser Instructor unterrichten kann
   instructorModules?: string[];  // Array von Module-IDs
 

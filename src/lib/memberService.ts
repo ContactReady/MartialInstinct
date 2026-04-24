@@ -77,6 +77,7 @@ function rowToMember(row: DbRow): Member {
     quizProgress: reviveDates(row.quiz_progress || {}) as Member['quizProgress'],
     buddyCode: row.buddy_code as Member['buddyCode'],
     connections: (row.connections as string[]) || [],
+    buddyRequests: (row.buddy_requests as Member['buddyRequests']) || [],
   };
 }
 
@@ -117,6 +118,7 @@ function memberToRow(m: Member): DbRow {
     quiz_progress:         m.quizProgress || null,
     buddy_code:            m.buddyCode || null,
     connections:           m.connections || [],
+    buddy_requests:        m.buddyRequests || [],
     updated_at:            new Date().toISOString(),
   };
 }

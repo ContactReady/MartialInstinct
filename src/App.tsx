@@ -378,7 +378,7 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
 
 // ── Notifications Dropdown ─────────────────────────────────────────────────────
 const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { currentUser, notifications, markNotificationRead, clearNotifications } = useApp();
+  const { currentUser, notifications, markNotificationRead, clearNotifications, acceptBuddyRequest, rejectBuddyRequest } = useApp();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -429,7 +429,18 @@ const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) =
         )}
       </div>
       <div className="max-h-96 overflow-y-auto">
-        {userNotifs.length === 0 ? (
+        {/* Ausstehende Trainingspartner-Anfragen */}
+        {(currentUser?.buddyRequests ?? []).map(req => (
+          <div key={req.id} className="px-4 py-3 border-b border-gray-800/60 bg-red-950/20">
+            <div className="text-white text-sm font-semibold leading-tight">{req.fromMemberName}</div>
+            <div className="text-gray-400 text-xs mt-0.5">möchte sich als Trainingspartner verbinden</div>
+            <div className="flex gap-2 mt-2">
+              <button onClick={() => acceptBuddyRequest(req.id)} className="flex-1 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-xs font-semibold transition-colors">Annehmen</button>
+              <button onClick={() => rejectBuddyRequest(req.id)} className="flex-1 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded text-xs font-semibold transition-colors">Ablehnen</button>
+            </div>
+          </div>
+        ))}
+        {userNotifs.length === 0 && (currentUser?.buddyRequests ?? []).length === 0 ? (
           <div className="px-4 py-8 text-center">
             <div className="text-3xl mb-2">🔔</div>
             <p className="text-gray-500 text-sm">Keine Benachrichtigungen</p>
@@ -865,12 +876,13 @@ const AppContent: React.FC = () => {
 
   const isOwnerRole = ['head_instructor', 'admin'].includes(currentUser?.role ?? '');
   const isInstructorRole = ['instructor', 'assistant_instructor', 'full_instructor', 'head_instructor', 'admin'].includes(currentUser?.role ?? '');
+  const pendingBuddyCount = currentUser?.buddyRequests?.length ?? 0;
   const unreadCount = currentUser
     ? notifications.filter(n => !n.read && (
         n.oduserId === currentUser.id ||
         (n.oduserId === 'all-instructors' && isInstructorRole) ||
         (n.oduserId === 'all-owners' && isOwnerRole)
-      )).length
+      )).length + pendingBuddyCount
     : 0;
 
   // Sound bei neuer Benachrichtigung (wenn aktiviert)

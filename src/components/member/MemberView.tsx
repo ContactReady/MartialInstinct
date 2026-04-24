@@ -32,6 +32,8 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
     generateBuddyCode,
     sendBuddyRequest,
     acceptBuddyRequest,
+    rejectBuddyRequest,
+    disconnectBuddy,
     getPendingBuddyRequests,
     platformConfig,
     getModuleName,
@@ -954,17 +956,25 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
           <div className="space-y-4">
             {/* Eingehende Buddy-Anfragen */}
             {getPendingBuddyRequests().map(req => (
-              <div key={req.id} className="bg-gray-800/50 rounded-xl border border-red-800/40 p-4 flex items-center justify-between gap-3">
+              <div key={req.id} className="bg-gray-800/50 rounded-xl border border-red-800/40 p-4 space-y-2">
                 <div>
                   <p className="text-white text-sm font-semibold">{req.fromMemberName}</p>
                   <p className="text-gray-400 text-xs mt-0.5">möchte sich als Trainingspartner verbinden</p>
                 </div>
-                <button
-                  onClick={() => acceptBuddyRequest(req.id)}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm transition-all flex-shrink-0"
-                >
-                  Annehmen
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => acceptBuddyRequest(req.id)}
+                    className="flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm transition-all"
+                  >
+                    Annehmen
+                  </button>
+                  <button
+                    onClick={() => rejectBuddyRequest(req.id)}
+                    className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg font-semibold text-sm transition-all"
+                  >
+                    Ablehnen
+                  </button>
+                </div>
               </div>
             ))}
 
@@ -1080,18 +1090,24 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                       const isOnlineNow = m.onlineSince !== undefined || (nowTs - new Date(m.lastSeenAt).getTime()) < ONLINE_CUTOFF_MS;
                       const status = inTraining ? 'training' : isOnlineNow ? 'online' : 'offline';
                       return (
-                        <div key={m.id} onClick={() => setViewingMember(m)} className="rounded-xl border border-red-900/40 bg-red-950/20 px-4 py-3 flex items-center gap-3 cursor-pointer hover:border-red-700/50 transition-colors">
-                          <div className="relative flex-shrink-0">
+                        <div key={m.id} className="rounded-xl border border-red-900/40 bg-red-950/20 px-4 py-3 flex items-center gap-3">
+                          <div className="relative flex-shrink-0 cursor-pointer" onClick={() => setViewingMember(m)}>
                             {m.profileImage
                               ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" />
                               : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
                             <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900 ${status === 'training' ? 'bg-orange-400' : status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setViewingMember(m)}>
                             <div className="text-white font-semibold text-sm">{m.name}</div>
                             <div className="text-gray-500 text-xs">{status === 'training' ? 'Im Training' : status === 'online' ? 'Online' : 'Offline'}</div>
                           </div>
-                          <span className="text-red-700 text-xs">Partner</span>
+                          <button
+                            onClick={() => disconnectBuddy(m.id)}
+                            className="text-gray-600 hover:text-red-400 text-xs transition-colors flex-shrink-0"
+                            title="Verbindung trennen"
+                          >
+                            ✕
+                          </button>
                         </div>
                       );
                     })}

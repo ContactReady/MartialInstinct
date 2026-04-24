@@ -255,7 +255,9 @@ interface AppContextType {
   // Buddy System
   generateBuddyCode: () => string;
   sendBuddyRequest: (code: string) => Promise<{ ok: boolean; error?: string }>;
-  acceptBuddyRequest: (requestId: string) => void;
+  acceptBuddyRequest: (requestId: string) => Promise<void>;
+  rejectBuddyRequest: (requestId: string) => Promise<void>;
+  disconnectBuddy: (buddyId: string) => Promise<void>;
   getPendingBuddyRequests: () => BuddyRequest[];
   getBuddies: () => Member[];
 
@@ -880,6 +882,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             examRequests: fresh.examRequests,
             certificates: fresh.certificates,
             streak: fresh.streak,
+            connections: fresh.connections,
+            buddyRequests: fresh.buddyRequests,
             // Runtime-only Felder beibehalten:
             onlineSince: prev.onlineSince,
             lastSeenAt: prev.lastSeenAt,
@@ -3042,8 +3046,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // ── Buddy System ────────────────────────────────────────────────────────────
-  const BUDDY_CODES_KEY = 'mi_buddy_codes';
-  const BUDDY_REQUESTS_KEY = 'mi_buddy_requests';
 
   const generateBuddyCode = (): string => {
     if (!currentUser) return '';
@@ -3052,10 +3054,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       Array.from({ length: n }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
     const code = `${rand(3)}-${rand(3)}`;
     const expiresAt = Date.now() + 15 * 60 * 1000;
-    // Supabase: Code im Member-Datensatz speichern (Cross-Device)
     supabase.from('members').update({ buddy_code: { code, expiresAt }, updated_at: new Date().toISOString() }).eq('id', currentUser.id)
-      .then(({ error }) => { if (error) console.warn('[generateBuddyCode] Supabase error:', error.message); });
-    // Lokaler State für sofortiges UI-Feedback
+      .then(({ error }) => { if (error) console.warn('[generateBuddyCode]', error.message); });
     setMembers(prev => prev.map(m => m.id === currentUser.id ? { ...m, buddyCode: { code, expiresAt } } : m));
     return code;
   };
@@ -3065,75 +3065,84 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const normalizedCode = code.trim().toUpperCase();
     const now = Date.now();
     // Supabase: Member mit passendem Code suchen
-    const { data, error } = await supabase.from('members').select('id, name, buddy_code, connections').not('buddy_code', 'is', null);
-    if (error) return { ok: false, error: 'Verbindung fehlgeschlagen. Bitte erneut versuchen.' };
-    const match = (data ?? []).find((r: { id: string; buddy_code: { code: string; expiresAt: number } | null }) =>
+    const { data, error } = await supabase.from('members').select('id, name, buddy_code, buddy_requests').not('buddy_code', 'is', null);
+    if (error) return { ok: false, error: 'Verbindung fehlgeschlagen.' };
+    type MatchRow = { id: string; name: string; buddy_code: { code: string; expiresAt: number } | null; buddy_requests: BuddyRequest[] | null };
+    const match = (data ?? []).find((r: MatchRow) =>
       r.buddy_code?.code === normalizedCode && (r.buddy_code?.expiresAt ?? 0) > now
-    ) as { id: string; name: string; connections: string[] | null } | undefined;
+    ) as MatchRow | undefined;
     if (!match) return { ok: false, error: 'Code ungültig oder abgelaufen.' };
-    if (match.id === currentUser.id) return { ok: false, error: 'Du kannst nicht deinen eigenen Code eingeben.' };
+    if (match.id === currentUser.id) return { ok: false, error: 'Das ist dein eigener Code.' };
     if ((currentUser.connections ?? []).includes(match.id)) return { ok: false, error: 'Ihr seid bereits verbunden.' };
-
-    // Direkt verbinden — kein Bestätigungsschritt nötig
-    const myId = currentUser.id;
-    const theirId = match.id;
-    const myConnections = [...new Set([...(currentUser.connections ?? []), theirId])];
-    const theirConnections = [...new Set([...(match.connections ?? []), myId])];
-
-    // Supabase: beide Members updaten
-    await Promise.all([
-      supabase.from('members').update({ connections: myConnections, updated_at: new Date().toISOString() }).eq('id', myId),
-      supabase.from('members').update({ connections: theirConnections, updated_at: new Date().toISOString() }).eq('id', theirId),
-    ]);
-
-    // Lokaler State
-    setCurrentUser(prev => prev ? { ...prev, connections: myConnections } : null);
-    setMembers(prev => prev.map(m => {
-      if (m.id === myId) return { ...m, connections: myConnections };
-      if (m.id === theirId) return { ...m, connections: theirConnections };
-      return m;
-    }));
-
-    // Notification für den Code-Ersteller
-    setNotifications(prev => [...prev, {
-      id: `notif-buddy-${now}`,
-      oduserId: theirId,
-      type: 'buddy_request' as const,
-      title: 'Neuer Trainingspartner',
-      message: `${currentUser.name} hat sich mit dir verbunden.`,
-      read: false,
-      createdAt: new Date(),
-    }]);
-
+    const existingReqs = match.buddy_requests ?? [];
+    if (existingReqs.some(r => r.fromMemberId === currentUser.id && r.status === 'pending')) return { ok: true };
+    const newRequest: BuddyRequest = {
+      id: `br_${now}_${Math.random().toString(36).slice(2)}`,
+      fromMemberId: currentUser.id,
+      fromMemberName: currentUser.name,
+      toMemberId: match.id,
+      code: normalizedCode,
+      createdAt: now,
+      status: 'pending',
+    };
+    // Anfrage in A's buddy_requests in Supabase speichern
+    await supabase.from('members').update({
+      buddy_requests: [...existingReqs, newRequest],
+      updated_at: new Date().toISOString(),
+    }).eq('id', match.id);
     return { ok: true };
   };
 
-  const acceptBuddyRequest = (requestId: string): void => {
+  const acceptBuddyRequest = async (requestId: string): Promise<void> => {
     if (!currentUser) return;
-    const requests: BuddyRequest[] = JSON.parse(localStorage.getItem(BUDDY_REQUESTS_KEY) || '[]');
-    const request = requests.find(r => r.id === requestId && r.status === 'pending');
+    const request = (currentUser.buddyRequests ?? []).find(r => r.id === requestId);
     if (!request) return;
-    const updated = requests.map(r => r.id === requestId ? { ...r, status: 'accepted' as const } : r);
-    localStorage.setItem(BUDDY_REQUESTS_KEY, JSON.stringify(updated));
     const myId = currentUser.id;
     const theirId = request.fromMemberId;
+    const myConnections = [...new Set([...(currentUser.connections ?? []), theirId])];
+    const updatedRequests = (currentUser.buddyRequests ?? []).filter(r => r.id !== requestId);
+    // Ihre Verbindungen aus Supabase holen
+    const { data: theirData } = await supabase.from('members').select('connections').eq('id', theirId).single();
+    const theirConnections = [...new Set([...((theirData?.connections ?? []) as string[]), myId])];
+    await Promise.all([
+      supabase.from('members').update({ connections: myConnections, buddy_requests: updatedRequests, updated_at: new Date().toISOString() }).eq('id', myId),
+      supabase.from('members').update({ connections: theirConnections, updated_at: new Date().toISOString() }).eq('id', theirId),
+    ]);
+    setCurrentUser(prev => prev ? { ...prev, connections: myConnections, buddyRequests: updatedRequests } : null);
     setMembers(prev => prev.map(m => {
-      if (m.id === myId) return { ...m, connections: [...new Set([...(m.connections ?? []), theirId])] };
-      if (m.id === theirId) return { ...m, connections: [...new Set([...(m.connections ?? []), myId])] };
+      if (m.id === myId) return { ...m, connections: myConnections, buddyRequests: updatedRequests };
+      if (m.id === theirId) return { ...m, connections: theirConnections };
       return m;
     }));
-    setCurrentUser(prev => prev ? { ...prev, connections: [...new Set([...(prev.connections ?? []), theirId])] } : null);
+  };
+
+  const rejectBuddyRequest = async (requestId: string): Promise<void> => {
+    if (!currentUser) return;
+    const updatedRequests = (currentUser.buddyRequests ?? []).filter(r => r.id !== requestId);
+    await supabase.from('members').update({ buddy_requests: updatedRequests, updated_at: new Date().toISOString() }).eq('id', currentUser.id);
+    setCurrentUser(prev => prev ? { ...prev, buddyRequests: updatedRequests } : null);
+    setMembers(prev => prev.map(m => m.id === currentUser.id ? { ...m, buddyRequests: updatedRequests } : m));
+  };
+
+  const disconnectBuddy = async (buddyId: string): Promise<void> => {
+    if (!currentUser) return;
+    const myConnections = (currentUser.connections ?? []).filter(id => id !== buddyId);
+    const { data: theirData } = await supabase.from('members').select('connections').eq('id', buddyId).single();
+    const theirConnections = ((theirData?.connections ?? []) as string[]).filter(id => id !== currentUser.id);
+    await Promise.all([
+      supabase.from('members').update({ connections: myConnections, updated_at: new Date().toISOString() }).eq('id', currentUser.id),
+      supabase.from('members').update({ connections: theirConnections, updated_at: new Date().toISOString() }).eq('id', buddyId),
+    ]);
+    setCurrentUser(prev => prev ? { ...prev, connections: myConnections } : null);
+    setMembers(prev => prev.map(m => {
+      if (m.id === currentUser.id) return { ...m, connections: myConnections };
+      if (m.id === buddyId) return { ...m, connections: theirConnections };
+      return m;
+    }));
   };
 
   const getPendingBuddyRequests = (): BuddyRequest[] => {
-    if (!currentUser) return [];
-    const requests: BuddyRequest[] = JSON.parse(localStorage.getItem(BUDDY_REQUESTS_KEY) || '[]');
-    const cutoff = Date.now() - 15 * 60 * 1000;
-    return requests.filter(r =>
-      r.toMemberId === currentUser.id &&
-      r.status === 'pending' &&
-      r.createdAt > cutoff
-    );
+    return currentUser?.buddyRequests ?? [];
   };
 
   const getBuddies = (): Member[] => {
@@ -3277,6 +3286,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     generateBuddyCode,
     sendBuddyRequest,
     acceptBuddyRequest,
+    rejectBuddyRequest,
+    disconnectBuddy,
     getPendingBuddyRequests,
     getBuddies,
     getBadgeScale,

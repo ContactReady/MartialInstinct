@@ -171,6 +171,10 @@ export const InstructorView: React.FC = () => {
     updateTrainingUnits,
     trainingSessions,
     getProfileImgSettings,
+    disconnectBuddy,
+    acceptBuddyRequest,
+    rejectBuddyRequest,
+    getPendingBuddyRequests,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<Tab>(() => {
@@ -957,18 +961,18 @@ export const InstructorView: React.FC = () => {
                       const inTraining = checkIns.some(c => c.memberId === m.id && c.status === 'approved');
                       const status = inTraining ? 'training' : m.onlineSince !== undefined ? 'online' : 'offline';
                       return (
-                        <div key={m.id} onClick={() => setProfileMember(m)} className="rounded-xl border border-red-900/40 bg-red-950/20 px-4 py-3 flex items-center gap-3 cursor-pointer hover:border-red-700/50 transition-colors">
-                          <div className="relative flex-shrink-0">
+                        <div key={m.id} className="rounded-xl border border-red-900/40 bg-red-950/20 px-4 py-3 flex items-center gap-3">
+                          <div className="relative flex-shrink-0 cursor-pointer" onClick={() => setProfileMember(m)}>
                             {m.profileImage
                               ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" />
                               : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
                             <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900 ${status === 'training' ? 'bg-orange-400' : status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setProfileMember(m)}>
                             <div className="text-white font-semibold text-sm">{m.name}</div>
                             <div className="text-gray-500 text-xs">{status === 'training' ? 'Im Training' : status === 'online' ? 'Online' : 'Offline'}</div>
                           </div>
-                          <span className="text-red-700 text-xs">Verbunden</span>
+                          <button onClick={() => disconnectBuddy(m.id)} className="text-gray-600 hover:text-red-400 text-xs transition-colors flex-shrink-0" title="Verbindung trennen">✕</button>
                         </div>
                       );
                     })}
