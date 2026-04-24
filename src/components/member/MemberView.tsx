@@ -1062,6 +1062,18 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                       {String(Math.floor(buddyCodeSecondsLeft / 60)).padStart(2, '0')}:{String(buddyCodeSecondsLeft % 60).padStart(2, '0')}
                     </span>
                   </div>
+                  <div className="border-t border-gray-800 pt-2 space-y-1.5">
+                    {[
+                      'Schicke diesen Code an deinen Trainingspartner (15 Min. gültig)',
+                      'Trainingspartner gibt den Code bei sich ein und drückt Verbinden',
+                      'Du bestätigst die Anfrage — fertig, ihr seid verbunden',
+                    ].map((step, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <span className="text-red-500 font-bold text-xs mt-0.5 flex-shrink-0">{i + 1}.</span>
+                        <span className="text-gray-400 text-xs leading-snug">{step}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
