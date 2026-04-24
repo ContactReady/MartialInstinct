@@ -109,11 +109,10 @@ export const RankingList: React.FC<RankingListProps> = ({
   };
 
   const statusDot = (m: Member) => {
-    if (m.isCheckedIn) return <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />;
-    const lastSeen = m.lastSeenAt ? new Date(m.lastSeenAt).getTime() : 0;
-    const minutesAgo = (Date.now() - lastSeen) / 60000;
-    if (minutesAgo < 5)  return <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 animate-pulse" />;
-    if (minutesAgo < 15) return <span className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0" />;
+    if (checkIns.some(c => c.memberId === m.id && c.status === 'approved'))
+      return <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />;
+    if (m.onlineSince !== undefined)
+      return <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 animate-pulse" />;
     return <span className="w-2 h-2 rounded-full bg-gray-700 flex-shrink-0" />;
   };
 
@@ -212,7 +211,7 @@ export const RankingList: React.FC<RankingListProps> = ({
                           </span>
                         )}
                         {m.stopTheBleedCertified && (
-                          <span className="text-[9px] bg-red-900/40 text-red-400 border border-red-800/40 px-1.5 py-0.5 rounded font-semibold">STB</span>
+                          <span className="text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded font-semibold">STB</span>
                         )}
                       </div>
                       {/* Kapitel-Badge: Instructoren zeigen Rolle, Member zeigen Level */}
@@ -293,6 +292,9 @@ export const RankingList: React.FC<RankingListProps> = ({
                             <div className="text-[9px] text-gray-500 flex gap-2">
                               <span>T: {bTactics}/{blockMods.length}</span>
                               <span>C: {bCombat}/{blockMods.length}</span>
+                              {isInstructor && (
+                                <span>I: {blockMods.filter(mod => m.instructorModules?.includes(mod.id)).length}/{blockMods.length}</span>
+                              )}
                             </div>
                           </div>
                           <div className="space-y-0.5">
@@ -310,6 +312,16 @@ export const RankingList: React.FC<RankingListProps> = ({
                                   }`}>
                                     {prog.combat && <span className="text-white font-bold" style={{ fontSize: '7px' }}>C</span>}
                                   </div>
+                                  {isInstructor && (() => {
+                                    const instrDone = m.instructorModules?.includes(mod.id) ?? false;
+                                    return (
+                                      <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
+                                        instrDone ? 'bg-red-600 border-red-600' : 'border-gray-700'
+                                      }`}>
+                                        {instrDone && <span className="text-white font-bold" style={{ fontSize: '7px' }}>I</span>}
+                                      </div>
+                                    );
+                                  })()}
                                   <span className={`text-xs truncate ${
                                     prog.combat ? 'text-white' : prog.tactics ? 'text-gray-300' : 'text-gray-600'
                                   }`}>
@@ -334,7 +346,6 @@ export const RankingList: React.FC<RankingListProps> = ({
       <div className="flex items-center gap-3 text-[10px] text-gray-600 pt-1 flex-wrap">
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> Beim Training</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> Online</span>
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> Inaktiv</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-700 inline-block" /> Offline</span>
         <span className="flex items-center gap-1">
           <span className="w-3.5 h-3.5 rounded-full bg-gray-600 inline-flex items-center justify-center text-[7px] font-bold text-gray-900">T</span> Tactics

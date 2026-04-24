@@ -521,19 +521,19 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
         {/* ── Stats-Kacheln ── */}
         <div className="grid grid-cols-2 gap-2">
           {/* Streak */}
-          <div className="bg-gradient-to-b from-orange-900/40 to-orange-900/20 rounded-xl p-3 border border-orange-800/40 flex items-center gap-3">
+          <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 flex items-center gap-3">
             <div className="text-2xl leading-none">🔥</div>
             <div>
-              <div className="text-2xl font-black text-orange-400 leading-none">{currentUser.streak.currentStreak}</div>
-              <div className="text-[10px] text-orange-300/60 mt-0.5">Streak Wochen</div>
+              <div className="text-2xl font-black text-white leading-none">{currentUser.streak.currentStreak}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">Streak Wochen</div>
             </div>
           </div>
           {/* XP Total */}
           <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/80 flex items-center gap-3">
             <div className="text-2xl leading-none">⭐</div>
             <div>
-              <div className="text-2xl font-black text-yellow-400 leading-none">{(currentUser.xp ?? 0).toLocaleString('de-DE')}</div>
-              <div className="text-[10px] text-yellow-500/60 mt-0.5">XP Gesamt</div>
+              <div className="text-2xl font-black text-white leading-none">{(currentUser.xp ?? 0).toLocaleString('de-DE')}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">XP Gesamt</div>
             </div>
           </div>
           {/* Tactics bestanden */}
@@ -569,18 +569,14 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
             </div>
           )}
           {/* Bandaids — volle Breite */}
-          <div className={`col-span-2 rounded-xl p-3 border flex items-center gap-3 ${
-            currentUser.streak.bandaids > 0 ? 'bg-green-900/20 border-green-800/40' : 'bg-gray-800/50 border-gray-700/80'
-          }`}>
+          <div className="col-span-2 rounded-xl p-3 border bg-gray-800/50 border-gray-700/80 flex items-center gap-3">
             <div className="text-2xl leading-none">🩹</div>
             <div className="flex-1">
-              <div className={`text-lg font-black leading-none flex items-baseline gap-1 ${
-                currentUser.streak.bandaids > 0 ? 'text-green-400' : 'text-gray-500'
-              }`}>
+              <div className="text-lg font-black leading-none flex items-baseline gap-1 text-white">
                 {currentUser.streak.bandaids}
-                <span className="text-sm font-medium opacity-50">/ {currentUser.streak.maxBandaids}</span>
+                <span className="text-sm font-medium text-gray-500">/ {currentUser.streak.maxBandaids}</span>
               </div>
-              <div className={`text-[10px] mt-0.5 ${currentUser.streak.bandaids > 0 ? 'text-green-500/70' : 'text-gray-600'}`}>
+              <div className="text-[10px] mt-0.5 text-gray-500">
                 Bandaids verfügbar
               </div>
             </div>
@@ -588,7 +584,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
             <div className="w-20 flex-shrink-0">
               <div className="bg-gray-900/60 rounded-full h-1">
                 <div
-                  className="bg-green-500 h-1 rounded-full transition-all"
+                  className="bg-gray-500 h-1 rounded-full transition-all"
                   style={{ width: `${currentUser.streak.maxBandaids > 0 ? Math.round((currentUser.streak.bandaids / currentUser.streak.maxBandaids) * 100) : 0}%` }}
                 />
               </div>
@@ -1140,7 +1136,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                       const isOnlineNow = m.onlineSince !== undefined;
                       const status = inTraining ? 'training' : isOnlineNow ? 'online' : 'offline';
                       return (
-                        <div key={m.id} className="rounded-xl border border-red-900/40 bg-red-950/20 px-4 py-3 flex items-center gap-3">
+                        <div key={m.id} className="rounded-xl border border-gray-700 bg-gray-800/50 px-4 py-3 flex items-center gap-3">
                           <div className="relative flex-shrink-0 cursor-pointer" onClick={() => setViewingMember(m)}>
                             {m.profileImage
                               ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" />
