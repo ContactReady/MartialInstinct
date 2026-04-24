@@ -239,6 +239,7 @@ export const InstructorView: React.FC = () => {
   const [coreLastName, setCoreLastName] = useState('');
   const [coreBirthDate, setCoreBirthDate] = useState('');
   const [coreMemberId, setCoreMemberId] = useState('');
+  const [coreLevel, setCoreLevel] = useState<import('../../types').ModuleLevel>('conflict');
 
   // Modul-Verwaltung State
   const [localModuleOrder, setLocalModuleOrder] = useState<ModuleOrder[]>([]);
@@ -2829,6 +2830,7 @@ export const InstructorView: React.FC = () => {
                               setCoreLastName(m.lastName ?? '');
                               setCoreBirthDate(m.birthDate ?? '');
                               setCoreMemberId(m.memberId ?? '');
+                              setCoreLevel(m.currentLevel);
                               setStreakRestoreValue(m.streak.currentStreak);
                               setStreakRestoreReason('');
                               setCoreDataSaveState('idle');
@@ -2926,22 +2928,33 @@ export const InstructorView: React.FC = () => {
                           <label className="text-xs text-gray-500 block mb-1">Geburtsdatum</label>
                           <input type="date" value={coreBirthDate} onChange={e => { setCoreBirthDate(e.target.value); setCoreDataSaveState('dirty'); setCoreDataPendingClose(false); }} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500" />
                         </div>
+                        <div>
+                          <label className="text-xs text-gray-500 block mb-1">Status</label>
+                          <select value={coreLevel} onChange={e => { setCoreLevel(e.target.value as import('../../types').ModuleLevel); setCoreDataSaveState('dirty'); setCoreDataPendingClose(false); }} className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-red-500">
+                            <option value="conflict">Conflict Ready · Beginner</option>
+                            <option value="combat">Combat Ready · Advanced</option>
+                            <option value="tactical">Tactical Ready · Specialist</option>
+                            <option value="contact">Contact Ready · Operator</option>
+                            <option value="assistant_instructor">Assistant Instructor</option>
+                            <option value="instructor_level">Instructor</option>
+                          </select>
+                        </div>
                       </div>
                       {coreDataPendingClose && (
                         <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-3 py-2.5 flex items-center justify-between gap-3">
                           <span className="text-xs text-yellow-400">⚠ Nicht gespeicherte Änderungen</span>
                           <div className="flex gap-2 flex-shrink-0">
                             <button onClick={() => { setCoreDataPendingClose(false); setCoreDataSaveState('idle'); }} className="text-xs px-2.5 py-1 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all">Verwerfen</button>
-                            <button onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined }); setCoreDataPendingClose(false); setCoreDataSaveState('saved'); }} className="text-xs px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-all">Speichern</button>
+                            <button onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined, currentLevel: coreLevel }); setCoreDataPendingClose(false); setCoreDataSaveState('saved'); setTimeout(() => setCoreDataSaveState('idle'), 3000); }} className="text-xs px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-all">Speichern</button>
                           </div>
                         </div>
                       )}
                       <button
                         disabled={coreDataSaveState !== 'dirty'}
-                        onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined }); setCoreDataSaveState('saved'); }}
+                        onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined, currentLevel: coreLevel }); setCoreDataSaveState('saved'); setTimeout(() => setCoreDataSaveState('idle'), 3000); }}
                         className={`w-full py-2 rounded-lg text-sm font-medium transition-all ${
                           coreDataSaveState === 'saved' ? 'bg-green-600 text-white cursor-default' :
-                          coreDataSaveState === 'dirty' ? 'bg-gray-600 hover:bg-gray-500 text-white' :
+                          coreDataSaveState === 'dirty' ? 'bg-red-600 hover:bg-red-500 text-white' :
                           'bg-gray-700 text-gray-500 cursor-not-allowed'
                         }`}
                       >
