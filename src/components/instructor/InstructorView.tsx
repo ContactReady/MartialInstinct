@@ -415,14 +415,10 @@ export const InstructorView: React.FC = () => {
     const now = new Date();
     const todayStr = now.toDateString();
 
-    // Online-Status: onlineSince gesetzt = aktiv eingeloggt
-    // Inaktiv: lastSeenAt < 10 Min her, aber kein onlineSince
-    const INACTIVE_CUTOFF = 10 * 60 * 1000;
+    // Online-Status: onlineSince gesetzt = online
     const isOnline = (m: typeof members[0]) => !!m.onlineSince;
-    const isInactive = (m: typeof members[0]) =>
-      !m.onlineSince && (now.getTime() - new Date(m.lastSeenAt).getTime()) < INACTIVE_CUTOFF;
 
-    const onlineMembers = getOnlineMembers().filter(m => isOnline(m) || isInactive(m));
+    const onlineMembers = getOnlineMembers().filter(m => isOnline(m));
 
     const instructorRoles = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'admin'];
     const onlineInstructors = onlineMembers.filter(m => instructorRoles.includes(m.role));
@@ -442,8 +438,8 @@ export const InstructorView: React.FC = () => {
       return `seit ${Math.floor(mins / 60)} Std`;
     };
 
-    const OnlineDot = ({ member }: { member: typeof members[0] }) => (
-      <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${isOnline(member) ? 'bg-green-400' : 'bg-yellow-400'}`} />
+    const OnlineDot = ({ member: _member }: { member: typeof members[0] }) => (
+      <span className="inline-block w-2 h-2 rounded-full flex-shrink-0 bg-green-400" />
     );
 
     return (
@@ -545,14 +541,6 @@ export const InstructorView: React.FC = () => {
                 )}
               </div>
             )}
-            <div className="px-4 py-2 border-t border-gray-700/40 flex items-center gap-4">
-              <span className="flex items-center gap-1.5 text-xs text-gray-500">
-                <span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> Aktiv
-              </span>
-              <span className="flex items-center gap-1.5 text-xs text-gray-500">
-                <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> Inaktiv (&lt;10 Min)
-              </span>
-            </div>
           </div>
         )}
 

@@ -794,14 +794,9 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
       return true; // 'all' → sichtbar für jeden
     });
 
-    const ONLINE_CUTOFF_MS = 10 * 60 * 1000; // 10 Min — konsistent mit InstructorView
-    const nowTs = Date.now();
     const nowDate = new Date();
     const isActive = (m: typeof visibleMembers[0]) => m.id === currentUser.id || !!m.onlineSince;
-    const isInactive = (m: typeof visibleMembers[0]) =>
-      !m.onlineSince && m.id !== currentUser.id &&
-      (nowTs - new Date(m.lastSeenAt).getTime()) < ONLINE_CUTOFF_MS;
-    const onlineConnected = visibleMembers.filter(m => isActive(m) || isInactive(m));
+    const onlineConnected = visibleMembers.filter(m => isActive(m));
     const trainingConnected = visibleMembers.filter(m => checkIns.some(c => c.memberId === m.id && c.status === 'approved'));
 
     const instructorRoles = ['assistant_instructor', 'instructor', 'full_instructor', 'head_instructor', 'admin'];
@@ -818,8 +813,8 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
       return `seit ${Math.floor(mins / 60)} Std`;
     };
 
-    const OnlineDot = ({ member }: { member: typeof visibleMembers[0] }) => (
-      <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${isActive(member) ? 'bg-green-400' : 'bg-yellow-400'}`} />
+    const OnlineDot = ({ member: _member }: { member: typeof visibleMembers[0] }) => (
+      <span className="inline-block w-2 h-2 rounded-full flex-shrink-0 bg-green-400" />
     );
 
     return (
@@ -905,14 +900,6 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                 )}
               </div>
             )}
-            <div className="px-4 py-2 border-t border-gray-700/40 flex items-center gap-4">
-              <span className="flex items-center gap-1.5 text-xs text-gray-500">
-                <span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> Aktiv
-              </span>
-              <span className="flex items-center gap-1.5 text-xs text-gray-500">
-                <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> Inaktiv (&lt;10 Min)
-              </span>
-            </div>
           </div>
         )}
 
@@ -1087,7 +1074,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                   <div className="space-y-2">
                     {myPartners.map(m => {
                       const inTraining = checkIns.some(c => c.memberId === m.id && c.status === 'approved');
-                      const isOnlineNow = m.onlineSince !== undefined || (nowTs - new Date(m.lastSeenAt).getTime()) < ONLINE_CUTOFF_MS;
+                      const isOnlineNow = m.onlineSince !== undefined;
                       const status = inTraining ? 'training' : isOnlineNow ? 'online' : 'offline';
                       return (
                         <div key={m.id} className="rounded-xl border border-red-900/40 bg-red-950/20 px-4 py-3 flex items-center gap-3">
@@ -1129,7 +1116,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                 <div className="space-y-2">
                   {visibleMembers.map(m => {
                     const isMe = m.id === currentUser.id;
-                    const isOnlineNow = isMe || m.onlineSince !== undefined || (nowTs - new Date(m.lastSeenAt).getTime()) < ONLINE_CUTOFF_MS;
+                    const isOnlineNow = isMe || m.onlineSince !== undefined;
                     const status = checkIns.some(c => c.memberId === m.id && c.status === 'approved') ? 'training' : isOnlineNow ? 'online' : 'offline';
                     return (
                       <div key={m.id} className={`rounded-xl border px-4 py-3 flex items-center gap-3 cursor-pointer ${isMe ? 'bg-gray-700/60 border-gray-600' : 'bg-gray-800/50 border-gray-700'}`} onClick={() => setViewingMember(m)}>

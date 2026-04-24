@@ -987,8 +987,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     };
     fetchCheckIns();
-    const interval = setInterval(fetchCheckIns, 20_000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchCheckIns, 5_000);
+    // Re-fetch sofort wenn User in die App zurückkehrt (Tab-Wechsel)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') fetchCheckIns();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ============================================
