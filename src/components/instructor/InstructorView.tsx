@@ -240,6 +240,7 @@ export const InstructorView: React.FC = () => {
   const [coreBirthDate, setCoreBirthDate] = useState('');
   const [coreMemberId, setCoreMemberId] = useState('');
   const [coreLevel, setCoreLevel] = useState<import('../../types').ModuleLevel>('conflict');
+  const [coreRole, setCoreRole] = useState<import('../../types').InstructorRole>('member');
 
   // Modul-Verwaltung State
   const [localModuleOrder, setLocalModuleOrder] = useState<ModuleOrder[]>([]);
@@ -2831,6 +2832,7 @@ export const InstructorView: React.FC = () => {
                               setCoreBirthDate(m.birthDate ?? '');
                               setCoreMemberId(m.memberId ?? '');
                               setCoreLevel(m.currentLevel);
+                              setCoreRole(m.role);
                               setStreakRestoreValue(m.streak.currentStreak);
                               setStreakRestoreReason('');
                               setCoreDataSaveState('idle');
@@ -2872,8 +2874,8 @@ export const InstructorView: React.FC = () => {
                           <div>
                             <label className="text-xs text-gray-500 block mb-1">Rolle</label>
                             <select
-                              value={m.role}
-                              onChange={e => updateMemberRole(m.id, e.target.value as InstructorRole)}
+                              value={coreRole}
+                              onChange={e => { setCoreRole(e.target.value as import('../../types').InstructorRole); setCoreDataSaveState('dirty'); setCoreDataPendingClose(false); }}
                               className="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-red-500"
                             >
                               {roleOptions.map(opt => (
@@ -2945,13 +2947,13 @@ export const InstructorView: React.FC = () => {
                           <span className="text-xs text-yellow-400">⚠ Nicht gespeicherte Änderungen</span>
                           <div className="flex gap-2 flex-shrink-0">
                             <button onClick={() => { setCoreDataPendingClose(false); setCoreDataSaveState('idle'); }} className="text-xs px-2.5 py-1 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all">Verwerfen</button>
-                            <button onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined, currentLevel: coreLevel }); setCoreDataPendingClose(false); setCoreDataSaveState('saved'); setTimeout(() => setCoreDataSaveState('idle'), 3000); }} className="text-xs px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-all">Speichern</button>
+                            <button onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined, currentLevel: coreLevel }); updateMemberRole(m.id, coreRole); setCoreDataPendingClose(false); setCoreDataSaveState('saved'); setTimeout(() => setCoreDataSaveState('idle'), 3000); }} className="text-xs px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-all">Speichern</button>
                           </div>
                         </div>
                       )}
                       <button
                         disabled={coreDataSaveState !== 'dirty'}
-                        onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined, currentLevel: coreLevel }); setCoreDataSaveState('saved'); setTimeout(() => setCoreDataSaveState('idle'), 3000); }}
+                        onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined, currentLevel: coreLevel }); updateMemberRole(m.id, coreRole); setCoreDataSaveState('saved'); setTimeout(() => setCoreDataSaveState('idle'), 3000); }}
                         className={`w-full py-2 rounded-lg text-sm font-medium transition-all ${
                           coreDataSaveState === 'saved' ? 'bg-green-600 text-white cursor-default' :
                           coreDataSaveState === 'dirty' ? 'bg-red-600 hover:bg-red-500 text-white' :
