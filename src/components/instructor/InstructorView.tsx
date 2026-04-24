@@ -241,6 +241,7 @@ export const InstructorView: React.FC = () => {
   const [coreMemberId, setCoreMemberId] = useState('');
   const [coreLevel, setCoreLevel] = useState<import('../../types').ModuleLevel>('conflict');
   const [coreRole, setCoreRole] = useState<import('../../types').InstructorRole>('member');
+  const [bandaidFeedbackId, setBandaidFeedbackId] = useState<string | null>(null);
 
   // Modul-Verwaltung State
   const [localModuleOrder, setLocalModuleOrder] = useState<ModuleOrder[]>([]);
@@ -1085,7 +1086,13 @@ export const InstructorView: React.FC = () => {
                             <div className="mt-0.5">{statusLabel(status, member)}</div>
                           </div>
                           <div className="flex gap-1.5 flex-shrink-0">
-                            <button onClick={() => awardBandaid(member.id, 'Instructor Bonus')} className="bg-gray-700/60 hover:bg-gray-700 text-gray-300 px-2.5 py-1.5 rounded-lg text-xs transition-all" title="Pflaster vergeben">🩹+</button>
+                            <button
+                              onClick={() => { awardBandaid(member.id, 'Instructor Bonus'); setBandaidFeedbackId(member.id); setTimeout(() => setBandaidFeedbackId(null), 2000); }}
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${bandaidFeedbackId === member.id ? 'bg-green-600 text-white' : 'bg-gray-700/60 hover:bg-gray-700 text-gray-300'}`}
+                              title="Pflaster vergeben"
+                            >
+                              {bandaidFeedbackId === member.id ? '✓ Pflaster' : '🩹 +'}
+                            </button>
                             <button onClick={() => setProfileMember(member)} className="bg-gray-700/60 hover:bg-gray-700 text-gray-300 px-2.5 py-1.5 rounded-lg text-xs transition-all" title="Profil anzeigen">👤</button>
                             <button onClick={() => { setSelectedMember(member); setActiveTab('dashboard'); setDashboardSubTab('bewerten'); }} className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all">Bewerten</button>
                           </div>
@@ -1158,12 +1165,8 @@ export const InstructorView: React.FC = () => {
             ← Zurück zu Mitgliedern
           </button>
           
-          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 flex items-center gap-4">
-            <span className="text-3xl">{selectedMember.avatar}</span>
-            <div>
-              <div className="font-bold text-white">{selectedMember.name}</div>
-              <div className="text-gray-400">{LEVEL_DISPLAY[selectedMember.currentLevel].subtitle}</div>
-            </div>
+          <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+            <div className="font-bold text-white">{selectedMember.name}</div>
           </div>
 
           <h3 className="text-lg font-bold text-white">Modul auswählen</h3>
@@ -1177,12 +1180,9 @@ export const InstructorView: React.FC = () => {
             
             return (
               <div key={block.id} className={`${block.bgColor} rounded-xl p-4 border ${block.borderColor}`}>
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-2xl">{block.icon}</span>
-                  <div>
-                    <div className={`font-bold ${block.color}`}>{block.name}</div>
-                    <div className="text-gray-400 text-sm">{progress.completed}/{progress.total} Techniken</div>
-                  </div>
+                <div className="mb-4">
+                  <div className={`font-bold ${block.color}`}>{block.name}</div>
+                  <div className="text-gray-400 text-sm">{progress.completed}/{progress.total} Techniken</div>
                 </div>
                 <div className="space-y-2">
                   {blockModules.map(module => (
@@ -1191,10 +1191,7 @@ export const InstructorView: React.FC = () => {
                       onClick={() => setSelectedModule(module.id)}
                       className="w-full bg-gray-800/50 rounded-lg p-3 flex items-center justify-between hover:bg-gray-700/50 transition-all text-left"
                     >
-                      <div className="flex items-center gap-3">
-                        <span>{module.icon}</span>
-                        <span className="text-white">{getModuleName(module.id)}</span>
-                      </div>
+                      <span className="text-white">{getModuleName(module.id)}</span>
                       <span className="text-gray-400">→</span>
                     </button>
                   ))}
