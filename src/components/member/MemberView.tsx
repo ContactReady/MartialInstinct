@@ -888,8 +888,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
           <div className="px-4 pb-3 flex flex-wrap gap-x-5 gap-y-1 text-xs border-t border-gray-700/40 pt-2">
             <span><span className="text-gray-600">Zuletzt online:</span> <span className="text-gray-400">{formatDT(m.lastSeenAt)}</span></span>
             <span><span className="text-gray-600">Letztes Training:</span> <span className="text-gray-400">{formatDT(m.streak?.lastTrainingDate)}</span></span>
-            <span className="text-gray-400">🔥 {m.streak?.currentStreak ?? 0} Wo.</span>
-            <span className="text-gray-400">🩹 {m.streak?.bandaids ?? 0}/{m.streak?.maxBandaids ?? 2}</span>
+            <span className="text-gray-400">🔥 {m.streak?.currentStreak ?? 0} Wo. · 🩹 {m.streak?.bandaids ?? 0}/{m.streak?.maxBandaids ?? 2}</span>
           </div>
         </div>
       );

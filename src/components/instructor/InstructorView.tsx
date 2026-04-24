@@ -1100,8 +1100,7 @@ export const InstructorView: React.FC = () => {
                         <div className="px-4 pb-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500 border-t border-gray-700/40 pt-2">
                           <span><span className="text-gray-600">Zuletzt online:</span> <span className="text-gray-400">{formatDateTime(member.lastSeenAt)}</span></span>
                           <span><span className="text-gray-600">Letztes Training:</span> <span className="text-gray-400">{formatDateTime(member.streak.lastTrainingDate)}</span></span>
-                          <span className="flex items-center gap-1">🔥 <span className="text-gray-400">{member.streak.currentStreak} Wochen</span></span>
-                          <span className="flex items-center gap-1">🩹 <span className="text-gray-400">{member.streak.bandaids}/{member.streak.maxBandaids}</span></span>
+                          <span className="text-gray-400">🔥 {member.streak.currentStreak} Wo. · 🩹 {member.streak.bandaids}/{member.streak.maxBandaids}</span>
                         </div>
                       </div>
                     );
@@ -2954,13 +2953,13 @@ export const InstructorView: React.FC = () => {
                           <span className="text-xs text-yellow-400">⚠ Nicht gespeicherte Änderungen</span>
                           <div className="flex gap-2 flex-shrink-0">
                             <button onClick={() => { setCoreDataPendingClose(false); setCoreDataSaveState('idle'); }} className="text-xs px-2.5 py-1 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all">Verwerfen</button>
-                            <button onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined, currentLevel: coreLevel }); updateMemberRole(m.id, coreRole); setCoreDataPendingClose(false); setCoreDataSaveState('saved'); setTimeout(() => setCoreDataSaveState('idle'), 3000); }} className="text-xs px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-all">Speichern</button>
+                            <button onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate, memberId: coreMemberId || undefined, currentLevel: coreLevel }); updateMemberRole(m.id, coreRole); setCoreDataPendingClose(false); setCoreDataSaveState('saved'); setTimeout(() => setCoreDataSaveState('idle'), 3000); }} className="text-xs px-2.5 py-1 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-all">Speichern</button>
                           </div>
                         </div>
                       )}
                       <button
                         disabled={coreDataSaveState !== 'dirty'}
-                        onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate || undefined, memberId: coreMemberId || undefined, currentLevel: coreLevel }); updateMemberRole(m.id, coreRole); setCoreDataSaveState('saved'); setTimeout(() => setCoreDataSaveState('idle'), 3000); }}
+                        onClick={() => { updateMemberCoreData(m.id, { name: coreName || undefined, firstName: coreFirstName, lastName: coreLastName, birthDate: coreBirthDate, memberId: coreMemberId || undefined, currentLevel: coreLevel }); updateMemberRole(m.id, coreRole); setCoreDataSaveState('saved'); setTimeout(() => setCoreDataSaveState('idle'), 3000); }}
                         className={`w-full py-2 rounded-lg text-sm font-medium transition-all ${
                           coreDataSaveState === 'saved' ? 'bg-green-600 text-white cursor-default' :
                           coreDataSaveState === 'dirty' ? 'bg-red-600 hover:bg-red-500 text-white' :
