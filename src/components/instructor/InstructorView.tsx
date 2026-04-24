@@ -945,6 +945,8 @@ export const InstructorView: React.FC = () => {
           const currModNums = [...new Set(listCurrMods.map(m => m.number))]; // [1..10]
           const getMemberModsDone = (member: Member) => {
             let tactics = 0, combat = 0;
+            const instrModIds = new Set(member.instructorModules ?? []);
+            const instructor = listCurrMods.filter(m => instrModIds.has(m.id)).length;
             currModNums.forEach(num => {
               const variants = listCurrMods.filter(m => m.number === num);
               const tacDone = variants.some(mod => {
@@ -958,7 +960,7 @@ export const InstructorView: React.FC = () => {
               if (tacDone) tactics++;
               if (cmbtDone) combat++;
             });
-            return { tactics, combat };
+            return { tactics, combat, instructor };
           };
 
           // Meine Verbindungen
@@ -984,9 +986,17 @@ export const InstructorView: React.FC = () => {
             if (status === 'online') return <span className="w-3 h-3 rounded-full bg-green-400 flex-shrink-0 inline-block animate-pulse" />;
             return <span className="w-3 h-3 rounded-full bg-gray-600 flex-shrink-0 inline-block" />;
           };
-          const statusLabel = (status: 'training' | 'checkedIn' | 'online' | 'offline') => {
-            if (status === 'training') return <span className="text-orange-400 text-xs font-medium">🥋 Im Training</span>;
-            if (status === 'checkedIn') return <span className="text-yellow-400 text-xs font-medium">✅ Eingecheckt</span>;
+          const statusLabel = (status: 'training' | 'checkedIn' | 'online' | 'offline', member?: Member) => {
+            if (status === 'training') return <span className="text-orange-400 text-xs font-medium">Im Training</span>;
+            if (status === 'checkedIn') {
+              let label = 'Eingecheckt';
+              if (member) {
+                const ci = checkIns.find(c => c.memberId === member.id && c.status === 'approved');
+                const unit = ci?.unitId ? trainingUnits.find(u => u.id === ci.unitId) : undefined;
+                if (unit) label = `Eingecheckt · ${unit.name} · ${unit.startTime} Uhr`;
+              }
+              return <span className="text-yellow-400 text-xs font-medium">{label}</span>;
+            }
             if (status === 'online') return <span className="text-green-400 text-xs font-medium">Online</span>;
             return <span className="text-gray-500 text-xs">Offline</span>;
           };
@@ -1064,15 +1074,15 @@ export const InstructorView: React.FC = () => {
                       <div key={member.id} className={`bg-gray-800/50 rounded-xl border transition-all ${status === 'training' ? 'border-orange-500/30' : status === 'checkedIn' ? 'border-yellow-600/30' : status === 'online' ? 'border-green-500/20' : 'border-gray-700'}`}>
                         <div className="px-4 py-3 flex items-center gap-3">
                           <StatusDot status={status} />
-                          <span className="text-2xl flex-shrink-0">{member.avatar}</span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-white font-semibold text-sm">{member.name}</span>
-                              <span className={`text-xs ${LEVEL_DISPLAY[member.currentLevel].color}`}>{LEVEL_DISPLAY[member.currentLevel].icon} {LEVEL_DISPLAY[member.currentLevel].subtitle}</span>
-                              <span className="text-gray-600 text-xs">T: {mods.tactics} · C: {mods.combat} Module</span>
-                              {member.stopTheBleedCertified && <span className="text-red-400 text-xs">🩸 STB</span>}
+                              <span className="text-gray-500 text-xs">
+                                T: {mods.tactics} · C: {mods.combat}{member.role !== 'member' ? ` · I: ${mods.instructor}` : ''} Module
+                              </span>
+                              {member.stopTheBleedCertified && <span className="text-red-400 text-xs">STB</span>}
                             </div>
-                            <div className="mt-0.5">{statusLabel(status)}</div>
+                            <div className="mt-0.5">{statusLabel(status, member)}</div>
                           </div>
                           <div className="flex gap-1.5 flex-shrink-0">
                             <button onClick={() => awardBandaid(member.id, 'Instructor Bonus')} className="bg-gray-700/60 hover:bg-gray-700 text-gray-300 px-2.5 py-1.5 rounded-lg text-xs transition-all" title="Pflaster vergeben">🩹+</button>
