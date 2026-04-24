@@ -274,11 +274,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
 
         {/* ── Check-In ── */}
         <div className="sticky top-[var(--mi-header-h)] z-20 bg-gray-950 -mx-4 px-4 pt-2 pb-2">
-        <div className={`rounded-xl border transition-all ${
-          inTraining        ? 'bg-green-900/20 border-green-600/40'
-          : checkedInNotStarted ? 'bg-yellow-900/20 border-yellow-600/40'
-          : 'bg-gray-800/50 border-gray-700'
-        }`}>
+        <div className="rounded-xl border transition-all bg-gray-800/50 border-gray-700">
           <div className="px-4 py-3 flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="text-sm font-bold text-white">Trainings Check-In</div>
@@ -973,7 +969,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                       const ci = checkIns.find(c => c.memberId === m.id && c.status === 'approved');
                       const unit = ci?.unitId ? trainingUnits.find(u => u.id === ci.unitId) : undefined;
                       return (
-                        <div key={m.id} className="bg-yellow-900/10 rounded-xl border border-yellow-800/30 px-4 py-3 flex items-center gap-3 mb-2 cursor-pointer" onClick={() => setViewingMember(m)}>
+                        <div key={m.id} className="bg-gray-800/50 rounded-xl border border-gray-700 px-4 py-3 flex items-center gap-3 mb-2 cursor-pointer" onClick={() => setViewingMember(m)}>
                           <div className="relative flex-shrink-0">
                             {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
                             <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-yellow-400 rounded-full border border-gray-900" />
