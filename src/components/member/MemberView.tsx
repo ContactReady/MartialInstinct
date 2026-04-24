@@ -292,11 +292,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                       : 'Sei heute dabei!'}
               </div>
             </div>
-            {inTraining ? (
-              <span className="text-green-400 text-xs font-bold flex-shrink-0">🥋 Dabei</span>
-            ) : checkedInNotStarted ? (
-              <span className="text-yellow-400 text-xs font-bold flex-shrink-0">✅ Dabei</span>
-            ) : checkInStatus === 'pending' ? (
+            {(inTraining || checkedInNotStarted) ? null : checkInStatus === 'pending' ? (
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
                 <button
@@ -488,7 +484,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
         {dashboardSubTab === 'fortschritt' && <>
 
         {/* ── Level-Banner ── */}
-        <div className={`${levelInfo.bgColor} rounded-xl border border-gray-700 p-4`}>
+        <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
           <div className="flex items-center gap-3 mb-3">
             <span className="text-3xl leading-none">{levelInfo.icon}</span>
             <div className="flex-1 min-w-0">
