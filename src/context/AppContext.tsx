@@ -1741,20 +1741,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       reason,
       date: new Date()
     };
-    
-    setMembers(prev => prev.map(m => 
-      m.id === memberId
-        ? {
-            ...m,
-            streak: {
-              ...m.streak,
-              bandaids: Math.min(m.streak.bandaids + 1, m.streak.maxBandaids),
-              bandaidHistory: [...m.streak.bandaidHistory, event]
-            }
-          }
-        : m
-    ));
-    
+
+    const target = members.find(m => m.id === memberId);
+    if (!target) return;
+
+    const newStreak = {
+      ...target.streak,
+      bandaids: Math.min(target.streak.bandaids + 1, target.streak.maxBandaids),
+      bandaidHistory: [...target.streak.bandaidHistory, event]
+    };
+
+    setMembers(prev => prev.map(m => m.id === memberId ? { ...m, streak: newStreak } : m));
+    updateMemberFields(memberId, { streak: newStreak });
+
     // Notify member
     const memberNotification: Notification = {
       id: `notif-${Date.now()}`,
@@ -1766,7 +1765,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       createdAt: new Date()
     };
     setNotifications(prev => [...prev, memberNotification]);
-  }, []);
+  }, [members]);
 
   // ============================================
   // BOARD MESSAGES
@@ -2933,7 +2932,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (data.name !== undefined) updated.name = data.name;
       if (data.firstName !== undefined) updated.firstName = data.firstName;
       if (data.lastName !== undefined) updated.lastName = data.lastName;
-      if (data.birthDate !== undefined) updated.birthDate = data.birthDate;
+      if (data.birthDate !== undefined) updated.birthDate = data.birthDate || undefined;
       if (data.memberId !== undefined) updated.memberId = data.memberId;
       if (data.currentLevel !== undefined) updated.currentLevel = data.currentLevel;
       return updated;
@@ -2943,7 +2942,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (data.name !== undefined) fields['name'] = data.name;
     if (data.firstName !== undefined) fields['first_name'] = data.firstName;
     if (data.lastName !== undefined) fields['last_name'] = data.lastName;
-    if (data.birthDate !== undefined) fields['birth_date'] = data.birthDate;
+    if (data.birthDate !== undefined) fields['birth_date'] = data.birthDate || null;
     if (data.memberId !== undefined) fields['member_id'] = data.memberId;
     if (data.currentLevel !== undefined) fields['current_level'] = data.currentLevel;
     if (Object.keys(fields).length > 0) updateMemberFields(memberId, fields);

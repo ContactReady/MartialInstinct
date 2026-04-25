@@ -1130,7 +1130,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                       const isOnlineNow = m.onlineSince !== undefined;
                       const status = inTraining ? 'training' : isOnlineNow ? 'online' : 'offline';
                       return (
-                        <div key={m.id} className="rounded-xl border border-gray-700 bg-gray-800/50 px-4 py-3 flex items-center gap-3">
+                        <div key={m.id} className="rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 flex items-center gap-3">
                           <div className="relative flex-shrink-0 cursor-pointer" onClick={() => setViewingMember(m)}>
                             {m.profileImage
                               ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" />
