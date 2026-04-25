@@ -420,7 +420,7 @@ export const InstructorView: React.FC = () => {
     const todayStr = now.toDateString();
 
     // Online-Status: onlineSince gesetzt = online
-    const isOnline = (m: typeof members[0]) => !!m.onlineSince;
+    const isOnline = (m: typeof members[0]) => !!m.onlineSince || m.id === currentUser.id;
 
     const onlineMembers = getOnlineMembers().filter(m => isOnline(m));
 
@@ -1021,11 +1021,9 @@ export const InstructorView: React.FC = () => {
                     {myConnectedMembers.map(m => {
                       const mStatus = getMemberStatus(m);
                       return (
-                        <div key={m.id} className="rounded-xl border border-red-900/40 bg-red-950/20 px-4 py-3 flex items-center gap-3">
+                        <div key={m.id} className="rounded-xl border border-gray-700 bg-gray-800/50 px-4 py-3 flex items-center gap-3">
                           <div className="relative flex-shrink-0 cursor-pointer" onClick={() => setProfileMember(m)}>
-                            {m.profileImage
-                              ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" />
-                              : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
+                            {m.profileImage && <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" />}
                             <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900 ${mStatus === 'training' ? 'bg-orange-400' : mStatus === 'checkedIn' ? 'bg-yellow-400' : mStatus === 'online' ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
                           </div>
                           <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setProfileMember(m)}>

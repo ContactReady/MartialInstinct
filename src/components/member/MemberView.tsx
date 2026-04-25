@@ -1130,11 +1130,9 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                       const isOnlineNow = m.onlineSince !== undefined;
                       const status = inTraining ? 'training' : isOnlineNow ? 'online' : 'offline';
                       return (
-                        <div key={m.id} className="rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 flex items-center gap-3">
+                        <div key={m.id} className="rounded-xl border border-gray-700 bg-gray-800/50 px-4 py-3 flex items-center gap-3">
                           <div className="relative flex-shrink-0 cursor-pointer" onClick={() => setViewingMember(m)}>
-                            {m.profileImage
-                              ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" />
-                              : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
+                            {m.profileImage && <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" />}
                             <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900 ${status === 'training' ? 'bg-orange-400' : status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
                           </div>
                           <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setViewingMember(m)}>
@@ -1174,7 +1172,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                     return (
                       <div key={m.id} className={`rounded-xl border px-4 py-3 flex items-center gap-3 cursor-pointer ${isMe ? 'bg-gray-700/60 border-gray-600' : 'bg-gray-800/50 border-gray-700'}`} onClick={() => setViewingMember(m)}>
                         <div className="relative flex-shrink-0">
-                          {m.profileImage ? <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
+                          {m.profileImage && <img src={m.profileImage} className="w-9 h-9 rounded-full object-cover" />}
                           <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900 ${
                             status === 'training' ? 'bg-orange-400' :
                             status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-gray-600'
