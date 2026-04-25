@@ -222,8 +222,8 @@ export const RankingList: React.FC<RankingListProps> = ({
                     {/* XP + Chevron */}
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <div className="text-right">
-                        <div className="text-yellow-400 font-bold text-sm">{m.xp ?? 0}</div>
-                        <div className="text-gray-600 text-[9px]">XP</div>
+                        <span className="text-yellow-400 font-bold text-sm">{m.xp ?? 0}</span>
+                        <span className="text-gray-600 text-[9px] ml-0.5">XP</span>
                       </div>
                       <span className={`text-gray-600 text-xs transition-transform ${isExpanded ? 'rotate-180' : ''}`}>▾</span>
                     </div>
@@ -343,19 +343,12 @@ export const RankingList: React.FC<RankingListProps> = ({
       )}
 
       {/* Legende */}
-      <div className="flex items-center gap-3 text-[10px] text-gray-600 pt-1 flex-wrap">
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> Beim Training</span>
+      <div className="flex items-center gap-2.5 text-[10px] text-gray-600 pt-1 flex-wrap">
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> Online</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-700 inline-block" /> Offline</span>
-        <span className="flex items-center gap-1">
-          <span className="w-3.5 h-3.5 rounded-full bg-gray-600 inline-flex items-center justify-center text-[7px] font-bold text-gray-900">T</span> Tactics
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3.5 h-3.5 rounded-full bg-gray-900 border border-gray-600 inline-flex items-center justify-center text-[7px] font-bold text-white">C</span> Combat
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3.5 h-3.5 rounded bg-red-600 inline-flex items-center justify-center text-[7px] font-bold text-white">I</span> Instructor
-        </span>
+        <span className="flex items-center gap-1"><span className="w-3.5 h-3.5 rounded-full bg-gray-600 inline-flex items-center justify-center text-[7px] font-bold text-gray-900">T</span> Tactics</span>
+        <span className="flex items-center gap-1"><span className="w-3.5 h-3.5 rounded-full bg-gray-900 border border-gray-600 inline-flex items-center justify-center text-[7px] font-bold text-white">C</span> Combat</span>
+        <span className="flex items-center gap-1"><span className="w-3.5 h-3.5 rounded bg-red-600 inline-flex items-center justify-center text-[7px] font-bold text-white">I</span> Instructor</span>
       </div>
     </div>
   );
