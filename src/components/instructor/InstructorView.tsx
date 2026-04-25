@@ -319,8 +319,9 @@ export const InstructorView: React.FC = () => {
   const [createMemberProgress, setCreateMemberProgress] = useState<Record<number, { tactics: boolean; combat: boolean }>>({});
   const [createMemberSTB, setCreateMemberSTB] = useState(false);
 
-  // Check-in Trend State
+  // Check-In Trend State
   const [trendPreset, setTrendPreset] = useState<'4W' | '8W' | '3M' | '6M' | '12M' | 'custom'>('8W');
+  const [inactivityPreset, setInactivityPreset] = useState<7 | 14 | 30 | 60>(14);
   const [trendHistorical, setTrendHistorical] = useState<{ approved_at: string; member_id: string }[]>([]);
   const [trendLoading, setTrendLoading] = useState(false);
   const [activeThisWeekCount, setActiveThisWeekCount] = useState<number | null>(null);
@@ -521,7 +522,7 @@ export const InstructorView: React.FC = () => {
                       {onlineInstructors.map(m => (
                         <div key={m.id} className="flex items-center gap-3">
                           <OnlineDot member={m} />
-                          {m.profileImage ? <img src={m.profileImage} className="w-7 h-7 rounded-full object-cover flex-shrink-0" /> : <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
+                          {m.profileImage && <img src={m.profileImage} className="w-7 h-7 rounded-full object-cover flex-shrink-0" />}
                           <div className="flex-1 min-w-0">
                             <span className="text-white font-medium text-sm">{m.name}</span>
                             <span className={`ml-2 text-xs ${ROLE_DISPLAY[m.role].color}`}>
@@ -543,7 +544,7 @@ export const InstructorView: React.FC = () => {
                       {onlineRegularMembers.map(m => (
                         <div key={m.id} className="flex items-center gap-3">
                           <OnlineDot member={m} />
-                          {m.profileImage ? <img src={m.profileImage} className="w-7 h-7 rounded-full object-cover flex-shrink-0" /> : <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-300">{m.name.charAt(0).toUpperCase()}</div>}
+                          {m.profileImage && <img src={m.profileImage} className="w-7 h-7 rounded-full object-cover flex-shrink-0" />}
                           <div className="flex-1 min-w-0">
                             <span className="text-white font-medium text-sm">{m.name}</span>
                             <span className="ml-2 text-xs text-gray-500">{LEVEL_DISPLAY[m.currentLevel].subtitle}</span>
@@ -1617,10 +1618,23 @@ export const InstructorView: React.FC = () => {
         {/* ── Beitrittsanfragen ─────────────────────────────────────────────── */}
         {requestSubTab === 'beitritt' && (
           <div className="space-y-3">
+            {/* Beitritts-QR-Code */}
+            {(() => {
+              const joinUrl = typeof window !== 'undefined' ? `${window.location.origin}?join=true` : '';
+              return (
+                <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-5 flex flex-col items-center gap-3">
+                  <div className="text-sm font-semibold text-white self-start">Beitritts-QR-Code</div>
+                  <div className="bg-white p-3 rounded-xl">
+                    <QRCode value={joinUrl} size={150} />
+                  </div>
+                  <div className="text-[10px] text-gray-500 text-center font-mono break-all">{joinUrl}</div>
+                  <div className="text-xs text-gray-400 text-center">Schüler scannen diesen Code — kein Login nötig</div>
+                </div>
+              );
+            })()}
             {pendingJoinRequests.length === 0 ? (
               <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/30 text-center">
                 <p className="text-gray-500 text-sm">Keine offenen Beitrittsanfragen</p>
-                <p className="text-gray-600 text-xs mt-1">Teile den QR-Code im Admin → Plattform-Bereich</p>
               </div>
             ) : (
               pendingJoinRequests.map(req => (
@@ -2452,8 +2466,8 @@ export const InstructorView: React.FC = () => {
             return { t, c };
           };
 
-          // Inaktive Mitglieder (>14 Tage kein Training)
-          const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 14);
+          // Inaktive Mitglieder (konfigurierbar)
+          const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - inactivityPreset);
           const inactive = allM.filter(m => {
             const last = m.streak.lastTrainingDate ? new Date(m.streak.lastTrainingDate) : null;
             return !last || last < cutoff;
@@ -2513,7 +2527,7 @@ export const InstructorView: React.FC = () => {
                 <div className="px-4 py-3 border-b border-gray-700/30">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-sm font-semibold text-white">Check-in Trend</div>
+                      <div className="text-sm font-semibold text-white">Check-In Trend</div>
                       <div className="text-[10px] text-gray-500 mt-0.5">Bestätigte Trainings{trendLoading ? ' · lädt…' : ''}</div>
                     </div>
                   </div>
@@ -2655,6 +2669,52 @@ export const InstructorView: React.FC = () => {
               {/* ── 2-Spalten ── */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
+                {/* Member-Aktivität (ehemals Inaktiv) */}
+                <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-700/30">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-semibold text-white">Member-Aktivität</div>
+                        <div className="text-[10px] text-gray-500 mt-0.5">{inactive.length} inaktiv &gt;{inactivityPreset} Tage</div>
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5 mt-2.5">
+                      {([7, 14, 30, 60] as const).map(d => (
+                        <button
+                          key={d}
+                          onClick={() => setInactivityPreset(d)}
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded transition-colors ${inactivityPreset === d ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+                        >
+                          {d}T
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="divide-y divide-gray-700/30 max-h-52 overflow-y-auto">
+                    {inactive.length === 0 ? (
+                      <div className="px-4 py-4 text-center text-gray-600 text-xs">Alle aktiv 💪</div>
+                    ) : inactive.map(m => {
+                      const last = m.streak.lastTrainingDate ? new Date(m.streak.lastTrainingDate) : null;
+                      const daysAgo = last ? Math.floor((now.getTime() - last.getTime()) / 86400000) : null;
+                      return (
+                        <div key={m.id} className="px-4 py-2.5 flex items-center gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs text-gray-300 truncate">{m.name}</div>
+                            <div className="text-[10px] text-gray-600">
+                              {daysAgo === null ? 'Noch nie' : `vor ${daysAgo} Tagen`}
+                            </div>
+                          </div>
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                            daysAgo === null || daysAgo > 30 ? 'bg-red-900/40 text-red-400' : 'bg-yellow-900/40 text-yellow-400'
+                          }`}>
+                            {daysAgo === null ? '–' : `${daysAgo}d`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Kapitel-Verteilung */}
                 <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 overflow-hidden">
                   <div className="px-4 py-3 border-b border-gray-700/30">
@@ -2673,38 +2733,6 @@ export const InstructorView: React.FC = () => {
                           <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
                             <div className={`h-full rounded-full ${meta.color} transition-all`} style={{ width: `${pct}%` }} />
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Inaktive Mitglieder */}
-                <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-gray-700/30">
-                    <div className="text-sm font-semibold text-white">Inaktiv &gt;14 Tage</div>
-                    <div className="text-[10px] text-gray-500 mt-0.5">{inactive.length} Member</div>
-                  </div>
-                  <div className="divide-y divide-gray-700/30 max-h-52 overflow-y-auto">
-                    {inactive.length === 0 ? (
-                      <div className="px-4 py-4 text-center text-gray-600 text-xs">Alle aktiv 💪</div>
-                    ) : inactive.map(m => {
-                      const last = m.streak.lastTrainingDate ? new Date(m.streak.lastTrainingDate) : null;
-                      const daysAgo = last ? Math.floor((now.getTime() - last.getTime()) / 86400000) : null;
-                      return (
-                        <div key={m.id} className="px-4 py-2.5 flex items-center gap-2">
-                          <span className="text-base flex-shrink-0">{m.avatar}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs text-gray-300 truncate">{m.name}</div>
-                            <div className="text-[10px] text-gray-600">
-                              {daysAgo === null ? 'Noch nie' : `vor ${daysAgo} Tagen`}
-                            </div>
-                          </div>
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                            daysAgo === null || daysAgo > 30 ? 'bg-red-900/40 text-red-400' : 'bg-yellow-900/40 text-yellow-400'
-                          }`}>
-                            {daysAgo === null ? '–' : `${daysAgo}d`}
-                          </span>
                         </div>
                       );
                     })}
@@ -4244,23 +4272,7 @@ export const InstructorView: React.FC = () => {
                 );
               })()}
 
-              {/* B: Beitritts-QR-Code */}
-              <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
-                <AccordionHeader id="qr" title="Beitritts-QR-Code" subtitle="Schüler scannen diesen Code und senden eine Beitrittsanfrage — kein Login nötig." />
-                {plattformOpen['qr'] && (
-                <div className="border-t border-gray-700/50">
-                <div className="p-5 flex flex-col items-center gap-3">
-                  <div className="bg-white p-3 rounded-xl">
-                    <QRCode value={joinUrl} size={160} />
-                  </div>
-                  <div className="text-[10px] text-gray-500 text-center font-mono break-all">{joinUrl}</div>
-                  <div className="text-xs text-gray-400 text-center">Anfragen erscheinen unter <span className="text-white font-semibold">Anfragen → Beitrittsanfragen</span></div>
-                </div>
-                </div>
-                )}
-              </div>
-
-              {/* C: Rechte-Matrix */}
+              {/* B: Rechte-Matrix */}
               <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 overflow-hidden">
                 <AccordionHeader id="rechte" title="Rechte-Matrix" subtitle="Legt fest, was jede Rolle tun darf. Admin hat immer alle Rechte." />
                 {plattformOpen['rechte'] && (
