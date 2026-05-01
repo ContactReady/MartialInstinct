@@ -1685,7 +1685,7 @@ export const InstructorView: React.FC = () => {
                   </div>
                 </div>
               ))
-            )}
+            ) : null}
           </div>
         )}
       </div>
