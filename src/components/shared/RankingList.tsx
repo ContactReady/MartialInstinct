@@ -149,8 +149,8 @@ export const RankingList: React.FC<RankingListProps> = ({
         <div className="flex gap-1.5 flex-shrink-0 flex-wrap justify-end">
           <SortBtn k="xp" label="⭐ XP" />
           <SortBtn k="streak" label="🔥 Streak" />
-          <SortBtn k="modules" label="✅ Mod." />
-          <SortBtn k="techniques" label="✅ Tech." />
+          <SortBtn k="modules" label="Modules" />
+          <SortBtn k="techniques" label="Techniques" />
         </div>
       </div>
 
@@ -270,10 +270,7 @@ export const RankingList: React.FC<RankingListProps> = ({
                       </span>
                     )}
                     <span className="text-[10px] text-gray-600 flex items-center gap-1 ml-auto">
-                      {sortKey === 'techniques'
-                        ? <span>{passedTechs} Tech.</span>
-                        : <span>{totalMods}<span className="text-gray-700">/{maxMods}</span> Mod.</span>
-                      }
+                      <span>{passedTechs} Tech.</span>
                     </span>
                   </div>
 
