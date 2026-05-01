@@ -38,7 +38,7 @@ function formatDateTime(date: Date | null | undefined): string {
   return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + ` ${time}`;
 }
 
-type SortKey = 'xp' | 'streak' | 'modules';
+type SortKey = 'xp' | 'streak' | 'modules' | 'techniques';
 type FilterKey = 'alle' | 'dieses_jahr' | 'mein_level';
 
 interface RankingListProps {
@@ -67,6 +67,14 @@ export const RankingList: React.FC<RankingListProps> = ({
     b.id !== 'assistant_instructor' &&
     b.moduleIds.some(id => CURRICULUM_MODULES.some(cm => cm.id === id))
   );
+
+  // Pflicht-Techniken aus den 10 Curriculum-Modulen (tech_passed oder tac_passed)
+  const countPassedTechs = (m: Member) =>
+    CURRICULUM_MODULES.flatMap(mod => mod.techniques.filter(t => t.isRequired))
+      .filter(t => {
+        const s = m.techniqueProgress[t.id]?.status;
+        return s === 'tech_passed' || s === 'tac_passed';
+      }).length;
 
   // Abgeschlossene Module (T + C + I) aus den 10 Curriculum-Modulen
   const countCompletedModules = (m: Member) => {
@@ -98,6 +106,7 @@ export const RankingList: React.FC<RankingListProps> = ({
       return diff !== 0 ? diff : countCompletedModules(b) - countCompletedModules(a);
     }
     if (sortKey === 'modules') return countCompletedModules(b) - countCompletedModules(a);
+    if (sortKey === 'techniques') return countPassedTechs(b) - countPassedTechs(a);
     return (b.xp ?? 0) - (a.xp ?? 0);
   });
 
@@ -137,10 +146,11 @@ export const RankingList: React.FC<RankingListProps> = ({
           <h2 className="text-lg font-bold text-white">🏆 Rangliste</h2>
           {myRank > 0 && <p className="text-xs text-gray-500 mt-0.5">Du bist auf Platz {myRank}</p>}
         </div>
-        <div className="flex gap-1.5 flex-shrink-0">
+        <div className="flex gap-1.5 flex-shrink-0 flex-wrap justify-end">
           <SortBtn k="xp" label="⭐ XP" />
           <SortBtn k="streak" label="🔥 Streak" />
-          <SortBtn k="modules" label="✅ Module" />
+          <SortBtn k="modules" label="✅ Mod." />
+          <SortBtn k="techniques" label="✅ Tech." />
         </div>
       </div>
 
@@ -184,6 +194,7 @@ export const RankingList: React.FC<RankingListProps> = ({
               : 0;
             const totalMods = tacticsDone + combatDone + instructorModCount;
             const maxMods = isInstructor ? total * 3 : total * 2;
+            const passedTechs = countPassedTechs(m);
 
             return (
               <div
@@ -259,7 +270,10 @@ export const RankingList: React.FC<RankingListProps> = ({
                       </span>
                     )}
                     <span className="text-[10px] text-gray-600 flex items-center gap-1 ml-auto">
-                      <span>{totalMods}<span className="text-gray-700">/{maxMods}</span> Mod.</span>
+                      {sortKey === 'techniques'
+                        ? <span>{passedTechs} Tech.</span>
+                        : <span>{totalMods}<span className="text-gray-700">/{maxMods}</span> Mod.</span>
+                      }
                     </span>
                   </div>
 
