@@ -38,7 +38,7 @@ function formatDateTime(date: Date | null | undefined): string {
   return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + ` ${time}`;
 }
 
-type SortKey = 'xp' | 'streak' | 'techniques';
+type SortKey = 'xp' | 'streak' | 'modules';
 type FilterKey = 'alle' | 'dieses_jahr' | 'mein_level';
 
 interface RankingListProps {
@@ -68,13 +68,15 @@ export const RankingList: React.FC<RankingListProps> = ({
     b.moduleIds.some(id => CURRICULUM_MODULES.some(cm => cm.id === id))
   );
 
-  // Nur Pflicht-Techniken aus den 10 Curriculum-Modulen zählen
-  const countPassedTechs = (m: Member) =>
-    CURRICULUM_MODULES.flatMap(mod => mod.techniques.filter(t => t.isRequired))
-      .filter(t => {
-        const s = m.techniqueProgress[t.id]?.status;
-        return s === 'tech_passed' || s === 'tac_passed';
-      }).length;
+  // Abgeschlossene Module (T + C + I) aus den 10 Curriculum-Modulen
+  const countCompletedModules = (m: Member) => {
+    const t = CURRICULUM_MODULES.filter(mod => getModProgress(m, mod.id).tactics).length;
+    const c = CURRICULUM_MODULES.filter(mod => getModProgress(m, mod.id).combat).length;
+    const i = m.role !== 'member'
+      ? CURRICULUM_MODULES.filter(mod => m.instructorModules?.includes(mod.id)).length
+      : 0;
+    return t + c + i;
+  };
 
   // Filter
   const filtered = members.filter(m => {
@@ -93,9 +95,9 @@ export const RankingList: React.FC<RankingListProps> = ({
   const sorted = [...filtered].sort((a, b) => {
     if (sortKey === 'streak') {
       const diff = b.streak.currentStreak - a.streak.currentStreak;
-      return diff !== 0 ? diff : countPassedTechs(b) - countPassedTechs(a);
+      return diff !== 0 ? diff : countCompletedModules(b) - countCompletedModules(a);
     }
-    if (sortKey === 'techniques') return countPassedTechs(b) - countPassedTechs(a);
+    if (sortKey === 'modules') return countCompletedModules(b) - countCompletedModules(a);
     return (b.xp ?? 0) - (a.xp ?? 0);
   });
 
@@ -138,7 +140,7 @@ export const RankingList: React.FC<RankingListProps> = ({
         <div className="flex gap-1.5 flex-shrink-0">
           <SortBtn k="xp" label="⭐ XP" />
           <SortBtn k="streak" label="🔥 Streak" />
-          <SortBtn k="techniques" label="✅ Tech." />
+          <SortBtn k="modules" label="✅ Module" />
         </div>
       </div>
 
@@ -174,11 +176,14 @@ export const RankingList: React.FC<RankingListProps> = ({
             const levelInfo = LEVEL_DISPLAY[m.currentLevel];
             const roleInfo = ROLE_DISPLAY[m.role];
             const isInstructor = m.role !== 'member';
-            const passed = countPassedTechs(m);
             const tacticsDone = CURRICULUM_MODULES.filter(mod => getModProgress(m, mod.id).tactics).length;
             const combatDone = CURRICULUM_MODULES.filter(mod => getModProgress(m, mod.id).combat).length;
             const total = CURRICULUM_MODULES.length;
-            const instructorModCount = m.instructorModules?.length ?? 0;
+            const instructorModCount = isInstructor
+              ? CURRICULUM_MODULES.filter(mod => m.instructorModules?.includes(mod.id)).length
+              : 0;
+            const totalMods = tacticsDone + combatDone + instructorModCount;
+            const maxMods = isInstructor ? total * 3 : total * 2;
 
             return (
               <div
@@ -254,7 +259,7 @@ export const RankingList: React.FC<RankingListProps> = ({
                       </span>
                     )}
                     <span className="text-[10px] text-gray-600 flex items-center gap-1 ml-auto">
-                      <span>{passed} Tech.</span>
+                      <span>{totalMods}<span className="text-gray-700">/{maxMods}</span> Mod.</span>
                     </span>
                   </div>
 
