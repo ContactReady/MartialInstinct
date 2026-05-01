@@ -321,7 +321,9 @@ export const InstructorView: React.FC = () => {
 
   // Check-In Trend State
   const [trendPreset, setTrendPreset] = useState<'4W' | '8W' | '3M' | '6M' | '12M' | 'custom'>('8W');
-  const [inactivityPreset, setInactivityPreset] = useState<7 | 14 | 30 | 60>(14);
+  const [inactivityPreset, setInactivityPreset] = useState<7 | 14 | 30 | 60 | 'custom'>(14);
+  const [inactivityCustomDays, setInactivityCustomDays] = useState(21);
+  const [inactivityMode, setInactivityMode] = useState<'offline' | 'online'>('offline');
   const [trendHistorical, setTrendHistorical] = useState<{ approved_at: string; member_id: string }[]>([]);
   const [trendLoading, setTrendLoading] = useState(false);
   const [activeThisWeekCount, setActiveThisWeekCount] = useState<number | null>(null);
@@ -1436,7 +1438,7 @@ export const InstructorView: React.FC = () => {
     const subTabItems: { id: typeof requestSubTab; label: string; badge: number }[] = [
       { id: 'exams',    label: 'Prüfungen',        badge: pendingExamRequests.length },
       { id: 'checkins', label: 'Check-Ins',         badge: pendingCheckIns.length },
-      ...(isAdmin ? [{ id: 'beitritt' as const, label: 'Beitrittsanfragen', badge: pendingJoinRequests.length }] : []),
+      { id: 'beitritt' as const, label: 'Beitrittsanfragen', badge: isAdmin ? pendingJoinRequests.length : 0 },
     ];
 
     return (
@@ -1630,11 +1632,11 @@ export const InstructorView: React.FC = () => {
                 </div>
               );
             })()}
-            {pendingJoinRequests.length === 0 ? (
+            {isAdmin && pendingJoinRequests.length === 0 ? (
               <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/30 text-center">
                 <p className="text-gray-500 text-sm">Keine offenen Beitrittsanfragen</p>
               </div>
-            ) : (
+            ) : isAdmin ? (
               pendingJoinRequests.map(req => (
                 <div key={req.id} className={`bg-gray-800/50 rounded-xl border overflow-hidden ${
                   req.status === 'pending' ? 'border-gray-700' : req.status === 'approved' ? 'border-green-800/40' : 'border-gray-700/30 opacity-60'
@@ -2464,8 +2466,9 @@ export const InstructorView: React.FC = () => {
             return { t, c };
           };
 
-          // Inaktive Mitglieder (konfigurierbar)
-          const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - inactivityPreset);
+          // Inaktive / Aktive Mitglieder (konfigurierbar)
+          const inactivityDays = inactivityPreset === 'custom' ? inactivityCustomDays : inactivityPreset;
+          const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - inactivityDays);
           const inactive = allM.filter(m => {
             const last = m.streak.lastTrainingDate ? new Date(m.streak.lastTrainingDate) : null;
             return !last || last < cutoff;
@@ -2473,6 +2476,14 @@ export const InstructorView: React.FC = () => {
             const la = a.streak.lastTrainingDate ? new Date(a.streak.lastTrainingDate).getTime() : 0;
             const lb = b.streak.lastTrainingDate ? new Date(b.streak.lastTrainingDate).getTime() : 0;
             return la - lb;
+          });
+          const active = allM.filter(m => {
+            const last = m.streak.lastTrainingDate ? new Date(m.streak.lastTrainingDate) : null;
+            return last && last >= cutoff;
+          }).sort((a, b) => {
+            const la = new Date(a.streak.lastTrainingDate!).getTime();
+            const lb = new Date(b.streak.lastTrainingDate!).getTime();
+            return lb - la; // neueste zuerst
           });
 
           const LEVEL_LABELS: Record<string, { label: string; color: string; icon: string }> = {
@@ -2673,10 +2684,26 @@ export const InstructorView: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-sm font-semibold text-white">Member-Aktivität</div>
-                        <div className="text-[10px] text-gray-500 mt-0.5">{inactive.length} inaktiv &gt;{inactivityPreset} Tage</div>
+                        <div className="text-[10px] text-gray-500 mt-0.5">
+                          {inactivityMode === 'offline'
+                            ? `${inactive.length} inaktiv >${inactivityDays} Tage`
+                            : `${active.length} aktiv in letzten ${inactivityDays} Tagen`}
+                        </div>
+                      </div>
+                      {/* Online / Offline Toggle */}
+                      <div className="flex items-center gap-0.5 bg-gray-700/60 rounded-lg p-0.5">
+                        <button
+                          onClick={() => setInactivityMode('offline')}
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded transition-colors ${inactivityMode === 'offline' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                        >Offline</button>
+                        <button
+                          onClick={() => setInactivityMode('online')}
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded transition-colors ${inactivityMode === 'online' ? 'bg-green-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                        >Online</button>
                       </div>
                     </div>
-                    <div className="flex gap-1.5 mt-2.5">
+                    {/* Zeitraum-Buttons */}
+                    <div className="flex gap-1.5 mt-2.5 flex-wrap">
                       {([7, 14, 30, 60] as const).map(d => (
                         <button
                           key={d}
@@ -2686,30 +2713,69 @@ export const InstructorView: React.FC = () => {
                           {d}T
                         </button>
                       ))}
+                      <button
+                        onClick={() => setInactivityPreset('custom')}
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded transition-colors ${inactivityPreset === 'custom' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+                      >Benutzerdefiniert</button>
+                      {inactivityPreset === 'custom' && (
+                        <div className="flex items-center gap-1 mt-1 w-full">
+                          <input
+                            type="number"
+                            min={1}
+                            max={365}
+                            value={inactivityCustomDays}
+                            onChange={e => setInactivityCustomDays(Math.max(1, Math.min(365, Number(e.target.value))))}
+                            className="w-16 bg-gray-700 text-white text-[10px] font-semibold px-2 py-0.5 rounded border border-gray-600 focus:outline-none focus:border-red-500"
+                          />
+                          <span className="text-[10px] text-gray-500">Tage</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="divide-y divide-gray-700/30 max-h-52 overflow-y-auto">
-                    {inactive.length === 0 ? (
-                      <div className="px-4 py-4 text-center text-gray-600 text-xs">Alle aktiv 💪</div>
-                    ) : inactive.map(m => {
-                      const last = m.streak.lastTrainingDate ? new Date(m.streak.lastTrainingDate) : null;
-                      const daysAgo = last ? Math.floor((now.getTime() - last.getTime()) / 86400000) : null;
-                      return (
-                        <div key={m.id} className="px-4 py-2.5 flex items-center gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs text-gray-300 truncate">{m.name}</div>
-                            <div className="text-[10px] text-gray-600">
-                              {daysAgo === null ? 'Noch nie' : `vor ${daysAgo} Tagen`}
+                    {inactivityMode === 'offline' ? (
+                      inactive.length === 0 ? (
+                        <div className="px-4 py-4 text-center text-gray-600 text-xs">Alle aktiv 💪</div>
+                      ) : inactive.map(m => {
+                        const last = m.streak.lastTrainingDate ? new Date(m.streak.lastTrainingDate) : null;
+                        const daysAgo = last ? Math.floor((now.getTime() - last.getTime()) / 86400000) : null;
+                        return (
+                          <div key={m.id} className="px-4 py-2.5 flex items-center gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs text-gray-300 truncate">{m.name}</div>
+                              <div className="text-[10px] text-gray-600">
+                                {daysAgo === null ? 'Noch nie' : `vor ${daysAgo} Tagen`}
+                              </div>
                             </div>
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                              daysAgo === null || daysAgo > 30 ? 'bg-red-900/40 text-red-400' : 'bg-yellow-900/40 text-yellow-400'
+                            }`}>
+                              {daysAgo === null ? '–' : `${daysAgo}d`}
+                            </span>
                           </div>
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                            daysAgo === null || daysAgo > 30 ? 'bg-red-900/40 text-red-400' : 'bg-yellow-900/40 text-yellow-400'
-                          }`}>
-                            {daysAgo === null ? '–' : `${daysAgo}d`}
-                          </span>
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    ) : (
+                      active.length === 0 ? (
+                        <div className="px-4 py-4 text-center text-gray-600 text-xs">Niemand aktiv in diesem Zeitraum</div>
+                      ) : active.map(m => {
+                        const last = new Date(m.streak.lastTrainingDate!);
+                        const daysAgo = Math.floor((now.getTime() - last.getTime()) / 86400000);
+                        return (
+                          <div key={m.id} className="px-4 py-2.5 flex items-center gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs text-gray-300 truncate">{m.name}</div>
+                              <div className="text-[10px] text-gray-600">
+                                {daysAgo === 0 ? 'Heute' : `vor ${daysAgo} Tagen`}
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-green-900/40 text-green-400">
+                              {daysAgo === 0 ? 'heute' : `${daysAgo}d`}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
 
@@ -2840,8 +2906,8 @@ export const InstructorView: React.FC = () => {
                           {roleInfo.label}
                         </span>
                         {memberHasAdmin && !adminFixed && (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-red-900/30 text-red-400">
-                            🔐 Admin
+                          <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-gray-700/70 text-gray-300">
+                            Admin
                           </span>
                         )}
                       </div>
@@ -2924,17 +2990,17 @@ export const InstructorView: React.FC = () => {
                               <button
                                 onClick={() => updateAdminAccess(m.id, !memberHasAdmin)}
                                 className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${
-                                  memberHasAdmin ? 'bg-red-900/40 text-red-400 hover:bg-red-900/60' : 'bg-gray-700/60 text-gray-400 hover:bg-gray-700'
+                                  memberHasAdmin ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-700/60 text-gray-400 hover:bg-gray-700'
                                 }`}
                               >
-                                {memberHasAdmin ? '🔓 Zugang entfernen' : '🔐 Zugang geben'}
+                                {memberHasAdmin ? 'Zugang entfernen' : 'Zugang geben'}
                               </button>
                             </div>
                           )}
                           {adminFixed && (
                             <div className="flex items-center justify-between opacity-50">
                               <p className="text-xs text-gray-400">Admin-Zugang</p>
-                              <span className="text-xs text-red-400 bg-red-900/20 px-2 py-1 rounded-lg">🔐 Admin (fest)</span>
+                              <span className="text-xs text-gray-300 bg-gray-700/70 px-2 py-1 rounded-lg">Admin (fest)</span>
                             </div>
                           )}
                         </div>
