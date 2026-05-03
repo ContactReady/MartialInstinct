@@ -721,7 +721,7 @@ Du lässt dein altes Muster nicht dein neues Lernen blockieren.
     moduleId: 'mod-2',
     title: 'Dein Zielsetzungsmindset',
     icon: '🎯',
-    order: 2,
+    order: 3,
     theoryText: `## Dein Zielsetzungsmindset
 
 Bevor du langfristig Fortschritte machen kannst, muss klar sein, wohin du überhaupt willst.
@@ -1000,7 +1000,7 @@ Dein Trainer unterstützt dich.
     moduleId: 'mod-2',
     title: 'Motivation & Commitment',
     icon: '🔥',
-    order: 3,
+    order: 4,
     theoryText: `## Motivation & Commitment
 
 Um hier eins direkt klarzustellen:
@@ -1188,7 +1188,7 @@ wirst du handeln – unabhängig von deiner Stimmung.
     moduleId: 'mod-2',
     title: 'Konzept der Lernbereitschaft',
     icon: '📚',
-    order: 4,
+    order: 2,
     theoryText: `## Konzept der Lernbereitschaft
 
 ### Was entscheidet über deinen Trainingserfolg?

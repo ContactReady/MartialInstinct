@@ -49,6 +49,7 @@ import { loadMembers, loadMemberById, saveMember, updateMemberFields, createMemb
 import { loadAllSettings, saveSetting } from '../lib/settingsService';
 import { MEMBERS, CHECK_INS, BOARD_MESSAGES, NOTIFICATIONS, LOCATIONS, VIDEOS, COURSES } from '../data/mockData';
 import { MODULES, BLOCKS, getAllTechniques, getModuleById } from '../data/modules';
+import { ModuleTopic, getTopicsForModule } from '../data/moduleTopics';
 
 // ============================================
 // LOCALSTORAGE QUOTA SCHUTZ
@@ -307,6 +308,9 @@ interface AppContextType {
   // Theorie-Texte (Admin-editierbar, nicht flaggbar durch Member)
   topicOverrides: Record<string, string>;
   updateTopicText: (topicId: string, text: string) => void;
+  topicOrderOverrides: Record<string, string[]>;
+  updateTopicOrder: (moduleId: string, orderedTopicIds: string[]) => void;
+  getTopicsForModuleOrdered: (moduleId: string) => ModuleTopic[];
   moduleNameOverrides: Record<string, string>;
   saveModuleName: (moduleId: string, name: string) => void;
   getModuleName: (moduleId: string) => string;
@@ -812,6 +816,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (settings.topic_overrides) {
           setTopicOverrides(settings.topic_overrides as Record<string, string>);
           safeLS('mi-topic-overrides', JSON.stringify(settings.topic_overrides));
+        }
+        if (settings.topic_order_overrides) {
+          setTopicOrderOverrides(settings.topic_order_overrides as Record<string, string[]>);
+          safeLS('mi-topic-order-overrides', JSON.stringify(settings.topic_order_overrides));
         }
         if (settings.module_name_overrides) {
           setModuleNameOverrides(settings.module_name_overrides as Record<string, string>);
@@ -2544,6 +2552,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   }, []);
 
+  const [topicOrderOverrides, setTopicOrderOverrides] = useState<Record<string, string[]>>(() => {
+    try {
+      const saved = localStorage.getItem('mi-topic-order-overrides');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  const updateTopicOrder = useCallback((moduleId: string, orderedTopicIds: string[]) => {
+    setTopicOrderOverrides(prev => {
+      const next = { ...prev, [moduleId]: orderedTopicIds };
+      localStorage.setItem('mi-topic-order-overrides', JSON.stringify(next));
+      saveSetting('topic_order_overrides', next);
+      return next;
+    });
+  }, []);
+
+  const getTopicsForModuleOrdered = useCallback((moduleId: string): ModuleTopic[] => {
+    const topics = getTopicsForModule(moduleId);
+    const order = topicOrderOverrides[moduleId];
+    if (!order || order.length === 0) return topics;
+    const sorted = [...topics].sort((a, b) => {
+      const ai = order.indexOf(a.id);
+      const bi = order.indexOf(b.id);
+      if (ai === -1 && bi === -1) return a.order - b.order;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+    return sorted;
+  }, [topicOrderOverrides]);
+
   const [moduleNameOverrides, setModuleNameOverrides] = useState<Record<string, string>>(() => {
     try {
       const saved = localStorage.getItem('mi-module-name-overrides');
@@ -3361,6 +3400,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Theorie-Texte
     topicOverrides,
     updateTopicText,
+    topicOrderOverrides,
+    updateTopicOrder,
+    getTopicsForModuleOrdered,
     // Modulnamen- & Subtitle-Overrides
     moduleNameOverrides,
     saveModuleName,

@@ -160,6 +160,8 @@ export const InstructorView: React.FC = () => {
     questionOverrides,
     topicOverrides,
     updateTopicText,
+    updateTopicOrder,
+    getTopicsForModuleOrdered,
     moduleNameOverrides,
     saveModuleName,
     getModuleName,
@@ -3821,7 +3823,7 @@ export const InstructorView: React.FC = () => {
 
                   {/* ── THEORIE ── */}
                   {contentSubTab === 'theorie' && (() => {
-                    const moduleTopicsList = getTopicsForModule(contentModuleId ?? '');
+                    const moduleTopicsList = getTopicsForModuleOrdered(contentModuleId ?? '');
                     if (moduleTopicsList.length === 0) {
                       return (
                         <div className="text-gray-600 text-xs text-center py-6 border border-dashed border-gray-700/40 rounded-lg">
@@ -3829,10 +3831,22 @@ export const InstructorView: React.FC = () => {
                         </div>
                       );
                     }
+                    const moveTopicUp = (idx: number) => {
+                      if (idx === 0) return;
+                      const ids = moduleTopicsList.map(t => t.id);
+                      [ids[idx - 1], ids[idx]] = [ids[idx], ids[idx - 1]];
+                      updateTopicOrder(contentModuleId ?? '', ids);
+                    };
+                    const moveTopicDown = (idx: number) => {
+                      if (idx === moduleTopicsList.length - 1) return;
+                      const ids = moduleTopicsList.map(t => t.id);
+                      [ids[idx], ids[idx + 1]] = [ids[idx + 1], ids[idx]];
+                      updateTopicOrder(contentModuleId ?? '', ids);
+                    };
                     return (
                       <div className="space-y-3">
-                        <p className="text-gray-500 text-xs">Bearbeite die Theorie-Texte der einzelnen Abschnitte. Änderungen nach Speichern für alle Member sichtbar.</p>
-                        {moduleTopicsList.map(topic => {
+                        <p className="text-gray-500 text-xs">Bearbeite die Theorie-Texte der einzelnen Abschnitte. Reihenfolge mit ▲▼ anpassen. Änderungen nach Speichern für alle Member sichtbar.</p>
+                        {moduleTopicsList.map((topic, topicIdx) => {
                           const overrideKey = `${contentModuleId}:${topic.id}`;
                           const currentText = topicOverrides[overrideKey] ?? topic.theoryText;
                           const isEditing = editingQuestionId === overrideKey;
@@ -3847,6 +3861,18 @@ export const InstructorView: React.FC = () => {
                                     🚩 {topicFlags.length}
                                   </span>
                                 )}
+                                <button
+                                  onClick={() => moveTopicUp(topicIdx)}
+                                  disabled={topicIdx === 0}
+                                  className="text-xs text-gray-500 hover:text-gray-300 disabled:opacity-20 px-1"
+                                  title="Nach oben"
+                                >▲</button>
+                                <button
+                                  onClick={() => moveTopicDown(topicIdx)}
+                                  disabled={topicIdx === moduleTopicsList.length - 1}
+                                  className="text-xs text-gray-500 hover:text-gray-300 disabled:opacity-20 px-1"
+                                  title="Nach unten"
+                                >▼</button>
                                 <button
                                   onClick={() => {
                                     if (isEditing) {

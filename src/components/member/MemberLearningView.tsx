@@ -10,7 +10,7 @@ import { useApp } from '../../context/AppContext';
 import { QuizEngine } from '../shared/QuizEngine';
 import { ProgressBar } from '../shared/ProgressBar';
 import { Module, Block, TechniqueProgress, xpProgress } from '../../types';
-import { ModuleTopic, getTopicsForModule } from '../../data/moduleTopics';
+import { ModuleTopic } from '../../data/moduleTopics';
 import { MODULES } from '../../data/modules';
 
 // ============================================
@@ -184,7 +184,7 @@ export const MemberLearningView: React.FC = () => {
     answeredQuestions, recordQuizAnswer,
     quizExamState, canTakeExam, completeQuizExam,
     flaggedQuestions, flagSystemEnabled, flagQuestion, unflagQuestion,
-    topicOverrides, platformConfig, getModuleName, getModuleSubtitle,
+    topicOverrides, getTopicsForModuleOrdered, platformConfig, getModuleName, getModuleSubtitle,
     moduleSettings, effectiveBlocks, moduleOrder,
   } = useApp();
   const [activeModule, setActiveModule] = useState<Module | null>(null);
@@ -526,7 +526,7 @@ export const MemberLearningView: React.FC = () => {
 
           {/* Topic-Navigation (falls vorhanden) */}
           {(() => {
-            const topics = getTopicsForModule(activeModule.id);
+            const topics = getTopicsForModuleOrdered(activeModule.id);
             if (topics.length === 0) return null;
             return (
               <div>
