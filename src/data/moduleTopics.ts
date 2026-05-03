@@ -574,11 +574,154 @@ Variationen von Seiten-, Aufwärts- und Rückwärtskicks für unterschiedliche D
   },
 ];
 
+// ── MODUL 2 — Be Ready! ──────────────────────────────────────────────────────
+
+export const MOD2_TOPICS: ModuleTopic[] = [
+
+  // ── 1. 🧠 Empty Your Mind ────────────────────────────────────────────────
+  {
+    id: 'empty-your-mind',
+    moduleId: 'mod-2',
+    title: 'Empty Your Mind',
+    icon: '🧠',
+    order: 1,
+    theoryText: `## Empty Your Mind
+
+Wenn du bei uns ins Training kommst, bringst du automatisch ein eigenes Denk- und Verhaltensmuster mit.
+
+Dieses Muster hat dich bis hierhin gebracht.
+
+Wenn dieses Muster bereits zu dem Punkt geführt hätte, an dem du sein willst, würdest du nicht hier stehen und trainieren.
+
+Das bedeutet: Dein bisheriges Denken und Handeln hat nicht ausgereicht, um dein Ziel zu erreichen.
+
+Genau deshalb beginnt das Training nicht nur auf körperlicher Ebene – sondern im Kopf.
+
+---
+
+### Was „Empty Your Mind" bedeutet
+
+„Empty Your Mind" bedeutet nicht, dass du aufhörst zu denken.
+
+Es bedeutet, dass du dein bisheriges Denken zunächst zurückstellst und dich auf das System einlässt.
+
+Das heißt konkret:
+
+- Du setzt die Inhalte so um, wie sie im Training vermittelt werden
+- Du vermeidest es, Dinge direkt zu verändern oder anzupassen
+- Du vertraust darauf, dass das System funktioniert
+
+Ziel ist, eine klare Basis zu schaffen, auf der alles Weitere aufbauen kann.
+
+---
+
+### Vertrauen in das Training
+
+Damit du Fortschritte machst, brauchst du Vertrauen:
+
+- Vertrauen in den Trainer
+- Vertrauen in das Trainerteam
+- Vertrauen in das Trainingssystem
+
+Du musst nicht alles sofort verstehen.
+Aber du musst bereit sein, die Dinge umzusetzen.
+
+**Der Fortschritt entsteht durch Umsetzung – nicht durch Diskussion.**
+
+---
+
+### Warum eigene Anpassungen problematisch sind
+
+Viele machen den Fehler, Inhalte sofort mit ihrem eigenen Wissen zu vergleichen oder anzupassen.
+
+Das Problem dabei: Dein aktuelles Denk- und Handlungsmuster ist genau das, was dich bisher nicht weitergebracht hat.
+
+Wenn du neue Inhalte direkt veränderst:
+
+- verfälschst du die Technik
+- verlierst du die Struktur
+- entstehen Fehler, die sich festsetzen
+
+**Erst umsetzen. Dann verstehen. Dann bewerten.**
+
+---
+
+### Alles baut aufeinander auf
+
+Unser Training ist strukturiert aufgebaut.
+
+Jede Technik, jede Bewegung und jedes Prinzip baut auf vorherigen Inhalten auf.
+
+Wenn du am Anfang Dinge falsch umsetzt oder veränderst, entstehen später Probleme:
+
+- Verbindungen zwischen Techniken funktionieren nicht
+- Abläufe werden unsauber
+- Fortschritt wird langsamer
+
+Deshalb ist es entscheidend, von Anfang an sauber zu arbeiten.
+
+---
+
+### Umgang mit Unsicherheit
+
+Es ist normal, dass du nicht alles sofort verstehst.
+
+Wichtig ist, wie du damit umgehst:
+
+- Stelle Fragen, wenn etwas unklar ist
+- Hole dir Feedback vom Trainer
+- Improvisiere nicht eigenständig
+
+Unsicherheit ist kein Problem. Falsche Eigenlösungen sind es.
+
+---
+
+### Entwicklung braucht Zeit
+
+Dein Mindset verändert sich nicht von heute auf morgen. Es ist ein Prozess.
+
+Du wirst Abläufe Schritt für Schritt verinnerlichen, sicherer werden und zunehmend verstehen, warum die Dinge so gemacht werden, wie sie gemacht werden.
+
+Das braucht:
+
+- Geduld
+- Wiederholung
+- konsequente Umsetzung
+
+---
+
+### Dein eigenes Tempo
+
+Jeder lernt unterschiedlich schnell.
+
+Deshalb gilt:
+
+- Vergleiche dich nicht mit anderen
+- Konzentriere dich auf deinen Fortschritt
+- Arbeite in deinem Tempo
+
+Techniken dürfen langsam gelernt werden – solange sie korrekt umgesetzt werden.
+
+---
+
+### Kernaussage
+
+**„Empty Your Mind" bedeutet:**
+
+Du lässt dein altes Muster nicht dein neues Lernen blockieren.
+
+1. Du setzt um, was dir gezeigt wird.
+2. Du vertraust dem Prozess.
+3. Du gibst dir die Zeit, besser zu werden.`,
+  },
+
+];
+
 // ── Lookup-Helper ────────────────────────────────────────────────────────────
 
 export const ALL_MODULE_TOPICS: ModuleTopic[] = [
   ...MOD1_TOPICS,
-  // Weitere Module folgen
+  ...MOD2_TOPICS,
 ];
 
 export function getTopicsForModule(moduleId: string): ModuleTopic[] {
