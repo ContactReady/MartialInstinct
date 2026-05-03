@@ -986,9 +986,9 @@ Es ist das Gesamtsystem – inklusive deiner inneren Haltung.
 
 Und diese Haltung bedeutet:
 
-👉 Eigenverantwortung statt Abwarten
-👉 Aktivität statt Passivität
-👉 Entwicklung statt Stillstand
+- Eigenverantwortung statt Abwarten
+- Aktivität statt Passivität
+- Entwicklung statt Stillstand
 
 Dein Trainer unterstützt dich.
 **Aber dein Fortschritt beginnt bei dir.**`,
@@ -1177,9 +1177,9 @@ Motivation entsteht immer aus deinem Motiv.
 Und wenn dein Motiv stark genug ist,
 wirst du handeln – unabhängig von deiner Stimmung.
 
-👉 Stimmung sagt: „Ich hab keine Lust."
-👉 Motiv sagt: „Ich zieh es durch."
-👉 Commitment sagt: „Ich hab entschieden."`,
+- Stimmung sagt: „Ich hab keine Lust."
+- Motiv sagt: „Ich zieh es durch."
+- Commitment sagt: „Ich hab entschieden."`,
   },
 
   // ── 4. 📚 Konzept der Lernbereitschaft ──────────────────────────────────
