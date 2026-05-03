@@ -1182,6 +1182,181 @@ wirst du handeln – unabhängig von deiner Stimmung.
 👉 Commitment sagt: „Ich hab entschieden."`,
   },
 
+  // ── 4. 📚 Konzept der Lernbereitschaft ──────────────────────────────────
+  {
+    id: 'lernbereitschaft',
+    moduleId: 'mod-2',
+    title: 'Konzept der Lernbereitschaft',
+    icon: '📚',
+    order: 4,
+    theoryText: `## Konzept der Lernbereitschaft
+
+### Was entscheidet über deinen Trainingserfolg?
+
+Es gibt drei Faktoren, die deinen Trainingserfolg beeinflussen:
+
+1. Deine Lernbereitschaft
+2. Die Trainerqualität
+3. Das Trainingskonzept
+
+Und genau in dieser Reihenfolge ist es für dich relevant.
+
+Der Grund ist einfach:
+
+Du kannst nur einen dieser Faktoren wirklich beeinflussen: **Deine Lernbereitschaft.**
+
+Und genau darauf sollte dein Fokus liegen:
+auf einer dauerhaft hohen Lernbereitschaft.
+
+---
+
+### Trainingskonzept – was du verstehen musst
+
+Unser Trainingskonzept ist darauf ausgelegt, in der Realität zu funktionieren.
+
+Nicht:
+
+- was sich gut anfühlt
+- was man sich vorstellt
+- was moralisch „richtig" wirkt
+
+Sondern: was in realen Konflikten funktioniert.
+
+Dieses Konzept basiert auf:
+
+- eigenen Erfahrungen
+- Erfahrungen anderer
+- Analyse realer Situationen
+- strukturierter Auswertung
+- Anpassung und Weiterentwicklung
+
+---
+
+### Anpassung: Konzept vs. Du
+
+Was oft missverstanden wird:
+
+Viele glauben, dass sich das Trainingskonzept oder der Stil an den Schüler anpassen muss.
+
+Das stimmt so nicht.
+
+Unserer Meinung nach sollte es wie folgt sein:
+
+**Du passt dich an ein System an, das darauf ausgelegt ist, in der Realität und im Ernstfall zu funktionieren.**
+
+Es bringt nichts, dich an einen Stil anzupassen, der nicht funktioniert – genauso wenig, ein funktionierendes System so zu verändern, bis es sich für dich angenehm anfühlt.
+
+**Warum ist das wichtig?**
+
+Viele Menschen, die sich unsicher fühlen oder lernen wollen, sich zu verteidigen, haben einen sehr starken moralischen Kompass und wollen natürlich niemanden verletzen.
+
+Das ist grundsätzlich nichts Schlechtes.
+
+Das Problem dabei:
+
+Dieser moralische Kompass steht dir im Ernstfall oft im Weg.
+
+Denn genau hier entsteht der Nachteil:
+
+- du zögerst
+- du handelst unentschlossen
+- du denkst darüber nach, wie du dich verteidigen kannst, ohne die andere Person dabei zu verletzen
+
+Das führt dazu, dass du unterlegen bist, bevor die Situation überhaupt richtig begonnen hat.
+
+Denn der Gegner hat diesen Gedanken nicht.
+Im Gegenteil: Er ist fest entschlossen, sein Ding durchzuziehen.
+
+Und deshalb brauchst du ein System:
+
+- das unabhängig von moralischen Vorstellungen funktioniert
+- das unabhängig von Wunschdenken funktioniert
+- das dir erlaubt, in der Realität handlungsfähig zu bleiben
+
+Und genau das bietet dir dieses Trainingskonzept.
+
+---
+
+### Trainerqualität – objektiv vs. subjektiv
+
+Ein Trainer hat in relativ kurzer Zeit mit sehr vielen Menschen zu tun.
+Das macht ihn zu einem Multiplikator, der mit seinem Verhalten viele Menschen beeinflusst.
+
+Damit geht eine große Verantwortung einher.
+
+Gleichzeitig werden Erwartungen an den Trainer gestellt. Diese lassen sich in zwei Kategorien unterteilen:
+
+**Subjektive Erwartungen**
+
+Hier geht es um persönliche Vorstellungen, die nichts mit der Qualität des Trainings zu tun haben.
+
+Zum Beispiel:
+
+- Sympathie
+- persönliche Ansichten
+- Auftreten
+- individuelle Erwartungen an Kommunikation oder Stil
+
+Diese Erwartungen entstehen aus deiner eigenen Einstellung.
+
+Ein Trainer kann es nicht allen recht machen.
+Subjektive Erwartungen werden daher nie vollständig erfüllt.
+
+**Objektive Erwartungen**
+
+Hier geht es um das, was wirklich zählt:
+
+- Fachkompetenz
+- Struktur im Training
+- klare Vermittlung der Inhalte
+- Einhaltung von Prinzipien, Regeln und Abläufen
+
+Diese Faktoren bilden die Grundlage für die Autorität eines Trainers.
+
+Genau darauf legen wir den Fokus.
+
+Das Training folgt klaren Strukturen, Richtlinien und Prinzipien sowie einem definierten Trainingsplan.
+
+Das ist der Standard, nach dem hier trainiert wird.
+
+---
+
+### Der entscheidende Faktor: Deine Lernbereitschaft
+
+Jetzt kommt der wichtigste Punkt:
+
+Alles steht und fällt mit deiner Lernbereitschaft.
+
+**Das beste Konzept + gute Trainer = kein Fortschritt**
+
+wenn du nicht bereit bist:
+
+- zuzuhören
+- umzusetzen
+- dich anzupassen
+
+---
+
+### Kernaussage
+
+**Dein Trainingserfolg hängt davon ab, wie lernbereit du bist.**
+
+---
+
+### Deine Aufgabe
+
+Frag dich jetzt ehrlich:
+
+- Setze ich wirklich das um, was im Training gezeigt wird — oder mache ich mein eigenes Ding?
+- Bin ich offen für neue Dinge — oder halte ich an dem fest, was ich schon kann?
+
+Und dann:
+
+- Geh aktiv auf einen Trainer zu.
+- Hol dir regelmäßiges Feedback.
+- Arbeite bewusst an deiner Lernbereitschaft.`,
+  },
+
 ];
 
 // ── Lookup-Helper ────────────────────────────────────────────────────────────
