@@ -449,7 +449,7 @@ export const MemberLearningView: React.FC = () => {
         )}
 
         {/* Header */}
-        <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 border-b border-gray-700/50 bg-white flex-shrink-0">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-700/50 flex-shrink-0">
           <button onClick={() => setActiveTopic(null)} className="text-gray-400 hover:text-white">
             <ChevronLeft className="w-5 h-5" />
           </button>
