@@ -1357,6 +1357,126 @@ Und dann:
 - Arbeite bewusst an deiner Lernbereitschaft.`,
   },
 
+  {
+    id: 'verhaltensmuster-110',
+    moduleId: 'mod-2',
+    title: '110% Verhaltensmuster',
+    icon: '💯',
+    order: 5,
+    theoryText: `## 110% Verhaltensmuster
+### Raus aus der Opferrolle
+
+---
+
+### Was bedeutet 110%?
+
+110% bedeutet nicht mehr Energie.
+110% bedeutet mehr Anspruch.
+
+Du bleibst nicht bei dem stehen, was gefordert ist –
+du gehst darüber hinaus.
+
+- 10 Wiederholungen → Ziel 11
+- Zeit halten → länger halten
+- „reicht" → reicht nicht
+
+**Du setzt deinen eigenen Standard höher als den vorgegebenen.**
+
+---
+
+### Worum es wirklich geht
+
+110% ist keine Emotion.
+110% ist Verhalten.
+
+Es geht nicht darum, dich auszupowern.
+Es geht darum, bewusst zu arbeiten:
+
+- sauber
+- präzise
+- kontrolliert
+
+Wenn langsam richtig ist → machst du es langsam.
+Wenn Technik zählt → zählt Technik.
+
+**Qualität schlägt Intensität.**
+
+---
+
+### Die Realität
+
+Die meisten hören auf, wenn es unangenehm wird.
+
+Dann kommt der Gedanke:
+„Das ist nichts für mich."
+
+Das ist keine Erkenntnis.
+Das ist maximal Selbstschutz.
+Viel wahrscheinlicher ist es Selbstbetrug.
+
+---
+
+### Die Opferrolle
+
+Typische Aussagen:
+
+- „Das funktioniert bei mir nicht"
+- „Ich kann das nicht"
+- „Ich habe keine Zeit"
+
+Übersetzt:
+
+- keine Lust
+- zu anstrengend
+- zu unbequem
+
+**Gedanken → Verhalten → Ergebnis**
+
+Diesen Bullshit sollte man nicht einfach so durchgehen lassen –
+schon gar nicht bei sich selbst.
+
+---
+
+### Verantwortung
+
+Das System funktioniert bei anderen, also funktioniert es auch bei dir.
+Das Training funktioniert bei anderen, also funktioniert es auch bei dir.
+
+**Du bist die Variable.**
+
+Du triffst deine Entscheidung.
+Nicht nur einmal – sondern täglich.
+
+Und je öfter du diese Entscheidung triffst,
+desto mehr wird sie zu einem Verhaltensmuster.
+
+---
+
+### Kernaussage
+
+110% ist keine Emotion.
+110% ist eine Entscheidung, die du jeden Tag triffst,
+um daraus ein Verhaltensmuster auf Autopilot zu machen.
+
+---
+
+### Deine Aufgabe
+
+Frag dich:
+
+Gebe ich wirklich 110% –
+oder höre ich auf, sobald es unbequem wird?
+
+Dann:
+
+- Setz deinen Standard höher.
+- Hör auf, dich selbst zu schonen.
+- Entscheide dich bewusst für 110%.
+
+**Raus aus der Opferrolle.**
+**Rein in Verantwortung.**`,
+  },
+
 ];
 
 // ── Lookup-Helper ────────────────────────────────────────────────────────────
