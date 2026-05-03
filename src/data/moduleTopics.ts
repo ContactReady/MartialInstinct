@@ -994,6 +994,194 @@ Dein Trainer unterstützt dich.
 **Aber dein Fortschritt beginnt bei dir.**`,
   },
 
+  // ── 3. 🔥 Motivation & Commitment ───────────────────────────────────────
+  {
+    id: 'motivation-commitment',
+    moduleId: 'mod-2',
+    title: 'Motivation & Commitment',
+    icon: '🔥',
+    order: 3,
+    theoryText: `## Motivation & Commitment
+
+Um hier eins direkt klarzustellen:
+Mein Trainerteam und ich sind nicht hier, um dich zu motivieren.
+
+Vielleicht denkst du jetzt:
+„Was soll das denn heißen?"
+„Warum wollen sie mich nicht motivieren?"
+
+Wie fühlt sich das an, was du gerade gelesen hast?
+Fühl mal kurz rein und denk darüber nach, bevor du weiterlesen.
+Was hast du gerade für ein Gefühl?
+
+Okay.
+Lass mich dir kurz erklären, was wir damit meinen.
+
+**Motivation ist nichts, was wir dir geben können.**
+
+Motivation entsteht immer aus dir selbst.
+Und zwar aus deinem Motiv.
+
+---
+
+### Der häufigste Denkfehler
+
+Viele Menschen verwechseln Motivation mit einem guten Gefühl.
+
+Sie denken:
+„Ich bin motiviert, wenn ich Lust habe."
+„Ich bin motiviert, wenn ich mich gut fühle."
+„Ich bin demotiviert, weil ich mich gerade nicht danach fühle."
+
+Das ist falsch. Das ist keine Motivation.
+
+Das ist:
+
+- Stimmung
+- Euphorie
+- ein kurzfristiges Hochgefühl
+
+Und darauf kannst du dich nicht verlassen.
+
+---
+
+### Was Motivation wirklich ist
+
+Motivation basiert immer auf einem Motiv.
+
+- Dein Motiv ist der Grund, warum du etwas tust.
+- Deine Motivation ist die Energie, die daraus entsteht.
+
+Und auf diese Motivation kannst du dich verlassen –
+wenn dein Motiv stark genug ist.
+
+---
+
+### Beispiel: Unter Wasser
+
+Stell dir vor, jemand drückt deinen Kopf unter Wasser.
+
+Du bekommst keine Luft mehr.
+Dein Körper kämpft.
+
+In diesem Moment hast du keine gute Stimmung.
+Keine Euphorie. Kein „ich hab Lust".
+
+Du hast ein Motiv:
+
+- Du willst Luft.
+- Du willst überleben.
+
+Und daraus entsteht sofort Motivation.
+
+---
+
+### Beispiel: Kind auf der Straße
+
+Stell dir vor, du siehst, wie ein Kind auf der Straße spielt.
+
+In einiger Entfernung kommt ein LKW angerast.
+
+In diesem Moment ist es egal:
+
+- wie du dich fühlst
+- ob du müde bist
+- ob du Lust hast
+
+Du wirst handeln.
+
+Warum? Weil du ein klares Motiv hast:
+
+- Du willst das Kind von der Straße holen.
+- Du willst verhindern, dass etwas passiert.
+
+Und genau daraus entsteht deine Motivation – unabhängig davon, wie deine Stimmung gerade ist.
+
+---
+
+### Übertragung auf dein Training
+
+Natürlich ist Training keine Lebensgefahr.
+
+Aber das Prinzip ist das gleiche:
+
+Wenn dein Motiv schwach ist:
+
+- trainierst du nur, wenn du Lust hast
+- bleibst du unregelmäßig
+- hörst du irgendwann auf
+
+Wenn dein Motiv stark ist:
+
+- trainierst du auch ohne Lust
+- bleibst du konstant
+- entwickelst dich weiter
+
+Unabhängig von deiner Stimmung.
+
+---
+
+### Dein echtes Motiv im Training
+
+Frag dich ehrlich:
+
+- Warum bist du hier?
+- Was willst du wirklich verändern?
+- Wo fühlst du dich unsicher?
+- Was stört dich an deiner aktuellen Situation?
+
+Ein starkes Motiv im Training ist zum Beispiel:
+
+- du willst dich sicher fühlen
+- du willst dich nicht hilflos fühlen
+- du willst abends entspannt nach Hause gehen
+- du willst dich nicht ständig unsicher fühlen
+
+Das ist kein kleines Ziel.
+
+Das ist Lebensqualität. Das ist Selbstsicherheit. Das ist Freiheit.
+
+---
+
+### Der entscheidende Unterschied
+
+**Stimmung sagt:** „Ich hab heute keine Lust."
+**Motiv sagt:** „Ich zieh es trotzdem durch."
+
+Und daraus entsteht Motivation.
+
+---
+
+### Commitment
+
+Commitment bedeutet:
+
+Du hast dein Motiv erkannt und triffst eine Entscheidung:
+
+**Ich ziehe das durch.**
+
+Unabhängig davon:
+
+- wie du dich fühlst
+- wie der Tag läuft
+- ob es gerade leicht ist oder nicht
+
+---
+
+### Kernaussage
+
+Motivation ist nichts, was dir jemand geben kann.
+
+Motivation entsteht immer aus deinem Motiv.
+
+Und wenn dein Motiv stark genug ist,
+wirst du handeln – unabhängig von deiner Stimmung.
+
+👉 Stimmung sagt: „Ich hab keine Lust."
+👉 Motiv sagt: „Ich zieh es durch."
+👉 Commitment sagt: „Ich hab entschieden."`,
+  },
+
 ];
 
 // ── Lookup-Helper ────────────────────────────────────────────────────────────
