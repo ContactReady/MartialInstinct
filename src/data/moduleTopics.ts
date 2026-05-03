@@ -715,6 +715,285 @@ Du lässt dein altes Muster nicht dein neues Lernen blockieren.
 3. Du gibst dir die Zeit, besser zu werden.`,
   },
 
+  // ── 2. 🎯 Dein Zielsetzungsmindset ──────────────────────────────────────
+  {
+    id: 'zielsetzungsmindset',
+    moduleId: 'mod-2',
+    title: 'Dein Zielsetzungsmindset',
+    icon: '🎯',
+    order: 2,
+    theoryText: `## Dein Zielsetzungsmindset
+
+Bevor du langfristig Fortschritte machen kannst, muss klar sein, wohin du überhaupt willst.
+
+Viele starten mit Aussagen wie:
+
+- „Ich will fitter werden"
+- „Ich will mich sicherer fühlen"
+- „Ich will mal was Neues ausprobieren"
+
+Das ist ein Anfang – aber noch kein klares Ziel.
+
+Vielleicht hast du dich gerade in einer dieser Aussagen wiedererkannt.
+
+Genau deshalb gibt es dieses Kapitel.
+
+---
+
+### Schritt 1: Verstehe das System
+
+Bevor du dir ein Ziel setzt, musst du verstehen, was du überhaupt trainierst.
+
+Unser Training besteht aus 10 Modulen, die aufeinander aufbauen:
+
+**1. Mission Begins**
+
+In diesem Modul lernst du die ersten Grundlagen, damit du überhaupt sinnvoll am Training teilnehmen kannst.
+
+- richtige Stellung
+- Beinarbeit / Schrittarbeit
+- erste Schlagtechniken
+- erste Angriffstechniken
+- erste Verteidigungstechniken
+- Grundbewegungen
+- Steigerung deiner Fitness
+- Mobility, Dehnung und körperliche Vorbereitung
+
+Ziel: Du bekommst eine körperliche und technische Basis, um aktiv am Unterricht teilnehmen und die ersten Abläufe sauber umsetzen zu können.
+
+---
+
+**2. Mindset & Readiness**
+
+In diesem Modul geht es um deine innere Einstellung zum Training und zu Konflikten.
+
+- Trainingsroutine aufzubauen
+- dranzubleiben
+- mit Druck besser umzugehen
+- mehr Selbstvertrauen zu entwickeln
+- im Alltag selbstsicherer aufzutreten
+- Konflikte mental besser einzuordnen
+- handlungsfähig zu bleiben
+
+Ziel: Du entwickelst ein stabiles Mindset, mehr Selbstsicherheit und eine bessere Trainingshaltung.
+
+---
+
+**3. P.O.N.R. – Point of No Return**
+
+Der Moment, an dem eine Situation kurz davor ist zu eskalieren und du nicht mehr einfach abwarten kannst.
+
+- deine rote Linie zu definieren
+- deinen persönlichen Point of No Return zu erkennen
+- Konflikte frühzeitig zu identifizieren
+- zu verstehen, wann eine Situation kippt
+- nicht zu lange zu warten
+- dem Gegner zuvorzukommen
+- eine Situation schnell zu beenden, bevor sie vollständig eskaliert
+
+Ziel: Du lernst, rechtzeitig zu handeln, deine rote Linie klar zu erkennen und dem Gegner zuvorzukommen.
+
+---
+
+**4. R.C.A.T. – Redirect, Control, Attack, Takeaway**
+
+Dieses Modul greift, wenn eine Situation bereits eskaliert ist.
+
+- Redirect – den Angriff umlenken oder stoppen
+- Control – Kontrolle über die Situation herstellen
+- Attack – aktiv kontern und Druck aufbauen
+- Takeaway – die Gefahr beenden und dich lösen
+
+Ziel: Du lernst, eine eskalierte Situation schnell zu stoppen, zu kontrollieren und zu beenden.
+
+---
+
+**5. Backup Insurance I – Stand**
+
+Wenn du die Situation nicht innerhalb weniger Sekunden beenden konntest, brauchst du eine Backup-Lösung.
+
+- Distanz
+- Schläge
+- Tritte
+- Verteidigung
+- Stabilität
+
+Ziel: Du bleibst im Stand handlungsfähig, auch wenn die Situation länger dauert.
+
+---
+
+**6. Backup Insurance II – Ground**
+
+Dieses Modul greift, wenn du auf dem Boden landest.
+
+- dich am Boden zu orientieren
+- dich zu schützen
+- aufzustehen
+- dich aus ungünstigen Positionen zu befreien
+
+Ziel: Du kannst Bodensituationen überstehen und schnellstmöglich wieder aufstehen.
+
+---
+
+**7. Backup Insurance III – Infight**
+
+Hier geht es um sehr enge Distanzen – jemand packt, würgt oder hält dich fest.
+
+Du lernst, in dieser Distanz handlungsfähig zu bleiben und dich zu befreien.
+
+Ziel: Du lernst, dich aus Nahdistanz-Situationen zu lösen und die Kontrolle zurückzugewinnen.
+
+---
+
+**8. Weapons I – Non-Lethal & Improvised Tools**
+
+- Pfefferspray
+- Tactical Pen
+- Kugelschreiber
+- Schlüssel
+- andere improvisierte Gegenstände
+
+Ziel: Du verstehst, wie du Hilfsmittel sinnvoll einsetzen kannst, um deine Handlungsmöglichkeiten zu erweitern.
+
+---
+
+**9. Weapons II – Edged & Impact Weapon Defense**
+
+- Distanzverhalten
+- Winkelarbeit
+- typische Angriffslinien
+- grundlegende Verteidigungsprinzipien
+
+Ziel: Du wirst auf extreme Situationen vorbereitet und lernst, handlungsfähig zu bleiben.
+
+---
+
+**10. Tactics & Survival**
+
+Hier wird alles miteinander kombiniert.
+
+- Stand, Boden und Infight
+- Hilfsmittel und Waffen
+- verschiedene Umgebungen und enge Räume
+- unterschiedliche Lichtverhältnisse und Szenarien
+- Stop the Bleed – Erstversorgung bei Verletzungen
+
+Ziel: Du lernst, Inhalte unter realistischen Bedingungen anzuwenden und in komplexen Situationen zu handeln.
+
+---
+
+### Schritt 2: Bestimme deinen aktuellen Stand
+
+Jetzt kommt der entscheidende Punkt:
+
+Wo stehst du aktuell?
+
+Frag dich:
+
+- In welchem Modul bewege ich mich gerade?
+- Was kann ich schon?
+- Wo habe ich Lücken?
+
+Wenn du das beantworten kannst: sehr gut.
+Wenn nicht: beginnt hier deine Mitarbeit.
+
+---
+
+### Schritt 3: Definiere dein Ziel
+
+Jetzt setzt du dir ein erstes Ziel.
+
+Nicht perfekt – aber klar.
+
+Beispiele:
+
+- „Ich will mich im Stand sicher fühlen"
+- „Ich will am Boden nicht hilflos sein"
+- „Ich will lernen, mit Drucksituationen umzugehen"
+
+Dein Ziel ist dein Ausgangspunkt.
+
+---
+
+### Schritt 4: Werde aktiv
+
+Jetzt gehst du aktiv auf einen Trainer zu.
+
+Nicht andersrum.
+
+Warum?
+
+- weil dein Fortschritt von dir ausgeht
+- weil du von Anfang an in die Eigenverantwortung gehst
+
+Du sollst nicht in die Haltung kommen:
+„Mein Trainer wird das schon für mich machen."
+
+Sondern du machst dir selbst Gedanken:
+
+- Wo stehe ich aktuell?
+- Wo will ich hin?
+- Was ist mein nächster Schritt?
+
+Und genau mit diesen Gedanken gehst du ins Gespräch.
+
+Das Gespräch dient nicht dazu, dir die Arbeit abzunehmen – sondern dazu, deine Überlegungen zu schärfen und klarer zu machen.
+
+**Das ist kein einmaliges Gespräch.**
+
+Du sollst regelmäßig:
+
+- deinen Stand reflektieren
+- dein Ziel überprüfen
+- Feedback einholen
+- den nächsten Schritt klären
+
+Wenn du einfach nur zum Training kommst und hoffst, dass „das schon alles wird", bleibst du passiv.
+
+**Und passives Training führt zu passiven Ergebnissen.**
+
+---
+
+### Schritt 5: Nutze die Roadmap
+
+Die Roadmap entsteht aus:
+
+- deinem Verständnis
+- deinem Ziel
+- deinem Gespräch mit dem Trainer
+
+Sie zeigt dir:
+
+- deinen nächsten sinnvollen Schritt
+- deinen Fokus
+- deinen Weg durch das System
+
+---
+
+### Kernaussage
+
+Du bist nicht hier, um einfach nur mitzumachen.
+
+Du bist hier, um besser zu werden.
+
+Und das bedeutet:
+
+**Verantwortung übernehmen. Selbst denken. Aktiv handeln.**
+
+Martial Instinct bedeutet für uns nicht nur die Techniken, die du lernst.
+
+Es ist das Gesamtsystem – inklusive deiner inneren Haltung.
+
+Und diese Haltung bedeutet:
+
+👉 Eigenverantwortung statt Abwarten
+👉 Aktivität statt Passivität
+👉 Entwicklung statt Stillstand
+
+Dein Trainer unterstützt dich.
+**Aber dein Fortschritt beginnt bei dir.**`,
+  },
+
 ];
 
 // ── Lookup-Helper ────────────────────────────────────────────────────────────
