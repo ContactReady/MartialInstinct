@@ -284,6 +284,10 @@ export const InstructorView: React.FC = () => {
   const [qEditQuestion, setQEditQuestion] = useState('');
   const [qEditOptions, setQEditOptions] = useState(['', '', '', '']);
   const [qEditCorrectIndex, setQEditCorrectIndex] = useState(0);
+  const [qEditCorrectIndices, setQEditCorrectIndices] = useState<number[]>([]);
+  const [qEditType, setQEditType] = useState<'single' | 'truefalse' | 'multiple' | 'matching' | 'fillblank'>('single');
+  const [qEditTopic, setQEditTopic] = useState('');
+  const [qEditPairs, setQEditPairs] = useState([{ left: '', right: '' }, { left: '', right: '' }, { left: '', right: '' }, { left: '', right: '' }]);
   const [qEditExplanation, setQEditExplanation] = useState('');
   const [contentQuizCount, setContentQuizCount] = useState(10);
 
@@ -3330,12 +3334,16 @@ export const InstructorView: React.FC = () => {
             await deleteTechnique(id);
           };
 
-          const openEditQuestion = (id: string, question = '', options = ['', '', '', ''], correctIndex = 0, explanation = '') => {
+          const openEditQuestion = (id: string, q?: { question?: string; options?: string[]; correctIndex?: number; correctIndices?: number[]; type?: string; topic?: string; pairs?: { left: string; right: string }[]; explanation?: string }) => {
             setEditingQuestionId(id);
-            setQEditQuestion(question);
-            setQEditOptions([...options, '', '', '', ''].slice(0, 4));
-            setQEditCorrectIndex(correctIndex);
-            setQEditExplanation(explanation);
+            setQEditQuestion(q?.question ?? '');
+            setQEditType((q?.type as 'single' | 'truefalse' | 'multiple' | 'matching' | 'fillblank') ?? 'single');
+            setQEditTopic(q?.topic ?? '');
+            setQEditOptions([...(q?.options ?? ['', '', '', '']), '', '', '', ''].slice(0, 4));
+            setQEditCorrectIndex(q?.correctIndex ?? 0);
+            setQEditCorrectIndices(q?.correctIndices ?? []);
+            setQEditPairs(q?.pairs?.length ? q.pairs.map(p => ({ left: p.left, right: p.right })).concat([{ left: '', right: '' }, { left: '', right: '' }, { left: '', right: '' }, { left: '', right: '' }]).slice(0, 4) : [{ left: '', right: '' }, { left: '', right: '' }, { left: '', right: '' }, { left: '', right: '' }]);
+            setQEditExplanation(q?.explanation ?? '');
           };
 
           const handleSaveQuestion = async () => {
@@ -3343,7 +3351,16 @@ export const InstructorView: React.FC = () => {
             const isNew = editingQuestionId === 'new';
             const id = isNew ? undefined : editingQuestionId ?? undefined;
             const maxPos = isNew ? moduleQuestions.length : (moduleQuestions.find(q => q.id === id)?.position ?? moduleQuestions.length);
-            await saveQuizQuestion({ id: id ?? '', moduleId: contentModuleId, question: qEditQuestion.trim(), options: qEditOptions.map(o => o.trim()), correctIndex: qEditCorrectIndex, explanation: qEditExplanation.trim(), position: maxPos });
+            const base = { id: id ?? '', moduleId: contentModuleId, question: qEditQuestion.trim(), type: qEditType, topic: qEditTopic || undefined, explanation: qEditExplanation.trim(), position: maxPos };
+            if (qEditType === 'truefalse') {
+              await saveQuizQuestion({ ...base, options: ['Richtig', 'Falsch'], correctIndex: qEditCorrectIndex });
+            } else if (qEditType === 'multiple') {
+              await saveQuizQuestion({ ...base, options: qEditOptions.map(o => o.trim()), correctIndices: qEditCorrectIndices });
+            } else if (qEditType === 'matching') {
+              await saveQuizQuestion({ ...base, pairs: qEditPairs.filter(p => p.left.trim() && p.right.trim()) });
+            } else {
+              await saveQuizQuestion({ ...base, options: qEditOptions.map(o => o.trim()), correctIndex: qEditCorrectIndex });
+            }
             setEditingQuestionId(null);
           };
 
@@ -3722,6 +3739,21 @@ export const InstructorView: React.FC = () => {
                         <button onClick={() => { setShowQuizBulkImport(v => !v); setQuizBulkPreview([]); setQuizBulkImportText(''); }} className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 py-2 px-3 rounded-lg">Bulk</button>
                       </div>
 
+                      {/* Topic-Filter */}
+                      {moduleQuestions.length > 0 && (() => {
+                        const topics = [...new Set(moduleQuestions.map(q => q.topic).filter(Boolean))];
+                        if (topics.length === 0) return null;
+                        return (
+                          <div className="flex flex-wrap gap-1">
+                            {topics.map(t => (
+                              <span key={t} className="text-[10px] bg-gray-800 text-gray-400 border border-gray-700 rounded px-2 py-0.5">
+                                {t} ({moduleQuestions.filter(q => q.topic === t).length})
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
+
                       {showQuizBulkImport && (
                         <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700 space-y-2">
                           <p className="text-gray-500 text-xs leading-relaxed">
@@ -3766,54 +3798,113 @@ export const InstructorView: React.FC = () => {
                         </div>
                       )}
 
-                      {editingQuestionId === 'new' && (
-                        <div className="bg-gray-700/50 rounded-lg p-3 border border-gray-600 space-y-2">
-                          <textarea value={qEditQuestion} onChange={e => setQEditQuestion(e.target.value)} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} placeholder="Frage *" rows={2} className="w-full bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none overflow-hidden" />
-                          {qEditOptions.map((opt, i) => (
-                            <div key={i} className="flex items-start gap-2">
-                              <button onClick={() => setQEditCorrectIndex(i)} className={`w-6 h-6 rounded-full border-2 flex-shrink-0 text-xs font-bold transition-all mt-1 ${i === qEditCorrectIndex ? 'bg-green-500 border-green-500 text-white' : 'border-gray-500 text-gray-500'}`}>{String.fromCharCode(65 + i)}</button>
-                              <textarea value={opt} onChange={e => { const o = [...qEditOptions]; o[i] = e.target.value; setQEditOptions(o); }} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} placeholder={`Option ${String.fromCharCode(65 + i)}`} rows={1} className="flex-1 bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none overflow-hidden" />
-                            </div>
-                          ))}
-                          <textarea value={qEditExplanation} onChange={e => setQEditExplanation(e.target.value)} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} placeholder="Erklärung nach der Antwort (optional)" rows={1} className="w-full bg-gray-800 text-gray-300 text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-gray-500 resize-none overflow-hidden" />
-                          <div className="flex gap-2 justify-end">
-                            <button onClick={() => setEditingQuestionId(null)} className="text-xs text-gray-400 px-3 py-1">Abbrechen</button>
-                            <button onClick={handleSaveQuestion} className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded">Speichern</button>
-                          </div>
-                        </div>
-                      )}
+                      {/* Fragen-Editor (neu + bearbeiten) */}
+                      {(() => {
+                        const qTypeLabels: Record<string, string> = { single: 'Single', truefalse: 'Wahr/Falsch', multiple: 'Multiple', matching: 'Zuordnung', fillblank: 'Lückentext' };
+                        const moduleTops = contentModuleId ? [...new Set(getQuizQuestionsForModule(contentModuleId).map(q => q.topic).filter(Boolean))] as string[] : [];
+                        const QuizEditor = ({ isNew, qId }: { isNew: boolean; qId?: string }) => (
+                          <div className="bg-gray-700/50 rounded-lg p-3 border border-gray-600 space-y-2">
+                            {!isNew && <div className="text-gray-500 text-xs">Frage bearbeiten</div>}
 
-                      {moduleQuestions.map((q, idx) => (
-                        editingQuestionId === q.id ? (
-                          <div key={q.id} className="bg-gray-700/50 rounded-lg p-3 border border-gray-600 space-y-2">
-                            <div className="text-gray-500 text-xs">Frage {idx + 1}</div>
-                            <textarea value={qEditQuestion} onChange={e => setQEditQuestion(e.target.value)} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} rows={2} className="w-full bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none overflow-hidden" />
-                            {qEditOptions.map((opt, i) => (
+                            {/* Typ-Auswahl */}
+                            <div className="flex flex-wrap gap-1">
+                              {(['single', 'truefalse', 'multiple', 'matching', 'fillblank'] as const).map(t => (
+                                <button key={t} onClick={() => setQEditType(t)} className={`text-[10px] px-2 py-0.5 rounded border transition-all ${qEditType === t ? 'bg-red-700 border-red-600 text-white' : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'}`}>{qTypeLabels[t]}</button>
+                              ))}
+                            </div>
+
+                            {/* Topic */}
+                            <input
+                              value={qEditTopic}
+                              onChange={e => setQEditTopic(e.target.value)}
+                              placeholder="Topic (z.B. empty-your-mind)"
+                              list={`topics-${qId ?? 'new'}`}
+                              className="w-full bg-gray-800 text-gray-300 text-xs rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-gray-500"
+                            />
+                            <datalist id={`topics-${qId ?? 'new'}`}>
+                              {moduleTops.map(t => <option key={t} value={t} />)}
+                            </datalist>
+
+                            {/* Fragetext */}
+                            <textarea value={qEditQuestion} onChange={e => setQEditQuestion(e.target.value)} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} placeholder="Frage *" rows={2} className="w-full bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none overflow-hidden" />
+
+                            {/* Typ-spezifische Inputs */}
+                            {qEditType === 'truefalse' && (
+                              <div className="flex gap-2">
+                                {['Richtig', 'Falsch'].map((lbl, i) => (
+                                  <button key={i} onClick={() => setQEditCorrectIndex(i)} className={`flex-1 text-xs py-1.5 rounded border transition-all ${qEditCorrectIndex === i ? 'bg-green-700 border-green-600 text-white' : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'}`}>{lbl}</button>
+                                ))}
+                              </div>
+                            )}
+
+                            {(qEditType === 'single' || qEditType === 'fillblank') && qEditOptions.map((opt, i) => (
                               <div key={i} className="flex items-start gap-2">
                                 <button onClick={() => setQEditCorrectIndex(i)} className={`w-6 h-6 rounded-full border-2 flex-shrink-0 text-xs font-bold transition-all mt-1 ${i === qEditCorrectIndex ? 'bg-green-500 border-green-500 text-white' : 'border-gray-500 text-gray-500'}`}>{String.fromCharCode(65 + i)}</button>
-                                <textarea value={opt} onChange={e => { const o = [...qEditOptions]; o[i] = e.target.value; setQEditOptions(o); }} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} rows={1} className="flex-1 bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none overflow-hidden" />
+                                <textarea value={opt} onChange={e => { const o = [...qEditOptions]; o[i] = e.target.value; setQEditOptions(o); }} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} placeholder={`Option ${String.fromCharCode(65 + i)}`} rows={1} className="flex-1 bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none overflow-hidden" />
                               </div>
                             ))}
-                            <textarea value={qEditExplanation} onChange={e => setQEditExplanation(e.target.value)} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} placeholder="Erklärung (optional)" rows={1} className="w-full bg-gray-800 text-gray-300 text-sm rounded px-2 py-1.5 border border-gray-600 outline-none resize-none overflow-hidden" />
+
+                            {qEditType === 'multiple' && qEditOptions.map((opt, i) => (
+                              <div key={i} className="flex items-start gap-2">
+                                <button onClick={() => setQEditCorrectIndices(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])} className={`w-6 h-6 rounded border-2 flex-shrink-0 text-xs font-bold transition-all mt-1 ${qEditCorrectIndices.includes(i) ? 'bg-green-500 border-green-500 text-white' : 'border-gray-500 text-gray-500'}`}>{String.fromCharCode(65 + i)}</button>
+                                <textarea value={opt} onChange={e => { const o = [...qEditOptions]; o[i] = e.target.value; setQEditOptions(o); }} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} placeholder={`Option ${String.fromCharCode(65 + i)}`} rows={1} className="flex-1 bg-gray-800 text-white text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500 resize-none overflow-hidden" />
+                              </div>
+                            ))}
+
+                            {qEditType === 'matching' && qEditPairs.map((pair, i) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <span className="text-gray-600 text-xs w-4 flex-shrink-0">{i + 1}</span>
+                                <input value={pair.left} onChange={e => { const p = [...qEditPairs]; p[i] = { ...p[i], left: e.target.value }; setQEditPairs(p); }} placeholder="Links" className="flex-1 bg-gray-800 text-white text-xs rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500" />
+                                <span className="text-gray-600 text-xs">→</span>
+                                <input value={pair.right} onChange={e => { const p = [...qEditPairs]; p[i] = { ...p[i], right: e.target.value }; setQEditPairs(p); }} placeholder="Rechts" className="flex-1 bg-gray-800 text-white text-xs rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-red-500" />
+                              </div>
+                            ))}
+
+                            <textarea value={qEditExplanation} onChange={e => setQEditExplanation(e.target.value)} onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }} placeholder="Erklärung nach der Antwort (optional)" rows={1} className="w-full bg-gray-800 text-gray-300 text-sm rounded px-2 py-1.5 border border-gray-600 outline-none focus:border-gray-500 resize-none overflow-hidden" />
                             <div className="flex gap-2 justify-between">
-                              <button onClick={() => handleDeleteQuestion(q.id)} className="text-xs bg-red-900/50 hover:bg-red-800 text-red-400 px-3 py-1 rounded">Löschen</button>
-                              <div className="flex gap-2">
+                              {!isNew && <button onClick={() => handleDeleteQuestion(qId!)} className="text-xs bg-red-900/50 hover:bg-red-800 text-red-400 px-3 py-1 rounded">Löschen</button>}
+                              <div className={`flex gap-2 ${isNew ? 'ml-auto' : ''}`}>
                                 <button onClick={() => setEditingQuestionId(null)} className="text-xs text-gray-400 px-3 py-1">Abbrechen</button>
                                 <button onClick={handleSaveQuestion} className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded">Speichern</button>
                               </div>
                             </div>
                           </div>
-                        ) : (
-                          <div key={q.id} className="flex items-start gap-2 bg-gray-800/50 rounded-lg px-3 py-2.5 group border border-gray-700/30 hover:border-gray-600/50">
-                            <span className="text-[10px] text-gray-600 font-mono flex-shrink-0 mt-0.5 w-6 text-right">#{idx + 1}</span>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-gray-200 text-sm leading-relaxed">{q.question}</div>
-                              <div className="text-gray-500 text-xs mt-0.5">✓ {q.options?.[q.correctIndex ?? 0]}</div>
-                            </div>
-                            <button onClick={() => openEditQuestion(q.id, q.question, q.options ?? [], q.correctIndex ?? 0, q.explanation ?? '')} className="text-gray-500 hover:text-white text-xs flex-shrink-0 mt-0.5">✏️</button>
-                          </div>
-                        )
-                      ))}
+                        );
+
+                        const typeColor: Record<string, string> = { single: 'text-blue-400', truefalse: 'text-purple-400', multiple: 'text-yellow-400', matching: 'text-orange-400', fillblank: 'text-cyan-400' };
+                        const typeBadge: Record<string, string> = { single: 'S', truefalse: 'TF', multiple: 'M', matching: 'MA', fillblank: 'FB' };
+
+                        const getAnswerPreview = (q: typeof moduleQuestions[0]) => {
+                          if (q.type === 'truefalse' || q.type === 'single' || q.type === 'fillblank') return `✓ ${q.options?.[q.correctIndex ?? 0] ?? ''}`;
+                          if (q.type === 'multiple') return `✓ ${(q.correctIndices ?? []).map(i => q.options?.[i]).filter(Boolean).join(', ')}`;
+                          if (q.type === 'matching') return `${q.pairs?.[0]?.left ?? ''} → ${q.pairs?.[0]?.right ?? ''}`;
+                          return '';
+                        };
+
+                        return (
+                          <>
+                            {editingQuestionId === 'new' && <QuizEditor isNew />}
+                            {moduleQuestions.map((q, idx) => (
+                              editingQuestionId === q.id ? (
+                                <QuizEditor key={q.id} isNew={false} qId={q.id} />
+                              ) : (
+                                <div key={q.id} className="flex items-start gap-2 bg-gray-800/50 rounded-lg px-3 py-2.5 group border border-gray-700/30 hover:border-gray-600/50">
+                                  <div className="flex flex-col items-center gap-0.5 flex-shrink-0 mt-0.5">
+                                    <span className="text-[10px] text-gray-600 font-mono w-6 text-right">#{idx + 1}</span>
+                                    <span className={`text-[9px] font-bold ${typeColor[q.type ?? 'single'] ?? 'text-gray-500'}`}>{typeBadge[q.type ?? 'single'] ?? 'S'}</span>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    {q.topic && <div className="text-[9px] text-gray-600 mb-0.5">{q.topic}</div>}
+                                    <div className="text-gray-200 text-sm leading-relaxed">{q.question}</div>
+                                    <div className="text-gray-500 text-xs mt-0.5 truncate">{getAnswerPreview(q)}</div>
+                                  </div>
+                                  <button onClick={() => openEditQuestion(q.id, q)} className="text-gray-500 hover:text-white text-xs flex-shrink-0 mt-0.5">✏️</button>
+                                </div>
+                              )
+                            ))}
+                          </>
+                        );
+                      })()}
 
                       {moduleQuestions.length === 0 && editingQuestionId !== 'new' && (
                         <div className="text-gray-600 text-xs text-center py-4 border border-dashed border-gray-700/40 rounded-lg">Noch keine Fragen — füge die erste hinzu.</div>
