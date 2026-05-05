@@ -78,6 +78,7 @@ function rowToMember(row: DbRow): Member {
     buddyCode: row.buddy_code as Member['buddyCode'],
     connections: (row.connections as string[]) || [],
     buddyRequests: (row.buddy_requests as Member['buddyRequests']) || [],
+    totalTrainingSessions: (row.total_training_sessions as number) || 0,
   };
 }
 
@@ -119,6 +120,7 @@ function memberToRow(m: Member): DbRow {
     buddy_code:            m.buddyCode || null,
     connections:           m.connections || [],
     buddy_requests:        m.buddyRequests || [],
+    total_training_sessions: m.totalTrainingSessions ?? 0,
     updated_at:            new Date().toISOString(),
   };
 }

@@ -320,6 +320,9 @@ export interface Member {
     showMemberId?: boolean;           // default: false
     birthDateVisibility?: 'hidden' | 'dayMonth' | 'full'; // default: 'hidden'
   };
+
+  // Gesamtanzahl bestätigter Trainingseinheiten (inkl. Check-Ins)
+  totalTrainingSessions?: number;
 }
 
 export interface MemberQuizProgress {

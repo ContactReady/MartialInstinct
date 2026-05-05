@@ -1104,6 +1104,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             checkedInAt: approvedAt,
             lastSeenAt: approvedAt,
             xp: (m.xp ?? 0) + platformConfig.xp.checkIn + streakXP,
+            totalTrainingSessions: (m.totalTrainingSessions ?? 0) + 1,
             streak: {
               ...m.streak,
               lastTrainingDate: approvedAt,
@@ -2150,6 +2151,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const techPassedCount = Object.values(tp).filter(p => p.status === 'tech_passed' || p.status === 'tac_passed' || p.status === 'tac_pending').length;
     const tacPassedCount = Object.values(tp).filter(p => p.status === 'tac_passed').length;
+
+    if ((member.totalTrainingSessions ?? 0) >= 10) {
+      badges.push({ id: 'training_10', label: '10 Trainings', icon: '🩹', description: '10 Trainingseinheiten absolviert', earnedAt: new Date() });
+    }
 
     if (techPassedCount >= 1) {
       badges.push({ id: 'first_tech', label: 'Erste Prüfung', icon: '🎯', description: 'Erste technische Prüfung bestanden', earnedAt: new Date() });
