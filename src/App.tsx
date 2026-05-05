@@ -1013,16 +1013,20 @@ const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <p className="mt-1">Fehlst du eine Woche, verlierst du den Streak — es sei denn du hast noch <span className="text-white font-semibold">Bandaids</span> übrig (max. 2). Ein Bandaid überbrückt eine verpasste Woche.</p>
           </Section>
 
-          <Section id="techniken" icon="🥋" title="Techniken & Prüfungen">
-            <p>Jedes Modul enthält Pflicht- und optionale Techniken. Eine Technik durchläuft zwei Stufen:</p>
-            <div className="mt-1.5 space-y-1">
-              <div className="flex items-start gap-2">
-                <span className="text-yellow-400 font-bold flex-shrink-0">Tech</span>
-                <span>Technisch bestanden — Bewegungsablauf korrekt ausgeführt.</span>
+          <Section id="techniken" icon="🥋" title="Techniken & Prüfungsebenen">
+            <p>Jedes Modul enthält Pflicht- und optionale Techniken. Jede Technik hat drei Kompetenzebenen:</p>
+            <div className="mt-1.5 space-y-1.5">
+              <div className="flex items-start gap-2.5">
+                <span className="text-blue-400 font-bold text-sm flex-shrink-0 w-4">T</span>
+                <div><span className="text-white font-semibold">Tactical</span> — Technisch-taktisches Verständnis. Ich habe es verstanden und kann es korrekt ausführen.</div>
               </div>
-              <div className="flex items-start gap-2">
-                <span className="text-green-400 font-bold flex-shrink-0">Tac</span>
-                <span>Taktisch bestanden — Anwendung unter Druck, entscheidend für Block-Abschluss.</span>
+              <div className="flex items-start gap-2.5">
+                <span className="text-orange-400 font-bold text-sm flex-shrink-0 w-4">C</span>
+                <div><span className="text-white font-semibold">Combat</span> — Anwendungsebene. Ich kann die Technik im Kampf einsetzen.</div>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="text-purple-400 font-bold text-sm flex-shrink-0 w-4">I</span>
+                <div><span className="text-white font-semibold">Instructor</span> — Lehrebene. Ich kann die Technik unterrichten und vermitteln.</div>
               </div>
             </div>
           </Section>
