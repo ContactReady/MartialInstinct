@@ -1026,111 +1026,822 @@ export const mod1Questions: QuizQuestion[] = [
 // MODUL 2 — Mindset & Readiness
 // ============================================
 export const mod2Questions: QuizQuestion[] = [
+
+  // ── EMPTY YOUR MIND (16) ──────────────────────────────────────────────────
+
   {
-    id: 'm2q1',
-    question: 'Was ist der erste Schritt zur Trainingsroutine?',
-    options: ['Sofort intensiv trainieren', 'Feste Trainingszeiten definieren und einhalten', 'Erst alle Techniken lernen', 'Auf Motivation warten'],
+    id: 'm2tf1',
+    topic: 'empty-your-mind',
+    type: 'truefalse',
+    question: '„Empty Your Mind" bedeutet, dass du aufhörst zu denken.',
+    options: ['Richtig', 'Falsch'],
     correctIndex: 1,
-    explanation: 'Feste Zeiten schaffen Routine — Routine schlägt Motivation, denn Motivation ist unzuverlässig, Gewohnheit nicht.'
+    explanation: 'Falsch. Es bedeutet, dein bisheriges Denkmuster zurückzustellen und dich auf das System einzulassen — nicht das Denken abzuschalten.'
   },
   {
-    id: 'm2q2',
-    question: 'Was bedeutet "mentale Stabilität" im Kampfkontext?',
-    options: ['Keine Angst zu haben', 'Handlungsfähig zu bleiben auch unter extremem Stress', 'Niemals aufzugeben', 'Immer ruhig zu wirken'],
+    id: 'm2tf2',
+    topic: 'empty-your-mind',
+    type: 'truefalse',
+    question: 'Fortschritt entsteht durch Diskussion, nicht durch Umsetzung.',
+    options: ['Richtig', 'Falsch'],
     correctIndex: 1,
-    explanation: 'Mentale Stabilität bedeutet handlungsfähig zu bleiben — Angst ist normal und nützlich, entscheidend ist ob du trotzdem reagieren kannst.'
+    explanation: 'Falsch. Der Fortschritt entsteht durch Umsetzung — nicht durch Diskussion.'
   },
   {
-    id: 'm2q3',
-    question: 'Was ist "Druckannahme" im M.I. Training?',
-    options: ['Das Akzeptieren von Kritik', 'Die Fähigkeit, unter Druck ruhig und handlungsfähig zu bleiben', 'Das Trainieren unter Zeitdruck', 'Psychologische Belastbarkeit am Arbeitsplatz'],
+    id: 'm2tf3',
+    topic: 'empty-your-mind',
+    type: 'truefalse',
+    question: 'Du musst eine Technik erst vollständig verstehen, bevor du sie umsetzt.',
+    options: ['Richtig', 'Falsch'],
     correctIndex: 1,
-    explanation: 'Druckannahme ist die trainierte Fähigkeit, auch in Hochstress-Situationen klare Entscheidungen zu treffen und zu handeln.'
+    explanation: 'Falsch. Die Reihenfolge lautet: erst umsetzen, dann verstehen, dann bewerten.'
   },
   {
-    id: 'm2q4',
-    question: 'Warum ist Durchhalten im Training so wichtig?',
-    options: ['Um anderen zu imponieren', 'Weil Können durch Wiederholung entsteht, nicht durch Talent', 'Weil der Instructor es erwartet', 'Für bessere Noten'],
-    correctIndex: 1,
-    explanation: 'Können entsteht durch Wiederholung — Techniken werden erst unter Druck abrufbar, wenn sie tausende Male geübt wurden.'
+    id: 'm2tf4',
+    topic: 'empty-your-mind',
+    type: 'truefalse',
+    question: 'Techniken dürfen langsam gelernt werden, solange sie korrekt umgesetzt werden.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 0,
+    explanation: 'Richtig. Langsam und korrekt ist besser als schnell und falsch — Fehler die sich festsetzen bremsen den späteren Fortschritt.'
   },
   {
-    id: 'm2q5',
-    question: 'Was versteht man unter "Entscheidungsfähigkeit" im Konflikt?',
-    options: ['Immer die beste Option wählen', 'Schnell eine Entscheidung treffen auch wenn die Information unvollständig ist', 'Lange abwägen bevor man handelt', 'Den Gegner beobachten bis eine Lücke entsteht'],
+    id: 'm2tf5',
+    topic: 'empty-your-mind',
+    type: 'truefalse',
+    question: 'Du solltest dich mit anderen Trainierenden vergleichen, um deinen Fortschritt einzuschätzen.',
+    options: ['Richtig', 'Falsch'],
     correctIndex: 1,
-    explanation: 'In einem echten Konflikt hast du keine Zeit für lange Analysen — Entscheidungsfähigkeit heißt: schnell handeln auch mit unvollständiger Information.'
+    explanation: 'Falsch. Jeder lernt in seinem eigenen Tempo. Konzentriere dich auf deinen eigenen Fortschritt — nicht auf den anderer.'
   },
   {
-    id: 'm2q6',
-    question: 'Was ist der Unterschied zwischen Mut und Rücksichtslosigkeit?',
-    options: ['Kein Unterschied', 'Mut ist kalkuliertes Handeln trotz Angst, Rücksichtslosigkeit ignoriert Risiken', 'Mut ist ohne Angst zu handeln', 'Rücksichtslosigkeit ist effektiver'],
+    id: 'm2s1',
+    topic: 'empty-your-mind',
+    type: 'single',
+    question: 'Was bedeutet „Empty Your Mind" konkret?',
+    options: [
+      'Alles vergessen, was du weißt',
+      'Dein bisheriges Denkmuster zurückstellen und dich auf das System einlassen',
+      'Ohne Nachdenken trainieren',
+      'Auf eigene Anweisungen des Trainers verzichten',
+    ],
     correctIndex: 1,
-    explanation: 'Mut bedeutet trotz Angst zu handeln und dabei Risiken einzukalkulieren. Rücksichtslosigkeit ignoriert Risiken — das ist gefährlich, nicht effektiv.'
+    explanation: 'Dein bisheriges Muster hat dich nicht ans Ziel gebracht — deshalb stellst du es zurück und lässt dich auf das System ein.'
   },
   {
-    id: 'm2q7',
-    question: 'Wie geht man mit "mentaler Auseinandersetzung mit Konflikten" um?',
-    options: ['Konflikte gedanklich vermeiden', 'Szenarien mental durchspielen um vorbereitet zu sein', 'Nur im Training denken, nicht im Alltag', 'Konflikte als unmöglich betrachten'],
-    correctIndex: 1,
-    explanation: 'Mentale Auseinandersetzung bedeutet: Szenarien im Kopf durchspielen, um im Ernstfall nicht von der Situation überrascht zu werden.'
+    id: 'm2s2',
+    topic: 'empty-your-mind',
+    type: 'single',
+    question: 'Was sollst du tun, wenn etwas im Training unklar ist?',
+    options: [
+      'Eigenständig improvisieren',
+      'Es ignorieren und weitermachen',
+      'Fragen stellen und Feedback vom Trainer holen',
+      'Warten bis du es alleine herausfindest',
+    ],
+    correctIndex: 2,
+    explanation: 'Unsicherheit ist kein Problem — falsche Eigenlösungen sind es. Fragen stellen ist immer die richtige Antwort.'
   },
   {
-    id: 'm2q8',
-    question: 'Was ist "Handlungsfähig bleiben" im M.I. Kontext?',
-    options: ['Immer kämpfen können', 'In jeder Situation — auch nach einem Treffer — weiter agieren können', 'Keine Verletzungen zu erleiden', 'Schneller als der Gegner sein'],
-    correctIndex: 1,
-    explanation: 'Handlungsfähig bleiben heißt: auch nach einem Treffer, auch in Panik, auch verletzt — weiter denken und agieren können.'
+    id: 'm2s3',
+    topic: 'empty-your-mind',
+    type: 'single',
+    question: 'Warum sind eigene Anpassungen an Techniken am Anfang problematisch?',
+    options: [
+      'Weil der Trainer es nicht erlaubt',
+      'Weil andere Mitglieder dadurch verwirrt werden',
+      'Weil es zu langsam geht',
+      'Weil sie die Technik verfälschen, die Struktur zerstören und Fehler festigen',
+    ],
+    correctIndex: 3,
+    explanation: 'Dein aktuelles Muster hat dich nicht ans Ziel gebracht. Neue Inhalte direkt zu verändern bedeutet, alte Fehler in Neues zu übertragen.'
   },
   {
-    id: 'm2q9',
-    question: 'Warum trainiert M.I. Stress-Inokulierung?',
-    options: ['Für Wettkampfvorbereitung', 'Um den Körper an Stress zu gewöhnen damit er im Ernstfall nicht überfordert ist', 'Für medizinische Forschung', 'Um Schüler zu testen'],
-    correctIndex: 1,
-    explanation: 'Stress-Inokulierung (Training unter Druck) gewöhnt Körper und Geist an Hochstress — im echten Ernstfall reagierst du dann nicht mit Panik.'
+    id: 'm2s4',
+    topic: 'empty-your-mind',
+    type: 'single',
+    question: 'Was ist das übergeordnete Ziel von „Empty Your Mind"?',
+    options: [
+      'Den Trainer zu beeindrucken',
+      'So schnell wie möglich Techniken zu lernen',
+      'Eine klare Basis schaffen, auf der alles Weitere aufbaut',
+      'Eigene Stärken von Anfang an einzubringen',
+    ],
+    correctIndex: 2,
+    explanation: 'Das Training ist strukturiert aufgebaut — eine saubere Basis von Anfang an ist die Voraussetzung für alles, was folgt.'
   },
   {
-    id: 'm2q10',
-    question: 'Was ist die mentale Grundhaltung im M.I. System?',
-    options: ['Aggression als erste Reaktion', 'Deeskalation bevorzugen, aber konsequent handeln wenn nötig', 'Immer zuerst fliehen', 'Den Gegner einschüchtern'],
-    correctIndex: 1,
-    explanation: 'M.I. bevorzugt Deeskalation — aber wenn die Situation eskaliert, wird konsequent und entschlossen gehandelt. Keine halben Sachen.'
+    id: 'm2s5',
+    topic: 'empty-your-mind',
+    type: 'single',
+    question: 'Was braucht Entwicklung im Training laut diesem Kapitel?',
+    options: [
+      'Talent, Fitness und Ehrgeiz',
+      'Viel Eigeninitiative und Anpassung',
+      'Regelmäßige Vergleiche mit anderen',
+      'Geduld, Wiederholung und konsequente Umsetzung',
+    ],
+    correctIndex: 3,
+    explanation: 'Mindset verändert sich nicht von heute auf morgen — Geduld, Wiederholung und konsequente Umsetzung sind der Prozess.'
   },
   {
-    id: 'm2q11',
-    question: 'Warum ist "Durchhalten" schwieriger als körperliches Training?',
-    options: ['Es ist einfacher', 'Weil der Kopf aufgibt bevor der Körper erschöpft ist', 'Weil es keine Techniken zu lernen gibt', 'Weil die Muskeln nicht trainiert werden'],
-    correctIndex: 1,
-    explanation: 'Der Kopf gibt in 90% der Fälle vor dem Körper auf — mentales Training ist deshalb genauso wichtig wie physisches.'
+    id: 'm2m1',
+    topic: 'empty-your-mind',
+    type: 'multiple',
+    question: 'Worauf brauchst du Vertrauen, damit du Fortschritte machst? (mehrere richtig)',
+    options: [
+      'In den Trainer',
+      'In deine eigene Vorerfahrung',
+      'In das Trainerteam',
+      'In das Trainingssystem',
+    ],
+    correctIndices: [0, 2, 3],
+    explanation: 'Vertrauen in Trainer, Trainerteam und Trainingssystem — diese drei bilden die Grundlage, auf der Umsetzung möglich wird.'
   },
   {
-    id: 'm2q12',
-    question: 'Was hilft gegen Blackout-Momente in Konfliktsituationen?',
-    options: ['Mehr Kraft trainieren', 'Automatisierte Reaktionen durch Wiederholungstraining', 'Tiefes Durchatmen im Moment', 'Den Gegner anschreien'],
-    correctIndex: 1,
-    explanation: 'Automatisierte Reaktionen (durch tausende Wiederholungen trainiert) laufen auch im Blackout ab — das Gehirn greift auf gespeicherte Muster zurück.'
+    id: 'm2m2',
+    topic: 'empty-your-mind',
+    type: 'multiple',
+    question: 'Was passiert, wenn du Techniken von Anfang an falsch umsetzt? (mehrere richtig)',
+    options: [
+      'Verbindungen zwischen Techniken funktionieren nicht',
+      'Der Trainer korrigiert es automatisch',
+      'Abläufe werden unsauber',
+      'Dein Fortschritt wird langsamer',
+    ],
+    correctIndices: [0, 2, 3],
+    explanation: 'Das Training baut aufeinander auf — falsche Grundlagen verhindern saubere Verbindungen und bremsen den späteren Fortschritt.'
   },
   {
-    id: 'm2q13',
-    question: 'Was ist "pre-conflict mindset"?',
-    options: ['Aggressivität vor dem Kampf', 'Mentale Vorbereitung auf mögliche Konfliktsituationen im Alltag', 'Angst vor Konflikten', 'Kampfsportliche Grundhaltung'],
-    correctIndex: 1,
-    explanation: 'Pre-conflict mindset bedeutet: im Alltag mental vorbereitet sein, Risiken früh erkennen und Deeskalation priorisieren.'
+    id: 'm2ma1',
+    topic: 'empty-your-mind',
+    type: 'matching',
+    question: 'Ordne die Aussagen ihrem richtigen Ende zu:',
+    pairs: [
+      { left: 'Fortschritt entsteht durch…', right: 'Umsetzung' },
+      { left: 'Unsicherheit ist kein…', right: 'Problem' },
+      { left: 'Falsche Eigenlösungen sind…', right: 'ein Problem' },
+      { left: 'Techniken dürfen langsam gelernt werden…', right: 'solange sie korrekt sind' },
+    ],
+    explanation: 'Diese vier Grundsätze aus „Empty Your Mind" zusammengefasst: Umsetzung schlägt Diskussion, Fragen schlägt Improvisieren.'
   },
   {
-    id: 'm2q14',
-    question: 'Wie baut man eine nachhaltige Trainingsroutine auf?',
-    options: ['So intensiv wie möglich jeden Tag', 'Mit realistischen, konsistenten Einheiten die langfristig durchzuhalten sind', 'Nur wenn Motivation vorhanden ist', 'Mit Wettbewerb gegen andere'],
-    correctIndex: 1,
-    explanation: 'Nachhaltigkeit schlägt Intensität — regelmäßige, realistische Einheiten über Jahre sind effektiver als intensive Bursts gefolgt von langen Pausen.'
+    id: 'm2fb1',
+    topic: 'empty-your-mind',
+    type: 'fillblank',
+    question: '„Erst ___ dann verstehen, dann bewerten."',
+    options: ['umsetzen,', 'lernen,', 'planen,', 'analysieren,'],
+    correctIndex: 0,
+    explanation: 'Die Reihenfolge ist entscheidend: erst umsetzen, dann verstehen, dann bewerten — nicht umgekehrt.'
   },
   {
-    id: 'm2q15',
-    question: 'Was ist der Zusammenhang zwischen Mindset und Technik?',
-    options: ['Kein Zusammenhang — Technik ist alles', 'Ohne richtiges Mindset kann auch gute Technik im Ernstfall versagen', 'Mindset ist wichtiger als Technik', 'Technik ersetzt Mindset'],
-    correctIndex: 1,
-    explanation: 'Technik und Mindset bedingen sich gegenseitig — die beste Technik versagt ohne die mentale Fähigkeit, sie unter extremem Stress abzurufen.'
+    id: 'm2fb2',
+    topic: 'empty-your-mind',
+    type: 'fillblank',
+    question: '„Empty Your Mind" bedeutet: Du lässt dein altes Muster nicht dein neues ___ blockieren.',
+    options: ['Lernen', 'Denken', 'Training', 'Handeln'],
+    correctIndex: 0,
+    explanation: 'Das alte Muster hat dich nicht ans Ziel gebracht — es darf das neue Lernen nicht blockieren.'
   },
+
+  // ── LERNBEREITSCHAFT (16) ─────────────────────────────────────────────────
+
+  {
+    id: 'm2tf6',
+    topic: 'lernbereitschaft',
+    type: 'truefalse',
+    question: 'Das Trainingskonzept passt sich individuell an jeden Schüler an.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Du passt dich dem System an — nicht umgekehrt. Das System ist darauf ausgelegt, in der Realität zu funktionieren.'
+  },
+  {
+    id: 'm2tf7',
+    topic: 'lernbereitschaft',
+    type: 'truefalse',
+    question: 'Ein starker moralischer Kompass kann im Ernstfall ein Nachteil sein.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 0,
+    explanation: 'Richtig. Er führt zu Zögern und Unentschlossenheit — der Gegner hat diesen Gedanken nicht.'
+  },
+  {
+    id: 'm2tf8',
+    topic: 'lernbereitschaft',
+    type: 'truefalse',
+    question: 'Sympathie für den Trainer ist eine objektive Erwartung.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Sympathie ist eine subjektive Erwartung — sie sagt nichts über die Qualität des Trainings aus.'
+  },
+  {
+    id: 'm2tf9',
+    topic: 'lernbereitschaft',
+    type: 'truefalse',
+    question: 'Lernbereitschaft bedeutet nur, regelmäßig zum Training zu erscheinen.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Lernbereitschaft bedeutet: zuhören, umsetzen und sich anpassen — nicht nur körperlich anwesend sein.'
+  },
+  {
+    id: 'm2tf10',
+    topic: 'lernbereitschaft',
+    type: 'truefalse',
+    question: 'Der Gegner im Ernstfall zögert genauso wie du.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Der Gegner ist fest entschlossen sein Ding durchzuziehen — genau deshalb ist Zögern gefährlich.'
+  },
+  {
+    id: 'm2s6',
+    topic: 'lernbereitschaft',
+    type: 'single',
+    question: 'In welcher Reihenfolge sind die 3 Faktoren für deinen Trainingserfolg relevant?',
+    options: [
+      'Trainingskonzept → Trainerqualität → Lernbereitschaft',
+      'Trainerqualität → Lernbereitschaft → Trainingskonzept',
+      'Lernbereitschaft → Trainerqualität → Trainingskonzept',
+      'Alle drei sind gleichwertig',
+    ],
+    correctIndex: 2,
+    explanation: 'Lernbereitschaft steht an erster Stelle — weil es der einzige Faktor ist, den du vollständig selbst kontrollierst.'
+  },
+  {
+    id: 'm2s7',
+    topic: 'lernbereitschaft',
+    type: 'single',
+    question: 'Was ist der einzige Faktor, den du wirklich selbst beeinflussen kannst?',
+    options: [
+      'Die Trainerqualität',
+      'Deine Lernbereitschaft',
+      'Das Trainingskonzept',
+      'Die Trainingsbedingungen',
+    ],
+    correctIndex: 1,
+    explanation: 'Trainerqualität und Trainingskonzept kannst du nicht vollständig kontrollieren — deine Lernbereitschaft schon.'
+  },
+  {
+    id: 'm2s8',
+    topic: 'lernbereitschaft',
+    type: 'single',
+    question: 'Was passiert, wenn du im Ernstfall versuchst, den Gegner möglichst nicht zu verletzen?',
+    options: [
+      'Du gewinnst Zeit für bessere Entscheidungen',
+      'Du bist der Situation moralisch gewachsen',
+      'Du zögerst, handelst unentschlossen und bist unterlegen',
+      'Du deeskalierst die Situation',
+    ],
+    correctIndex: 2,
+    explanation: 'Zögern und Unentschlossenheit entstehen genau durch diesen Gedanken — der Gegner hat ihn nicht.'
+  },
+  {
+    id: 'm2s9',
+    topic: 'lernbereitschaft',
+    type: 'single',
+    question: 'Was sind objektive Erwartungen an einen Trainer?',
+    options: [
+      'Sympathie, Auftreten und persönliche Ansichten',
+      'Freundlichkeit und individuelle Betreuung',
+      'Bekannte Erfolge und Auszeichnungen',
+      'Fachkompetenz, Struktur und klare Vermittlung',
+    ],
+    correctIndex: 3,
+    explanation: 'Objektive Erwartungen bilden die Grundlage für Trainerautorität — Fachkompetenz, Struktur und klare Vermittlung.'
+  },
+  {
+    id: 'm2m3',
+    topic: 'lernbereitschaft',
+    type: 'multiple',
+    question: 'Worauf basiert das Trainingskonzept? (mehrere richtig)',
+    options: [
+      'Eigenen Erfahrungen',
+      'Was sich gut anfühlt',
+      'Analyse realer Situationen',
+      'Strukturierter Auswertung',
+    ],
+    correctIndices: [0, 2, 3],
+    explanation: 'Das Konzept basiert auf realen Erfahrungen, Analyse und Auswertung — nicht auf dem, was sich gut anfühlt.'
+  },
+  {
+    id: 'm2m4',
+    topic: 'lernbereitschaft',
+    type: 'multiple',
+    question: 'Was folgt aus einem zu starken moralischen Kompass im Ernstfall? (mehrere richtig)',
+    options: [
+      'Du zögerst',
+      'Du handelst entschlossener',
+      'Du handelst unentschlossen',
+      'Du bist unterlegen, bevor die Situation richtig beginnt',
+    ],
+    correctIndices: [0, 2, 3],
+    explanation: 'Der moralische Kompass ist grundsätzlich nichts Schlechtes — aber im Ernstfall steht er dir im Weg.'
+  },
+  {
+    id: 'm2ma2',
+    topic: 'lernbereitschaft',
+    type: 'matching',
+    question: 'Ordne die Begriffe ihren Erklärungen zu:',
+    pairs: [
+      { left: 'Subjektive Erwartung', right: 'Sympathie für den Trainer' },
+      { left: 'Objektive Erwartung', right: 'Fachkompetenz' },
+      { left: 'Lernbereitschaft', right: 'Einziger selbst beeinflussbarer Faktor' },
+      { left: 'Zögern im Ernstfall', right: 'Folge eines zu starken Moralempfindens' },
+    ],
+    explanation: 'Subjektiv vs. objektiv, Lernbereitschaft als Kernfaktor, Zögern als Konsequenz — die vier Schlüsselbegriffe dieses Kapitels.'
+  },
+  {
+    id: 'm2fb3',
+    topic: 'lernbereitschaft',
+    type: 'fillblank',
+    question: '„Das beste Konzept + gute Trainer = kein ___ wenn du nicht bereit bist umzusetzen."',
+    options: ['Fortschritt,', 'Ergebnis,', 'Training,', 'System,'],
+    correctIndex: 0,
+    explanation: 'Lernbereitschaft ist der entscheidende Faktor — ohne sie nützt auch das beste Konzept nichts.'
+  },
+  {
+    id: 'm2fb4',
+    topic: 'lernbereitschaft',
+    type: 'fillblank',
+    question: '„Alles steht und fällt mit deiner ___."',
+    options: ['Lernbereitschaft', 'Fitness', 'Motivation', 'Erfahrung'],
+    correctIndex: 0,
+    explanation: 'Die Kernaussage des Kapitels: Lernbereitschaft ist der entscheidende und einzig selbst kontrollierbare Faktor.'
+  },
+
+  // ── ZIELSETZUNGSMINDSET (18) ──────────────────────────────────────────────
+
+  {
+    id: 'm2tf11',
+    topic: 'zielsetzungsmindset',
+    type: 'truefalse',
+    question: '„Ich will fitter werden" ist ein klares Trainingsziel.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Das ist ein Anfang — aber noch kein klares Ziel. Ein klares Ziel ist konkret und überprüfbar.'
+  },
+  {
+    id: 'm2tf12',
+    topic: 'zielsetzungsmindset',
+    type: 'truefalse',
+    question: 'Das Ziel muss sofort perfekt formuliert sein.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Nicht perfekt — aber klar. Ein erstes Ziel ist der Ausgangspunkt, nicht das Endergebnis.'
+  },
+  {
+    id: 'm2tf13',
+    topic: 'zielsetzungsmindset',
+    type: 'truefalse',
+    question: 'Passives Training führt zu aktiven Ergebnissen.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Passives Training führt zu passiven Ergebnissen — wer einfach nur mitmacht, bleibt passiv.'
+  },
+  {
+    id: 'm2tf14',
+    topic: 'zielsetzungsmindset',
+    type: 'truefalse',
+    question: 'Der Trainer soll dir im Zielsetzungsprozess die Arbeit abnehmen.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Das Gespräch dient dazu, deine Überlegungen zu schärfen — die Arbeit machst du selbst.'
+  },
+  {
+    id: 'm2tf15',
+    topic: 'zielsetzungsmindset',
+    type: 'truefalse',
+    question: 'Du solltest warten, bis der Trainer von sich aus das Gespräch sucht.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Du gehst aktiv auf den Trainer zu — nicht andersrum. Eigenverantwortung beginnt hier.'
+  },
+  {
+    id: 'm2s10',
+    topic: 'zielsetzungsmindset',
+    type: 'single',
+    question: 'Aus wie vielen Modulen besteht das Trainingssystem?',
+    options: ['8', '9', '10', '12'],
+    correctIndex: 2,
+    explanation: '10 Module — von Mission Begins (Grundlagen) bis Tactics & Survival (alles kombiniert).'
+  },
+  {
+    id: 'm2s11',
+    topic: 'zielsetzungsmindset',
+    type: 'single',
+    question: 'Was ist der Zweck des Gesprächs mit dem Trainer im Zielsetzungsprozess?',
+    options: [
+      'Den Trainer über deine Fortschritte zu informieren',
+      'Deine eigenen Überlegungen zu schärfen und klarer zu machen',
+      'Eine fertige Trainingsplan-Vorlage zu erhalten',
+      'Kritik am System zu äußern',
+    ],
+    correctIndex: 1,
+    explanation: 'Das Gespräch nimmt dir nicht die Arbeit ab — es schärft deine eigenen Überlegungen.'
+  },
+  {
+    id: 'm2s12',
+    topic: 'zielsetzungsmindset',
+    type: 'single',
+    question: 'Was behandelt Modul 3 — P.O.N.R.?',
+    options: [
+      'Grundlagen der Selbstverteidigung',
+      'Bodenkampf und Aufstehen',
+      'Den Moment kurz vor der Eskalation und die eigene rote Linie',
+      'Waffen und improvisierte Hilfsmittel',
+    ],
+    correctIndex: 2,
+    explanation: 'P.O.N.R. = Point of No Return — der Moment, an dem du nicht mehr einfach abwarten kannst.'
+  },
+  {
+    id: 'm2s13',
+    topic: 'zielsetzungsmindset',
+    type: 'single',
+    question: 'Was ist Schritt 2 im Zielsetzungsprozess?',
+    options: [
+      'Das erste Ziel setzen',
+      'Die Roadmap erstellen',
+      'Aktiv auf den Trainer zugehen',
+      'Den aktuellen Stand bestimmen',
+    ],
+    correctIndex: 3,
+    explanation: 'Schritt 2: Wo stehe ich aktuell? Was kann ich schon? Wo habe ich Lücken? — erst dann kann ein sinnvolles Ziel gesetzt werden.'
+  },
+  {
+    id: 'm2s14',
+    topic: 'zielsetzungsmindset',
+    type: 'single',
+    question: 'Was bedeutet „Martial Instinct" laut Kernaussage dieses Kapitels?',
+    options: [
+      'Die Summe der erlernten Techniken',
+      'Eine Kampfsportart aus den Philippinen',
+      'Das Abzeichen nach bestandenem Exam',
+      'Das Gesamtsystem inklusive der inneren Haltung',
+    ],
+    correctIndex: 3,
+    explanation: 'Martial Instinct ist nicht nur die Techniken — es ist das Gesamtsystem inklusive Eigenverantwortung, Aktivität und Entwicklung.'
+  },
+  {
+    id: 'm2m5',
+    topic: 'zielsetzungsmindset',
+    type: 'multiple',
+    question: 'Woraus entsteht die persönliche Roadmap? (mehrere richtig)',
+    options: [
+      'Deinem Verständnis des Systems',
+      'Dem Vergleich mit anderen Mitgliedern',
+      'Deinem Ziel',
+      'Dem Gespräch mit dem Trainer',
+    ],
+    correctIndices: [0, 2, 3],
+    explanation: 'Roadmap = Verständnis + Ziel + Trainer-Gespräch. Vergleiche mit anderen gehören nicht dazu.'
+  },
+  {
+    id: 'm2m6',
+    topic: 'zielsetzungsmindset',
+    type: 'multiple',
+    question: 'Was sollst du im regelmäßigen Gespräch mit dem Trainer tun? (mehrere richtig)',
+    options: [
+      'Deinen Stand reflektieren',
+      'Das Trainingskonzept kritisieren',
+      'Dein Ziel überprüfen',
+      'Den nächsten Schritt klären',
+    ],
+    correctIndices: [0, 2, 3],
+    explanation: 'Stand reflektieren, Ziel überprüfen, nächsten Schritt klären — das ist aktive Eigenverantwortung.'
+  },
+  {
+    id: 'm2ma3',
+    topic: 'zielsetzungsmindset',
+    type: 'matching',
+    question: 'Ordne Modul-Nummer und Modulname zu:',
+    pairs: [
+      { left: 'Modul 1', right: 'Mission Begins' },
+      { left: 'Modul 3', right: 'P.O.N.R.' },
+      { left: 'Modul 6', right: 'Backup Insurance II – Ground' },
+      { left: 'Modul 10', right: 'Tactics & Survival' },
+    ],
+    explanation: 'Die 10 Module bauen aufeinander auf — von den Grundlagen bis zur Kombination aller Inhalte unter realistischen Bedingungen.'
+  },
+  {
+    id: 'm2fb5',
+    topic: 'zielsetzungsmindset',
+    type: 'fillblank',
+    question: '„Eigenverantwortung statt Abwarten, Aktivität statt Passivität, Entwicklung statt ___."',
+    options: ['Stillstand', 'Faulheit', 'Warten', 'Passivität'],
+    correctIndex: 0,
+    explanation: 'Die drei Gegensatzpaare aus der Kernaussage: Eigenverantwortung, Aktivität, Entwicklung — statt Abwarten, Passivität, Stillstand.'
+  },
+  {
+    id: 'm2fb6',
+    topic: 'zielsetzungsmindset',
+    type: 'fillblank',
+    question: '„___ Training führt zu passiven Ergebnissen."',
+    options: ['Passives', 'Aktives', 'Schlechtes', 'Seltenes'],
+    correctIndex: 0,
+    explanation: 'Wer einfach nur mitmacht und hofft dass „das schon alles wird", bleibt passiv — und bekommt passive Ergebnisse.'
+  },
+
+  // ── MOTIVATION & COMMITMENT (16) ─────────────────────────────────────────
+
+  {
+    id: 'm2tf16',
+    topic: 'motivation-commitment',
+    type: 'truefalse',
+    question: 'Das Trainerteam ist dafür verantwortlich, dich zu motivieren.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Motivation kommt immer aus dir selbst — aus deinem Motiv. Sie kann nicht von außen gegeben werden.'
+  },
+  {
+    id: 'm2tf17',
+    topic: 'motivation-commitment',
+    type: 'truefalse',
+    question: 'Wenn du Lust hast zu trainieren, bist du motiviert.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Lust ist Stimmung — kurzfristig und unzuverlässig. Echte Motivation entsteht aus dem Motiv, nicht aus der Stimmung.'
+  },
+  {
+    id: 'm2tf18',
+    topic: 'motivation-commitment',
+    type: 'truefalse',
+    question: 'Im „Unterwasser-Beispiel" braucht man gute Stimmung, um zu handeln.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Das Motiv (Luft / Überleben) erzeugt sofort Motivation — unabhängig von Stimmung oder Gefühlslage.'
+  },
+  {
+    id: 'm2tf19',
+    topic: 'motivation-commitment',
+    type: 'truefalse',
+    question: 'Commitment bedeutet, nur zu trainieren, wenn es gerade leicht fällt.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Commitment ist die Entscheidung, es durchzuziehen — unabhängig davon, wie du dich fühlst oder wie der Tag läuft.'
+  },
+  {
+    id: 'm2tf20',
+    topic: 'motivation-commitment',
+    type: 'truefalse',
+    question: 'Wer ein starkes Motiv hat, trainiert auch ohne Lust.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 0,
+    explanation: 'Richtig. Ein starkes Motiv macht das Training unabhängig von der Stimmung — du trainierst weil du musst, nicht weil du Lust hast.'
+  },
+  {
+    id: 'm2s15',
+    topic: 'motivation-commitment',
+    type: 'single',
+    question: 'Woraus entsteht echte Motivation?',
+    options: [
+      'Aus einer inspirierenden Umgebung',
+      'Aus Lob und Anerkennung',
+      'Aus dem Trainer-Feedback',
+      'Aus dem eigenen Motiv',
+    ],
+    correctIndex: 3,
+    explanation: 'Motivation entsteht immer aus dem Motiv — dem persönlichen Grund, warum du etwas tust.'
+  },
+  {
+    id: 'm2s16',
+    topic: 'motivation-commitment',
+    type: 'single',
+    question: 'Was ist der Unterschied zwischen Stimmung und Motivation?',
+    options: [
+      'Stimmung ist langfristig, Motivation kurzfristig',
+      'Kein Unterschied — beides beschreibt Antrieb',
+      'Stimmung ist ein kurzfristiges Gefühl; Motivation entsteht aus dem Motiv',
+      'Motivation ist stärker als Stimmung, aber gleicher Natur',
+    ],
+    correctIndex: 2,
+    explanation: 'Stimmung ist unzuverlässig und kurzfristig. Motivation basiert auf einem Motiv — und ist deshalb beständig.'
+  },
+  {
+    id: 'm2s17',
+    topic: 'motivation-commitment',
+    type: 'single',
+    question: 'Was zeigt das Beispiel mit dem Kind auf der Straße?',
+    options: [
+      'Dass Angst Motivation erzeugt',
+      'Dass man trainieren muss, um im Ernstfall zu handeln',
+      'Dass Motivation aus dem Motiv entsteht — unabhängig von Stimmung und Müdigkeit',
+      'Dass Instinkte das Handeln leiten',
+    ],
+    correctIndex: 2,
+    explanation: 'Egal wie müde oder unmotiviert man ist — wenn das Motiv klar ist, handelt man. Stimmung spielt keine Rolle.'
+  },
+  {
+    id: 'm2s18',
+    topic: 'motivation-commitment',
+    type: 'single',
+    question: 'Was bedeutet Commitment?',
+    options: [
+      'Regelmäßig zum Training erscheinen',
+      'Ein Versprechen gegenüber dem Trainer',
+      'Motivation täglich neu aufbauen',
+      'Die Entscheidung, es durchzuziehen — unabhängig von der Stimmung',
+    ],
+    correctIndex: 3,
+    explanation: 'Commitment = Entscheidung. Du hast dein Motiv erkannt und ziehst es durch — unabhängig davon wie der Tag läuft.'
+  },
+  {
+    id: 'm2m7',
+    topic: 'motivation-commitment',
+    type: 'multiple',
+    question: 'Was ist KEINE echte Motivation? (mehrere richtig)',
+    options: [
+      'Gute Stimmung haben',
+      'Ein klares Motiv',
+      'Euphorie spüren',
+      'Sich gerade danach fühlen',
+    ],
+    correctIndices: [0, 2, 3],
+    explanation: 'Stimmung, Euphorie und Lust sind kurzfristig und unzuverlässig — das ist keine Motivation, das ist Gefühl.'
+  },
+  {
+    id: 'm2m8',
+    topic: 'motivation-commitment',
+    type: 'multiple',
+    question: 'Welche Eigenschaften hat jemand mit starkem Motiv? (mehrere richtig)',
+    options: [
+      'Trainiert nur wenn die Stimmung stimmt',
+      'Trainiert auch ohne Lust',
+      'Bleibt konstant',
+      'Entwickelt sich weiter',
+    ],
+    correctIndices: [1, 2, 3],
+    explanation: 'Starkes Motiv = Training unabhängig von Stimmung, Konstanz über Zeit, kontinuierliche Entwicklung.'
+  },
+  {
+    id: 'm2ma4',
+    topic: 'motivation-commitment',
+    type: 'matching',
+    question: 'Ordne die Begriffe ihrer Bedeutung zu:',
+    pairs: [
+      { left: 'Stimmung', right: 'Kurzfristiges Hochgefühl' },
+      { left: 'Motiv', right: 'Der Grund warum du etwas tust' },
+      { left: 'Motivation', right: 'Die Energie die aus dem Motiv entsteht' },
+      { left: 'Commitment', right: 'Die Entscheidung, es durchzuziehen' },
+    ],
+    explanation: 'Diese vier Begriffe bauen aufeinander auf: Motiv → Motivation → Commitment — Stimmung spielt keine Rolle.'
+  },
+  {
+    id: 'm2fb7',
+    topic: 'motivation-commitment',
+    type: 'fillblank',
+    question: '„Stimmung sagt: Ich hab keine Lust. Motiv sagt: Ich ___ es durch."',
+    options: ['zieh', 'mach', 'bring', 'halt'],
+    correctIndex: 0,
+    explanation: 'Der entscheidende Unterschied: Stimmung zweifelt — Motiv handelt.'
+  },
+  {
+    id: 'm2fb8',
+    topic: 'motivation-commitment',
+    type: 'fillblank',
+    question: '„Motivation entsteht immer aus deinem ___."',
+    options: ['Motiv', 'Willen', 'Ziel', 'Training'],
+    correctIndex: 0,
+    explanation: 'Motivation ist keine Stimmungssache — sie entsteht immer aus dem persönlichen Motiv.'
+  },
+
+  // ── 110% VERHALTENSMUSTER (14) ────────────────────────────────────────────
+
+  {
+    id: 'm2tf21',
+    topic: 'verhaltensmuster-110',
+    type: 'truefalse',
+    question: '110% bedeutet, mehr Energie einzusetzen als andere.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. 110% bedeutet mehr Anspruch — nicht mehr Energie. Es geht um bewusstes, qualitatives Arbeiten.'
+  },
+  {
+    id: 'm2tf22',
+    topic: 'verhaltensmuster-110',
+    type: 'truefalse',
+    question: '110% ist eine Emotion.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. 110% ist Verhalten — eine tägliche Entscheidung, kein Gefühlszustand.'
+  },
+  {
+    id: 'm2tf23',
+    topic: 'verhaltensmuster-110',
+    type: 'truefalse',
+    question: '„Das ist nichts für mich" ist eine valide Erkenntnis, wenn es unangenehm wird.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 1,
+    explanation: 'Falsch. Das ist keine Erkenntnis — das ist maximal Selbstschutz und viel wahrscheinlicher Selbstbetrug.'
+  },
+  {
+    id: 'm2tf24',
+    topic: 'verhaltensmuster-110',
+    type: 'truefalse',
+    question: 'Das Training funktioniert bei anderen — also funktioniert es auch bei dir.',
+    options: ['Richtig', 'Falsch'],
+    correctIndex: 0,
+    explanation: 'Richtig. Du bist die Variable — nicht das System. Das System funktioniert.'
+  },
+  {
+    id: 'm2s19',
+    topic: 'verhaltensmuster-110',
+    type: 'single',
+    question: 'Was bedeutet 110% konkret?',
+    options: [
+      'Doppelt so hart trainieren wie andere',
+      'Immer als Erster fertig sein',
+      'Mehr Trainingseinheiten absolvieren als verlangt',
+      'Den eigenen Standard höher setzen als den vorgegebenen',
+    ],
+    correctIndex: 3,
+    explanation: '10 Wiederholungen gefordert → Ziel 11. Zeit halten → länger halten. Dein Standard liegt über dem Minimum.'
+  },
+  {
+    id: 'm2s20',
+    topic: 'verhaltensmuster-110',
+    type: 'single',
+    question: 'Was ist laut diesem Kapitel wichtiger — Qualität oder Intensität?',
+    options: [
+      'Intensität, weil sie Fortschritt erzeugt',
+      'Beides ist gleichwertig',
+      'Qualität',
+      'Kommt auf die Technik an',
+    ],
+    correctIndex: 2,
+    explanation: 'Qualität schlägt Intensität. Wenn langsam richtig ist → machst du es langsam. Wenn Technik zählt → zählt Technik.'
+  },
+  {
+    id: 'm2s21',
+    topic: 'verhaltensmuster-110',
+    type: 'single',
+    question: 'Was bedeutet „Du bist die Variable"?',
+    options: [
+      'Dein Erfolg ist zufällig',
+      'Jeder macht andere Erfahrungen',
+      'Du kannst das System anpassen',
+      'Du bist der einzige Faktor, den du ändern kannst — das System funktioniert',
+    ],
+    correctIndex: 3,
+    explanation: 'Das System funktioniert bei anderen — also liegt der Unterschied bei dir. Du bist die Variable.'
+  },
+  {
+    id: 'm2s22',
+    topic: 'verhaltensmuster-110',
+    type: 'single',
+    question: 'Wie wird 110% zum Autopilot?',
+    options: [
+      'Durch besonders intensives Training',
+      'Durch externe Motivation und Bestätigung',
+      'Durch einmalige Entschlossenheit',
+      'Durch tägliche, wiederholte Entscheidungen',
+    ],
+    correctIndex: 3,
+    explanation: 'Je öfter du diese Entscheidung triffst, desto mehr wird sie zu einem Verhaltensmuster auf Autopilot.'
+  },
+  {
+    id: 'm2m9',
+    topic: 'verhaltensmuster-110',
+    type: 'multiple',
+    question: 'Was bedeuten typische Opferrolle-Aussagen wirklich? (mehrere richtig)',
+    options: [
+      'Keine Lust',
+      'Echte körperliche Einschränkung',
+      'Zu anstrengend',
+      'Zu unbequem',
+    ],
+    correctIndices: [0, 2, 3],
+    explanation: '„Ich habe keine Zeit" = zu unbequem. „Ich kann das nicht" = keine Lust oder zu anstrengend. Übersetz die Ausreden.'
+  },
+  {
+    id: 'm2ma5',
+    topic: 'verhaltensmuster-110',
+    type: 'matching',
+    question: 'Ordne die Begriffe ihren Beschreibungen zu:',
+    pairs: [
+      { left: '110%', right: 'Mehr Anspruch, nicht mehr Energie' },
+      { left: 'Opferrolle', right: '„Ich kann das nicht"' },
+      { left: 'Selbstschutz', right: 'Aufhören wenn es unangenehm wird' },
+      { left: 'Verhaltensmuster', right: 'Entsteht durch wiederholte Entscheidungen' },
+    ],
+    explanation: 'Die vier Kernbegriffe des Kapitels — 110% als Anspruch, Opferrolle als Ausrede, Selbstschutz als Bremse, Verhaltensmuster als Ziel.'
+  },
+  {
+    id: 'm2fb9',
+    topic: 'verhaltensmuster-110',
+    type: 'fillblank',
+    question: '„Gedanken → ___ → Ergebnis"',
+    options: ['Verhalten', 'Emotion', 'Entscheidung', 'Aktion'],
+    correctIndex: 0,
+    explanation: 'Gedanken formen Verhalten — Verhalten erzeugt Ergebnisse. Deshalb beginnt alles im Kopf.'
+  },
+  {
+    id: 'm2fb10',
+    topic: 'verhaltensmuster-110',
+    type: 'fillblank',
+    question: '„110% ist eine ___ die du jeden Tag triffst."',
+    options: ['Entscheidung', 'Emotion', 'Routine', 'Übung'],
+    correctIndex: 0,
+    explanation: '110% ist keine Emotion und keine zufällige Stimmung — es ist eine bewusste tägliche Entscheidung.'
+  },
+
 ];
 
 // ============================================
