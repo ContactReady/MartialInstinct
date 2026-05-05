@@ -2149,44 +2149,49 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const badges: Badge[] = [];
     const tp = member.techniqueProgress;
 
-    const techPassedCount = Object.values(tp).filter(p => p.status === 'tech_passed' || p.status === 'tac_passed' || p.status === 'tac_pending').length;
-    const tacPassedCount = Object.values(tp).filter(p => p.status === 'tac_passed').length;
-
+    // 10 Trainingseinheiten
     if ((member.totalTrainingSessions ?? 0) >= 10) {
-      badges.push({ id: 'training_10', label: '10 Trainings', icon: '🩹', description: '10 Trainingseinheiten absolviert', earnedAt: new Date() });
+      badges.push({ id: 'training_10', label: '10 Trainingseinheiten', icon: '🩹', description: '10 Trainingseinheiten absolviert', earnedAt: new Date() });
     }
 
-    if (techPassedCount >= 1) {
-      badges.push({ id: 'first_tech', label: 'Erste Prüfung', icon: '🎯', description: 'Erste technische Prüfung bestanden', earnedAt: new Date() });
-    }
-    if (tacPassedCount >= 1) {
-      badges.push({ id: 'first_tac', label: 'Taktik-Meister', icon: '⚔️', description: 'Erste taktische Prüfung bestanden', earnedAt: new Date() });
-    }
-
-    // Ebenen-Badges: Badge wenn alle Module einer Ebene abgeschlossen (alle required tac_passed)
-    BLOCKS.forEach((block, idx) => {
-      const blockModules = MODULES.filter(m => m.level === block.level);
-      if (blockModules.length === 0) return;
-      const allDone = blockModules.every(mod =>
-        mod.techniques.filter(t => t.isRequired).every(t => tp[t.id]?.status === 'tac_passed')
-      );
-      if (allDone) {
-        badges.push({ id: `block_${idx}`, label: block.name, icon: block.icon, description: `${block.name} abgeschlossen`, earnedAt: new Date() });
+    // Quiz-Prüfung pro Modul bestanden
+    MODULES.forEach(mod => {
+      const examPassed = quizExamState[mod.id]?.passedAt;
+      if (examPassed) {
+        badges.push({ id: `quiz_${mod.id}`, label: `Quiz: ${mod.name}`, icon: '🧠', description: `Theoriemodul ${mod.name} bestanden`, earnedAt: examPassed });
       }
     });
 
-    if (member.certificates.length >= 1) {
-      badges.push({ id: 'certified', label: 'Zertifiziert', icon: '📜', description: 'Erstes Zertifikat erhalten', earnedAt: new Date() });
-    }
-    if (member.role !== 'member') {
-      badges.push({ id: 'instructor', label: 'Instructor', icon: '🎓', description: 'Ausbilderrang erreicht', earnedAt: new Date() });
-    }
+    // Praxismodul Tactical bestanden (alle Pflicht-Techniken tech_passed oder tac_passed)
+    MODULES.forEach(mod => {
+      const required = mod.techniques.filter(t => t.isRequired);
+      if (required.length === 0) return;
+      const tacticalDone = required.every(t => {
+        const s = tp[t.id]?.status;
+        return s === 'tech_passed' || s === 'tac_passed';
+      });
+      if (tacticalDone) {
+        badges.push({ id: `praxis_t_${mod.id}`, label: `Tactical: ${mod.name}`, icon: '◐', description: `${mod.name} — Tactical bestanden`, earnedAt: new Date() });
+      }
+    });
+
+    // Praxismodul Combat bestanden (alle Pflicht-Techniken tac_passed)
+    MODULES.forEach(mod => {
+      const required = mod.techniques.filter(t => t.isRequired);
+      if (required.length === 0) return;
+      const combatDone = required.every(t => tp[t.id]?.status === 'tac_passed');
+      if (combatDone) {
+        badges.push({ id: `praxis_c_${mod.id}`, label: `Combat: ${mod.name}`, icon: '●', description: `${mod.name} — Combat bestanden`, earnedAt: new Date() });
+      }
+    });
+
+    // Stop The Bleed®
     if (member.stopTheBleedCertified) {
       badges.push({ id: 'stop_the_bleed', label: 'Stop The Bleed®', icon: '🩸', imageUrl: '/logos/stop-the-bleed-patch.png', description: 'Stop The Bleed® Kurs absolviert — Lebensrettende Erste Hilfe', earnedAt: new Date() });
     }
 
     return badges;
-  }, []);
+  }, [quizExamState]);
 
   // ============================================
   // HELPERS

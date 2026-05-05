@@ -979,23 +979,21 @@ const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <div className="text-white font-semibold mb-0.5">Prüfungsquiz</div>
                 <p>{platformConfig.quiz.examQuestions} Fragen. Mindestens <span className="text-white font-bold">{Math.round(platformConfig.quiz.examPassRate * 100)}%</span> zum Bestehen.</p>
               </div>
-              <div className="bg-red-900/30 border border-red-800/50 rounded-lg px-3 py-2">
-                <div className="text-red-400 font-semibold text-xs mb-0.5">⚠️ Achtung</div>
-                <p className="text-red-300">2 Fehlversuche beim Prüfungsquiz → <span className="font-bold">30 Tage Sperre</span> für dieses Modul.</p>
+              <div className="bg-gray-800/70 border border-gray-700 rounded-lg px-3 py-2">
+                <div className="text-gray-300 font-semibold text-xs mb-0.5">⚠️ Achtung</div>
+                <p className="text-gray-400">2 Fehlversuche beim Prüfungsquiz → <span className="text-white font-bold">30 Tage Sperre</span> für dieses Modul.</p>
               </div>
             </div>
           </Section>
 
-          <Section id="badges" icon="🩹" title="Pflaster (Badges)">
+          <Section id="badges" icon="🩹" title="Pflaster">
             <div className="space-y-1">
               {[
-                { icon: '🩹', label: '10 Trainings', desc: '10 bestätigte Check-Ins' },
-                { icon: '🎯', label: 'Erste Prüfung', desc: '1 Technik technisch bestanden' },
-                { icon: '⚔️', label: 'Taktik-Meister', desc: '1 Technik taktisch bestanden' },
-                { icon: '🏅', label: 'Block-Badge', desc: 'Alle Pflicht-Techniken eines Blocks taktisch bestanden' },
-                { icon: '📜', label: 'Zertifiziert', desc: 'Erstes Zertifikat erhalten' },
+                { icon: '🩹', label: '10 Trainingseinheiten', desc: '10 bestätigte Check-Ins absolviert' },
+                { icon: '🧠', label: 'Theoriemodul bestanden', desc: 'Quiz-Prüfung in einem Modul bestanden — 1 Pflaster pro Modul' },
+                { icon: '◐', label: 'Praxismodul Tactical', desc: 'Alle Pflicht-Techniken eines Moduls auf Tactical — 1 Pflaster pro Modul' },
+                { icon: '●', label: 'Praxismodul Combat', desc: 'Alle Pflicht-Techniken eines Moduls auf Combat — 1 Pflaster pro Modul' },
                 { icon: '🩸', label: 'Stop The Bleed®', desc: 'Stop The Bleed® Kurs absolviert' },
-                { icon: '🎓', label: 'Instructor', desc: 'Trainerrang erreicht' },
               ].map(b => (
                 <div key={b.label} className="flex items-start gap-2 py-1 border-b border-gray-800/50 last:border-0">
                   <span className="text-base leading-none mt-0.5 flex-shrink-0">{b.icon}</span>
@@ -1010,7 +1008,7 @@ const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
           <Section id="streak" icon="🔥" title="Streak">
             <p>Dein Streak zählt wie viele Trainingswochen du in Folge aktiv warst. Eine Woche gilt als aktiv wenn du mindestens einmal eingecheckt hast.</p>
-            <p className="mt-1">Fehlst du eine Woche, verlierst du den Streak — es sei denn du hast noch <span className="text-white font-semibold">Bandaids</span> übrig (max. 2). Ein Bandaid überbrückt eine verpasste Woche.</p>
+            <p className="mt-1">Fehlst du eine Woche, verlierst du den Streak — es sei denn du hast noch <span className="text-white font-semibold">Pflaster</span> übrig (max. 2). Ein Pflaster überbrückt eine verpasste Woche.</p>
           </Section>
 
           <Section id="techniken" icon="🥋" title="Techniken & Prüfungsebenen">
@@ -1025,7 +1023,7 @@ const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <div><span className="text-white font-semibold">Combat</span> — Combat Verhaltensmuster. Technik ist verinnerlicht und wird unter Druck ohne Nachdenken abgerufen.</div>
               </div>
             </div>
-            <p className="mt-2 text-gray-500">Für Trainer kommt eine dritte Ebene hinzu: <span className="text-white">Instructor</span> — alle technischen Inhalte des Moduls können unterrichtet werden.</p>
+            <p className="mt-2 text-gray-500">Für Trainer kommt eine dritte Ebene hinzu: <span className="text-white">Instructor</span> — alle Inhalte des Moduls können unterrichtet werden.</p>
           </Section>
 
         </div>
