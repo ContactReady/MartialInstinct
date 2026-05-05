@@ -547,7 +547,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       pairs: (r.pairs as { left: string; right: string }[] | null) ?? undefined,
       explanation: (r.explanation as string) ?? '',
       position: r.position as number,
-      topic: topicByQuestion.get((r.question as string)?.trim()),
+      topic: (r.topic as string | null) ?? topicByQuestion.get((r.question as string)?.trim()),
     });
 
     const buildHardcoded = () => {
@@ -590,21 +590,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           await supabase.from('content_techniques').insert(fallT.map(t => ({ id: t.id, module_id: t.moduleId, name: t.name, description: t.description, is_required: t.isRequired, position: t.position })));
           techniques = fallT;
         }
+        const toRow = (q: QuizQuestion) => ({
+          module_id: q.moduleId,
+          topic: q.topic ?? null,
+          question: q.question,
+          type: q.type ?? null,
+          options: q.options ?? null,
+          correct_index: q.correctIndex ?? null,
+          correct_indices: q.correctIndices ?? null,
+          pairs: q.pairs ?? null,
+          explanation: q.explanation ?? '',
+          position: q.position ?? 0,
+        });
         if (questions.length === 0) {
           const { questions: fallQ } = buildHardcoded();
-          await supabase.from('content_quiz_questions').insert(fallQ.map(q => ({
-            module_id: q.moduleId,
-            question: q.question,
-            type: q.type ?? null,
-            options: q.options ?? null,
-            correct_index: q.correctIndex ?? null,
-            correct_indices: q.correctIndices ?? null,
-            pairs: q.pairs ?? null,
-            explanation: q.explanation ?? '',
-            position: q.position ?? 0,
-          })));
+          await supabase.from('content_quiz_questions').insert(fallQ.map(toRow));
           const { data: freshQ } = await supabase.from('content_quiz_questions').select('*').order('module_id').order('position');
           questions = (freshQ ?? []).map(mapQ);
+        } else {
+          // Per-Modul-Seed: fehlende Module nachfüllen
+          const { questions: hardcoded } = buildHardcoded();
+          const seededIds = new Set(questions.map(q => q.moduleId));
+          const missing = [...new Set(hardcoded.map(q => q.moduleId))].filter(m => !seededIds.has(m));
+          if (missing.length > 0) {
+            await supabase.from('content_quiz_questions').insert(
+              hardcoded.filter(q => missing.includes(q.moduleId)).map(toRow)
+            );
+            const { data: freshQ } = await supabase.from('content_quiz_questions').select('*').order('module_id').order('position');
+            questions = (freshQ ?? []).map(mapQ);
+          }
         }
 
         // Falls Supabase-Seed gescheitert ist → hardcoded als Fallback
