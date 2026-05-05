@@ -9,9 +9,9 @@
 export type TechniqueStatus =
   | 'not_tested'      // ○ Noch nicht geprüft
   | 'tech_pending'    // ⏳ Technische Prüfung beantragt
-  | 'tech_passed'     // ◐ Technisch bestanden
-  | 'tac_pending'     // ⏳ Taktische Prüfung beantragt
-  | 'tac_passed'      // ● Vollständig gemeistert (beide Ebenen)
+  | 'tech_passed'     // ◐ Tactical — technisch-taktisches Verständnis
+  | 'tac_pending'     // ⏳ Combat-Prüfung beantragt
+  | 'tac_passed'      // ● Combat — Technik unter Druck abrufbar
   | 'needs_training'; // ↩ Nachtrainieren empfohlen
 
 // Module/Level
@@ -727,9 +727,9 @@ export interface AppState {
 export const STATUS_DISPLAY: Record<TechniqueStatus, { icon: string; label: string; color: string }> = {
   not_tested:     { icon: '○',  label: 'Nicht geprüft',        color: 'text-gray-500' },
   tech_pending:   { icon: '⏳', label: 'Prüfung angefragt',    color: 'text-yellow-400' },
-  tech_passed:    { icon: '◐',  label: 'Technisch bestanden',  color: 'text-blue-400' },
+  tech_passed:    { icon: '◐',  label: 'Tactical',  color: 'text-blue-400' },
   tac_pending:    { icon: '⏳', label: 'Prüfung angefragt',    color: 'text-yellow-400' },
-  tac_passed:     { icon: '●',  label: 'Vollständig',          color: 'text-green-400' },
+  tac_passed:     { icon: '●',  label: 'Combat',    color: 'text-green-400' },
   needs_training: { icon: '↩',  label: 'Nachtrainieren',       color: 'text-orange-400' },
 };
 

@@ -1,6 +1,6 @@
 // ============================================
 // TECHNIQUE CARD — Zwei-Ebenen Prüfsystem
-// Technisch ◐ und Taktisch ● pro Technik
+// Tactical ◐ und Combat ● pro Technik
 // ============================================
 
 import React, { useState } from 'react';
@@ -138,13 +138,13 @@ export const TechniqueCard: React.FC<TechniqueCardProps> = ({
         {/* Zwei-Level Chips */}
         <div className="mt-3 flex gap-2 flex-wrap">
           <LevelChip
-            label="Technisch"
+            label="Tactical"
             passedAt={progress?.techPassedAt}
             examinerName={progress?.techExaminerName}
             pending={techPending}
           />
           <LevelChip
-            label="Taktisch"
+            label="Combat"
             passedAt={progress?.tacPassedAt}
             examinerName={progress?.tacExaminerName}
             pending={tacPending}
@@ -212,7 +212,7 @@ export const TechniqueCard: React.FC<TechniqueCardProps> = ({
                 onClick={e => { e.stopPropagation(); onRequestExam?.(); }}
                 className="w-full bg-yellow-600/80 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
               >
-                {techPassed ? '🔶 Taktisch prüfen' : '🔷 Technisch prüfen'}
+                {techPassed ? '🔶 Combat prüfen' : '🔷 Tactical prüfen'}
               </button>
             ) : (
               <div className="w-full bg-gray-700/40 border border-gray-600/30 rounded-lg px-3 py-1.5 text-center">
@@ -250,7 +250,7 @@ export const TechniqueCard: React.FC<TechniqueCardProps> = ({
                   onClick={handleMarkPassed}
                   className="flex-1 bg-green-600 hover:bg-green-500 text-white py-1.5 rounded-lg text-sm font-medium transition-all"
                 >
-                  ✅ Vollständig bestanden
+                  ✅ Combat bestanden
                 </button>
                 <button
                   onClick={() => { setShowNoteField(false); setNote(''); }}
@@ -265,7 +265,7 @@ export const TechniqueCard: React.FC<TechniqueCardProps> = ({
               onClick={() => setShowNoteField(true)}
               className="w-full bg-green-600 hover:bg-green-500 text-white py-1.5 rounded-lg text-sm font-medium transition-all"
             >
-              ✅ Als bestanden markieren
+              ✅ Als Combat markieren
             </button>
           )}
         </div>

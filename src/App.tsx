@@ -1014,21 +1014,18 @@ const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </Section>
 
           <Section id="techniken" icon="🥋" title="Techniken & Prüfungsebenen">
-            <p>Jedes Modul enthält Pflicht- und optionale Techniken. Jede Technik hat drei Kompetenzebenen:</p>
+            <p>Jedes Modul enthält Pflicht- und optionale Techniken. Es gibt zwei Prüfungsebenen für Mitglieder:</p>
             <div className="mt-1.5 space-y-1.5">
               <div className="flex items-start gap-2.5">
-                <span className="text-blue-400 font-bold text-sm flex-shrink-0 w-4">T</span>
-                <div><span className="text-white font-semibold">Tactical</span> — Technisch-taktisches Verständnis. Ich habe es verstanden und kann es korrekt ausführen.</div>
+                <span className="text-blue-400 font-bold text-sm flex-shrink-0 w-4">◐</span>
+                <div><span className="text-white font-semibold">Tactical</span> — Taktisches Verständnis. Technik wurde technisch und taktisch verstanden und kann einem Anfänger erklärt werden.</div>
               </div>
               <div className="flex items-start gap-2.5">
-                <span className="text-orange-400 font-bold text-sm flex-shrink-0 w-4">C</span>
-                <div><span className="text-white font-semibold">Combat</span> — Anwendungsebene. Ich kann die Technik im Kampf einsetzen.</div>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <span className="text-purple-400 font-bold text-sm flex-shrink-0 w-4">I</span>
-                <div><span className="text-white font-semibold">Instructor</span> — Lehrebene. Ich kann die Technik unterrichten und vermitteln.</div>
+                <span className="text-green-400 font-bold text-sm flex-shrink-0 w-4">●</span>
+                <div><span className="text-white font-semibold">Combat</span> — Combat Verhaltensmuster. Technik ist verinnerlicht und wird unter Druck ohne Nachdenken abgerufen.</div>
               </div>
             </div>
+            <p className="mt-2 text-gray-500">Für Trainer kommt eine dritte Ebene hinzu: <span className="text-white">Instructor</span> — alle technischen Inhalte des Moduls können unterrichtet werden.</p>
           </Section>
 
         </div>

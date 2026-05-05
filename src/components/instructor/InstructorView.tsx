@@ -1491,8 +1491,8 @@ export const InstructorView: React.FC = () => {
                 const canReject = canProcess && hasComment;
 
                 const levelBadge = req.examLevel === 'technical'
-                  ? <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-medium">🔷 Technisch</span>
-                  : <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded border border-orange-500/20 font-medium">🔶 Taktisch</span>;
+                  ? <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-medium">🔷 Tactical</span>
+                  : <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded border border-orange-500/20 font-medium">🔶 Combat</span>;
 
                 return (
                   <div key={req.id} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
@@ -4587,8 +4587,8 @@ export const InstructorView: React.FC = () => {
                         { key: 'quizCorrect',        label: 'Quiz: richtige Antwort',            unit: 'XP' },
                         { key: 'quizBonusAllCorrect',label: 'Quiz: Bonus bei 100%',              unit: 'XP' },
                         { key: 'examPass',           label: 'Prüfungsquiz bestanden',            unit: 'XP' },
-                        { key: 'techPassed',         label: 'Technik bestanden (tech_passed)',   unit: 'XP' },
-                        { key: 'tacPassed',          label: 'Technik bestanden (tac_passed)',    unit: 'XP' },
+                        { key: 'techPassed',         label: 'Tactical bestanden',               unit: 'XP' },
+                        { key: 'tacPassed',          label: 'Combat bestanden',                  unit: 'XP' },
                         { key: 'stopTheBleed',       label: 'Stop the Bleed Zertifizierung',    unit: 'XP' },
                         { key: 'streakWeeks',        label: 'Streak-Bonus (alle N Wochen)',      unit: 'XP' },
                         { key: 'streakInterval',     label: 'Streak-Intervall',                  unit: 'Wochen' },

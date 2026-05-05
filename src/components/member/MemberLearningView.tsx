@@ -24,8 +24,8 @@ function getPraxisStatus(progress: TechniqueProgress | undefined): { label: stri
   }
   if (progress.status === 'needs_training') return { label: 'Im Training', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' };
   if (progress.status === 'tech_pending' || progress.status === 'tac_pending') return { label: 'Prüfung ausstehend', color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20' };
-  if (progress.status === 'tech_passed') return { label: 'Technisch ✓', color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20' };
-  if (progress.status === 'tac_passed') return { label: 'Bestanden ✓', color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20' };
+  if (progress.status === 'tech_passed') return { label: 'Tactical ✓', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' };
+  if (progress.status === 'tac_passed') return { label: 'Combat ✓', color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20' };
   return { label: '–', color: 'text-gray-500', bg: 'bg-gray-700/20 border-gray-700/30' };
 }
 
