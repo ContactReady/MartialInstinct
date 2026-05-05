@@ -2696,6 +2696,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const existing = q.id ? quizQuestions.find(x => x.id === q.id) : null;
     const row = {
       module_id: q.moduleId, question: q.question,
+      topic: q.topic ?? null,
       type: q.type ?? null,
       options: q.options ?? null,
       correct_index: q.correctIndex ?? null,
