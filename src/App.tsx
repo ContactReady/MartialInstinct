@@ -896,12 +896,150 @@ function playNotificationSound() {
   } catch { /* ignore if browser blocks audio */ }
 }
 
+// ── Help Modal ─────────────────────────────────────────────────────────────────
+const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { platformConfig } = useApp();
+  const xp = platformConfig.xp;
+  const [open, setOpen] = useState<string | null>(null);
+  const toggle = (key: string) => setOpen(o => o === key ? null : key);
+
+  const Section: React.FC<{ id: string; icon: string; title: string; children: React.ReactNode }> = ({ id, icon, title, children }) => (
+    <div>
+      <button
+        onClick={() => toggle(id)}
+        className="w-full flex items-center justify-between py-2.5 px-3 bg-gray-800/70 rounded-xl border border-gray-700 hover:border-gray-600 transition-all text-left"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-base leading-none">{icon}</span>
+          <span className="text-sm font-semibold text-white">{title}</span>
+        </div>
+        <span className="text-gray-500 text-xs flex-shrink-0">{open === id ? '▲' : '▼'}</span>
+      </button>
+      {open === id && (
+        <div className="mt-1.5 px-1 space-y-1.5 text-xs text-gray-300 leading-relaxed">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+
+  const Row: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+    <div className="flex items-center justify-between py-1 border-b border-gray-800/60 last:border-0">
+      <span className="text-gray-400">{label}</span>
+      <span className="text-white font-semibold">{value}</span>
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm px-3 pb-3 sm:pb-0" onClick={onClose}>
+      <div
+        className="w-full max-w-sm bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-gray-800">
+          <div className="flex items-center gap-2">
+            <span className="text-base">📖</span>
+            <h2 className="text-white font-bold text-sm">Gebrauchsanweisung</h2>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-white text-lg leading-none transition-colors">✕</button>
+        </div>
+
+        {/* Sections */}
+        <div className="px-3 py-3 space-y-2 overflow-y-auto max-h-[70vh]">
+
+          <Section id="checkin" icon="📍" title="Check-In">
+            <p>Beantrage beim Trainer deinen Check-In für die aktuelle Trainingseinheit. Sobald der Trainer bestätigt, wirst du als anwesend markiert.</p>
+            <div className="mt-1.5 bg-gray-800/50 rounded-lg px-3 py-2">
+              <Row label="Bestätigter Check-In" value={`+${xp.checkIn} XP`} />
+            </div>
+          </Section>
+
+          <Section id="xp" icon="⚡" title="XP – Erfahrungspunkte">
+            <div className="bg-gray-800/50 rounded-lg px-3 py-2 space-y-0">
+              <Row label="Check-In" value={`+${xp.checkIn} XP`} />
+              <Row label="Quiz-Frage richtig" value={`+${xp.quizCorrect} XP`} />
+              <Row label="Alle Fragen richtig (Bonus)" value={`+${xp.quizBonusAllCorrect} XP`} />
+              <Row label="Prüfungsquiz bestanden" value={`+${xp.examPass} XP`} />
+              <Row label="Technik technisch bestanden" value={`+${xp.techPassed} XP`} />
+              <Row label="Technik taktisch bestanden" value={`+${xp.tacPassed} XP`} />
+              <Row label="Stop The Bleed® Zertifikat" value={`+${xp.stopTheBleed} XP`} />
+              <Row label={`Streak-Bonus (alle ${xp.streakInterval} Wochen)`} value={`+${xp.streakWeeks} XP`} />
+            </div>
+            <p className="text-gray-500 mt-1">XP bestimmt deinen Level-Rang in der Rangliste.</p>
+          </Section>
+
+          <Section id="quiz" icon="🧠" title="Quiz & Prüfung">
+            <div className="space-y-2">
+              <div>
+                <div className="text-white font-semibold mb-0.5">Practice-Modus</div>
+                <p>{platformConfig.quiz.practiceQuestionsPerSession} zufällige Fragen aus dem Modul-Pool. Jederzeit wiederholbar — keine Konsequenzen.</p>
+              </div>
+              <div>
+                <div className="text-white font-semibold mb-0.5">Prüfungsquiz</div>
+                <p>{platformConfig.quiz.examQuestions} Fragen. Mindestens <span className="text-white font-bold">{Math.round(platformConfig.quiz.examPassRate * 100)}%</span> zum Bestehen.</p>
+              </div>
+              <div className="bg-red-900/30 border border-red-800/50 rounded-lg px-3 py-2">
+                <div className="text-red-400 font-semibold text-xs mb-0.5">⚠️ Achtung</div>
+                <p className="text-red-300">2 Fehlversuche beim Prüfungsquiz → <span className="font-bold">30 Tage Sperre</span> für dieses Modul.</p>
+              </div>
+            </div>
+          </Section>
+
+          <Section id="badges" icon="🩹" title="Pflaster (Badges)">
+            <div className="space-y-1">
+              {[
+                { icon: '🩹', label: '10 Trainings', desc: '10 bestätigte Check-Ins' },
+                { icon: '🎯', label: 'Erste Prüfung', desc: '1 Technik technisch bestanden' },
+                { icon: '⚔️', label: 'Taktik-Meister', desc: '1 Technik taktisch bestanden' },
+                { icon: '🏅', label: 'Block-Badge', desc: 'Alle Pflicht-Techniken eines Blocks taktisch bestanden' },
+                { icon: '📜', label: 'Zertifiziert', desc: 'Erstes Zertifikat erhalten' },
+                { icon: '🩸', label: 'Stop The Bleed®', desc: 'Stop The Bleed® Kurs absolviert' },
+                { icon: '🎓', label: 'Instructor', desc: 'Trainerrang erreicht' },
+              ].map(b => (
+                <div key={b.label} className="flex items-start gap-2 py-1 border-b border-gray-800/50 last:border-0">
+                  <span className="text-base leading-none mt-0.5 flex-shrink-0">{b.icon}</span>
+                  <div>
+                    <span className="text-white font-semibold">{b.label}</span>
+                    <span className="text-gray-500 ml-1.5">{b.desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          <Section id="streak" icon="🔥" title="Streak">
+            <p>Dein Streak zählt wie viele Trainingswochen du in Folge aktiv warst. Eine Woche gilt als aktiv wenn du mindestens einmal eingecheckt hast.</p>
+            <p className="mt-1">Fehlst du eine Woche, verlierst du den Streak — es sei denn du hast noch <span className="text-white font-semibold">Bandaids</span> übrig (max. 2). Ein Bandaid überbrückt eine verpasste Woche.</p>
+          </Section>
+
+          <Section id="techniken" icon="🥋" title="Techniken & Prüfungen">
+            <p>Jedes Modul enthält Pflicht- und optionale Techniken. Eine Technik durchläuft zwei Stufen:</p>
+            <div className="mt-1.5 space-y-1">
+              <div className="flex items-start gap-2">
+                <span className="text-yellow-400 font-bold flex-shrink-0">Tech</span>
+                <span>Technisch bestanden — Bewegungsablauf korrekt ausgeführt.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-green-400 font-bold flex-shrink-0">Tac</span>
+                <span>Taktisch bestanden — Anwendung unter Druck, entscheidend für Block-Abschluss.</span>
+              </div>
+            </div>
+          </Section>
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AppContent: React.FC = () => {
   const { currentUser, authLoading, login, darkMode, notifications, getProfileImgSettings, getPendingCheckIns, getPendingExamRequests, joinRequests } = useApp();
   const [viewMode, setViewMode] = useState<'member' | 'instructor'>('member');
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const [showJoinForm, setShowJoinForm] = useState(() =>
     new URLSearchParams(window.location.search).get('join') === 'true'
@@ -963,8 +1101,17 @@ const AppContent: React.FC = () => {
 
           <div className="flex-1" />
 
-          {/* Right: Bell + Avatar */}
+          {/* Right: Help + Bell + Avatar */}
           <div className="flex items-center gap-2 flex-shrink-0">
+
+            {/* Help Button */}
+            <button
+              onClick={() => { setShowHelp(v => !v); setShowNotifications(false); setShowUserDropdown(false); }}
+              className="p-1.5 text-gray-400 hover:text-white transition-colors text-sm font-bold leading-none w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-800 border border-transparent hover:border-gray-700"
+              title="Gebrauchsanweisung"
+            >
+              ?
+            </button>
 
             {/* Notifications Bell */}
             <div className="relative">
@@ -1019,6 +1166,9 @@ const AppContent: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Help Modal */}
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
 
       {/* Main Content */}
       <div className="pt-[69px]">
