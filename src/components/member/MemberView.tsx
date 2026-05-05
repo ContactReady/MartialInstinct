@@ -560,7 +560,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
               </div>
             </div>
           )}
-          {/* Bandaids — volle Breite */}
+          {/* Pflaster — volle Breite */}
           <div className="col-span-2 rounded-xl p-3 border bg-gray-800/50 border-gray-700/80 flex items-center gap-3">
             <div className="text-2xl leading-none">🩹</div>
             <div className="flex-1">
@@ -569,7 +569,7 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
                 <span className="text-sm font-medium text-gray-500">/ {currentUser.streak.maxBandaids}</span>
               </div>
               <div className="text-[10px] mt-0.5 text-gray-500">
-                Bandaids verfügbar
+                Pflaster verfügbar
               </div>
             </div>
             {/* mini Balken */}

@@ -955,37 +955,6 @@ const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </div>
           </Section>
 
-          <Section id="xp" icon="⚡" title="XP – Erfahrungspunkte">
-            <div className="bg-gray-800/50 rounded-lg px-3 py-2 space-y-0">
-              <Row label="Check-In" value={`+${xp.checkIn} XP`} />
-              <Row label="Quiz-Frage richtig" value={`+${xp.quizCorrect} XP`} />
-              <Row label="Alle Fragen richtig (Bonus)" value={`+${xp.quizBonusAllCorrect} XP`} />
-              <Row label="Prüfungsquiz bestanden" value={`+${xp.examPass} XP`} />
-              <Row label="Technik technisch bestanden" value={`+${xp.techPassed} XP`} />
-              <Row label="Technik taktisch bestanden" value={`+${xp.tacPassed} XP`} />
-              <Row label="Stop The Bleed® Zertifikat" value={`+${xp.stopTheBleed} XP`} />
-              <Row label={`Streak-Bonus (alle ${xp.streakInterval} Wochen)`} value={`+${xp.streakWeeks} XP`} />
-            </div>
-            <p className="text-gray-500 mt-1">XP bestimmt deinen Level-Rang in der Rangliste.</p>
-          </Section>
-
-          <Section id="quiz" icon="🧠" title="Quiz & Prüfung">
-            <div className="space-y-2">
-              <div>
-                <div className="text-white font-semibold mb-0.5">Practice-Modus</div>
-                <p>{platformConfig.quiz.practiceQuestionsPerSession} zufällige Fragen aus dem Modul-Pool. Jederzeit wiederholbar — keine Konsequenzen.</p>
-              </div>
-              <div>
-                <div className="text-white font-semibold mb-0.5">Prüfungsquiz</div>
-                <p>{platformConfig.quiz.examQuestions} Fragen. Mindestens <span className="text-white font-bold">{Math.round(platformConfig.quiz.examPassRate * 100)}%</span> zum Bestehen.</p>
-              </div>
-              <div className="bg-gray-800/70 border border-gray-700 rounded-lg px-3 py-2">
-                <div className="text-gray-300 font-semibold text-xs mb-0.5">⚠️ Achtung</div>
-                <p className="text-gray-400">2 Fehlversuche beim Prüfungsquiz → <span className="text-white font-bold">30 Tage Sperre</span> für dieses Modul.</p>
-              </div>
-            </div>
-          </Section>
-
           <Section id="badges" icon="🩹" title="Pflaster">
             <div className="space-y-1">
               {[
@@ -1003,6 +972,23 @@ const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   </div>
                 </div>
               ))}
+            </div>
+          </Section>
+
+          <Section id="quiz" icon="🧠" title="Quiz & Prüfung">
+            <div className="space-y-2">
+              <div>
+                <div className="text-white font-semibold mb-0.5">Practice-Modus</div>
+                <p>{platformConfig.quiz.practiceQuestionsPerSession} zufällige Fragen aus dem Modul-Pool. Jederzeit wiederholbar — keine Konsequenzen.</p>
+              </div>
+              <div>
+                <div className="text-white font-semibold mb-0.5">Prüfungsquiz</div>
+                <p>{platformConfig.quiz.examQuestions} Fragen. Mindestens <span className="text-white font-bold">{Math.round(platformConfig.quiz.examPassRate * 100)}%</span> zum Bestehen.</p>
+              </div>
+              <div className="bg-gray-800/70 border border-gray-700 rounded-lg px-3 py-2">
+                <div className="text-gray-300 font-semibold text-xs mb-0.5">⚠️ Achtung</div>
+                <p className="text-gray-400">2 Fehlversuche beim Prüfungsquiz → <span className="text-white font-bold">30 Tage Sperre</span> für dieses Modul.</p>
+              </div>
             </div>
           </Section>
 
@@ -1024,6 +1010,20 @@ const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               </div>
             </div>
             <p className="mt-2 text-gray-500">Für Trainer kommt eine dritte Ebene hinzu: <span className="text-white">Instructor</span> — alle Inhalte des Moduls können unterrichtet werden.</p>
+          </Section>
+
+          <Section id="xp" icon="⚡" title="XP – Erfahrungspunkte">
+            <div className="bg-gray-800/50 rounded-lg px-3 py-2 space-y-0">
+              <Row label="Check-In" value={`+${xp.checkIn} XP`} />
+              <Row label="Quiz-Frage richtig" value={`+${xp.quizCorrect} XP`} />
+              <Row label="Alle Fragen richtig (Bonus)" value={`+${xp.quizBonusAllCorrect} XP`} />
+              <Row label="Prüfungsquiz bestanden" value={`+${xp.examPass} XP`} />
+              <Row label="Tactical bestanden" value={`+${xp.techPassed} XP`} />
+              <Row label="Combat bestanden" value={`+${xp.tacPassed} XP`} />
+              <Row label="Stop The Bleed® Zertifikat" value={`+${xp.stopTheBleed} XP`} />
+              <Row label={`Streak-Bonus (alle ${xp.streakInterval} Wochen)`} value={`+${xp.streakWeeks} XP`} />
+            </div>
+            <p className="text-gray-500 mt-1">XP bestimmt deinen Level-Rang in der Rangliste.</p>
           </Section>
 
         </div>
@@ -1106,10 +1106,10 @@ const AppContent: React.FC = () => {
             {/* Help Button */}
             <button
               onClick={() => { setShowHelp(v => !v); setShowNotifications(false); setShowUserDropdown(false); }}
-              className="p-1.5 text-gray-400 hover:text-white transition-colors text-sm font-bold leading-none w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-800 border border-transparent hover:border-gray-700"
+              className="p-1.5 text-gray-400 hover:text-white transition-colors leading-none flex items-center justify-center"
               title="Gebrauchsanweisung"
             >
-              ?
+              <span className="text-xl leading-none">ℹ️</span>
             </button>
 
             {/* Notifications Bell */}
