@@ -2,7 +2,7 @@
 // MARTIAL INSTINCT - APP CONTEXT
 // ============================================
 
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import {
   Member,
   Badge,
@@ -877,6 +877,73 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }, 2000);
     return () => clearTimeout(timer);
   }, [currentUser]);
+
+  // Streak-Gesundheitscheck: einmal pro Session beim Login
+  const streakCheckedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!currentUser) return;
+    if (streakCheckedRef.current === currentUser.id) return;
+    streakCheckedRef.current = currentUser.id;
+
+    const { lastTrainingDate, currentStreak, bandaids, bandaidHistory } = currentUser.streak;
+    if (!lastTrainingDate || currentStreak === 0) return;
+
+    const getWeekMonday = (d: Date): Date => {
+      const date = new Date(d);
+      date.setHours(0, 0, 0, 0);
+      const day = date.getDay();
+      date.setDate(date.getDate() + (day === 0 ? -6 : 1 - day));
+      return date;
+    };
+
+    const now = new Date();
+    const thisWeek = getWeekMonday(now);
+    const lastWeek = new Date(thisWeek); lastWeek.setDate(lastWeek.getDate() - 7);
+    const twoWeeksAgo = new Date(thisWeek); twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+    const lastTrainingWeek = getWeekMonday(new Date(lastTrainingDate));
+
+    // Letzte Einheit diese oder letzte Woche → alles ok
+    if (lastTrainingWeek >= lastWeek) return;
+
+    let updatedStreak = { ...currentUser.streak };
+
+    if (lastTrainingWeek >= twoWeeksAgo && bandaids > 0) {
+      // Genau 1 Woche verpasst + Pflaster vorhanden → automatisch einsetzen
+      const event: BandaidEvent = {
+        id: `bandaid-${Date.now()}`,
+        type: 'used',
+        reason: 'Verpasste Trainingswoche automatisch überbrückt',
+        date: now,
+      };
+      updatedStreak = { ...updatedStreak, bandaids: bandaids - 1, bandaidHistory: [...bandaidHistory, event] };
+      setNotifications(prev => [...prev, {
+        id: `notif-bandaid-auto-${Date.now()}`,
+        oduserId: currentUser.id,
+        type: 'bandaid' as const,
+        title: 'Pflaster eingesetzt 🩹',
+        message: 'Eine verpasste Trainingswoche wurde automatisch mit einem Pflaster überbrückt.',
+        read: false,
+        createdAt: now,
+      }]);
+    } else {
+      // Mehr als 1 Woche verpasst oder kein Pflaster → Streak zurücksetzen
+      updatedStreak = { ...updatedStreak, currentStreak: 0, lastTrainingDate: null };
+      setNotifications(prev => [...prev, {
+        id: `notif-streak-reset-${Date.now()}`,
+        oduserId: currentUser.id,
+        type: 'system' as const,
+        title: 'Streak zurückgesetzt',
+        message: 'Du hast eine Trainingswoche verpasst und hattest kein Pflaster mehr. Dein Streak wurde zurückgesetzt.',
+        read: false,
+        createdAt: now,
+      }]);
+    }
+
+    const updated = { ...currentUser, streak: updatedStreak };
+    setCurrentUser(updated);
+    setMembers(prev => prev.map(m => m.id === updated.id ? updated : m));
+    saveMember(updated);
+  }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Heartbeat: lastSeenAt alle 60s aktualisieren + Self-Refresh aus Supabase (für Instructor-Änderungen)
   useEffect(() => {
