@@ -167,6 +167,10 @@ export interface StreakData {
   maxBandaids: number;
   streakHistory: StreakWeek[];
   bandaidHistory: BandaidEvent[];
+  // Neue Felder (Pflaster-Progression + Admin-Restore)
+  bandaidsWithoutUse?: number;    // Pflaster gesammelt ohne eines zu verbrauchen — reset bei Verbrauch, ab 10 → 3. Slot
+  lastStreakBeforeReset?: number;  // Streak-Wert unmittelbar vor dem letzten Reset (für Admin-Restore)
+  lastStreakWeek?: string;         // ISO-Datum des Montags der letzten Woche mit Streak-Inkrement (YYYY-MM-DD)
 }
 
 export interface StreakWeek {

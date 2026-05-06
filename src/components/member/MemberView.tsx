@@ -561,27 +561,48 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
             </div>
           )}
           {/* Pflaster — volle Breite */}
-          <div className="col-span-2 rounded-xl p-3 border bg-gray-800/50 border-gray-700/80 flex items-center gap-3">
-            <div className="text-2xl leading-none">🩹</div>
-            <div className="flex-1">
-              <div className="text-lg font-black leading-none flex items-baseline gap-1 text-white">
-                {currentUser.streak.bandaids}
-                <span className="text-sm font-medium text-gray-500">/ {currentUser.streak.maxBandaids}</span>
+          {(() => {
+            const { bandaids, maxBandaids, bandaidsWithoutUse } = currentUser.streak;
+            const without = bandaidsWithoutUse ?? 0;
+            const show3rdProgress = maxBandaids < 3;
+            const pct = maxBandaids > 0 ? Math.round((bandaids / maxBandaids) * 100) : 0;
+            const unlockPct = Math.min(Math.round((without / 10) * 100), 100);
+            return (
+              <div className={`col-span-2 rounded-xl p-3 border flex items-start gap-3 ${bandaids === 0 ? 'bg-red-950/30 border-red-700/40' : 'bg-gray-800/50 border-gray-700/80'}`}>
+                <div className="text-2xl leading-none mt-0.5">🩹</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-lg font-black leading-none flex items-baseline gap-1 text-white">
+                    {bandaids}
+                    <span className="text-sm font-medium text-gray-500">/ {maxBandaids}</span>
+                  </div>
+                  <div className={`text-[10px] mt-0.5 ${bandaids === 0 ? 'text-red-400' : 'text-gray-500'}`}>
+                    {bandaids === 0 ? '⚠ Kein Pflaster — Streak ungeschützt' : 'Pflaster verfügbar'}
+                  </div>
+                  {/* Fortschritt zum 3. Slot */}
+                  {show3rdProgress && (
+                    <div className="mt-1.5">
+                      <div className="bg-gray-900/60 rounded-full h-1">
+                        <div
+                          className="bg-amber-600/70 h-1 rounded-full transition-all"
+                          style={{ width: `${unlockPct}%` }}
+                        />
+                      </div>
+                      <div className="text-[9px] text-gray-600 mt-0.5">{without}/10 gesammelt — 3. Slot</div>
+                    </div>
+                  )}
+                </div>
+                {/* Aktiv-Balken */}
+                <div className="w-16 flex-shrink-0 mt-1">
+                  <div className="bg-gray-900/60 rounded-full h-1">
+                    <div
+                      className="bg-gray-500 h-1 rounded-full transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="text-[10px] mt-0.5 text-gray-500">
-                Pflaster verfügbar
-              </div>
-            </div>
-            {/* mini Balken */}
-            <div className="w-20 flex-shrink-0">
-              <div className="bg-gray-900/60 rounded-full h-1">
-                <div
-                  className="bg-gray-500 h-1 rounded-full transition-all"
-                  style={{ width: `${currentUser.streak.maxBandaids > 0 ? Math.round((currentUser.streak.bandaids / currentUser.streak.maxBandaids) * 100) : 0}%` }}
-                />
-              </div>
-            </div>
-          </div>
+            );
+          })()}
         </div>
 
         {/* ── Gesamtfortschritt ── */}

@@ -888,6 +888,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const { lastTrainingDate, currentStreak, bandaids, bandaidHistory } = currentUser.streak;
     if (!lastTrainingDate || currentStreak === 0) return;
 
+
     const getWeekMonday = (d: Date): Date => {
       const date = new Date(d);
       date.setHours(0, 0, 0, 0);
@@ -915,7 +916,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         reason: 'Verpasste Trainingswoche automatisch überbrückt',
         date: now,
       };
-      updatedStreak = { ...updatedStreak, bandaids: bandaids - 1, bandaidHistory: [...bandaidHistory, event] };
+      updatedStreak = {
+        ...updatedStreak,
+        bandaids: bandaids - 1,
+        bandaidsWithoutUse: 0, // Zähler reset — Pflaster verbraucht
+        bandaidHistory: [...bandaidHistory, event],
+      };
       setNotifications(prev => [...prev, {
         id: `notif-bandaid-auto-${Date.now()}`,
         oduserId: currentUser.id,
@@ -927,7 +933,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }]);
     } else {
       // Mehr als 1 Woche verpasst oder kein Pflaster → Streak zurücksetzen
-      updatedStreak = { ...updatedStreak, currentStreak: 0, lastTrainingDate: null };
+      updatedStreak = {
+        ...updatedStreak,
+        currentStreak: 0,
+        lastTrainingDate: null,
+        lastStreakBeforeReset: currentStreak, // Letzten Streak-Wert für Admin-Restore sichern
+      };
       setNotifications(prev => [...prev, {
         id: `notif-streak-reset-${Date.now()}`,
         oduserId: currentUser.id,
@@ -1152,6 +1163,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const approvedAt = new Date();
 
+    // Montag der aktuellen Woche als YYYY-MM-DD (Wochenschlüssel für Streak)
+    const getWeekKey = (d: Date): string => {
+      const date = new Date(d);
+      date.setHours(0, 0, 0, 0);
+      const day = date.getDay();
+      date.setDate(date.getDate() + (day === 0 ? -6 : 1 - day));
+      return date.toISOString().split('T')[0];
+    };
+    const thisWeekKey = getWeekKey(approvedAt);
+
     // 1. checkIns State aktualisieren
     setCheckIns(prev => prev.map(c =>
       c.id === checkInId
@@ -1159,27 +1180,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         : c
     ));
 
-    // 2. Member State aktualisieren (außerhalb setCheckIns)
-    const newStreak = (members.find(m => m.id === checkIn.memberId)?.streak.currentStreak ?? 0) + 1;
+    // 2. Member State aktualisieren — Streak nur einmal pro Kalenderwoche erhöhen
     const interval = platformConfig.xp.streakInterval;
-    const streakXP = newStreak > 0 && newStreak % interval === 0 ? platformConfig.xp.streakWeeks : 0;
-    const updateMember = (m: import('../types').Member) =>
-      m.id === checkIn.memberId
-        ? {
-            ...m,
-            isCheckedIn: true,
-            checkedInAt: approvedAt,
-            lastSeenAt: approvedAt,
-            xp: (m.xp ?? 0) + platformConfig.xp.checkIn + streakXP,
-            totalTrainingSessions: (m.totalTrainingSessions ?? 0) + 1,
-            streak: {
-              ...m.streak,
-              lastTrainingDate: approvedAt,
-              currentStreak: m.streak.currentStreak + 1,
-              longestStreak: Math.max(m.streak.longestStreak, m.streak.currentStreak + 1),
-            }
-          }
-        : m;
+    const updateMember = (m: import('../types').Member) => {
+      if (m.id !== checkIn.memberId) return m;
+
+      // Diese Woche bereits trainiert → Streak nicht nochmals erhöhen
+      const alreadyThisWeek = m.streak.lastStreakWeek === thisWeekKey;
+      const newCurrentStreak = alreadyThisWeek ? m.streak.currentStreak : m.streak.currentStreak + 1;
+      const newLongestStreak = Math.max(m.streak.longestStreak, newCurrentStreak);
+      const streakXP = !alreadyThisWeek && newCurrentStreak > 0 && newCurrentStreak % interval === 0
+        ? platformConfig.xp.streakWeeks : 0;
+
+      return {
+        ...m,
+        isCheckedIn: true,
+        checkedInAt: approvedAt,
+        lastSeenAt: approvedAt,
+        xp: (m.xp ?? 0) + platformConfig.xp.checkIn + streakXP,
+        totalTrainingSessions: (m.totalTrainingSessions ?? 0) + 1,
+        streak: {
+          ...m.streak,
+          lastTrainingDate: approvedAt,
+          currentStreak: newCurrentStreak,
+          longestStreak: newLongestStreak,
+          lastStreakWeek: alreadyThisWeek ? m.streak.lastStreakWeek : thisWeekKey,
+        }
+      };
+    };
     setMembers(prev => {
       const next = prev.map(updateMember);
       const updated = next.find(m => m.id === checkIn.memberId);
@@ -1793,69 +1821,82 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const useBandaid = useCallback(() => {
     if (!currentUser || currentUser.streak.bandaids <= 0) return;
-    
+
     const event: BandaidEvent = {
       id: `bandaid-${Date.now()}`,
       type: 'used',
       reason: 'Streak gerettet',
       date: new Date()
     };
-    
-    setMembers(prev => prev.map(m => 
-      m.id === currentUser.id
-        ? {
-            ...m,
-            streak: {
-              ...m.streak,
-              bandaids: m.streak.bandaids - 1,
-              bandaidHistory: [...m.streak.bandaidHistory, event]
-            }
-          }
-        : m
+
+    const applyUse = (s: typeof currentUser.streak) => ({
+      ...s,
+      bandaids: s.bandaids - 1,
+      bandaidsWithoutUse: 0, // Zähler zurücksetzen — 3. Slot Belohnung geht verloren
+      bandaidHistory: [...s.bandaidHistory, event],
+    });
+
+    setMembers(prev => prev.map(m =>
+      m.id === currentUser.id ? { ...m, streak: applyUse(m.streak) } : m
     ));
-    
-    setCurrentUser(prev => prev ? {
-      ...prev,
-      streak: {
-        ...prev.streak,
-        bandaids: prev.streak.bandaids - 1,
-        bandaidHistory: [...prev.streak.bandaidHistory, event]
-      }
-    } : null);
+    setCurrentUser(prev => prev ? { ...prev, streak: applyUse(prev.streak) } : null);
   }, [currentUser]);
 
   const awardBandaid = useCallback((memberId: string, reason: string) => {
-    const event: BandaidEvent = {
-      id: `bandaid-${Date.now()}`,
-      type: 'earned',
-      reason,
-      date: new Date()
-    };
-
     const target = members.find(m => m.id === memberId);
     if (!target) return;
 
+    const now = new Date();
+    const event: BandaidEvent = { id: `bandaid-${Date.now()}`, type: 'earned', reason, date: now };
+
+    const currentMax = target.streak.maxBandaids;
+    const currentWithoutUse = target.streak.bandaidsWithoutUse ?? 0;
+
+    // bandaidsWithoutUse nur zählen solange 3. Slot noch nicht freigeschaltet
+    const newWithoutUse = currentMax >= 3 ? currentWithoutUse : currentWithoutUse + 1;
+
+    // 3. Slot freischalten wenn 10 Pflaster ohne Verbrauch gesammelt
+    const shouldUnlock3rd = currentMax === 2 && newWithoutUse >= 10;
+    const newMaxBandaids = shouldUnlock3rd ? 3 : currentMax;
+
+    // Aktive Pflaster nur bis maxBandaids auffüllen
+    const newBandaids = Math.min(target.streak.bandaids + 1, newMaxBandaids);
+
     const newStreak = {
       ...target.streak,
-      bandaids: Math.min(target.streak.bandaids + 1, target.streak.maxBandaids),
-      bandaidHistory: [...target.streak.bandaidHistory, event]
+      bandaids: newBandaids,
+      maxBandaids: newMaxBandaids,
+      bandaidsWithoutUse: newWithoutUse,
+      bandaidHistory: [...target.streak.bandaidHistory, event],
     };
 
     setMembers(prev => prev.map(m => m.id === memberId ? { ...m, streak: newStreak } : m));
+    if (currentUser?.id === memberId) setCurrentUser(prev => prev ? { ...prev, streak: newStreak } : null);
     updateMemberFields(memberId, { streak: newStreak });
 
-    // Notify member
-    const memberNotification: Notification = {
-      id: `notif-${Date.now()}`,
+    // Unlock-Benachrichtigung
+    if (shouldUnlock3rd) {
+      setNotifications(prev => [...prev, {
+        id: `notif-unlock3-${Date.now()}`,
+        oduserId: memberId,
+        type: 'bandaid' as const,
+        title: '3. Pflaster-Slot freigeschaltet! 🎖️',
+        message: 'Du hast 10 Pflaster gesammelt ohne eines zu verbrauchen. Der dritte Pflaster-Slot ist dauerhaft freigeschaltet!',
+        read: false,
+        createdAt: now,
+      }]);
+    }
+
+    setNotifications(prev => [...prev, {
+      id: `notif-bandaid-${Date.now()}`,
       oduserId: memberId,
-      type: 'bandaid',
+      type: 'bandaid' as const,
       title: 'Pflaster erhalten! 🩹',
       message: reason,
       read: false,
-      createdAt: new Date()
-    };
-    setNotifications(prev => [...prev, memberNotification]);
-  }, [members]);
+      createdAt: now,
+    }]);
+  }, [members, currentUser]);
 
   // ============================================
   // BOARD MESSAGES
@@ -2888,27 +2929,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [currentUser]);
 
   const restoreStreak = useCallback((memberId: string, streakValue: number, reason: string) => {
+    const now = new Date();
     const update = (m: Member): Member => ({
       ...m,
       streak: {
         ...m.streak,
         currentStreak: streakValue,
         longestStreak: Math.max(m.streak.longestStreak, streakValue),
-        lastTrainingDate: new Date(),
+        lastTrainingDate: now,
+        lastStreakBeforeReset: undefined, // nach Restore löschen
       }
     });
-    setMembers(prev => prev.map(m => m.id === memberId ? update(m) : m));
+    setMembers(prev => {
+      const next = prev.map(m => m.id === memberId ? update(m) : m);
+      const updated = next.find(m => m.id === memberId);
+      if (updated) updateMemberFields(memberId, { streak: updated.streak });
+      return next;
+    });
     if (currentUser?.id === memberId) setCurrentUser(prev => prev ? update(prev) : null);
-    const notif: Notification = {
+    setNotifications(prev => [...prev, {
       id: `notif-${Date.now()}`,
       oduserId: memberId,
-      type: 'bandaid',
+      type: 'bandaid' as const,
       title: 'Streak wiederhergestellt 🔥',
       message: reason,
       read: false,
-      createdAt: new Date()
-    };
-    setNotifications(prev => [...prev, notif]);
+      createdAt: now,
+    }]);
   }, [currentUser]);
 
   // ============================================

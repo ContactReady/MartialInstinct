@@ -3070,12 +3070,35 @@ export const InstructorView: React.FC = () => {
                       {/* ── Streak ── */}
                       <div className="border-t border-gray-700/50 pt-3 space-y-2">
                         <p className="text-xs text-gray-500 font-medium uppercase tracking-widest">🔥 Streak</p>
+                        {/* Aktueller Status */}
+                        <div className="bg-gray-900/40 rounded-lg px-3 py-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                          <span className="text-gray-400">Aktuell: <span className="text-white font-bold">{m.streak.currentStreak} W</span></span>
+                          <span className="text-gray-400">Pflaster: <span className="text-white font-bold">{m.streak.bandaids}/{m.streak.maxBandaids}</span></span>
+                          {m.streak.maxBandaids < 3 && (
+                            <span className="text-gray-400">Gesammelt: <span className="text-amber-400 font-bold">{m.streak.bandaidsWithoutUse ?? 0}/10</span></span>
+                          )}
+                          {m.streak.lastStreakBeforeReset !== undefined && (
+                            <span className="text-gray-400">Vor Reset: <span className="text-orange-400 font-bold">{m.streak.lastStreakBeforeReset} W</span></span>
+                          )}
+                        </div>
+                        {/* Schnell-Restore wenn lastStreakBeforeReset vorhanden */}
+                        {m.streak.lastStreakBeforeReset !== undefined && (
+                          <button
+                            onClick={() => {
+                              restoreStreak(m.id, m.streak.lastStreakBeforeReset!, `Streak auf letzten Wert (${m.streak.lastStreakBeforeReset} W) wiederhergestellt`);
+                              setStreakSaveState('saved');
+                            }}
+                            className="w-full py-1.5 rounded-lg text-xs font-medium bg-orange-900/40 border border-orange-700/40 text-orange-300 hover:bg-orange-900/60 transition-all"
+                          >
+                            🔄 Auf letzten Streak wiederherstellen ({m.streak.lastStreakBeforeReset} W)
+                          </button>
+                        )}
                       <div className="flex gap-2">
                         <div className="flex-1">
                           <label className="text-xs text-gray-500 block mb-1">Wochen</label>
                           <input
                             type="number"
-                            min={1}
+                            min={0}
                             max={52}
                             value={streakRestoreValue}
                             onChange={e => { setStreakRestoreValue(Number(e.target.value)); setStreakSaveState('dirty'); setStreakPendingClose(false); }}
