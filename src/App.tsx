@@ -973,6 +973,8 @@ const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </div>
               ))}
             </div>
+            <p className="mt-2">Pflaster werden automatisch eingesetzt wenn du eine Trainingswoche verpasst. Standardmäßig hast du <span className="text-white font-semibold">2 Slots</span>.</p>
+            <p className="mt-1"><span className="text-white font-semibold">3. Slot freischalten:</span> Sammel 10 Pflaster in Folge <span className="text-white font-semibold">ohne eines zu verbrauchen</span> — dann wird der dritte Slot dauerhaft freigeschaltet.</p>
           </Section>
 
           <Section id="quiz" icon="🧠" title="Quiz & Prüfung">
@@ -994,7 +996,7 @@ const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
           <Section id="streak" icon="🔥" title="Streak">
             <p>Dein Streak zählt wie viele Trainingswochen du in Folge aktiv warst. Eine Woche gilt als aktiv wenn du mindestens einmal eingecheckt hast.</p>
-            <p className="mt-1">Fehlst du eine Woche, verlierst du den Streak — es sei denn du hast noch <span className="text-white font-semibold">Pflaster</span> übrig (max. 2). Ein Pflaster überbrückt eine verpasste Woche.</p>
+            <p className="mt-1">Fehlst du eine Woche, verlierst du den Streak — es sei denn du hast noch <span className="text-white font-semibold">Pflaster</span> übrig. Ein Pflaster überbrückt eine verpasste Woche.</p>
           </Section>
 
           <Section id="techniken" icon="🥋" title="Techniken & Prüfungsebenen">
