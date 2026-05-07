@@ -1,14 +1,13 @@
 // ============================================
 // CERTIFICATE VIEW — Digitaler Trainingsnachweis
-// Design orientiert am physischen MI-Zertifikat
-// Print via ReactDOM.createPortal → direkt in body
+// html2canvas + jsPDF für zuverlässigen Download (inkl. Mobil)
 // ============================================
 
-import React, { useEffect, useRef } from 'react';
-import ReactDOM from 'react-dom';
+import React, { useState, useRef } from 'react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import { useApp, BLOCKS, MODULES } from '../../context/AppContext';
 
-// ── Roman Numerals ───────────────────────────────────────────────────────────
 function toRoman(n: number): string {
   const map: [number, string][] = [
     [1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],
@@ -22,7 +21,6 @@ function toRoman(n: number): string {
   return result;
 }
 
-// ── Ersten 9 Curriculum-Module ──────────────────────────────────────────────
 const CURRICULUM_MODULES = BLOCKS
   .filter(b => b.id !== 'assistant_instructor' && !b.adminOnly)
   .flatMap(b => b.moduleIds.map(id => MODULES.find(m => m.id === id)!))
@@ -35,16 +33,8 @@ interface CertificateViewProps {
 
 export const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => {
   const { currentUser, getTechniquesForModule } = useApp();
-  const portalRef = useRef<HTMLDivElement | null>(null);
-
-  // Portal-Container direkt in body einhängen
-  useEffect(() => {
-    const el = document.createElement('div');
-    el.id = 'mi-certificate-portal';
-    document.body.appendChild(el);
-    portalRef.current = el;
-    return () => { document.body.removeChild(el); };
-  }, []);
+  const certRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(false);
 
   if (!currentUser) return null;
 
@@ -86,293 +76,381 @@ export const CertificateView: React.FC<CertificateViewProps> = ({ onClose }) => 
     );
   };
 
-  const handlePrint = () => window.print();
+  const handleDownload = async () => {
+    if (!certRef.current || loading) return;
+    setLoading(true);
+    try {
+      await document.fonts.ready;
+      const el = certRef.current;
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: el.offsetWidth,
+        height: el.offsetHeight,
+      });
 
-  // ── Zertifikat-Inhalt ─────────────────────────────────────────────────────
-  const certificateContent = (
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = pdf.internal.pageSize.getHeight();
+      const aspect = canvas.height / canvas.width;
+      const imgH = pdfW * aspect;
+      const yOffset = imgH < pdfH ? (pdfH - imgH) / 2 : 0;
+      pdf.addImage(imgData, 'JPEG', 0, yOffset, pdfW, Math.min(imgH, pdfH));
+
+      // Blob-basierter Download für bessere Mobilkompatibilität
+      const blob = pdf.output('blob');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `MI_Zertifikat_${currentUser.name.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      console.error('PDF error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
     <>
-      {/* Print CSS — direkt in head, kein nesting-Problem */}
       <style>{`
-        @media print {
-          body > *:not(#mi-certificate-portal) { display: none !important; }
-          #mi-certificate-portal { display: block !important; position: fixed; inset: 0; z-index: 9999; }
-          .cert-no-print { display: none !important; }
-        }
-        @page { size: A4 portrait; margin: 0; }
         @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
       `}</style>
-
-      {/* ── Screen Overlay ── */}
-      <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-start overflow-y-auto overflow-x-auto py-4 px-4 cert-no-print"
-        style={{ fontFamily: 'Georgia, serif' }}
-      >
+      <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-start overflow-y-auto overflow-x-auto py-4 px-2">
+        {/* Buttons */}
         <div className="flex gap-3 mb-4 w-full max-w-[794px]">
-          <button onClick={onClose}
+          <button
+            onClick={onClose}
             className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-all"
-          >← Zurück</button>
-          <button onClick={handlePrint}
-            className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-sm font-bold transition-all"
-          >Als PDF herunterladen</button>
+          >
+            ← Zurück
+          </button>
+          <button
+            onClick={handleDownload}
+            disabled={loading}
+            className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-bold transition-all"
+          >
+            {loading ? 'Wird erstellt…' : 'Als PDF herunterladen'}
+          </button>
         </div>
 
-        {/* Zertifikat-Karte */}
-        <CertificateCard
-          name={currentUser.name}
-          today={today}
-          modules={CURRICULUM_MODULES}
-          isTacticsDone={isTacticsDone}
-          isCombatDone={isCombatDone}
-          stopTheBleedCertified={currentUser.stopTheBleedCertified}
-        />
-      </div>
+        {/* Zertifikat-Karte — wird von html2canvas erfasst */}
+        <div
+          ref={certRef}
+          style={{
+            width: '794px',
+            minHeight: '1123px',
+            backgroundColor: '#ffffff',
+            fontFamily: 'Georgia, "Times New Roman", serif',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
+          }}
+        >
+          {/* Äußerer Rahmen */}
+          <div style={{
+            margin: '14px',
+            border: '1.5px solid #d1d5db',
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative',
+          }}>
+            {/* Innerer dünner Rahmen */}
+            <div style={{
+              position: 'absolute',
+              inset: '5px',
+              border: '0.5px solid #e5e7eb',
+              pointerEvents: 'none',
+            }} />
 
-      {/* ── Print-Version (nur bei window.print() sichtbar) ── */}
-      <div id="mi-certificate-print" style={{ display: 'none', fontFamily: 'Georgia, serif' }}>
-        <CertificateCard
-          name={currentUser.name}
-          today={today}
-          modules={CURRICULUM_MODULES}
-          isTacticsDone={isTacticsDone}
-          isCombatDone={isCombatDone}
-          stopTheBleedCertified={currentUser.stopTheBleedCertified}
-          isPrint
-        />
+            {/* ── Logo ── */}
+            <div style={{ textAlign: 'center', padding: '36px 24px 20px' }}>
+              <img
+                src="/logos/mi-logo-landscape-light.svg"
+                alt="Martial Instinct"
+                style={{ height: '60px', margin: '0 auto', display: 'block', objectFit: 'contain' }}
+                onError={e => {
+                  (e.target as HTMLImageElement).src = '/logos/mi-logo-landscape-dark.svg';
+                }}
+              />
+            </div>
+
+            {/* ── Trennlinie ── */}
+            <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: '0 24px' }} />
+
+            {/* ── ZERTIFIKAT ── */}
+            <div style={{
+              textAlign: 'center',
+              padding: '24px 24px 20px',
+              borderBottom: '1px solid #e5e7eb',
+            }}>
+              <div style={{
+                fontSize: '46px',
+                fontWeight: '900',
+                letterSpacing: '0.55em',
+                color: '#c41230',
+                textTransform: 'uppercase',
+                fontFamily: 'Georgia, serif',
+                lineHeight: 1,
+                paddingLeft: '0.55em', // optische Zentrierung bei letter-spacing
+              }}>
+                ZERTIFIKAT
+              </div>
+            </div>
+
+            {/* ── Untertitel + Name ── */}
+            <div style={{ textAlign: 'center', padding: '24px 48px 12px' }}>
+              <p style={{ fontSize: '11px', color: '#6b7280', lineHeight: 1.7, margin: 0 }}>
+                Dieses Zertifikat bestätigt den Fortschritt im Bereich<br />
+                <strong style={{ color: '#1f2937' }}>M.I. Streetdefense</strong> von:
+              </p>
+              <div style={{
+                borderBottom: '1.5px solid #374151',
+                margin: '18px 32px 6px',
+                paddingBottom: '6px',
+              }}>
+                <span style={{
+                  fontSize: '28px',
+                  fontWeight: '900',
+                  color: '#111827',
+                  letterSpacing: '0.02em',
+                  fontFamily: 'Georgia, serif',
+                }}>
+                  {currentUser.name}
+                </span>
+              </div>
+            </div>
+
+            {/* ── Zitat ── */}
+            <div style={{ textAlign: 'center', padding: '10px 56px 20px' }}>
+              <p style={{
+                fontFamily: "'Dancing Script', 'Brush Script MT', cursive",
+                fontSize: '17px',
+                color: '#374151',
+                lineHeight: 1.8,
+                fontStyle: 'italic',
+                margin: 0,
+              }}>
+                „Erzähle es mir und ich werde es vergessen.<br />
+                Zeige es mir und ich werde es behalten.<br />
+                Lass es mich tun und ich werde es können."
+              </p>
+            </div>
+
+            {/* ── Trennlinie ── */}
+            <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: '0 24px' }} />
+
+            {/* ── Hauptbereich: Foto + Siegel | Modul-Tabelle ── */}
+            <div style={{
+              display: 'flex',
+              gap: '24px',
+              padding: '24px 28px',
+              alignItems: 'flex-start',
+            }}>
+              {/* Foto + Siegel */}
+              <div style={{
+                flexShrink: 0,
+                width: '88px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '16px',
+              }}>
+                <div style={{
+                  width: '80px',
+                  height: '100px',
+                  border: '1.5px solid #d1d5db',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '2px',
+                }}>
+                  <span style={{ fontSize: '10px', color: '#9ca3af', textAlign: 'center', lineHeight: 1.5 }}>Foto</span>
+                </div>
+                <div style={{
+                  width: '62px',
+                  height: '62px',
+                  borderRadius: '50%',
+                  backgroundColor: '#b91c1c',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 14px rgba(153,27,27,0.45), inset 0 1px 3px rgba(255,255,255,0.12)',
+                }}>
+                  <img
+                    src="/logos/mi-icon.jpg"
+                    alt="MI"
+                    style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'contain', opacity: 0.9 }}
+                    onError={e => {
+                      const el = e.target as HTMLImageElement;
+                      el.style.display = 'none';
+                      const p = el.parentElement;
+                      if (p) p.innerHTML = '<span style="color:white;font-size:22px;font-weight:900;font-family:Georgia,serif">M</span>';
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Modul-Tabelle */}
+              <div style={{ flex: 1 }}>
+                {/* Spalten-Header */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '56px 1fr 56px',
+                  marginBottom: '6px',
+                }}>
+                  <div style={{ textAlign: 'center', fontSize: '8.5px', fontWeight: '700', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#6b7280' }}>Tactics</div>
+                  <div style={{ textAlign: 'center', fontSize: '8.5px', fontWeight: '700', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#374151' }}>Modul</div>
+                  <div style={{ textAlign: 'center', fontSize: '8.5px', fontWeight: '700', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#6b7280' }}>Combat</div>
+                </div>
+
+                <div style={{ height: '2px', backgroundColor: '#1f2937' }} />
+
+                {CURRICULUM_MODULES.map((mod, idx) => {
+                  const tDone = isTacticsDone(mod.id);
+                  const cDone = isCombatDone(mod.id);
+                  return (
+                    <div
+                      key={mod.id}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '56px 1fr 56px',
+                        alignItems: 'center',
+                        padding: '7px 0',
+                        borderBottom: idx < CURRICULUM_MODULES.length - 1 ? '1px solid #f3f4f6' : 'none',
+                      }}
+                    >
+                      {/* Tactics */}
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <div style={{
+                          width: '20px', height: '20px',
+                          borderRadius: '50%',
+                          backgroundColor: tDone ? '#1f2937' : 'transparent',
+                          border: `1.5px solid ${tDone ? '#1f2937' : '#d1d5db'}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          {tDone && <span style={{ color: 'white', fontSize: '10px', fontWeight: '900', lineHeight: 1 }}>✓</span>}
+                        </div>
+                      </div>
+
+                      {/* Modul-Name */}
+                      <div style={{ textAlign: 'center', padding: '0 8px' }}>
+                        <span style={{ fontSize: '9px', color: '#9ca3af', fontFamily: 'monospace', marginRight: '5px' }}>
+                          {toRoman(idx + 1)}
+                        </span>
+                        <span style={{ fontSize: '10.5px', fontWeight: '600', color: '#1f2937' }}>
+                          {mod.name}
+                        </span>
+                      </div>
+
+                      {/* Combat */}
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <div style={{
+                          width: '20px', height: '20px',
+                          borderRadius: '50%',
+                          backgroundColor: cDone ? '#c41230' : 'transparent',
+                          border: `1.5px solid ${cDone ? '#c41230' : '#d1d5db'}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          {cDone && <span style={{ color: 'white', fontSize: '10px', fontWeight: '900', lineHeight: 1 }}>✓</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div style={{ height: '2px', backgroundColor: '#1f2937' }} />
+
+                {/* Legende */}
+                <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '8px', color: '#9ca3af' }}>
+                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#1f2937' }} />
+                    Tactics bestanden
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '8px', color: '#9ca3af' }}>
+                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#c41230' }} />
+                    Combat bestanden
+                  </div>
+                </div>
+
+                {currentUser.stopTheBleedCertified && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', marginTop: '10px' }}>
+                    <img
+                      src="/logos/stop-the-bleed.png"
+                      alt="Stop The Bleed"
+                      style={{ height: '18px', objectFit: 'contain' }}
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                    <span style={{ fontSize: '8.5px', fontWeight: '600', color: '#6b7280', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                      Stop The Bleed® Certified
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Spacer */}
+            <div style={{ flex: 1 }} />
+
+            {/* ── Unterschriften ── */}
+            <div style={{ borderTop: '1px solid #e5e7eb', padding: '20px 36px 24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+                {[
+                  { label: 'Ort, Datum', value: today },
+                  { label: 'Trainer', value: '' },
+                  { label: 'Prüfer', value: '' },
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ textAlign: 'center' }}>
+                    <div style={{
+                      borderBottom: '1px solid #9ca3af',
+                      paddingBottom: '4px',
+                      minHeight: '28px',
+                      fontSize: '11px',
+                      color: '#4b5563',
+                      fontFamily: 'Georgia, serif',
+                    }}>
+                      {value}
+                    </div>
+                    <div style={{
+                      fontSize: '8px',
+                      color: '#9ca3af',
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                      marginTop: '5px',
+                    }}>
+                      {label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Footer ── */}
+            <div style={{
+              textAlign: 'center',
+              padding: '8px 24px 14px',
+              fontSize: '7.5px',
+              color: '#9ca3af',
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+              borderTop: '1px solid #f3f4f6',
+            }}>
+              Martial Instinct Köln · JKD · Eskrima · Selbstverteidigung
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );
-
-  // Portal direkt in body rendern → Print CSS kann body-children korrekt verstecken
-  if (portalRef.current) {
-    return ReactDOM.createPortal(certificateContent, portalRef.current);
-  }
-  return certificateContent;
 };
-
-// ── Zertifikat-Layout ─────────────────────────────────────────────────────────
-interface CardProps {
-  name: string;
-  today: string;
-  modules: typeof CURRICULUM_MODULES;
-  isTacticsDone: (id: string) => boolean;
-  isCombatDone: (id: string) => boolean;
-  stopTheBleedCertified?: boolean;
-  isPrint?: boolean;
-}
-
-const CertificateCard: React.FC<CardProps> = ({
-  name, today, modules, isTacticsDone, isCombatDone, stopTheBleedCertified, isPrint
-}) => (
-  <div
-    className={`bg-white text-black overflow-hidden ${isPrint ? '' : 'rounded-2xl shadow-2xl'}`}
-    style={{
-      fontFamily: 'Georgia, serif',
-      width: isPrint ? '210mm' : '794px',
-      minHeight: isPrint ? '297mm' : '1123px',
-      ...(isPrint ? { position: 'fixed', inset: 0 } : {})
-    }}
-  >
-    {/* ── Dekorativer Rahmen ── */}
-    <div
-      className="relative m-3 border-2 border-gray-300 rounded-xl overflow-hidden bg-white flex flex-col"
-      style={{ minHeight: isPrint ? 'calc(297mm - 24px)' : 'calc(1123px - 24px)' }}
-    >
-
-      {/* Innerer dünner Rahmen */}
-      <div className="absolute inset-1 border border-gray-200 rounded-lg pointer-events-none z-10" />
-
-      {/* ── Header: Logo auf Weiß ── */}
-      <div className="bg-white px-6 pt-6 pb-2 text-center">
-        <img
-          src="/logos/mi-logo-landscape-light.svg"
-          alt="Martial Instinct"
-          className="h-14 mx-auto object-contain"
-          onError={e => { (e.target as HTMLImageElement).src = '/logos/mi-logo-landscape-dark.svg'; }}
-        />
-      </div>
-
-      {/* ── Titel ── */}
-      <div className="text-center py-2 px-6 border-b border-gray-200 bg-white">
-        <div
-          className="font-black tracking-[0.45em] uppercase"
-          style={{ fontSize: '30px', color: '#c41230', fontFamily: 'Georgia, serif' }}
-        >ZERTIFIKAT</div>
-      </div>
-
-      {/* ── Intro-Text ── */}
-      <div className="text-center px-8 pt-3 pb-1 bg-white">
-        <p className="text-xs text-gray-500 leading-relaxed">
-          Dieses Zertifikat bestätigt den Fortschritt im Bereich<br />
-          <strong className="text-gray-800">M.I. Streetdefense</strong> von:
-        </p>
-        <div className="mt-2 border-b-2 border-gray-800 mx-8 pb-1">
-          <span className="text-2xl font-black tracking-wide text-gray-900">{name}</span>
-        </div>
-        <div className="text-[10px] text-gray-400 mt-1 tracking-widest">Datum: {today}</div>
-      </div>
-
-      {/* ── Zitat ── */}
-      <div className="px-10 py-3 text-center bg-white">
-        <p
-          className="text-gray-600 leading-relaxed italic"
-          style={{ fontFamily: "'Dancing Script', 'Brush Script MT', cursive", fontSize: '13px' }}
-        >
-          „Erzähle es mir und ich werde es vergessen.<br />
-          Zeige es mir und ich werde es behalten.<br />
-          Lass es mich tun und ich werde es können."
-        </p>
-      </div>
-
-      {/* ── Hauptbereich: Foto + Siegel + Module ── */}
-      <div className="px-6 pb-2 bg-white">
-        <div className="flex gap-3 items-start">
-
-          {/* Foto-Platzhalter */}
-          <div className="flex-shrink-0">
-            <div
-              className="border-2 border-gray-300 rounded flex items-center justify-center text-gray-300 bg-gray-50"
-              style={{ width: '72px', height: '90px', fontSize: '10px', textAlign: 'center', lineHeight: '1.3' }}
-            >
-              Foto
-            </div>
-            {/* Siegel */}
-            <div className="mt-2 flex justify-center">
-              <WaxSeal />
-            </div>
-          </div>
-
-          {/* Module-Tabelle */}
-          <div className="flex-1">
-            {/* Spalten-Header */}
-            <div className="grid grid-cols-[1fr_auto_1fr] gap-x-2 mb-1 mt-1">
-              <div className="text-center text-[9px] font-black tracking-[0.2em] uppercase text-gray-500">Tactics</div>
-              <div className="w-36" />
-              <div className="text-center text-[9px] font-black tracking-[0.2em] uppercase text-gray-500">Combat</div>
-            </div>
-            <div className="border-t-2 border-gray-800 mb-0.5" />
-
-            {modules.map((mod, idx) => {
-              const romanNum = toRoman(idx + 1);
-              const tacticsDone = isTacticsDone(mod.id);
-              const combatDone = isCombatDone(mod.id);
-              return (
-                <div
-                  key={mod.id}
-                  className={`grid grid-cols-[1fr_auto_1fr] gap-x-2 items-center py-1 ${
-                    idx < modules.length - 1 ? 'border-b border-gray-100' : ''
-                  }`}
-                >
-                  <div className="flex justify-center">
-                    {tacticsDone
-                      ? <SmallStamp color="black" />
-                      : <div className="w-5 h-5" />
-                    }
-                  </div>
-                  <div className="w-36 text-center">
-                    <span className="text-[9px] text-gray-400 font-mono mr-1.5">{romanNum}</span>
-                    <span className="text-[10px] font-semibold text-gray-800">{mod.name}</span>
-                  </div>
-                  <div className="flex justify-center">
-                    {combatDone
-                      ? <SmallStamp color="red" />
-                      : <div className="w-5 h-5" />
-                    }
-                  </div>
-                </div>
-              );
-            })}
-            <div className="border-t-2 border-gray-800 mt-0.5" />
-
-            {/* Stop The Bleed Badge */}
-            {stopTheBleedCertified && (
-              <div className="mt-2 flex items-center gap-2 justify-center">
-                <img
-                  src="/logos/stop-the-bleed.png"
-                  alt="Stop The Bleed"
-                  className="h-5 object-contain"
-                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
-                <span className="text-[9px] font-semibold text-gray-600 tracking-wider uppercase">Stop The Bleed® Certified</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Legende */}
-        <div className="flex justify-center gap-6 mt-2 text-[8px] text-gray-400 uppercase tracking-widest">
-          <span className="flex items-center gap-1">
-            <SmallStamp color="black" />
-            Tactics bestanden
-          </span>
-          <span className="flex items-center gap-1">
-            <SmallStamp color="red" />
-            Combat bestanden
-          </span>
-        </div>
-      </div>
-
-      {/* Spacer — schiebt Unterschriften ans Ende */}
-      <div className="flex-1" />
-
-      {/* ── Unterschriften ── */}
-      <div className="px-6 pb-4 pt-3 border-t border-gray-200 bg-white">
-        <div className="flex justify-between items-end gap-4">
-          <div className="text-center flex-1">
-            <div className="border-b border-gray-500 pb-0.5 text-xs text-gray-600 min-h-[20px]">{today}</div>
-            <div className="text-[9px] text-gray-400 tracking-widest uppercase mt-1">Ort, Datum</div>
-          </div>
-          <div className="text-center flex-1">
-            <div className="border-b border-gray-500 pb-0.5 min-h-[20px]">
-              {/* TRAINER UNTERSCHRIFT PLACEHOLDER */}
-            </div>
-            <div className="text-[9px] text-gray-400 tracking-widest uppercase mt-1">Trainer</div>
-          </div>
-          <div className="text-center flex-1">
-            <div className="border-b border-gray-500 pb-0.5 min-h-[20px]">
-              {/* PRÜFER UNTERSCHRIFT PLACEHOLDER */}
-            </div>
-            <div className="text-[9px] text-gray-400 tracking-widest uppercase mt-1">Prüfer</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Footer ── */}
-      <div className="bg-white text-gray-400 text-[8px] text-center py-3 tracking-widest uppercase border-t border-gray-100">
-        Martial Instinct Köln · JKD · Eskrima · Selbstverteidigung
-      </div>
-    </div>
-  </div>
-);
-
-// ── Wachs-Siegel ─────────────────────────────────────────────────────────────
-const WaxSeal: React.FC = () => (
-  <div
-    className="flex items-center justify-center rounded-full bg-red-700 shadow-lg"
-    style={{ width: '54px', height: '54px', boxShadow: '0 3px 8px rgba(153,27,27,0.5), inset 0 1px 2px rgba(255,255,255,0.1)' }}
-  >
-    <img
-      src="/logos/mi-icon.jpg"
-      alt="MI"
-      className="w-8 h-8 rounded-full object-contain opacity-90"
-      onError={e => {
-        const el = e.target as HTMLImageElement;
-        el.style.display = 'none';
-        const parent = el.parentElement;
-        if (parent) parent.innerHTML = '<span style="color:white;font-size:18px;font-weight:900">M</span>';
-      }}
-    />
-  </div>
-);
-
-// ── Kleiner Stempel ───────────────────────────────────────────────────────────
-const SmallStamp: React.FC<{ color: 'black' | 'red' }> = ({ color }) => (
-  <div
-    className={`w-5 h-5 rounded-full flex items-center justify-center font-black text-white border ${
-      color === 'red' ? 'bg-red-600 border-red-700' : 'bg-gray-900 border-gray-700'
-    }`}
-    style={{ fontSize: '8px' }}
-  >
-    {color === 'red' ? 'C' : 'T'}
-  </div>
-);
 
 export default CertificateView;

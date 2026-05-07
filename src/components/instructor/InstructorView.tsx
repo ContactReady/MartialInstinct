@@ -87,7 +87,8 @@ type CommunitySubTab = 'online' | 'mitglieder' | 'training' | 'rangliste';
 type AdminSubTab = 'analytics' | 'verwaltung' | 'bewerbungen';
 type VerwaltungSubTab = 'plattform' | 'training' | 'mitglieder';
 
-export const InstructorView: React.FC<{ navTarget?: string | null; onNavComplete?: () => void }> = ({ navTarget, onNavComplete }) => {
+type NavTarget = { tab: string; subTab?: string; requestSubTab?: string };
+export const InstructorView: React.FC<{ navTarget?: NavTarget | null; onNavComplete?: () => void }> = ({ navTarget, onNavComplete }) => {
   const {
     currentUser,
     members,
@@ -190,7 +191,11 @@ export const InstructorView: React.FC<{ navTarget?: string | null; onNavComplete
   useEffect(() => {
     if (!navTarget) return;
     const valid: Tab[] = ['dashboard', 'training', 'community', 'profil', 'admin'];
-    if (valid.includes(navTarget as Tab)) setActiveTabPersisted(navTarget as Tab);
+    if (valid.includes(navTarget.tab as Tab)) {
+      setActiveTabPersisted(navTarget.tab as Tab);
+      if (navTarget.subTab) setDashboardSubTab(navTarget.subTab as DashboardSubTab);
+      if (navTarget.requestSubTab) setRequestSubTab(navTarget.requestSubTab as 'exams' | 'checkins' | 'beitritt');
+    }
     onNavComplete?.();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navTarget]);

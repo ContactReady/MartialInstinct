@@ -377,7 +377,8 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
 };
 
 // ── Notifications Dropdown ─────────────────────────────────────────────────────
-const NotificationsDropdown: React.FC<{ onClose: () => void; onNavigate: (tab: string) => void }> = ({ onClose, onNavigate }) => {
+type NavTarget = { tab: string; subTab?: string; requestSubTab?: string };
+const NotificationsDropdown: React.FC<{ onClose: () => void; onNavigate: (target: NavTarget) => void }> = ({ onClose, onNavigate }) => {
   const { currentUser, notifications, markNotificationRead, clearNotifications, acceptBuddyRequest, rejectBuddyRequest, getPendingCheckIns, getPendingExamRequests, joinRequests } = useApp();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -410,16 +411,16 @@ const NotificationsDropdown: React.FC<{ onClose: () => void; onNavigate: (tab: s
     + (currentUser?.buddyRequests?.length ?? 0)
     + pendingCIs.length + pendingExams.length + pendingJoins.length;
 
-  const navigate = (tab: string) => { onNavigate(tab); onClose(); };
+  const navigate = (target: NavTarget) => { onNavigate(target); onClose(); };
 
-  const notifNavTab = (type: string): string | null => {
+  const notifNavTarget = (type: string): NavTarget | null => {
     switch (type) {
-      case 'checkin': return 'dashboard';
-      case 'exam_result': return 'training';
-      case 'exam_request': return 'training';
-      case 'certificate': return 'profil';
-      case 'application': return 'profil';
-      case 'board': return 'community';
+      case 'checkin': return { tab: 'dashboard' };
+      case 'exam_result': return { tab: 'training' };
+      case 'exam_request': return { tab: 'training' };
+      case 'certificate': return { tab: 'profil' };
+      case 'application': return { tab: 'profil' };
+      case 'board': return { tab: 'community' };
       default: return null;
     }
   };
@@ -436,7 +437,7 @@ const NotificationsDropdown: React.FC<{ onClose: () => void; onNavigate: (tab: s
   };
 
   return (
-    <div ref={ref} className="absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-1rem)] bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden">
+    <div ref={ref} className="fixed top-[69px] right-2 w-80 max-w-[calc(100vw-1rem)] bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-[100] overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
         <h3 className="text-white font-bold text-sm">
           Benachrichtigungen
@@ -462,7 +463,7 @@ const NotificationsDropdown: React.FC<{ onClose: () => void; onNavigate: (tab: s
         ))}
         {/* Offene Check-in Anfragen (für Instructoren) */}
         {pendingCIs.map(ci => (
-          <div key={ci.id} onClick={() => navigate('dashboard')} className="flex border-b border-gray-800/60 cursor-pointer hover:bg-gray-800/50 transition-colors">
+          <div key={ci.id} onClick={() => navigate({ tab: 'dashboard', subTab: 'anfragen', requestSubTab: 'checkins' })} className="flex border-b border-gray-800/60 cursor-pointer hover:bg-gray-800/50 transition-colors">
             <div className="w-0.5 bg-red-600 flex-shrink-0" />
             <div className="px-4 py-3 flex-1">
               <div className="text-white text-sm font-semibold leading-tight">{ci.memberName}</div>
@@ -473,7 +474,7 @@ const NotificationsDropdown: React.FC<{ onClose: () => void; onNavigate: (tab: s
         ))}
         {/* Offene Prüfungsanfragen (für Instructoren) */}
         {pendingExams.map(ex => (
-          <div key={ex.id} onClick={() => navigate('training')} className="flex border-b border-gray-800/60 cursor-pointer hover:bg-gray-800/50 transition-colors">
+          <div key={ex.id} onClick={() => navigate({ tab: 'training' })} className="flex border-b border-gray-800/60 cursor-pointer hover:bg-gray-800/50 transition-colors">
             <div className="w-0.5 bg-red-600 flex-shrink-0" />
             <div className="px-4 py-3 flex-1">
               <div className="text-white text-sm font-semibold leading-tight">{ex.memberName}</div>
@@ -484,7 +485,7 @@ const NotificationsDropdown: React.FC<{ onClose: () => void; onNavigate: (tab: s
         ))}
         {/* Offene Beitrittsanfragen (für Owner/Admins) */}
         {pendingJoins.map(jr => (
-          <div key={jr.id} onClick={() => navigate('admin')} className="flex border-b border-gray-800/60 cursor-pointer hover:bg-gray-800/50 transition-colors">
+          <div key={jr.id} onClick={() => navigate({ tab: 'dashboard', subTab: 'anfragen', requestSubTab: 'beitritt' })} className="flex border-b border-gray-800/60 cursor-pointer hover:bg-gray-800/50 transition-colors">
             <div className="w-0.5 bg-red-600 flex-shrink-0" />
             <div className="px-4 py-3 flex-1">
               <div className="text-white text-sm font-semibold leading-tight">{jr.name || jr.email}</div>
@@ -500,14 +501,14 @@ const NotificationsDropdown: React.FC<{ onClose: () => void; onNavigate: (tab: s
             <p className="text-gray-500 text-sm">Keine Benachrichtigungen</p>
           </div>
         ) : userNotifs.map(notif => {
-          const navTab = notifNavTab(notif.type);
+          const navT = notifNavTarget(notif.type);
           return (
             <div
               key={notif.id}
-              onClick={navTab ? () => { markNotificationRead(notif.id); navigate(navTab); } : undefined}
-              className={`flex border-b border-gray-800/60 last:border-0 transition-colors ${notif.read ? 'opacity-60' : 'bg-gray-800/30'} ${navTab ? 'cursor-pointer hover:bg-gray-800/50' : ''}`}
+              onClick={navT ? () => { markNotificationRead(notif.id); navigate(navT); } : undefined}
+              className={`flex border-b border-gray-800/60 last:border-0 transition-colors ${notif.read ? 'opacity-60' : 'bg-gray-800/30'} ${navT ? 'cursor-pointer hover:bg-gray-800/50' : ''}`}
             >
-              {navTab && <div className="w-0.5 bg-red-600 flex-shrink-0" />}
+              {navT && <div className="w-0.5 bg-red-600 flex-shrink-0" />}
               <div className="px-4 py-3 flex-1">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -1073,7 +1074,7 @@ const AppContent: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const [navTarget, setNavTarget] = useState<string | null>(null);
+  const [navTarget, setNavTarget] = useState<{ tab: string; subTab?: string; requestSubTab?: string } | null>(null);
 
   const [showJoinForm, setShowJoinForm] = useState(() =>
     new URLSearchParams(window.location.search).get('join') === 'true'
@@ -1162,7 +1163,7 @@ const AppContent: React.FC = () => {
                 )}
               </button>
               {showNotifications && (
-                <NotificationsDropdown onClose={() => setShowNotifications(false)} onNavigate={tab => { setNavTarget(tab); setShowNotifications(false); }} />
+                <NotificationsDropdown onClose={() => setShowNotifications(false)} onNavigate={target => { setNavTarget(target); setShowNotifications(false); }} />
               )}
             </div>
 
@@ -1207,7 +1208,7 @@ const AppContent: React.FC = () => {
       {/* Main Content */}
       <div className="pt-[69px]">
         {actualViewMode === 'member'
-          ? <MemberView onSwitchToAdmin={currentUser?.role === 'admin' ? () => setViewMode('instructor') : undefined} navTarget={navTarget} onNavComplete={() => setNavTarget(null)} />
+          ? <MemberView onSwitchToAdmin={currentUser?.role === 'admin' ? () => setViewMode('instructor') : undefined} navTarget={navTarget?.tab ?? null} onNavComplete={() => setNavTarget(null)} />
           : <InstructorView navTarget={navTarget} onNavComplete={() => setNavTarget(null)} />}
       </div>
 
