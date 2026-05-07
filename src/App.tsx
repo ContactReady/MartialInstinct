@@ -940,7 +940,7 @@ const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-gray-800">
           <div className="flex items-center gap-2">
             <span className="text-base">📖</span>
-            <h2 className="text-white font-bold text-sm">Gebrauchsanweisung</h2>
+            <h2 className="text-white font-bold text-sm">Leitfaden</h2>
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-white text-lg leading-none transition-colors">✕</button>
         </div>
@@ -986,6 +986,10 @@ const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <div>
                 <div className="text-white font-semibold mb-0.5">Prüfungsquiz</div>
                 <p>{platformConfig.quiz.examQuestions} Fragen. Mindestens <span className="text-white font-bold">{Math.round(platformConfig.quiz.examPassRate * 100)}%</span> zum Bestehen.</p>
+              </div>
+              <div>
+                <div className="text-white font-semibold mb-0.5">⭐ Stern-System</div>
+                <p>Beantwortest du eine Frage <span className="text-white font-semibold">5× in Folge richtig</span>, wird sie automatisch mit einem Stern markiert. Du kannst Fragen auch manuell markieren. Gestirnte Fragen lassen sich im Practice-Modus gezielt üben.</p>
               </div>
               <div className="bg-gray-800/70 border border-gray-700 rounded-lg px-3 py-2">
                 <div className="text-gray-300 font-semibold text-xs mb-0.5">⚠️ Achtung</div>
@@ -1109,7 +1113,7 @@ const AppContent: React.FC = () => {
             <button
               onClick={() => { setShowHelp(v => !v); setShowNotifications(false); setShowUserDropdown(false); }}
               className="p-1.5 text-gray-400 hover:text-white transition-colors leading-none flex items-center justify-center"
-              title="Gebrauchsanweisung"
+              title="Leitfaden"
             >
               <span className="text-xl leading-none">ℹ️</span>
             </button>
