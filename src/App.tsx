@@ -377,7 +377,7 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
 };
 
 // ── Notifications Dropdown ─────────────────────────────────────────────────────
-const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+const NotificationsDropdown: React.FC<{ onClose: () => void; onNavigate: (tab: string) => void }> = ({ onClose, onNavigate }) => {
   const { currentUser, notifications, markNotificationRead, clearNotifications, acceptBuddyRequest, rejectBuddyRequest, getPendingCheckIns, getPendingExamRequests, joinRequests } = useApp();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -409,6 +409,20 @@ const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) =
   const unreadCount = userNotifs.filter(n => !n.read).length
     + (currentUser?.buddyRequests?.length ?? 0)
     + pendingCIs.length + pendingExams.length + pendingJoins.length;
+
+  const navigate = (tab: string) => { onNavigate(tab); onClose(); };
+
+  const notifNavTab = (type: string): string | null => {
+    switch (type) {
+      case 'checkin': return 'dashboard';
+      case 'exam_result': return 'training';
+      case 'exam_request': return 'training';
+      case 'certificate': return 'profil';
+      case 'application': return 'profil';
+      case 'board': return 'community';
+      default: return null;
+    }
+  };
 
   const formatTime = (date: Date) => {
     const d = new Date(date);
@@ -448,32 +462,35 @@ const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) =
         ))}
         {/* Offene Check-in Anfragen (für Instructoren) */}
         {pendingCIs.map(ci => (
-          <div key={ci.id} className="px-4 py-3 border-b border-gray-800/60 bg-gray-800/30">
-            <div className="text-white text-sm font-semibold leading-tight">{ci.memberName}</div>
-            <div className="text-gray-400 text-xs mt-0.5">
-              Check-in Anfrage{ci.unitName ? ` · ${ci.unitName}` : ''}
-            </div>
-            <div className="text-gray-600 text-xs mt-1">
-              {new Date(ci.requestedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr
+          <div key={ci.id} onClick={() => navigate('dashboard')} className="flex border-b border-gray-800/60 cursor-pointer hover:bg-gray-800/50 transition-colors">
+            <div className="w-0.5 bg-red-600 flex-shrink-0" />
+            <div className="px-4 py-3 flex-1">
+              <div className="text-white text-sm font-semibold leading-tight">{ci.memberName}</div>
+              <div className="text-gray-400 text-xs mt-0.5">Check-in Anfrage{ci.unitName ? ` · ${ci.unitName}` : ''}</div>
+              <div className="text-gray-600 text-xs mt-1">{new Date(ci.requestedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr</div>
             </div>
           </div>
         ))}
         {/* Offene Prüfungsanfragen (für Instructoren) */}
         {pendingExams.map(ex => (
-          <div key={ex.id} className="px-4 py-3 border-b border-gray-800/60 bg-gray-800/30">
-            <div className="text-white text-sm font-semibold leading-tight">{ex.memberName}</div>
-            <div className="text-gray-400 text-xs mt-0.5">
-              Prüfungsanfrage · {ex.techniqueName}
+          <div key={ex.id} onClick={() => navigate('training')} className="flex border-b border-gray-800/60 cursor-pointer hover:bg-gray-800/50 transition-colors">
+            <div className="w-0.5 bg-red-600 flex-shrink-0" />
+            <div className="px-4 py-3 flex-1">
+              <div className="text-white text-sm font-semibold leading-tight">{ex.memberName}</div>
+              <div className="text-gray-400 text-xs mt-0.5">Prüfungsanfrage · {ex.techniqueName}</div>
+              <div className="text-gray-600 text-xs mt-1">{ex.moduleName}</div>
             </div>
-            <div className="text-gray-600 text-xs mt-1">{ex.moduleName}</div>
           </div>
         ))}
         {/* Offene Beitrittsanfragen (für Owner/Admins) */}
         {pendingJoins.map(jr => (
-          <div key={jr.id} className="px-4 py-3 border-b border-gray-800/60 bg-gray-800/30">
-            <div className="text-white text-sm font-semibold leading-tight">{jr.name || jr.email}</div>
-            <div className="text-gray-400 text-xs mt-0.5">Beitrittsanfrage</div>
-            <div className="text-gray-600 text-xs mt-1">{jr.email}</div>
+          <div key={jr.id} onClick={() => navigate('admin')} className="flex border-b border-gray-800/60 cursor-pointer hover:bg-gray-800/50 transition-colors">
+            <div className="w-0.5 bg-red-600 flex-shrink-0" />
+            <div className="px-4 py-3 flex-1">
+              <div className="text-white text-sm font-semibold leading-tight">{jr.name || jr.email}</div>
+              <div className="text-gray-400 text-xs mt-0.5">Beitrittsanfrage</div>
+              <div className="text-gray-600 text-xs mt-1">{jr.email}</div>
+            </div>
           </div>
         ))}
         {userNotifs.length === 0 && (currentUser?.buddyRequests ?? []).length === 0
@@ -482,20 +499,30 @@ const NotificationsDropdown: React.FC<{ onClose: () => void }> = ({ onClose }) =
             <div className="text-3xl mb-2">🔔</div>
             <p className="text-gray-500 text-sm">Keine Benachrichtigungen</p>
           </div>
-        ) : userNotifs.map(notif => (
-          <div key={notif.id} className={`px-4 py-3 border-b border-gray-800/60 last:border-0 transition-colors ${notif.read ? 'opacity-60' : 'bg-gray-800/30'}`}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="text-white text-sm font-semibold leading-tight">{notif.title}</div>
-                <div className="text-gray-400 text-xs mt-0.5 leading-snug">{notif.message}</div>
-                <div className="text-gray-600 text-xs mt-1">{formatTime(notif.createdAt)}</div>
+        ) : userNotifs.map(notif => {
+          const navTab = notifNavTab(notif.type);
+          return (
+            <div
+              key={notif.id}
+              onClick={navTab ? () => { markNotificationRead(notif.id); navigate(navTab); } : undefined}
+              className={`flex border-b border-gray-800/60 last:border-0 transition-colors ${notif.read ? 'opacity-60' : 'bg-gray-800/30'} ${navTab ? 'cursor-pointer hover:bg-gray-800/50' : ''}`}
+            >
+              {navTab && <div className="w-0.5 bg-red-600 flex-shrink-0" />}
+              <div className="px-4 py-3 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-white text-sm font-semibold leading-tight">{notif.title}</div>
+                    <div className="text-gray-400 text-xs mt-0.5 leading-snug">{notif.message}</div>
+                    <div className="text-gray-600 text-xs mt-1">{formatTime(notif.createdAt)}</div>
+                  </div>
+                  {!notif.read && (
+                    <button onClick={e => { e.stopPropagation(); markNotificationRead(notif.id); }} className="text-gray-500 hover:text-green-400 text-xs transition-colors flex-shrink-0 mt-0.5" title="Als gelesen markieren">✓</button>
+                  )}
+                </div>
               </div>
-              {!notif.read && (
-                <button onClick={() => markNotificationRead(notif.id)} className="text-gray-500 hover:text-green-400 text-xs transition-colors flex-shrink-0 mt-0.5" title="Als gelesen markieren">✓</button>
-              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -1046,6 +1073,7 @@ const AppContent: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [navTarget, setNavTarget] = useState<string | null>(null);
 
   const [showJoinForm, setShowJoinForm] = useState(() =>
     new URLSearchParams(window.location.search).get('join') === 'true'
@@ -1134,7 +1162,7 @@ const AppContent: React.FC = () => {
                 )}
               </button>
               {showNotifications && (
-                <NotificationsDropdown onClose={() => setShowNotifications(false)} />
+                <NotificationsDropdown onClose={() => setShowNotifications(false)} onNavigate={tab => { setNavTarget(tab); setShowNotifications(false); }} />
               )}
             </div>
 
@@ -1178,7 +1206,9 @@ const AppContent: React.FC = () => {
 
       {/* Main Content */}
       <div className="pt-[69px]">
-        {actualViewMode === 'member' ? <MemberView onSwitchToAdmin={currentUser?.role === 'admin' ? () => setViewMode('instructor') : undefined} /> : <InstructorView />}
+        {actualViewMode === 'member'
+          ? <MemberView onSwitchToAdmin={currentUser?.role === 'admin' ? () => setViewMode('instructor') : undefined} navTarget={navTarget} onNavComplete={() => setNavTarget(null)} />
+          : <InstructorView navTarget={navTarget} onNavComplete={() => setNavTarget(null)} />}
       </div>
 
       </>)}

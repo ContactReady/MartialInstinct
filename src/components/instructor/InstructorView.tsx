@@ -87,7 +87,7 @@ type CommunitySubTab = 'online' | 'mitglieder' | 'training' | 'rangliste';
 type AdminSubTab = 'analytics' | 'verwaltung' | 'bewerbungen';
 type VerwaltungSubTab = 'plattform' | 'training' | 'mitglieder';
 
-export const InstructorView: React.FC = () => {
+export const InstructorView: React.FC<{ navTarget?: string | null; onNavComplete?: () => void }> = ({ navTarget, onNavComplete }) => {
   const {
     currentUser,
     members,
@@ -186,6 +186,14 @@ export const InstructorView: React.FC = () => {
     return saved;
   });
   const setActiveTabPersisted = (tab: Tab) => { setActiveTab(tab); localStorage.setItem('mi_active_tab_instructor', tab); };
+
+  useEffect(() => {
+    if (!navTarget) return;
+    const valid: Tab[] = ['dashboard', 'training', 'community', 'profil', 'admin'];
+    if (valid.includes(navTarget as Tab)) setActiveTabPersisted(navTarget as Tab);
+    onNavComplete?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navTarget]);
   const [dashboardSubTab, setDashboardSubTab] = useState<DashboardSubTab>('fortschritt');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);

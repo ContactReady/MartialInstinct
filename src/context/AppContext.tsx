@@ -919,10 +919,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       updatedStreak = {
         ...updatedStreak,
         bandaids: bandaids - 1,
-        bandaidsWithoutUse: 0, // Zähler reset — Pflaster verbraucht
+        bandaidsWithoutUse: 0,
         bandaidHistory: [...bandaidHistory, event],
       };
-      setNotifications(prev => [...prev, {
+      const notifs: Notification[] = [{
         id: `notif-bandaid-auto-${Date.now()}`,
         oduserId: currentUser.id,
         type: 'bandaid' as const,
@@ -930,7 +930,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         message: 'Eine verpasste Trainingswoche wurde automatisch mit einem Pflaster überbrückt.',
         read: false,
         createdAt: now,
-      }]);
+      }];
+      if (bandaids - 1 === 0) {
+        notifs.push({
+          id: `notif-bandaid-empty-${Date.now()}`,
+          oduserId: currentUser.id,
+          type: 'bandaid' as const,
+          title: 'Kein Pflaster mehr',
+          message: 'Du hast keine Pflaster mehr. Dein Streak ist jetzt ungeschützt.',
+          read: false,
+          createdAt: now,
+        });
+      }
+      setNotifications(prev => [...prev, ...notifs]);
     } else {
       // Mehr als 1 Woche verpasst oder kein Pflaster → Streak zurücksetzen
       updatedStreak = {
@@ -1832,7 +1844,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const applyUse = (s: typeof currentUser.streak) => ({
       ...s,
       bandaids: s.bandaids - 1,
-      bandaidsWithoutUse: 0, // Zähler zurücksetzen — 3. Slot Belohnung geht verloren
+      bandaidsWithoutUse: 0,
       bandaidHistory: [...s.bandaidHistory, event],
     });
 
@@ -1840,6 +1852,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       m.id === currentUser.id ? { ...m, streak: applyUse(m.streak) } : m
     ));
     setCurrentUser(prev => prev ? { ...prev, streak: applyUse(prev.streak) } : null);
+
+    if (currentUser.streak.bandaids - 1 === 0) {
+      setNotifications(prev => [...prev, {
+        id: `notif-bandaid-empty-${Date.now()}`,
+        oduserId: currentUser.id,
+        type: 'bandaid' as const,
+        title: 'Kein Pflaster mehr',
+        message: 'Du hast keine Pflaster mehr. Dein Streak ist jetzt ungeschützt.',
+        read: false,
+        createdAt: new Date(),
+      }]);
+    }
   }, [currentUser]);
 
   const awardBandaid = useCallback((memberId: string, reason: string) => {

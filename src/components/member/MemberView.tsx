@@ -16,7 +16,7 @@ import { RankingList } from '../shared/RankingList';
 type Tab = 'dashboard' | 'training' | 'community' | 'profil';
 type ApplicationType = 'contact' | 'assistant_instructor' | null;
 
-export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitchToAdmin }) => {
+export const MemberView: React.FC<{ onSwitchToAdmin?: () => void; navTarget?: string | null; onNavComplete?: () => void }> = ({ onSwitchToAdmin, navTarget, onNavComplete }) => {
   const {
     currentUser,
     members,
@@ -48,6 +48,14 @@ export const MemberView: React.FC<{ onSwitchToAdmin?: () => void }> = ({ onSwitc
 
   const [activeTab, setActiveTab] = useState<Tab>(() => (localStorage.getItem('mi_active_tab_member') as Tab) || 'dashboard');
   const setActiveTabPersisted = (tab: Tab) => { setActiveTab(tab); localStorage.setItem('mi_active_tab_member', tab); };
+
+  useEffect(() => {
+    if (!navTarget) return;
+    const valid: Tab[] = ['dashboard', 'training', 'community', 'profil'];
+    if (valid.includes(navTarget as Tab)) setActiveTabPersisted(navTarget as Tab);
+    onNavComplete?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navTarget]);
   const [dashboardSubTab, setDashboardSubTab] = useState<'fortschritt' | 'board'>('fortschritt');
   const [boardReplyOpenId, setBoardReplyOpenId] = useState<string | null>(null);
   const [boardReplyText, setBoardReplyText] = useState('');
