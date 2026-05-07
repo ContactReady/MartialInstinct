@@ -989,7 +989,8 @@ const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               </div>
               <div>
                 <div className="text-white font-semibold mb-0.5">⭐ Stern-System</div>
-                <p>Beantwortest du eine Frage <span className="text-white font-semibold">5× in Folge richtig</span>, wird sie automatisch mit einem Stern markiert. Du kannst Fragen auch manuell markieren. Gestirnte Fragen tauchen im Practice-Modus <span className="text-white font-semibold">seltener auf</span> — der Stern signalisiert: diese Frage sitzt.</p>
+                <p>Beantwortest du eine Frage <span className="text-white font-semibold">5× in Folge richtig</span>, wird sie automatisch mit einem Stern markiert. Gestirnte Fragen tauchen im Practice-Modus <span className="text-white font-semibold">seltener auf</span> — der Stern signalisiert: diese Frage sitzt.</p>
+                <p className="mt-1">Du kannst Fragen direkt im Quiz auch manuell markieren.</p>
               </div>
               <div className="bg-gray-800/70 border border-gray-700 rounded-lg px-3 py-2">
                 <div className="text-gray-300 font-semibold text-xs mb-0.5">⚠️ Achtung</div>
